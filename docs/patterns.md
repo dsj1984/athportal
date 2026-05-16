@@ -98,3 +98,36 @@ whole-tree Biome and ESLint passes the ratchet needs.
    linters as `pnpm run lint` and `pnpm exec eslint .`, so a `--check`
    failure that does not reproduce in `pnpm run lint` is a script bug,
    not a code bug — file an issue rather than working around it.
+
+## Local quality gate (`quality:ci-local`)
+
+`pnpm run quality:ci-local` is the **local mirror** of the
+`.github/workflows/quality.yml` GitHub Actions workflow. It chains the
+same five steps the CI job runs, in the same order, failing fast on the
+first non-zero exit:
+
+```sh
+pnpm run lint \
+  && pnpm run typecheck \
+  && pnpm run test \
+  && pnpm run build \
+  && pnpm run lint:baseline:check
+```
+
+Use it before pushing to pre-validate a branch against the gate that
+will run in CI. A clean exit locally is a strong (but not absolute —
+CI runs on a fresh checkout with `--frozen-lockfile`) predictor that
+the PR's `quality` check will pass.
+
+### Why a separate script from `quality:preview`?
+
+`quality:preview` is the **operator-facing diff-narrowed convenience**
+described above — it delegates to
+`.agents/scripts/quality-preview.js --changed-since HEAD` and only
+inspects files touched on the working branch. Its job is fast feedback
+during iteration, not parity with CI.
+
+`quality:ci-local` is the **CI parity script**. It runs the whole-tree
+gates `quality.yml` runs and is intentionally slower. The two scripts
+coexist: iterate with `quality:preview`, then run `quality:ci-local`
+before push to catch anything the diff-narrowed view missed.
