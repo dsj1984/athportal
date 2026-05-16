@@ -83,3 +83,10 @@ tmp/
 
 # Agent worktrees
 .worktrees/
+
+# Workspace build/test artifacts (recursive)
+**/.turbo/
+**/dist/
+**/.cache/
+**/coverage/
+**/*.tsbuildinfo
