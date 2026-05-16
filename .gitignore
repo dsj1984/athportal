@@ -1,0 +1,85 @@
+# Dependencies
+.pnp
+.pnp.js
+node_modules
+
+# Build outputs
+**/.astro/
+.expo
+.next
+.wrangler
+build
+dist
+out
+
+# Turbo cache
+.turbo
+.turbo-cache
+
+# Cloudflare Workers
+.dev.vars
+apps/**/.dev.vars
+worker-configuration.d.ts
+
+# Environment variables
+.env
+
+# MCP config (contains secrets)
+.mcp.json
+
+# TypeScript
+*.tsbuildinfo
+
+# Test output
+.nyc_output
+coverage
+coverage.txt
+err.txt
+jest-err.txt
+jest-results.txt
+test-full-output.log
+test-results.json
+
+# Stryker (mutation testing)
+**/reports/mutation/
+**/stryker-setup-*.js
+**/stryker-setup-*.js.map
+.stryker-tmp/
+reports/mutation/
+stryker-report/
+
+# Playwright
+blob-report/
+playwright-report/
+playwright/.cache/
+test-results/
+
+# Cucumber reports
+cucumber-report.html
+cucumber-report.json
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode
+
+# Scratch and temp files
+temp/
+tmp/
+
+# Claude Code
+.claude/commands
+.claude/scheduled_tasks.lock
+.claude/settings.local.json
+
+# Agent worktrees
+.worktrees/
