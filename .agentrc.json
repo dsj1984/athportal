@@ -1,0 +1,45 @@
+{
+  "$schema": "./.agents/schemas/agentrc.schema.json",
+  "project": {
+    "paths": {
+      "agentRoot": ".agents",
+      "docsRoot": "docs",
+      "tempRoot": "temp"
+    },
+    "docsContextFiles": [
+      "architecture.md",
+      "data-dictionary.md",
+      "decisions.md",
+      "patterns.md",
+      "style-guide.md",
+      "web-routes.md"
+    ],
+    "commands": {
+      "lintBaseline": "node node_modules/eslint/bin/eslint.js . --format json",
+      "test": "pnpm run test",
+      "typecheck": "pnpm run typecheck"
+    }
+  },
+  "github": {
+    "owner": "dsj1984",
+    "repo": "athportal",
+    "projectNumber": 6,
+    "operatorHandle": "@dsj1984"
+  },
+  "delivery": {
+    "quality": {
+      "codingGuardrails": {
+        "cyclomaticFlag": 8,
+        "cyclomaticMustFix": 12,
+        "miDropMustRefactor": 1.5,
+        "requireSiblingTest": false
+      },
+      "autoRefresh": {
+        "enabled": true,
+        "miDropCap": 1.5,
+        "crapJumpCap": 5,
+        "scope": "diff"
+      }
+    }
+  }
+}
