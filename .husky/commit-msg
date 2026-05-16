@@ -1,0 +1,8 @@
+#!/usr/bin/env sh
+# Enforce Conventional Commit subjects locally.
+#
+# Rejects non-conventional commit messages so release-please-style tooling
+# can parse the squash commit that lands on `main`. Allowed types are
+# pinned in commitlint.config.js (mirrored from
+# .agents/rules/git-conventions.md).
+pnpm exec commitlint --edit "$1"

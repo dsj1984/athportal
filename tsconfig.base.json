@@ -1,0 +1,17 @@
+{
+  "//": "Single source of truth for TypeScript strictness across all workspaces. Workspaces extend this file and add a future '@repo/shared/*' alias under compilerOptions.paths pointing into packages/shared/src/*.",
+  "compilerOptions": {
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "verbatimModuleSyntax": true,
+    "moduleResolution": "Bundler",
+    "module": "ESNext",
+    "target": "ES2022",
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+    "paths": {}
+  }
+}

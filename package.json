@@ -3,11 +3,27 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@9.15.9",
+  "engines": {
+    "node": ">=24 <25"
+  },
   "scripts": {
+    "lint": "turbo run lint",
+    "lint:biome": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:coverage": "vitest run --coverage",
+    "build": "turbo run build",
+    "lint:baseline:check": "node scripts/lint-baseline.mjs --check",
+    "lint:baseline:update": "node scripts/lint-baseline.mjs --update",
     "sync:commands": "node .agents/scripts/sync-claude-commands.js",
     "prepare": "node .agents/scripts/sync-claude-commands.js",
     "quality:preview": "node .agents/scripts/quality-preview.js --changed-since HEAD",
-    "quality:watch": "node .agents/scripts/quality-watch.js"
+    "quality:watch": "node .agents/scripts/quality-watch.js",
+    "quality:ci-local": "pnpm run lint && pnpm run typecheck && pnpm run test && pnpm run build && pnpm run lint:baseline:check"
   },
   "dependencies": {
     "ajv": "^8.20.0",
@@ -16,5 +32,17 @@
     "picomatch": "^4.0.4",
     "string-argv": "^0.3.2",
     "typhonjs-escomplex": "^0.1.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.0",
+    "@commitlint/cli": "^21.0.1",
+    "@commitlint/config-conventional": "^21.0.1",
+    "@vitest/coverage-v8": "^4.1.6",
+    "eslint": "^9",
+    "eslint-config-prettier": "^10.1.8",
+    "turbo": "^2",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.59.3",
+    "vitest": "^4.1.6"
   }
 }
