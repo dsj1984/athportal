@@ -15,7 +15,7 @@
       "web-routes.md"
     ],
     "commands": {
-      "lintBaseline": "node node_modules/eslint/bin/eslint.js . --format json",
+      "lintBaseline": "pnpm run lint:baseline:check",
       "test": "pnpm run test",
       "typecheck": "pnpm run typecheck"
     }

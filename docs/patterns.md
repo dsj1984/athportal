@@ -4,30 +4,57 @@ This file is the project's living catalogue of cross-cutting engineering
 patterns. Sections below cover only what the current scaffolding requires;
 new patterns land here as Stories add them.
 
-## Linting: Biome <-> ESLint scope boundary
+## Linting: Biome ↔ ESLint scope boundary
 
 The repo uses **two linters with non-overlapping concerns** so each tool
-can run at its strengths without fighting the other:
+runs at its strengths without fighting the other. The single rule that
+resolves every edge case: **when in doubt, Biome wins.** ESLint exists
+only to cover rule classes Biome cannot express (today: type-aware
+rules; tomorrow: framework-specific plugins).
 
-- **Biome** (`biome.json`) owns *stylistic* and *cheap-to-check* rules:
-  formatting, quote/semicolon style, organize-imports, correctness/suspicious
-  recommended sets. Biome runs on every file the workspace globs match and
-  is the fast feedback loop for editor-on-save and pre-commit.
-- **ESLint 9 flat config** (`eslint.config.mjs`) is opt-in per workspace
-  and runs only the rules that **require TypeScript's type-checker** —
-  primarily `@typescript-eslint/no-floating-promises` and
-  `no-misused-promises`. `eslint-config-prettier` is appended last so any
-  future stylistic rule that sneaks in via a plugin is neutralized; style
-  belongs to Biome.
+- **Biome** (`biome.json`) is the **primary** linter and the **sole
+  formatter**. It owns formatting, organize-imports, and the universal
+  correctness / suspicious / style recommended sets. Biome runs on every
+  file the workspace globs match and is the fast-feedback loop driving
+  editor-on-save, the Husky `pre-commit` hook, and `pnpm run lint:biome`.
+- **ESLint 9 flat config** (per-workspace `eslint.config.mjs`, once the
+  workspaces exist) is the **secondary** linter, opt-in per workspace.
+  It runs only the rule classes Biome cannot cover — currently the
+  type-aware rules from `typescript-eslint` (`no-floating-promises`,
+  `no-misused-promises`, etc.) and, in future, framework plugins
+  (`eslint-plugin-react`, `jsx-a11y`, `eslint-plugin-astro`, …).
+  `eslint-config-prettier` is appended last so any stylistic rule that
+  sneaks in via a plugin is neutralized — style belongs to Biome.
 
-Both linters emit JSON reports that the baseline ratchet (see next section)
-aggregates into a single per-file warning tally — they are complementary,
-not redundant.
+Both linters emit JSON reports that the baseline ratchet (see next
+section) aggregates into a single per-file warning tally — they are
+complementary, not redundant.
 
-> The deeper version of this boundary, including which rules live where
-> and why, is owned by Story #100 (lint scope documentation). The stub
-> here exists so the **Lint baseline ratchet** runbook below has a stable
-> anchor.
+### Decision table — which tool owns which rule class
+
+| Rule category                                   | Owner       | Why                                                                                                               |
+| ----------------------------------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------- |
+| Formatting (indent, quotes, semicolons, width)  | **Biome**   | Biome is the sole formatter; Prettier is intentionally absent and `eslint-config-prettier` enforces the absence.  |
+| Import ordering / organize-imports              | **Biome**   | Biome's `organize-imports` is the canonical pass; ESLint must not duplicate it.                                   |
+| Universal correctness (e.g. `no-unused-vars`, `no-debugger`, `useExhaustiveDependencies`) | **Biome** | Covered by Biome's `recommended` correctness/suspicious sets; no type-checker needed.                              |
+| Style / opinion (e.g. `useConst`, `useTemplate`)| **Biome**   | Biome's `style` recommended set is the project's style policy.                                                    |
+| Type-aware lint (`no-floating-promises`, `no-misused-promises`, `await-thenable`, `no-unsafe-*`) | **ESLint** | Requires the TypeScript type-checker — Biome cannot run these today.                                              |
+| Framework plugins (React hooks rules, JSX-a11y, Astro, Next.js, etc.) | **ESLint** | Biome has no equivalent plugin surface; ecosystem plugins ship as ESLint rules.                                   |
+| Test-framework plugins (jest, vitest, playwright) | **ESLint** | Same reason as framework plugins — ecosystem ships ESLint rules.                                                  |
+| Conflict / overlap between the two              | **Biome wins** | If both tools can express a rule, disable it in ESLint and let Biome own it; `eslint-config-prettier` enforces this for stylistic overlap. |
+
+When adding a new lint rule:
+
+1. Check Biome's recommended sets first. If Biome already covers it (or
+   could cover it via a flag), enable it there and stop.
+2. If the rule requires the TypeScript type-checker, add it to the
+   relevant ESLint flat config.
+3. If the rule is framework-specific (React/JSX/Astro/etc.), add it via
+   the appropriate ESLint plugin to the consuming workspace's flat
+   config, not to the shared base.
+4. If you find yourself disabling a Biome rule to "let ESLint handle
+   it" — stop. That is the conflict case; Biome wins. Disable the ESLint
+   rule instead.
 
 ## Lint baseline ratchet
 

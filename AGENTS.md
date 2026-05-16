@@ -9,24 +9,75 @@ This file is the **project-specific** complement to the framework system prompt.
 
 ## Project Status
 
-**Fresh scaffolding.** The application code, workspace layout, build tooling, and docs tree have not been created yet. The repository currently contains only:
+**Foundation toolchain in place; workspace folders pending.** Epic #2
+landed the build/lint/test plumbing this repo will use, but the actual
+`apps/` and `packages/` workspaces (and their source code) have not been
+created yet — Story #121 carries that scaffolding. Update this file as
+real workspaces and features land; keep it honest about what exists today.
 
-- `.agents/` — framework submodule (do not edit directly; use `/agents-update`)
-- `.agentrc.json` — project configuration (see [`.agentrc.json`](.agentrc.json))
-- `.claude/` — Claude Code harness settings and generated command mirrors
-- `.husky/pre-commit` — placeholder hook
-- `package.json` — minimal scripts (`sync:commands`, `prepare`, `quality:preview`, `quality:watch`)
-- `README.md` — repository pointer
+What currently exists on `main` / `epic/2`:
 
-Planned architecture and milestones live on GitHub Project #6. Update this file as real workspaces, docs, and tooling land — keep it honest about what exists today.
+- **Package manager & workspaces:** pnpm 9.15.9 pinned via `packageManager`
+  in [`package.json`](package.json); `pnpm-workspace.yaml` declares
+  `apps/*` and `packages/*` globs (the folders themselves are
+  intentionally absent until Story #121).
+- **Monorepo task runner:** [Turborepo v2](turbo.json) (`turbo run lint`,
+  `typecheck`, `test`, `build`) drives the pnpm scripts.
+- **Primary linter / formatter:** [Biome 1.9](biome.json) — formatting,
+  organize-imports, universal correctness. Runs via `pnpm run lint:biome`
+  and on save / pre-commit. See
+  [`docs/patterns.md` § _Linting: Biome ↔ ESLint scope boundary_](docs/patterns.md#linting-biome--eslint-scope-boundary)
+  for which tool owns which rule class.
+- **Secondary linter:** ESLint 9 (flat config) + `typescript-eslint`
+  carries the type-aware rules Biome cannot run.
+  `eslint-config-prettier` is appended last so any stylistic rule that
+  slips in via a plugin is neutralized — style belongs to Biome.
+- **TypeScript:** strict via [`tsconfig.base.json`](tsconfig.base.json);
+  per-workspace `tsconfig.json` files extend it once those workspaces
+  exist.
+- **Lint baseline ratchet:** [`scripts/lint-baseline.mjs`](scripts/lint-baseline.mjs)
+  with the committed snapshot at
+  [`.lint-baseline.json`](.lint-baseline.json). CI calls
+  `pnpm run lint:baseline:check`; see `docs/patterns.md` § _Lint baseline
+  ratchet_ for the runbook.
+- **Commit hygiene:** Husky `pre-commit` runs `pnpm run lint:biome` +
+  `pnpm run lint:baseline:check`; Husky `commit-msg` runs
+  [`commitlint`](commitlint.config.js) with `@commitlint/config-conventional`.
+- **CI gate:** [`.github/workflows/quality.yml`](.github/workflows/quality.yml)
+  chains lint → typecheck → test → build → baseline ratchet on every PR
+  and push to `main`. `pnpm run quality:ci-local` mirrors the same chain
+  locally.
+- **Agent framework:** `.agents/` (submodule, do not edit directly),
+  `.agentrc.json`, `.claude/` (harness settings + generated command
+  mirrors), and a `temp/` scratch directory excluded from git.
+
+Planned architecture and milestones live on GitHub Project #6.
 
 ---
 
 ## Documentation Map
 
-`docs/` does not yet exist. The `project.docsContextFiles` list in [`.agentrc.json`](.agentrc.json) names the files agents are expected to read once they are created (`architecture.md`, `data-dictionary.md`, `decisions.md`, `patterns.md`, `style-guide.md`, `web-routes.md`). Until those files exist, the runtime skips them silently per `.agents/instructions.md` §3.
+The `project.docsContextFiles` list in [`.agentrc.json`](.agentrc.json)
+is the authoritative read-on-every-task set. Current state of the docs
+tree:
 
-Sprint planning context lives in **GitHub Issues**, not in `docs/`. Each Epic's body links its PRD and Tech Spec issues via `context::prd` and `context::tech-spec` labels — read those before starting work in an Epic.
+- [`docs/architecture.md`](docs/architecture.md) — present
+- [`docs/data-dictionary.md`](docs/data-dictionary.md) — present
+- [`docs/decisions.md`](docs/decisions.md) — present
+- [`docs/patterns.md`](docs/patterns.md) — present; includes
+  [`Biome ↔ ESLint scope boundary`](docs/patterns.md#linting-biome--eslint-scope-boundary)
+  and the lint-baseline ratchet runbook
+- [`docs/style-guide.md`](docs/style-guide.md) — present
+- [`docs/web-routes.md`](docs/web-routes.md) — present
+- [`docs/testing-strategy.md`](docs/testing-strategy.md) — present
+  (referenced from [`CLAUDE.md`](CLAUDE.md) as always-on testing context)
+
+When the runtime hydrates a task, any entry whose file is absent is
+skipped silently per `.agents/instructions.md` §3.
+
+Sprint planning context lives in **GitHub Issues**, not in `docs/`. Each
+Epic's body links its PRD and Tech Spec issues via `context::prd` and
+`context::tech-spec` labels — read those before starting work in an Epic.
 
 ---
 
