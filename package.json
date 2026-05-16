@@ -15,6 +15,7 @@
     "format:check": "biome format .",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
+    "test:coverage": "vitest run --coverage",
     "build": "turbo run build",
     "lint:baseline:check": "node scripts/lint-baseline.mjs --check",
     "lint:baseline:update": "node scripts/lint-baseline.mjs --update",
@@ -36,10 +37,12 @@
     "@biomejs/biome": "^1.9.0",
     "@commitlint/cli": "^21.0.1",
     "@commitlint/config-conventional": "^21.0.1",
+    "@vitest/coverage-v8": "^4.1.6",
     "eslint": "^9",
     "eslint-config-prettier": "^10.1.8",
     "turbo": "^2",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.59.3"
+    "typescript-eslint": "^8.59.3",
+    "vitest": "^4.1.6"
   }
 }

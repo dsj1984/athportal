@@ -2,14 +2,10 @@
   "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
   "files": {
     "include": [
-      "apps/**/src/**/*.ts",
-      "apps/**/src/**/*.tsx",
-      "apps/**/src/**/*.js",
-      "apps/**/src/**/*.mjs",
-      "packages/**/src/**/*.ts",
-      "packages/**/src/**/*.tsx",
-      "packages/**/src/**/*.js",
-      "packages/**/src/**/*.mjs",
+      "**/src/**/*.ts",
+      "**/src/**/*.tsx",
+      "**/src/**/*.js",
+      "**/src/**/*.mjs",
       "scripts/**/*.mjs"
     ],
     "ignore": [

@@ -54,9 +54,7 @@ function parseArgs(argv) {
 function runLinter(label, nodeEntry, args) {
   const entryAbs = path.join(REPO_ROOT, nodeEntry);
   if (!fs.existsSync(entryAbs)) {
-    throw new Error(
-      `[${label}] entrypoint missing at ${nodeEntry}. Did dependencies install?`,
-    );
+    throw new Error(`[${label}] entrypoint missing at ${nodeEntry}. Did dependencies install?`);
   }
   const result = spawnSync(process.execPath, [entryAbs, ...args], {
     cwd: REPO_ROOT,
@@ -134,11 +132,11 @@ function extractFirstJsonArray(text) {
 // ---------------------------------------------------------------------------
 
 function collectBiomeWarnings() {
-  const r = runLinter(
-    'biome',
-    'node_modules/@biomejs/biome/bin/biome',
-    ['check', '.', '--reporter=json'],
-  );
+  const r = runLinter('biome', 'node_modules/@biomejs/biome/bin/biome', [
+    'check',
+    '.',
+    '--reporter=json',
+  ]);
   // Biome exits non-zero when diagnostics exist — that is normal. We only
   // bail when there is no parseable JSON object at all.
   const jsonStr = extractFirstJsonObject(r.stdout);
@@ -176,11 +174,7 @@ function collectBiomeWarnings() {
 // ---------------------------------------------------------------------------
 
 function collectEslintWarnings() {
-  const r = runLinter(
-    'eslint',
-    'node_modules/eslint/bin/eslint.js',
-    ['.', '--format=json'],
-  );
+  const r = runLinter('eslint', 'node_modules/eslint/bin/eslint.js', ['.', '--format=json']);
   const jsonStr = extractFirstJsonArray(r.stdout);
   if (!jsonStr) {
     // ESLint with zero files matched returns `[]` — extractFirstJsonArray
@@ -222,9 +216,7 @@ function aggregate() {
   for (const [f, n] of biome) merged.set(f, (merged.get(f) ?? 0) + n);
   for (const [f, n] of eslint) merged.set(f, (merged.get(f) ?? 0) + n);
   // Sort lex so JSON is diff-stable.
-  const sorted = [...merged.entries()].sort(([a], [b]) =>
-    a < b ? -1 : a > b ? 1 : 0,
-  );
+  const sorted = [...merged.entries()].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
   const byFile = {};
   let totalWarnings = 0;
   for (const [f, n] of sorted) {
@@ -245,9 +237,7 @@ function loadBaseline() {
   try {
     return JSON.parse(raw);
   } catch (err) {
-    throw new Error(
-      `Failed to parse .lint-baseline.json: ${err.message}`,
-    );
+    throw new Error(`Failed to parse .lint-baseline.json: ${err.message}`);
   }
 }
 
@@ -302,9 +292,7 @@ function modeCheck() {
   if (regressions.length > 0) {
     process.stderr.write('  files that gained warnings:\n');
     for (const r of regressions) {
-      process.stderr.write(
-        `    ${r.file}: ${r.prev} → ${r.count} (+${r.count - r.prev})\n`,
-      );
+      process.stderr.write(`    ${r.file}: ${r.prev} → ${r.count} (+${r.count - r.prev})\n`);
     }
   }
   process.stderr.write(
