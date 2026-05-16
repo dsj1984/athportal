@@ -1,6 +1,26 @@
-# Stabilized quality gates (Epic #1386 / Story #1401):
-# catch MI/CRAP drift at git-commit time so the agent refactors before the
-# diff is closed. quality:preview wraps both gates with --changed-since HEAD
-# --staged and exits non-zero on any threshold violation, blocking the
-# commit and rendering the per-file delta table to stderr.
-node .agents/scripts/quality-preview.js --changed-since HEAD --staged
+#!/usr/bin/env sh
+# Pre-commit hook — Athlete Portal.
+#
+# Two-stage guard:
+#   1. Block any staged path under `.agents/` (the framework submodule).
+#      Per AGENTS.md §Safety Constraints, that directory is managed only
+#      via `/agents-update` — direct edits are forbidden.
+#   2. Run Biome against the staged set only (`--staged`) so the hook stays
+#      fast on large diffs. `--no-errors-on-unmatched` keeps the hook quiet
+#      when staged paths fall outside Biome's configured globs.
+
+# --- 1. .agents/ write-guard ---------------------------------------------
+staged_agents=$(git diff --cached --name-only --diff-filter=ACMR | grep '^\.agents/' || true)
+if [ -n "$staged_agents" ]; then
+	echo "✖ pre-commit: refusing to commit changes under .agents/" >&2
+	echo "" >&2
+	echo "  The .agents/ tree is a git submodule managed by /agents-update." >&2
+	echo "  See AGENTS.md §Safety Constraints — do not edit .agents/ directly." >&2
+	echo "" >&2
+	echo "  Staged paths:" >&2
+	echo "$staged_agents" | sed 's/^/    /' >&2
+	exit 1
+fi
+
+# --- 2. Biome on staged files --------------------------------------------
+pnpm exec biome check --staged --no-errors-on-unmatched
