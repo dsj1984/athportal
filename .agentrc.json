@@ -25,21 +25,5 @@
     "repo": "athportal",
     "projectNumber": 6,
     "operatorHandle": "@dsj1984"
-  },
-  "delivery": {
-    "quality": {
-      "codingGuardrails": {
-        "cyclomaticFlag": 8,
-        "cyclomaticMustFix": 12,
-        "miDropMustRefactor": 1.5,
-        "requireSiblingTest": false
-      },
-      "autoRefresh": {
-        "enabled": true,
-        "miDropCap": 1.5,
-        "crapJumpCap": 5,
-        "scope": "diff"
-      }
-    }
   }
 }
