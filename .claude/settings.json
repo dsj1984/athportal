@@ -1,4 +1,24 @@
 {
+  "permissions": {
+    "allow": [
+      "Read",
+      "Edit",
+      "Write",
+      "Glob",
+      "Grep",
+      "Bash",
+      "Bash(git stash:*)",
+      "mcp__github__*",
+      "mcp__context7__*",
+      "mcp__chrome-devtools__*",
+      "WebSearch",
+      "Monitor",
+      "Skill(update-config)",
+      "Skill(update-config:*)"
+    ],
+    "deny": ["Bash(git reset --hard*)", "Bash(git clean *)", "Bash(rm -rf *)", "Bash(rmdir *)"],
+    "defaultMode": "acceptEdits"
+  },
   "hooks": {
     "UserPromptSubmit": [
       {
@@ -6,6 +26,18 @@
           {
             "type": "command",
             "command": "node .agents/scripts/sync-claude-commands.js"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Bash(rm -rf *)",
+            "command": "node -e 'let s=\"\";process.stdin.on(\"data\",d=>s+=d);process.stdin.on(\"end\",()=>{try{const c=JSON.parse(s).tool_input.command;if(/\\brm\\s+-rf\\s+([^\\s]*\\/)?\\.worktrees\\//.test(c))console.log(JSON.stringify({hookSpecificOutput:{hookEventName:\"PreToolUse\",permissionDecision:\"allow\",permissionDecisionReason:\"target inside .worktrees/\"}}));else console.log(\"{}\");}catch(e){console.log(\"{}\");}})'"
           }
         ]
       }
