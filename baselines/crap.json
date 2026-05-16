@@ -1,0 +1,7 @@
+{
+  "$schema": ".agents/schemas/crap-baseline.schema.json",
+  "escomplexVersion": "0.1.0",
+  "kernelVersion": "1.1.0",
+  "rows": [],
+  "tsTranspilerVersion": "0.0.0"
+}
