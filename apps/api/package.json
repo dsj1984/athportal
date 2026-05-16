@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "lint": "biome check src && eslint src",
-    "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "vitest run",
+    "lint": "pnpm exec biome check src && pnpm exec eslint src",
+    "typecheck": "pnpm exec tsc --noEmit -p tsconfig.json",
+    "test": "pnpm exec vitest run",
     "build": "exit 0"
   }
 }
