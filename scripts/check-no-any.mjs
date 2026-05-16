@@ -22,7 +22,7 @@
 //
 // Story #99 — Strict TypeScript baseline with shared tsconfig.base.json.
 
-import { readdir, readFile, stat } from 'node:fs/promises';
+import { readFile, readdir, stat } from 'node:fs/promises';
 import { join, relative, sep } from 'node:path';
 import process from 'node:process';
 
