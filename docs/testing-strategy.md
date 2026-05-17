@@ -1,8 +1,8 @@
 # Testing Strategy
 
-> **Forward-looking target.** Tier rules, decision matrix, and forbidden patterns below are evergreen and apply from day one. Concrete paths (`apps/api/src/...`, `tests/features/...`) and CI job names accrete as `foundation-testing-infrastructure` and downstream feature Epics land.
+> The generic tier rules live in [`.agents/rules/testing-standards.md`](../.agents/rules/testing-standards.md); this document maps those rules onto the concrete tools, paths, and workspaces this repo uses. When `AGENTS.md`, `CLAUDE.md`, or `docs/patterns.md` talk about testing, they defer to this file — do not duplicate rules across documents.
 >
-> The generic tier rules live in [`.agents/rules/testing-standards.md`](../.agents/rules/testing-standards.md); this document maps those rules onto the concrete tools, paths, and workspaces this repo will use. When `AGENTS.md`, `CLAUDE.md`, or `docs/patterns.md` talk about testing, they defer to this file — do not duplicate rules across documents.
+> The three tiers (unit, contract, acceptance) are wired today: Vitest projects run unit + contract under `pnpm run test`, the smoke acceptance scenario runs under `pnpm --filter @repo/web exec bddgen && pnpm --filter @repo/web test:e2e -- --grep @smoke`, and the step-definition linter runs under `pnpm run lint:steps`. CI ([`quality.yml`](../.github/workflows/quality.yml)) gates every PR on the three; the nightly schedule ([`nightly.yml`](../.github/workflows/nightly.yml)) runs the full acceptance corpus and the Stryker mutation report.
 
 ---
 
@@ -252,13 +252,18 @@ Unit and contract suites must be safe to run in parallel.
 
 ## Cross-platform execution *(v1.0)*
 
-The acceptance tier is **cross-platform first** by design: a scenario in `tests/features/**` is the single source of truth for a user-visible journey and is bound by both runners against their own step library — web via Playwright-bdd, mobile via the Detox binder. One scenario, two bindings, two runtime executions.
+> **Forward-looking target.** The Detox binder, the parity checker, and the mobile step library are deferred to the v1.0 native-apps Epic. The text below is the written contract that Epic will deliver against — the web runner is the only live binding today.
 
-At MVP only the web runner exists. The corpus, the linters, the parity checker, and the tag convention are all scoped to the mobile-native Epic. Forward-looking notes:
+The acceptance tier is **cross-platform first** by design: a scenario in `tests/features/**` is the single source of truth for a user-visible journey and is bound by both runners against their own step library — web via Playwright-bdd (live today), mobile via the Detox + Jest binder (v1.0). One scenario, two bindings, two runtime executions.
 
-- **Step libraries** stay aligned phrase-for-phrase across the two runners. A cross-runner parity checker (`scripts/check-step-parity.mjs`) enforces this; gaps are warnings during normal development and errors at Epic close.
-- **Step-definition linter** enforces three rules: no duplicate phrases, no forbidden patterns (raw SQL, `/api/` URL literals, HTTP status-code assertions inside step bodies), and (at Epic close) no unused phrases.
-- **Step catalog** is emitted by `scripts/step-catalog.mjs` and consumed by agent workflows so scenario authoring stays grounded in the current vocabulary.
+At MVP only the web runner exists. The step-definition linter (`scripts/lint-steps.mjs`, wired into `pnpm run lint:steps` and the Husky `pre-commit` hook) already enforces forbidden patterns and duplicate phrases against the web step library; the rest of the cross-platform machinery lands with the mobile-native Epic.
+
+The v1.0 deliverables this section names as the written contract:
+
+- **Detox + Jest binder.** Mobile step library lives at `apps/mobile/e2e/steps/`, mirroring the five canonical files under `apps/web/e2e/steps/` (`auth.steps.ts`, `form.steps.ts`, `navigation.steps.ts`, `rbac.steps.ts`, `visibility.steps.ts`). The same `.feature` scenarios run against both bindings.
+- **Cross-runner parity checker.** `scripts/check-step-parity.mjs` compares the web and mobile step libraries phrase-for-phrase. Gaps are warnings during normal development and errors at Epic close — a phrase that exists in one binding but not the other blocks the v1.0 Epic from merging.
+- **Step-definition linter** already runs the three rule classes against the web corpus (no duplicate phrases, no forbidden patterns — raw SQL, `/api/` URL literals, HTTP status-code assertions inside step bodies — and, at Epic close, no unused phrases). The v1.0 Epic extends its glob to cover `apps/mobile/e2e/steps/` as well.
+- **Step catalog.** `scripts/step-catalog.mjs` emits the live phrase vocabulary and is consumed by agent workflows so scenario authoring stays grounded in the current step library across both bindings.
 
 ---
 

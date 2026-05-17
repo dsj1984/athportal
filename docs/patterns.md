@@ -158,3 +158,60 @@ during iteration, not parity with CI.
 gates `quality.yml` runs and is intentionally slower. The two scripts
 coexist: iterate with `quality:preview`, then run `quality:ci-local`
 before push to catch anything the diff-narrowed view missed.
+
+## How to add a new step
+
+The acceptance tier reads from a small, deliberately constrained step
+vocabulary. Adding a new step is a cost — it fragments the phrase library
+and can hide a near-miss reuse. Follow this runbook so the vocabulary
+stays disciplined and the linter stays green.
+
+### Where steps live
+
+The five canonical step files live under
+[`apps/web/e2e/steps/`](../apps/web/e2e/steps/):
+
+- `auth.steps.ts` — sign-in, sign-out, role/identity setup.
+- `form.steps.ts` — text entry, form submission, file uploads.
+- `navigation.steps.ts` — page navigation, URL transitions.
+- `rbac.steps.ts` — user-visible authorization outcomes.
+- `visibility.steps.ts` — assertions about banners, lists, rows, and
+  other on-screen artefacts.
+
+Per-domain step files (one per feature area) sit alongside these
+canonical files when a domain accrues enough scenarios to justify its
+own bucket. Cross-cutting phrases stay in the canonical five.
+
+### Process
+
+1. **Grep the step library first.** Search the existing
+   `apps/web/e2e/steps/*.ts` for the phrase you want. If it exists, reuse
+   it verbatim and rephrase the scenario to fit. If a near-match exists,
+   widen the parameter (swap a literal for `{string}`) and update every
+   call site in the same PR.
+2. **Pick the right file.** Keep concerns co-located — auth in
+   `auth.steps.ts`, visibility in `visibility.steps.ts`, and so on.
+   Cross-cutting phrases that do not fit a canonical file usually mean
+   the scenario is asserting an implementation detail; reshape the
+   scenario instead of adding a new file.
+3. **Honour the tier boundaries.** A step body asserts **user-visible
+   outcomes only**. HTTP status codes, DB row state, JSON shapes, and
+   raw SQL belong in contract tests — see
+   [`docs/testing-strategy.md`](testing-strategy.md) and the
+   [assertion-placement rule](../.agents/rules/testing-standards.md#assertion-placement).
+4. **Reference the new step from a scenario in the same PR.** Unused
+   steps are warnings during development and become errors at Epic close
+   (enforced by [`scripts/lint-steps.mjs`](../scripts/lint-steps.mjs)).
+5. **Run the linter locally.** `pnpm run lint:steps` runs the same three
+   rule classes CI runs (no duplicate phrases, no forbidden patterns, no
+   unused steps at Epic close). The Husky `pre-commit` hook also runs
+   `pnpm run lint:steps --staged` against staged changes; do not bypass
+   it with `--no-verify`.
+
+### Gherkin authoring rules
+
+Phrasing and tag conventions for `.feature` files themselves live in
+[`.agents/rules/gherkin-standards.md`](../.agents/rules/gherkin-standards.md).
+Read that rule before authoring a new scenario — it covers the canonical
+tag taxonomy, the Background discipline, and the forbidden patterns the
+linter enforces.
