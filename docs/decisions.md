@@ -376,66 +376,92 @@ required?" question becomes a recurring review topic.
 
 ---
 
-## 2026-05-17 — Indexing posture: default-allow on public, noindex on signed-in and private
+## ADR-017 — Destructive-migration label, guard workflow, and two-reviewer rule
 
-**Status**: Accepted (Epic #3)
+**Status**: Accepted (2026-05-17, Epic #3)
 
-**Context**: The MVP web app ships two broad classes of route: anonymous
-public surfaces (marketing, slug-resolved discovery pages, share links)
-and authenticated surfaces (post sign-in dashboards, onboarding,
-settings, owner-only management UI). Without a documented indexing
-posture, individual routes default to whatever their layout happens to
-emit — search engines will index signed-in pages that accidentally leak
-rendered HTML to anonymous callers, and operators have no canonical
-table to point a code review at when asking "should this route be
-crawlable?". The `NoIndex` primitive and generated `robots.txt`
-described in the Epic #3 Tech Spec ([#134](https://github.com/dsj1984/athportal/issues/134))
-need a single posture document to read from; this ADR is that document.
-Implementation of the primitive and the generated `robots.txt` is
-deferred to the `apps/web` scaffolding Epic — this ADR pins the policy
-the implementation must satisfy.
+**Context**: Schema migrations are the highest-risk class of change in
+this repo because they cannot be rolled back by
+[`wrangler rollback`](./runbooks/branch-protection-setup.md) once the
+database has applied them. A `DROP COLUMN`, a `RENAME`, or a
+`NOT NULL ADD` against a populated column is a one-way door — a forward
+fix requires a fresh migration that re-creates state, which under time
+pressure during an incident is the exact wrong shape of work. The same
+PR-level gate that catches code regressions (the `quality` workflow)
+cannot detect this risk class because it operates on lint/type/test
+output, not on a semantic read of the diff. Without an explicit label
+and a workflow that requires it, the destructive change ships when the
+first reviewer is moving fast and the diff happens to be small.
 
 **Decision**:
-- **Public routes default-allow.** Anonymous, slug-addressable routes
-  (marketing pages, public org / team / event detail pages, share-link
-  unlocked views) are indexable by default. They emit no `noindex`
-  meta tag and no `X-Robots-Tag: noindex` header.
-- **Signed-in routes are `noindex, nofollow`.** Every route that requires
-  authentication — onboarding, dashboards, settings, owner-only
-  management UI — emits both `<meta name="robots" content="noindex,
-  nofollow" />` in the document head and a matching `X-Robots-Tag`
-  response header. The header is the load-bearing control: a crawler
-  that ignores HTML still sees the header.
-- **Private (`isPublic = false`) routes are `noindex, nofollow`** even
-  when their slug is technically resolvable. Per
-  [ADR-008](#adr-008--slug-first-public-discovery-surface), private
-  entities are filtered at the query layer so they don't appear in
-  anonymous lists or sitemaps; the indexing posture is the belt to that
-  query-layer suspenders.
-- **Per-resource override hook.** Individual resources may opt out of
-  their prefix's default by setting an explicit posture flag on the
-  resource (e.g. an org marking itself non-indexable while remaining
-  public, or a public entity that wants to opt-in to canonical link
-  emission separately). The override flips the posture for that
-  resource only and is recorded alongside the resource's other
-  visibility metadata.
-- **`docs/web-routes.md` is the canonical route-posture table.** The
-  build-time `apps/web/scripts/generate-robots.mjs` step reads it (or
-  its machine-readable companion) to emit `apps/web/public/robots.txt`
-  with `Disallow:` rules for every signed-in / private prefix. Hand-
-  editing `robots.txt` is forbidden — the docs surface is the single
-  source of truth. See [`docs/web-routes.md`](./web-routes.md) for the
-  current table.
+- **The `migration::destructive` PR label is the canonical marker for
+  destructive schema changes.** Any PR whose diff adds a `DROP`,
+  `RENAME`, or `NOT NULL ADD` clause inside a Drizzle migration file
+  under `apps/api/**/migrations/**` MUST carry the label. The label is
+  created once via the
+  [branch-protection setup runbook](./runbooks/branch-protection-setup.md#one-time-label-bootstrap)
+  with color `D93F0B` and the description
+  `"PR touches a destructive migration (DROP / RENAME / NOT NULL ADD) — second-approver required"`.
+- **The `migration-label-guard` workflow enforces the label
+  mechanically.** It runs on `pull_request` (opened, synchronize,
+  reopened, labeled, unlabeled), reads the PR diff via the GitHub API,
+  matches added lines against the three destructive patterns above
+  inside the migration path predicate, and fails the check when matches
+  are found without the label. When no migration files are touched the
+  check passes trivially — this is required because the
+  `apps/api/**/migrations/**` directory does not yet exist on every
+  branch.
+- **The two-reviewer rule is enforced procedurally.** GitHub
+  branch-protection's required-approvers count cannot conditionally bump
+  for a single label, so the rule is documented in
+  [`CONTRIBUTING.md` § "Destructive migrations"](../CONTRIBUTING.md#destructive-migrations)
+  and lives in the reviewer's discipline: the first reviewer approves on
+  general merit and explicitly `@`-mentions a second reviewer; the
+  second reviewer's approval is what unlocks the merge. The PR author
+  MUST NOT self-merge a `migration::destructive` PR.
+- **The label and the guard are paired, not redundant.** The guard
+  fails-closed when the label is missing — that is the load-bearing
+  mechanical gate. The two-reviewer rule fails-open by design — it
+  relies on reviewer attention to honor the convention. Both layers are
+  needed: the guard catches "author forgot to label"; the two-reviewer
+  rule catches "author labeled correctly but the change still needs
+  more eyes".
+
+**Rejected — branch-protection rule with conditional required-approvers
+based on label**: GitHub's branch-protection ruleset cannot express
+"require 2 approvers when label X is present, 1 otherwise". The closest
+analog is a CODEOWNERS escalation, which requires a `CODEOWNERS` file
+keyed to migration paths — that approach trades the label visibility (a
+red badge in the PR list) for a hidden CODEOWNERS mapping that authors
+won't notice until they hit the rule.
+
+**Rejected — pre-commit hook that blocks destructive clauses**: A
+local hook fires before the PR exists, can be bypassed with
+`--no-verify`, and is not the reviewer-visible signal the label
+provides. Hooks complement the workflow at most — they do not replace
+it.
+
+**Rejected — workflow that auto-applies the label**: The label is a
+declaration of intent ("I know this is destructive and the migration is
+necessary"), not a side effect of the diff shape. Auto-applying the
+label drops the author's accountability and removes the moment of
+deliberation the label is there to create.
 
 **Consequences**:
-- A route author has one place to read the posture for their prefix,
-  and one place to register a new prefix when adding a section to the
-  app.
-- A regression where a signed-in route accidentally renders to an
-  anonymous caller is contained: the `noindex, nofollow` header keeps
-  the page out of search results even when the auth gate has a bug.
-- `robots.txt` stays in sync with the route table by construction —
-  there is no second file to hand-edit when a prefix moves.
-- The per-resource override is a single boolean (or small enum) on the
-  resource row; the `NoIndex` primitive checks the resource-level flag
-  before falling back to the prefix-level default.
+- The `migration::destructive` label is part of the repo's required-PR
+  vocabulary; adding the workflow as a required check on the `main`
+  ruleset is the operator's responsibility per the
+  [branch-protection setup runbook](./runbooks/branch-protection-setup.md#1-required-status-checks).
+- The guard workflow's path predicate (`apps/api/**/migrations/**`) is a
+  load-bearing convention. Moving migrations out of that tree without
+  updating the workflow defeats the gate silently.
+- The guard inspects **added** lines only. A diff that removes a
+  destructive clause (reverting a previous migration) does not re-fire
+  the guard.
+- Cross-references:
+  [`CONTRIBUTING.md`](../CONTRIBUTING.md) (the author-facing rule
+  surface) and
+  [`docs/runbooks/branch-protection-setup.md`](./runbooks/branch-protection-setup.md)
+  (the operator-facing setup runbook) both point back to this ADR.
+  Changes to the policy require superseding this ADR, not editing the
+  downstream documents in isolation.

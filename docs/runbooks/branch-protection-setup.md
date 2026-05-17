@@ -106,12 +106,16 @@ production without a named human approver.
 
 Destructive schema migrations (`DROP COLUMN`, `RENAME`, `NOT NULL`
 ADD against a populated column) require the **`migration::destructive`**
-PR label. The `migration-label-guard` workflow (required check above)
-fails the PR if a destructive diff lands without the label.
+PR label. The
+[`migration-label-guard`](../../.github/workflows/migration-label-guard.yml)
+workflow (required check above) fails the PR if a destructive diff
+lands without the label.
 
 ### One-time label bootstrap
 
-If the label does not yet exist on the repo, create it:
+The label is created once per repo. If it does not yet exist (verify
+with `gh label list | grep migration::destructive`), create it with the
+canonical color and description:
 
 ```bash
 gh label create migration::destructive \
@@ -119,15 +123,24 @@ gh label create migration::destructive \
   --description "PR touches a destructive migration (DROP / RENAME / NOT NULL ADD) — second-approver required"
 ```
 
+- **Color (`D93F0B`)** — the GitHub "red" used elsewhere on the repo for
+  blocking / high-severity labels. The guard workflow does **not** match
+  on color (it matches on the exact name), but keeping the color stable
+  preserves the visual signal across PR listings.
+- **Description** — surfaced in the GitHub label picker. The exact text
+  above is what `CONTRIBUTING.md` § "Destructive migrations" points
+  authors at; keep them in sync if either is edited.
+
 ### Reviewer discipline
 
 When the `migration::destructive` label is present on a PR, a second
 named approver is expected before merge. GitHub's branch-protection
 "approval count" cannot conditionally bump for one label, so this rule
-is documented (`CONTRIBUTING.md` once it lands) and enforced
-procedurally rather than mechanically. The label's purpose is to make
-the impact category **visible** to the first reviewer, who escalates
-explicitly.
+is documented in
+[`CONTRIBUTING.md` § "Destructive migrations"](../../CONTRIBUTING.md#destructive-migrations)
+and enforced procedurally rather than mechanically. The label's purpose
+is to make the impact category **visible** to the first reviewer, who
+escalates explicitly.
 
 ---
 
