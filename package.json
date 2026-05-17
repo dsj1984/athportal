@@ -14,7 +14,7 @@
     "format": "biome format --write .",
     "format:check": "biome format .",
     "typecheck": "turbo run typecheck",
-    "test": "turbo run test",
+    "test": "turbo run test && pnpm exec vitest run --project scripts",
     "test:coverage": "vitest run --coverage",
     "mutation": "stryker run",
     "build": "turbo run build",

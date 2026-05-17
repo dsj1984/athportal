@@ -49,6 +49,16 @@ export default defineConfig({
           ],
         },
       },
+      {
+        extends: false,
+        test: {
+          name: 'scripts',
+          environment: 'node',
+          globals: false,
+          include: ['scripts/__tests__/**/*.test.mjs'],
+          exclude: ['**/dist/**', '**/node_modules/**'],
+        },
+      },
     ],
   },
 });
