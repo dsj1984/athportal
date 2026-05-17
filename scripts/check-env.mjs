@@ -34,23 +34,22 @@
 //   url                    — parses as an absolute http(s) URL
 //   cloudflare-account-id  — 32-char lowercase hex string
 
-import { readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const SHAPES = {
-	nonempty: (value) => typeof value === "string" && value.trim().length > 0,
-	url: (value) => {
-		if (typeof value !== "string" || value.length === 0) return false;
-		try {
-			const parsed = new URL(value);
-			return parsed.protocol === "http:" || parsed.protocol === "https:";
-		} catch {
-			return false;
-		}
-	},
-	"cloudflare-account-id": (value) =>
-		typeof value === "string" && /^[0-9a-f]{32}$/.test(value),
+  nonempty: (value) => typeof value === 'string' && value.trim().length > 0,
+  url: (value) => {
+    if (typeof value !== 'string' || value.length === 0) return false;
+    try {
+      const parsed = new URL(value);
+      return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+    } catch {
+      return false;
+    }
+  },
+  'cloudflare-account-id': (value) => typeof value === 'string' && /^[0-9a-f]{32}$/.test(value),
 };
 
 /**
@@ -68,41 +67,41 @@ const SHAPES = {
  *   - A `KEY=value` line without a pending shape marker is skipped.
  */
 export function parseEnvExample(source) {
-	const lines = source.split(/\r?\n/);
-	const entries = [];
-	let pendingShape = null;
+  const lines = source.split(/\r?\n/);
+  const entries = [];
+  let pendingShape = null;
 
-	for (const raw of lines) {
-		const line = raw.trim();
+  for (const raw of lines) {
+    const line = raw.trim();
 
-		if (line.length === 0) {
-			pendingShape = null;
-			continue;
-		}
+    if (line.length === 0) {
+      pendingShape = null;
+      continue;
+    }
 
-		if (line.startsWith("#")) {
-			const shapeMatch = line.match(/^#\s*shape:\s*([a-z0-9-]+)\s*$/i);
-			if (shapeMatch) {
-				pendingShape = shapeMatch[1].toLowerCase();
-			} else {
-				pendingShape = null;
-			}
-			continue;
-		}
+    if (line.startsWith('#')) {
+      const shapeMatch = line.match(/^#\s*shape:\s*([a-z0-9-]+)\s*$/i);
+      if (shapeMatch) {
+        pendingShape = shapeMatch[1].toLowerCase();
+      } else {
+        pendingShape = null;
+      }
+      continue;
+    }
 
-		const keyMatch = line.match(/^([A-Z_][A-Z0-9_]*)\s*=/);
-		if (!keyMatch) {
-			pendingShape = null;
-			continue;
-		}
+    const keyMatch = line.match(/^([A-Z_][A-Z0-9_]*)\s*=/);
+    if (!keyMatch) {
+      pendingShape = null;
+      continue;
+    }
 
-		if (pendingShape !== null) {
-			entries.push({ key: keyMatch[1], shape: pendingShape });
-		}
-		pendingShape = null;
-	}
+    if (pendingShape !== null) {
+      entries.push({ key: keyMatch[1], shape: pendingShape });
+    }
+    pendingShape = null;
+  }
 
-	return entries;
+  return entries;
 }
 
 /**
@@ -112,46 +111,46 @@ export function parseEnvExample(source) {
  * means the env is valid.
  */
 export function validateEnv(entries, env) {
-	const failures = [];
+  const failures = [];
 
-	for (const { key, shape } of entries) {
-		const value = env[key];
+  for (const { key, shape } of entries) {
+    const value = env[key];
 
-		if (value === undefined || value === "") {
-			failures.push({ key, reason: "missing" });
-			continue;
-		}
+    if (value === undefined || value === '') {
+      failures.push({ key, reason: 'missing' });
+      continue;
+    }
 
-		const validator = SHAPES[shape];
-		if (!validator) {
-			failures.push({ key, reason: "unknown-shape", shape });
-			continue;
-		}
+    const validator = SHAPES[shape];
+    if (!validator) {
+      failures.push({ key, reason: 'unknown-shape', shape });
+      continue;
+    }
 
-		if (!validator(value)) {
-			failures.push({ key, reason: "shape-mismatch", shape });
-		}
-	}
+    if (!validator(value)) {
+      failures.push({ key, reason: 'shape-mismatch', shape });
+    }
+  }
 
-	return failures;
+  return failures;
 }
 
 function formatFailure(failure) {
-	switch (failure.reason) {
-		case "missing":
-			return `  - ${failure.key}: missing required value`;
-		case "shape-mismatch":
-			return `  - ${failure.key}: value does not satisfy shape "${failure.shape}"`;
-		case "unknown-shape":
-			return `  - ${failure.key}: declared shape "${failure.shape}" is not registered`;
-		default:
-			return `  - ${failure.key}: ${failure.reason}`;
-	}
+  switch (failure.reason) {
+    case 'missing':
+      return `  - ${failure.key}: missing required value`;
+    case 'shape-mismatch':
+      return `  - ${failure.key}: value does not satisfy shape "${failure.shape}"`;
+    case 'unknown-shape':
+      return `  - ${failure.key}: declared shape "${failure.shape}" is not registered`;
+    default:
+      return `  - ${failure.key}: ${failure.reason}`;
+  }
 }
 
 function defaultExamplePath() {
-	const here = dirname(fileURLToPath(import.meta.url));
-	return resolve(here, "..", ".env.example");
+  const here = dirname(fileURLToPath(import.meta.url));
+  return resolve(here, '..', '.env.example');
 }
 
 /**
@@ -159,99 +158,93 @@ function defaultExamplePath() {
  * Pure (no process I/O) so the unit tests can drive it directly.
  */
 export function checkEnv({ examplePath, env }) {
-	const source = readFileSync(examplePath, "utf8");
-	const entries = parseEnvExample(source);
-	const failures = validateEnv(entries, env);
-	return { entries, failures };
+  const source = readFileSync(examplePath, 'utf8');
+  const entries = parseEnvExample(source);
+  const failures = validateEnv(entries, env);
+  return { entries, failures };
 }
 
 function runSelfTest() {
-	const synthetic = [
-		"# shape: nonempty",
-		"NODE_ENV=development",
-		"# shape: url",
-		"SENTRY_DSN=https://example.invalid/1",
-		"# shape: url",
-		"DATABASE_URL=https://db.example.invalid",
-		"# shape: nonempty",
-		"CLOUDFLARE_API_TOKEN=abc",
-		"# shape: cloudflare-account-id",
-		"CLOUDFLARE_ACCOUNT_ID=0123456789abcdef0123456789abcdef",
-		"# shape: nonempty",
-		"SENTRY_AUTH_TOKEN=stoken",
-	].join("\n");
+  const synthetic = [
+    '# shape: nonempty',
+    'NODE_ENV=development',
+    '# shape: url',
+    'SENTRY_DSN=https://example.invalid/1',
+    '# shape: url',
+    'DATABASE_URL=https://db.example.invalid',
+    '# shape: nonempty',
+    'CLOUDFLARE_API_TOKEN=abc',
+    '# shape: cloudflare-account-id',
+    'CLOUDFLARE_ACCOUNT_ID=0123456789abcdef0123456789abcdef',
+    '# shape: nonempty',
+    'SENTRY_AUTH_TOKEN=stoken',
+  ].join('\n');
 
-	const entries = parseEnvExample(synthetic);
-	const goodEnv = {
-		NODE_ENV: "production",
-		SENTRY_DSN: "https://abc@sentry.example.invalid/123",
-		DATABASE_URL: "https://db.example.invalid/path",
-		CLOUDFLARE_API_TOKEN: "token-value",
-		CLOUDFLARE_ACCOUNT_ID: "0123456789abcdef0123456789abcdef",
-		SENTRY_AUTH_TOKEN: "secret",
-	};
+  const entries = parseEnvExample(synthetic);
+  const goodEnv = {
+    NODE_ENV: 'production',
+    SENTRY_DSN: 'https://abc@sentry.example.invalid/123',
+    DATABASE_URL: 'https://db.example.invalid/path',
+    CLOUDFLARE_API_TOKEN: 'token-value',
+    CLOUDFLARE_ACCOUNT_ID: '0123456789abcdef0123456789abcdef',
+    SENTRY_AUTH_TOKEN: 'secret',
+  };
 
-	const goodFailures = validateEnv(entries, goodEnv);
-	if (goodFailures.length !== 0) {
-		process.stderr.write(
-			`check-env self-test FAILED: expected clean env to validate, got:\n${goodFailures
-				.map(formatFailure)
-				.join("\n")}\n`,
-		);
-		process.exit(1);
-	}
+  const goodFailures = validateEnv(entries, goodEnv);
+  if (goodFailures.length !== 0) {
+    process.stderr.write(
+      `check-env self-test FAILED: expected clean env to validate, got:\n${goodFailures
+        .map(formatFailure)
+        .join('\n')}\n`,
+    );
+    process.exit(1);
+  }
 
-	const badEnv = { ...goodEnv, SENTRY_DSN: "not-a-url", NODE_ENV: undefined };
-	const badFailures = validateEnv(entries, badEnv);
-	const hasMissing = badFailures.some(
-		(f) => f.key === "NODE_ENV" && f.reason === "missing",
-	);
-	const hasShape = badFailures.some(
-		(f) => f.key === "SENTRY_DSN" && f.reason === "shape-mismatch",
-	);
-	if (!hasMissing || !hasShape) {
-		process.stderr.write(
-			`check-env self-test FAILED: expected NODE_ENV missing + SENTRY_DSN shape mismatch, got:\n${badFailures
-				.map(formatFailure)
-				.join("\n")}\n`,
-		);
-		process.exit(1);
-	}
+  const badEnv = { ...goodEnv, SENTRY_DSN: 'not-a-url', NODE_ENV: undefined };
+  const badFailures = validateEnv(entries, badEnv);
+  const hasMissing = badFailures.some((f) => f.key === 'NODE_ENV' && f.reason === 'missing');
+  const hasShape = badFailures.some((f) => f.key === 'SENTRY_DSN' && f.reason === 'shape-mismatch');
+  if (!hasMissing || !hasShape) {
+    process.stderr.write(
+      `check-env self-test FAILED: expected NODE_ENV missing + SENTRY_DSN shape mismatch, got:\n${badFailures
+        .map(formatFailure)
+        .join('\n')}\n`,
+    );
+    process.exit(1);
+  }
 
-	process.stdout.write("check-env self-test OK\n");
-	process.exit(0);
+  process.stdout.write('check-env self-test OK\n');
+  process.exit(0);
 }
 
 function main() {
-	const args = process.argv.slice(2);
-	if (args.includes("--self-test")) {
-		runSelfTest();
-		return;
-	}
+  const args = process.argv.slice(2);
+  if (args.includes('--self-test')) {
+    runSelfTest();
+    return;
+  }
 
-	const examplePath = defaultExamplePath();
-	const { failures } = checkEnv({ examplePath, env: process.env });
+  const examplePath = defaultExamplePath();
+  const { failures } = checkEnv({ examplePath, env: process.env });
 
-	if (failures.length > 0) {
-		process.stderr.write(
-			`check-env: ${failures.length} validation failure(s):\n${failures
-				.map(formatFailure)
-				.join("\n")}\n`,
-		);
-		process.exit(1);
-	}
+  if (failures.length > 0) {
+    process.stderr.write(
+      `check-env: ${failures.length} validation failure(s):\n${failures
+        .map(formatFailure)
+        .join('\n')}\n`,
+    );
+    process.exit(1);
+  }
 
-	process.stdout.write(
-		"check-env: every required key present and shape-valid\n",
-	);
-	process.exit(0);
+  process.stdout.write('check-env: every required key present and shape-valid\n');
+  process.exit(0);
 }
 
 // Only run main() when invoked directly, not when imported by tests.
 const invokedDirectly =
-	import.meta.url === `file://${process.argv[1]}` ||
-	import.meta.url === `file:///${process.argv[1]?.replace(/\\/g, "/")}`;
+  import.meta.url === `file://${process.argv[1]}` ||
+  import.meta.url === `file:///${process.argv[1]?.replace(/\\/g, '/')}`;
 
 if (invokedDirectly) {
-	main();
+  main();
 }
