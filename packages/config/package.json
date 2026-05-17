@@ -1,16 +1,18 @@
 {
-  "name": "@repo/api",
+  "name": "@repo/config",
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "exports": {
+    "./vitest-base": "./vitest.base.ts"
+  },
   "scripts": {
-    "lint": "pnpm exec biome check src && pnpm exec eslint src",
+    "lint": "pnpm exec biome check .",
     "typecheck": "pnpm exec tsc --noEmit -p tsconfig.json",
-    "test": "pnpm exec vitest run",
+    "test": "exit 0",
     "build": "exit 0"
   },
   "devDependencies": {
-    "@repo/config": "workspace:*",
     "vitest": "^4.1.6"
   }
 }
