@@ -373,3 +373,95 @@ required?" question becomes a recurring review topic.
   the step introduces a new failure mode, a paragraph in
   [`docs/patterns.md`](./patterns.md). It is **not** a new required
   check on the ruleset.
+
+---
+
+## ADR-017 — Destructive-migration label, guard workflow, and two-reviewer rule
+
+**Status**: Accepted (2026-05-17, Epic #3)
+
+**Context**: Schema migrations are the highest-risk class of change in
+this repo because they cannot be rolled back by
+[`wrangler rollback`](./runbooks/branch-protection-setup.md) once the
+database has applied them. A `DROP COLUMN`, a `RENAME`, or a
+`NOT NULL ADD` against a populated column is a one-way door — a forward
+fix requires a fresh migration that re-creates state, which under time
+pressure during an incident is the exact wrong shape of work. The same
+PR-level gate that catches code regressions (the `quality` workflow)
+cannot detect this risk class because it operates on lint/type/test
+output, not on a semantic read of the diff. Without an explicit label
+and a workflow that requires it, the destructive change ships when the
+first reviewer is moving fast and the diff happens to be small.
+
+**Decision**:
+- **The `migration::destructive` PR label is the canonical marker for
+  destructive schema changes.** Any PR whose diff adds a `DROP`,
+  `RENAME`, or `NOT NULL ADD` clause inside a Drizzle migration file
+  under `apps/api/**/migrations/**` MUST carry the label. The label is
+  created once via the
+  [branch-protection setup runbook](./runbooks/branch-protection-setup.md#one-time-label-bootstrap)
+  with color `D93F0B` and the description
+  `"PR touches a destructive migration (DROP / RENAME / NOT NULL ADD) — second-approver required"`.
+- **The `migration-label-guard` workflow enforces the label
+  mechanically.** It runs on `pull_request` (opened, synchronize,
+  reopened, labeled, unlabeled), reads the PR diff via the GitHub API,
+  matches added lines against the three destructive patterns above
+  inside the migration path predicate, and fails the check when matches
+  are found without the label. When no migration files are touched the
+  check passes trivially — this is required because the
+  `apps/api/**/migrations/**` directory does not yet exist on every
+  branch.
+- **The two-reviewer rule is enforced procedurally.** GitHub
+  branch-protection's required-approvers count cannot conditionally bump
+  for a single label, so the rule is documented in
+  [`CONTRIBUTING.md` § "Destructive migrations"](../CONTRIBUTING.md#destructive-migrations)
+  and lives in the reviewer's discipline: the first reviewer approves on
+  general merit and explicitly `@`-mentions a second reviewer; the
+  second reviewer's approval is what unlocks the merge. The PR author
+  MUST NOT self-merge a `migration::destructive` PR.
+- **The label and the guard are paired, not redundant.** The guard
+  fails-closed when the label is missing — that is the load-bearing
+  mechanical gate. The two-reviewer rule fails-open by design — it
+  relies on reviewer attention to honor the convention. Both layers are
+  needed: the guard catches "author forgot to label"; the two-reviewer
+  rule catches "author labeled correctly but the change still needs
+  more eyes".
+
+**Rejected — branch-protection rule with conditional required-approvers
+based on label**: GitHub's branch-protection ruleset cannot express
+"require 2 approvers when label X is present, 1 otherwise". The closest
+analog is a CODEOWNERS escalation, which requires a `CODEOWNERS` file
+keyed to migration paths — that approach trades the label visibility (a
+red badge in the PR list) for a hidden CODEOWNERS mapping that authors
+won't notice until they hit the rule.
+
+**Rejected — pre-commit hook that blocks destructive clauses**: A
+local hook fires before the PR exists, can be bypassed with
+`--no-verify`, and is not the reviewer-visible signal the label
+provides. Hooks complement the workflow at most — they do not replace
+it.
+
+**Rejected — workflow that auto-applies the label**: The label is a
+declaration of intent ("I know this is destructive and the migration is
+necessary"), not a side effect of the diff shape. Auto-applying the
+label drops the author's accountability and removes the moment of
+deliberation the label is there to create.
+
+**Consequences**:
+- The `migration::destructive` label is part of the repo's required-PR
+  vocabulary; adding the workflow as a required check on the `main`
+  ruleset is the operator's responsibility per the
+  [branch-protection setup runbook](./runbooks/branch-protection-setup.md#1-required-status-checks).
+- The guard workflow's path predicate (`apps/api/**/migrations/**`) is a
+  load-bearing convention. Moving migrations out of that tree without
+  updating the workflow defeats the gate silently.
+- The guard inspects **added** lines only. A diff that removes a
+  destructive clause (reverting a previous migration) does not re-fire
+  the guard.
+- Cross-references:
+  [`CONTRIBUTING.md`](../CONTRIBUTING.md) (the author-facing rule
+  surface) and
+  [`docs/runbooks/branch-protection-setup.md`](./runbooks/branch-protection-setup.md)
+  (the operator-facing setup runbook) both point back to this ADR.
+  Changes to the policy require superseding this ADR, not editing the
+  downstream documents in isolation.
