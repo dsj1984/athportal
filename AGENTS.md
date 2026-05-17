@@ -47,6 +47,20 @@ What currently exists on `main` / `epic/2`:
   chains lint → typecheck → test → build → baseline ratchet on every PR
   and push to `main`. `pnpm run quality:ci-local` mirrors the same chain
   locally.
+- **Testing:** three tiers wired end-to-end — Vitest unit + contract
+  projects ([`vitest.workspace.ts`](vitest.workspace.ts)) run under
+  `pnpm run test`; the smoke acceptance scenario at
+  [`tests/features/foundation/web-acceptance-smoke.feature`](tests/features/foundation/web-acceptance-smoke.feature)
+  runs under `pnpm --filter @repo/web exec bddgen && pnpm --filter @repo/web test:e2e -- --grep @smoke`;
+  the step-definition linter at
+  [`scripts/lint-steps.mjs`](scripts/lint-steps.mjs) runs under
+  `pnpm run lint:steps` and is wired into the Husky `pre-commit` hook
+  against staged changes. `quality.yml` gates each PR on `test`,
+  `acceptance-smoke`, and `lint-steps` jobs; the nightly schedule at
+  [`.github/workflows/nightly.yml`](.github/workflows/nightly.yml) runs
+  the full acceptance corpus and the Stryker mutation report. See
+  [`docs/testing-strategy.md`](docs/testing-strategy.md) for the tier
+  decision matrix and forbidden patterns.
 - **Agent framework:** `.agents/` (submodule, do not edit directly),
   `.agentrc.json`, `.claude/` (harness settings + generated command
   mirrors), and a `temp/` scratch directory excluded from git.
