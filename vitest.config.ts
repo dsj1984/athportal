@@ -1,15 +1,17 @@
 import { defineConfig } from 'vitest/config';
 
 // Root-level Vitest config used by `pnpm run test:coverage`. It picks up every
-// workspace's tests and emits a single merged coverage report at
+// workspace's unit tests and emits a single merged coverage report at
 // `coverage/coverage-final.json` so the story-close validation chain can read
 // a unified artifact regardless of how many workspaces exist.
 //
-// Three projects are declared:
-//   - `unit`       — .test.ts under node env.
-//   - `unit-jsdom` — .test.tsx under jsdom (React components).
-//   - `contract`   — *.contract.test.{ts,tsx} under node env with
-//     forked, non-singleFork pool config for parallel-safe DB isolation.
+// Pyramid tier scope: unit. Contract tests (`*.contract.test.{ts,tsx}`) are
+// excluded here — they run via apps/api's dedicated contract config once
+// Story #170 lands.
+//
+// Two projects are declared so `.tsx` component tests run under jsdom while
+// pure-logic `.ts` tests stay on the faster node env. This mirrors the
+// per-workspace `vitest.config.ts` choice made by `@repo/shared`.
 export default defineConfig({
   test: {
     coverage: {
@@ -51,23 +53,11 @@ export default defineConfig({
       {
         extends: false,
         test: {
-          name: 'contract',
+          name: 'scripts',
           environment: 'node',
           globals: false,
-          include: [
-            'apps/**/src/**/*.contract.test.{ts,tsx}',
-            'packages/**/src/**/*.contract.test.{ts,tsx}',
-          ],
+          include: ['scripts/__tests__/**/*.test.mjs'],
           exclude: ['**/dist/**', '**/node_modules/**'],
-          pool: 'forks',
-          // Vitest 4 removed `poolOptions.forks.singleFork`; `fileParallelism`
-          // at its default of `true` is the new equivalent of `singleFork:
-          // false`. Pin it explicitly so the contract project's parallel
-          // contract stays visible.
-          fileParallelism: true,
-          isolate: true,
-          hookTimeout: 30_000,
-          testTimeout: 30_000,
         },
       },
     ],
