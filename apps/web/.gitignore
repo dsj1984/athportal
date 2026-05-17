@@ -3,4 +3,5 @@
 
 # Playwright + Cucumber reporter outputs
 test-results/
+playwright-output/
 playwright-report/

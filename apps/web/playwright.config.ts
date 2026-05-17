@@ -17,19 +17,37 @@ import { cucumberReporter, defineBddConfig } from 'playwright-bdd';
  * `--grep` flag (e.g., `--grep @smoke` for the PR pipeline).
  */
 const testDir = defineBddConfig({
-  features: ['../../tests/features/**/*.feature'],
+  featuresRoot: '../../tests/features',
   steps: ['./e2e/steps/**/*.ts'],
   outputDir: '.bdd-gen',
 });
 
+const E2E_PORT = Number(process.env.E2E_PORT ?? 4317);
+const E2E_BASE_URL = `http://127.0.0.1:${E2E_PORT}`;
+
 export default defineConfig({
   testDir,
   fullyParallel: true,
+  // Playwright clears `outputDir` before every run; keep per-test artifacts
+  // (screenshots, traces) in `playwright-output/` so `test-results/` stays
+  // a stable destination for the Cucumber JSON report consumed by CI.
+  outputDir: 'playwright-output',
   reporter: [
     ['list'],
     ['html', { open: 'never' }],
     cucumberReporter('json', { outputFile: 'test-results/cucumber.json' }),
   ],
+  use: {
+    baseURL: E2E_BASE_URL,
+  },
+  webServer: {
+    command: `node e2e/fixtures/static-server.mjs`,
+    url: E2E_BASE_URL,
+    reuseExistingServer: !process.env.CI,
+    env: { PORT: String(E2E_PORT) },
+    stdout: 'pipe',
+    stderr: 'pipe',
+  },
   projects: [
     {
       name: 'chromium-desktop',
