@@ -1,7 +1,14 @@
 {
-  "$schema": ".agents/schemas/crap-baseline.schema.json",
-  "escomplexVersion": "0.1.0",
-  "kernelVersion": "1.1.0",
-  "rows": [],
-  "tsTranspilerVersion": "0.0.0"
+  "$schema": ".agents/schemas/baselines/crap.schema.json",
+  "kernelVersion": "1.0.0",
+  "generatedAt": "2026-05-17T00:00:00.000Z",
+  "rollup": {
+    "*": {
+      "p50": 0,
+      "p95": 0,
+      "max": 0,
+      "methodsAbove20": 0
+    }
+  },
+  "rows": []
 }

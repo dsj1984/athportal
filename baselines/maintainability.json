@@ -1,1 +1,13 @@
-{}
+{
+  "$schema": ".agents/schemas/baselines/maintainability.schema.json",
+  "kernelVersion": "1.0.0",
+  "generatedAt": "2026-05-17T00:00:00.000Z",
+  "rollup": {
+    "*": {
+      "min": 0,
+      "p50": 0,
+      "p95": 0
+    }
+  },
+  "rows": []
+}
