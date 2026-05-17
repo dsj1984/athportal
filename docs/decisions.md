@@ -345,3 +345,46 @@ The MVP supports the following browsers and operating systems. "Supported" means
 - CSS feature usage, polyfill choices, and JS target compilation settings (`tsconfig`, build tooling) target the intersection of this matrix. Anything requiring a newer feature requires either a graceful-degradation path or an ADR widening the floor.
 - Bug reports against out-of-scope browsers/OS versions are triaged as P3 by default and may be closed `wontfix` without further investigation.
 - The ADR is dated; the "latest two majors" phrasing rolls forward automatically as browsers release. A future ADR is required only to change the floor (e.g. drop Firefox, raise the iOS floor to iOS 17) — not to absorb routine major-version releases.
+
+---
+
+## 2026-05-17 — `quality` workflow is the canonical PR quality gate
+
+**Status**: Accepted (operational pin, Epic #3)
+
+**Context**: Epic #2 landed the [`quality`](../.github/workflows/quality.yml)
+workflow (lint → typecheck → test → build → lint-baseline ratchet) and
+wired it into `pull_request` and `push: main`. Epic #3 needs a single
+named PR gate to declare "required" on the `main` branch ruleset so the
+[branch-protection-setup runbook](./runbooks/branch-protection-setup.md)
+has an unambiguous target. Without an explicit pin, future Epics could
+introduce parallel quality workflows and the "which checks are
+required?" question becomes a recurring review topic.
+
+**Decision**:
+- **The `quality` workflow is the canonical PR quality gate.** It is the
+  required check listed in
+  [`docs/runbooks/branch-protection-setup.md`](./runbooks/branch-protection-setup.md)
+  under "Required status checks" for the `main` branch.
+- New language-, framework-, or domain-level quality steps land **inside**
+  `quality.yml` (as additional steps in the existing job, or as new jobs
+  in the same workflow) rather than as parallel workflows. The required
+  check name stays `quality` for the lifetime of the project.
+- Workflows that are **not** the PR quality gate
+  (`migration-label-guard`, `deploy-staging`, `deploy-production`,
+  future security/governance hooks) live in their own files and are
+  added to the branch-protection rule on their own merits — they do not
+  subsume `quality`'s role.
+- `pnpm run quality:ci-local` MUST remain a faithful local mirror of
+  `quality.yml`'s job chain so contributors can reproduce CI failures
+  offline without a push.
+
+**Consequences**:
+- The branch-protection ruleset has a stable, named target —
+  re-applying it after a fork is mechanical.
+- The "which workflow gates the PR?" question has a single answer at any
+  point in time, which is what the runbook documents.
+- Adding a quality step is a single-file change (`quality.yml`) plus, if
+  the step introduces a new failure mode, a paragraph in
+  [`docs/patterns.md`](./patterns.md). It is **not** a new required
+  check on the ruleset.
