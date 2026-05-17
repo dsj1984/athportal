@@ -373,3 +373,69 @@ required?" question becomes a recurring review topic.
   the step introduces a new failure mode, a paragraph in
   [`docs/patterns.md`](./patterns.md). It is **not** a new required
   check on the ruleset.
+
+---
+
+## 2026-05-17 — Indexing posture: default-allow on public, noindex on signed-in and private
+
+**Status**: Accepted (Epic #3)
+
+**Context**: The MVP web app ships two broad classes of route: anonymous
+public surfaces (marketing, slug-resolved discovery pages, share links)
+and authenticated surfaces (post sign-in dashboards, onboarding,
+settings, owner-only management UI). Without a documented indexing
+posture, individual routes default to whatever their layout happens to
+emit — search engines will index signed-in pages that accidentally leak
+rendered HTML to anonymous callers, and operators have no canonical
+table to point a code review at when asking "should this route be
+crawlable?". The `NoIndex` primitive and generated `robots.txt`
+described in the Epic #3 Tech Spec ([#134](https://github.com/dsj1984/athportal/issues/134))
+need a single posture document to read from; this ADR is that document.
+Implementation of the primitive and the generated `robots.txt` is
+deferred to the `apps/web` scaffolding Epic — this ADR pins the policy
+the implementation must satisfy.
+
+**Decision**:
+- **Public routes default-allow.** Anonymous, slug-addressable routes
+  (marketing pages, public org / team / event detail pages, share-link
+  unlocked views) are indexable by default. They emit no `noindex`
+  meta tag and no `X-Robots-Tag: noindex` header.
+- **Signed-in routes are `noindex, nofollow`.** Every route that requires
+  authentication — onboarding, dashboards, settings, owner-only
+  management UI — emits both `<meta name="robots" content="noindex,
+  nofollow" />` in the document head and a matching `X-Robots-Tag`
+  response header. The header is the load-bearing control: a crawler
+  that ignores HTML still sees the header.
+- **Private (`isPublic = false`) routes are `noindex, nofollow`** even
+  when their slug is technically resolvable. Per
+  [ADR-008](#adr-008--slug-first-public-discovery-surface), private
+  entities are filtered at the query layer so they don't appear in
+  anonymous lists or sitemaps; the indexing posture is the belt to that
+  query-layer suspenders.
+- **Per-resource override hook.** Individual resources may opt out of
+  their prefix's default by setting an explicit posture flag on the
+  resource (e.g. an org marking itself non-indexable while remaining
+  public, or a public entity that wants to opt-in to canonical link
+  emission separately). The override flips the posture for that
+  resource only and is recorded alongside the resource's other
+  visibility metadata.
+- **`docs/web-routes.md` is the canonical route-posture table.** The
+  build-time `apps/web/scripts/generate-robots.mjs` step reads it (or
+  its machine-readable companion) to emit `apps/web/public/robots.txt`
+  with `Disallow:` rules for every signed-in / private prefix. Hand-
+  editing `robots.txt` is forbidden — the docs surface is the single
+  source of truth. See [`docs/web-routes.md`](./web-routes.md) for the
+  current table.
+
+**Consequences**:
+- A route author has one place to read the posture for their prefix,
+  and one place to register a new prefix when adding a section to the
+  app.
+- A regression where a signed-in route accidentally renders to an
+  anonymous caller is contained: the `noindex, nofollow` header keeps
+  the page out of search results even when the auth gate has a bug.
+- `robots.txt` stays in sync with the route table by construction —
+  there is no second file to hand-edit when a prefix moves.
+- The per-resource override is a single boolean (or small enum) on the
+  resource row; the `NoIndex` primitive checks the resource-level flag
+  before falling back to the prefix-level default.
