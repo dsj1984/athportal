@@ -24,3 +24,11 @@ fi
 
 # --- 2. Biome on staged files --------------------------------------------
 pnpm exec biome check --staged --no-errors-on-unmatched
+
+# --- 3. Step-definition linter on staged step/feature files --------------
+# `lint:steps --staged` short-circuits via `git diff --cached --name-only` and
+# exits 0 in <500ms when no step (apps/web/e2e/steps/**/*.ts) or feature
+# (tests/features/**/*.feature) file is staged. When a step or feature file
+# IS staged, the three rule classes documented in docs/testing-strategy.md
+# (forbidden patterns, duplicate phrases, unused-step warning) are enforced.
+pnpm run lint:steps --staged
