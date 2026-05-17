@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./vitest-base": "./vitest.base.ts"
+    "./vitest-base": "./vitest.base.ts",
+    "./vitest-contract": "./vitest.contract.ts"
   },
   "scripts": {
     "lint": "exit 0",
