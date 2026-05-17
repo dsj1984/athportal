@@ -1,7 +1,7 @@
 /**
  * @repo/shared/testing — barrel for the shared test harness.
  *
- * Helpers landing in Story #172:
+ * Helpers landed in Story #172:
  *   - safety.ts (assertSyntheticPii, syntheticEmailSchema) — Task #180
  *   - db.ts (freshDb, closeAllTestDbs) — Task #175
  *   - app.ts (createTestApp) — Task #175
@@ -34,3 +34,10 @@ export {
   type Resource,
   type User,
 } from './schema';
+export {
+  seedResource,
+  seedUser,
+  type SeedResourceInput,
+  type SeedUserOverrides,
+} from './seeds';
+export { authHeaders, type AuthUserLike } from './auth';

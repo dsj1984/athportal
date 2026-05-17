@@ -22,10 +22,9 @@ describe('freshDb', () => {
     expect(existsSync(db.__filename)).toBe(true);
   });
 
-  it('applies the example schema and allows round-trip writes', async () => {
+  it('applies the example schema and allows round-trip writes', () => {
     const db = freshDb();
-    await db
-      .insert(users)
+    db.insert(users)
       .values({
         id: 'u_1',
         clerkId: 'clerk_1',
@@ -33,15 +32,15 @@ describe('freshDb', () => {
         role: 'org_admin',
       })
       .run();
-    const rows = await db.select().from(users).all();
+    const rows = db.select().from(users).all();
     expect(rows).toHaveLength(1);
     expect(rows[0]?.email).toBe('test-1@example.invalid');
   });
 
-  it('isolates writes between two calls', async () => {
+  it('isolates writes between two calls', () => {
     const dbA = freshDb();
     const dbB = freshDb();
-    await dbA
+    dbA
       .insert(users)
       .values({
         id: 'u_a',
@@ -49,8 +48,8 @@ describe('freshDb', () => {
         email: 'a@example.invalid',
       })
       .run();
-    const rowsA = await dbA.select().from(users).all();
-    const rowsB = await dbB.select().from(users).all();
+    const rowsA = dbA.select().from(users).all();
+    const rowsB = dbB.select().from(users).all();
     expect(rowsA).toHaveLength(1);
     expect(rowsB).toHaveLength(0);
   });

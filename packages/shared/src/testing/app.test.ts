@@ -18,8 +18,7 @@ describe('createTestApp', () => {
 
   it('exposes the bound DB on c.var.db', async () => {
     const db = freshDb();
-    await db
-      .insert(users)
+    db.insert(users)
       .values({
         id: 'u_1',
         clerkId: 'clerk_1',
@@ -27,8 +26,8 @@ describe('createTestApp', () => {
       })
       .run();
     const app = createTestApp(db);
-    app.get('/__test/db-echo', async (c) => {
-      const all = await c.var.db.select().from(users).all();
+    app.get('/__test/db-echo', (c) => {
+      const all = c.var.db.select().from(users).all();
       return c.json({ count: all.length, email: all[0]?.email ?? null });
     });
     const res = await app.request('/__test/db-echo');
@@ -41,7 +40,7 @@ describe('createTestApp', () => {
     const dbB = freshDb();
     const appA = createTestApp(dbA);
     const appB = createTestApp(dbB);
-    await dbA
+    dbA
       .insert(users)
       .values({
         id: 'u_a',
@@ -49,16 +48,9 @@ describe('createTestApp', () => {
         email: 'a@example.invalid',
       })
       .run();
-    appA.get('/count', async (c) =>
-      c.json({ n: (await c.var.db.select().from(users).all()).length }),
-    );
-    appB.get('/count', async (c) =>
-      c.json({ n: (await c.var.db.select().from(users).all()).length }),
-    );
-    const [resA, resB] = await Promise.all([
-      appA.request('/count'),
-      appB.request('/count'),
-    ]);
+    appA.get('/count', (c) => c.json({ n: c.var.db.select().from(users).all().length }));
+    appB.get('/count', (c) => c.json({ n: c.var.db.select().from(users).all().length }));
+    const [resA, resB] = await Promise.all([appA.request('/count'), appB.request('/count')]);
     expect(await resA.json()).toEqual({ n: 1 });
     expect(await resB.json()).toEqual({ n: 0 });
   });
