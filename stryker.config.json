@@ -1,0 +1,37 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "_comment": "Stryker mutation testing scaffold for the unit tier. Permissive thresholds — the quality-baselines Epic will tighten them once production code lands. Story #169.",
+  "packageManager": "pnpm",
+  "testRunner": "vitest",
+  "plugins": ["@stryker-mutator/vitest-runner"],
+  "vitest": {
+    "configFile": "vitest.workspace.ts"
+  },
+  "reporters": ["html", "clear-text", "progress"],
+  "htmlReporter": {
+    "fileName": "reports/mutation/mutation.html"
+  },
+  "coverageAnalysis": "perTest",
+  "mutate": [
+    "packages/**/src/**/*.ts",
+    "!packages/**/src/**/*.test.ts",
+    "!packages/**/src/**/*.test.tsx",
+    "!packages/**/dist/**",
+    "!packages/**/node_modules/**"
+  ],
+  "thresholds": {
+    "high": 80,
+    "low": 60,
+    "break": 0
+  },
+  "tempDirName": ".stryker-tmp",
+  "cleanTempDir": true,
+  "ignorePatterns": [
+    "**/dist/**",
+    "**/coverage/**",
+    "**/.turbo/**",
+    "**/node_modules/**",
+    "reports/**",
+    ".worktrees/**"
+  ]
+}
