@@ -305,46 +305,31 @@
 
 ---
 
-## ADR-016 — MVP browser and OS support matrix
+## ADR-016 — `/api/v1` route-mount and post-MVP deprecation policy
 
-**Status**: Accepted
+**Status**: Accepted (2026-05-17, Epic #3)
 
-**Date**: 2026-05-17
-
-**Context**: The MVP scope under Epic #3 (Foundation: planning baseline) needs a single, durable statement of which browsers and mobile operating systems are in-scope for the initial release. Without an ADR, individual Stories implicitly redefine "supported" — one Story tests against Chrome only, another assumes iOS 17, a third blocks on a Safari-specific regression that was never in scope. A dated matrix locks the target surface so test plans, polyfill choices, CSS feature gates, and bug triage all reference the same baseline.
+**Context**: The HTTP API surface needs a single, stable mount point so clients (web, mobile-web PWA, later native mobile) can pin to a versioned base URL without re-discovering route shape on every release. Pre-MVP, the API is still finding its shape — every Epic that lands routes may legitimately need to rename a path, restructure a payload, or remove a field that turned out to be wrong. Post-MVP, the same flexibility is a stability liability: a paying client cannot tolerate a silent breaking change to `GET /api/v1/teams/:id`. The project also needs an explicit answer to "what happens when we *do* need to break a v1 contract after MVP launch?" so the question doesn't get re-litigated per Epic.
 
 **Decision**:
+- **All API routes mount under `/api/v1`.** Every router under `apps/api/src/routes/v1/**` composes onto this prefix; no route ships at `/api/<anything-else>` or at the bare `/` path (excepting the health probe `/api/v1/health` and any Cloudflare-required well-known endpoints). The `v1` segment is a literal, not a build-time variable — clients pin to it directly.
+- **Pre-MVP, breaking changes inside `/api/v1` are allowed.** Until MVP launch the API has no external paying clients; the cost of a renamed path or restructured payload is bounded to the same-PR client update. Document the breakage in the Epic's PR body and update the matching Zod schema in `@repo/shared` in the same change — `architecture.md` § 5 (Safety Constraints) already requires this pairing.
+- **Post-MVP, `/api/v1` is additive-only.** Once MVP ships, `/api/v1` accepts only backwards-compatible changes: new routes, new optional request fields, new response fields. Removing a field, renaming a path, tightening a validator, or changing a status-code semantic is **not** an additive change and **must not** land on `/api/v1`.
+- **Breaking changes ship to `/api/v2` with a six-month deprecation overlap.** When a breaking change is genuinely required post-MVP, it lands behind a new `/api/v2` mount. The previous version (`/api/v1`) continues to serve for **six months** from the day `/api/v2` ships its first route in the affected domain. During the overlap, both versions are maintained; after the overlap, the deprecated route on `/api/v1` returns `410 Gone` with an error envelope pointing clients at the `/api/v2` replacement.
+- **The six-month clock runs per route, not per version.** Adding a single breaking route under `/api/v2` does not start a deprecation clock on the entire `/api/v1` surface — only on the matching route. Routes that never had a breaking change continue indefinitely under `/api/v1`.
 
-The MVP supports the following browsers and operating systems. "Supported" means: shipped features must work, automated and manual test coverage targets this matrix, and regressions outside it are P3 (best-effort) until a future ADR widens scope.
+**Rejected — unversioned mount (`/api/*`)**: Forces every breaking change to be either a coordinated client rollout or a silent failure for older clients. No safety margin for slow mobile rollouts.
 
-**Browsers** — latest two stable major versions of each:
+**Rejected — date-versioned mount (`/api/2026-05`)**: Solves the per-change versioning problem but explodes the URL surface and complicates RPC-client typing against `@repo/api`'s `AppType`. Acceptable for some industries (Stripe) but disproportionate for an athlete-portal scope.
 
-- **Chrome** (latest two majors, desktop + Android)
-- **Safari** (latest two majors, macOS + iOS)
-- **Firefox** (latest two majors, desktop + Android)
-- **Edge** (latest two majors, desktop Chromium-based)
-
-**Mobile operating systems**:
-
-- **iOS 16** and later (covers iOS 16, iOS 17, iOS 18 at the time of this ADR)
-- **Android 12** and later (API level 31+)
-
-**Out of scope for MVP** (P3, best-effort only):
-
-- Internet Explorer (any version)
-- Safari or Chrome on iOS/Android versions older than the floors above
-- Desktop browsers older than the latest two majors
-- Embedded webviews inside third-party native apps (e.g. in-app Instagram browser)
-
-**Reference**: Epic #3 — Foundation: planning baseline (MVP milestone).
+**Rejected — header-based versioning (`Accept: application/vnd.athportal.v2+json`)**: Hides the version from caches, CDN routing rules, log dashboards, and operator-readable URLs. Worse ergonomics for the same correctness guarantees as path-versioned mounts.
 
 **Consequences**:
-
-- Test matrices in `docs/testing-strategy.md` and per-Epic Tech Specs reference ADR-016 rather than redefining the surface.
-- The acceptance-tier Playwright project list (and the v1.0 Detox device matrix) maps 1:1 to this ADR; adding a browser or OS to CI requires an ADR superseding or extending this one.
-- CSS feature usage, polyfill choices, and JS target compilation settings (`tsconfig`, build tooling) target the intersection of this matrix. Anything requiring a newer feature requires either a graceful-degradation path or an ADR widening the floor.
-- Bug reports against out-of-scope browsers/OS versions are triaged as P3 by default and may be closed `wontfix` without further investigation.
-- The ADR is dated; the "latest two majors" phrasing rolls forward automatically as browsers release. A future ADR is required only to change the floor (e.g. drop Firefox, raise the iOS floor to iOS 17) — not to absorb routine major-version releases.
+- The `apps/api/src/routes/v1/**` directory shape is a load-bearing convention — moving a router out of that tree is a breaking change subject to this ADR.
+- Foundation Epics that touch the API entrypoint (router composition, OpenAPI emission, Hono RPC client typing) reference this ADR rather than re-deciding the prefix.
+- Post-MVP, every Epic that lands routes has a checklist item: "is this additive? if not, does it belong under `/api/v2`?". The answer lives in the Epic PR body.
+- The six-month overlap is a **floor**, not a ceiling. Specific routes may be carried longer when client telemetry shows non-trivial residual traffic; shortening below six months requires an ADR superseding this one.
+- Cross-references: `docs/architecture.md` § 1 (Tech Stack) names the `/api/v1` mount as the API workspace's entrypoint; this ADR is the authoritative rule it points back to.
 
 ---
 
