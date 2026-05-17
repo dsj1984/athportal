@@ -128,8 +128,8 @@ gh label create migration::destructive \
   on color (it matches on the exact name), but keeping the color stable
   preserves the visual signal across PR listings.
 - **Description** — surfaced in the GitHub label picker. The exact text
-  above is what `CONTRIBUTING.md` § "Destructive migrations" points
-  authors at; keep them in sync if either is edited.
+  above is what `README.md` § "Destructive migrations" points authors
+  at; keep them in sync if either is edited.
 
 ### Reviewer discipline
 
@@ -137,7 +137,7 @@ When the `migration::destructive` label is present on a PR, a second
 named approver is expected before merge. GitHub's branch-protection
 "approval count" cannot conditionally bump for one label, so this rule
 is documented in
-[`CONTRIBUTING.md` § "Destructive migrations"](../../CONTRIBUTING.md#destructive-migrations)
+[`README.md` § "Destructive migrations"](../../README.md#destructive-migrations)
 and enforced procedurally rather than mechanically. The label's purpose
 is to make the impact category **visible** to the first reviewer, who
 escalates explicitly.

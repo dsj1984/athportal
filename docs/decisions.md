@@ -414,7 +414,7 @@ first reviewer is moving fast and the diff happens to be small.
 - **The two-reviewer rule is enforced procedurally.** GitHub
   branch-protection's required-approvers count cannot conditionally bump
   for a single label, so the rule is documented in
-  [`CONTRIBUTING.md` § "Destructive migrations"](../CONTRIBUTING.md#destructive-migrations)
+  [`README.md` § "Destructive migrations"](../README.md#destructive-migrations)
   and lives in the reviewer's discipline: the first reviewer approves on
   general merit and explicitly `@`-mentions a second reviewer; the
   second reviewer's approval is what unlocks the merge. The PR author
@@ -459,8 +459,8 @@ deliberation the label is there to create.
   destructive clause (reverting a previous migration) does not re-fire
   the guard.
 - Cross-references:
-  [`CONTRIBUTING.md`](../CONTRIBUTING.md) (the author-facing rule
-  surface) and
+  [`README.md` § "Destructive migrations"](../README.md#destructive-migrations)
+  (the author-facing rule surface) and
   [`docs/runbooks/branch-protection-setup.md`](./runbooks/branch-protection-setup.md)
   (the operator-facing setup runbook) both point back to this ADR.
   Changes to the policy require superseding this ADR, not editing the

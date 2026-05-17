@@ -1,7 +1,7 @@
 name: migration-label-guard
 
 # Enforces the destructive-migration policy recorded in
-# docs/decisions.md and CONTRIBUTING.md:
+# docs/decisions.md and README.md § "Destructive migrations":
 #   - Scans the PR diff for added DROP / RENAME / NOT NULL clauses
 #     inside Drizzle migration files under apps/api/**/migrations/**.
 #   - Fails the check when matches are found without the
@@ -107,7 +107,7 @@ jobs:
 
             // Destructive clauses were added. The PR must carry the
             // migration::destructive label, applied by the author and
-            // visible to reviewers per CONTRIBUTING.md.
+            // visible to reviewers per README.md § "Destructive migrations".
             const labels = context.payload.pull_request.labels || [];
             const hasLabel = labels.some((l) => l.name === 'migration::destructive');
 
@@ -128,6 +128,6 @@ jobs:
                 'but is missing the migration::destructive label.',
                 '',
                 'Apply the label and ensure a second reviewer is escalated before merge.',
-                'See CONTRIBUTING.md § "Destructive migrations" and ADR in docs/decisions.md.',
+                'See README.md § "Destructive migrations" and ADR in docs/decisions.md.',
               ].join('\n'),
             );
