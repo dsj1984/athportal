@@ -17,7 +17,8 @@
       ".worktrees/**",
       ".stryker-tmp/**",
       "reports/**",
-      "temp/**"
+      "temp/**",
+      "scripts/__fixtures__/**"
     ]
   },
   "formatter": {

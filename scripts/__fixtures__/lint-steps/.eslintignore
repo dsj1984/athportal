@@ -1,0 +1,5 @@
+# Intentionally-broken step fixtures for the lint-steps AC-5 evidence
+# harness. The production ESLint and Biome runs already exclude this
+# tree (eslint.config.mjs ignores + biome.json files.ignore); this file
+# is a belt-and-braces marker for any flat-file-aware tooling.
+*

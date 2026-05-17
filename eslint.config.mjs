@@ -16,7 +16,13 @@ import prettier from 'eslint-config-prettier';
 import tseslint from 'typescript-eslint';
 
 const ignores = {
-  ignores: ['**/dist/**', '**/.turbo/**', '**/node_modules/**', '.agents/**'],
+  ignores: [
+    '**/dist/**',
+    '**/.turbo/**',
+    '**/node_modules/**',
+    '.agents/**',
+    'scripts/__fixtures__/**',
+  ],
 };
 
 // JS baseline — recommended rules only, no type information required. Node
