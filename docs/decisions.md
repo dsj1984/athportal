@@ -305,6 +305,49 @@
 
 ---
 
+## ADR-016 — MVP browser and OS support matrix
+
+**Status**: Accepted
+
+**Date**: 2026-05-17
+
+**Context**: The MVP scope under Epic #3 (Foundation: planning baseline) needs a single, durable statement of which browsers and mobile operating systems are in-scope for the initial release. Without an ADR, individual Stories implicitly redefine "supported" — one Story tests against Chrome only, another assumes iOS 17, a third blocks on a Safari-specific regression that was never in scope. A dated matrix locks the target surface so test plans, polyfill choices, CSS feature gates, and bug triage all reference the same baseline.
+
+**Decision**:
+
+The MVP supports the following browsers and operating systems. "Supported" means: shipped features must work, automated and manual test coverage targets this matrix, and regressions outside it are P3 (best-effort) until a future ADR widens scope.
+
+**Browsers** — latest two stable major versions of each:
+
+- **Chrome** (latest two majors, desktop + Android)
+- **Safari** (latest two majors, macOS + iOS)
+- **Firefox** (latest two majors, desktop + Android)
+- **Edge** (latest two majors, desktop Chromium-based)
+
+**Mobile operating systems**:
+
+- **iOS 16** and later (covers iOS 16, iOS 17, iOS 18 at the time of this ADR)
+- **Android 12** and later (API level 31+)
+
+**Out of scope for MVP** (P3, best-effort only):
+
+- Internet Explorer (any version)
+- Safari or Chrome on iOS/Android versions older than the floors above
+- Desktop browsers older than the latest two majors
+- Embedded webviews inside third-party native apps (e.g. in-app Instagram browser)
+
+**Reference**: Epic #3 — Foundation: planning baseline (MVP milestone).
+
+**Consequences**:
+
+- Test matrices in `docs/testing-strategy.md` and per-Epic Tech Specs reference ADR-016 rather than redefining the surface.
+- The acceptance-tier Playwright project list (and the v1.0 Detox device matrix) maps 1:1 to this ADR; adding a browser or OS to CI requires an ADR superseding or extending this one.
+- CSS feature usage, polyfill choices, and JS target compilation settings (`tsconfig`, build tooling) target the intersection of this matrix. Anything requiring a newer feature requires either a graceful-degradation path or an ADR widening the floor.
+- Bug reports against out-of-scope browsers/OS versions are triaged as P3 by default and may be closed `wontfix` without further investigation.
+- The ADR is dated; the "latest two majors" phrasing rolls forward automatically as browsers release. A future ADR is required only to change the floor (e.g. drop Firefox, raise the iOS floor to iOS 17) — not to absorb routine major-version releases.
+
+---
+
 ## 2026-05-17 — `quality` workflow is the canonical PR quality gate
 
 **Status**: Accepted (operational pin, Epic #3)
