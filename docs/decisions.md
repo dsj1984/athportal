@@ -302,3 +302,166 @@
 - Coverage drift is visible at CI time, not at quarterly audit.
 - The check is per-workspace, not aggregate — a 5pp drop in `@repo/mobile` cannot be hidden by a 5pp gain in `@repo/api`.
 - The initial commit ships unprimed (`primed: false`, `null` per-workspace entries). The operator runs `pnpm test:coverage && pnpm coverage:update` once to prime real numbers.
+
+---
+
+## ADR-016 — `/api/v1` route-mount and post-MVP deprecation policy
+
+**Status**: Accepted (2026-05-17, Epic #3)
+
+**Context**: The HTTP API surface needs a single, stable mount point so clients (web, mobile-web PWA, later native mobile) can pin to a versioned base URL without re-discovering route shape on every release. Pre-MVP, the API is still finding its shape — every Epic that lands routes may legitimately need to rename a path, restructure a payload, or remove a field that turned out to be wrong. Post-MVP, the same flexibility is a stability liability: a paying client cannot tolerate a silent breaking change to `GET /api/v1/teams/:id`. The project also needs an explicit answer to "what happens when we *do* need to break a v1 contract after MVP launch?" so the question doesn't get re-litigated per Epic.
+
+**Decision**:
+- **All API routes mount under `/api/v1`.** Every router under `apps/api/src/routes/v1/**` composes onto this prefix; no route ships at `/api/<anything-else>` or at the bare `/` path (excepting the health probe `/api/v1/health` and any Cloudflare-required well-known endpoints). The `v1` segment is a literal, not a build-time variable — clients pin to it directly.
+- **Pre-MVP, breaking changes inside `/api/v1` are allowed.** Until MVP launch the API has no external paying clients; the cost of a renamed path or restructured payload is bounded to the same-PR client update. Document the breakage in the Epic's PR body and update the matching Zod schema in `@repo/shared` in the same change — `architecture.md` § 5 (Safety Constraints) already requires this pairing.
+- **Post-MVP, `/api/v1` is additive-only.** Once MVP ships, `/api/v1` accepts only backwards-compatible changes: new routes, new optional request fields, new response fields. Removing a field, renaming a path, tightening a validator, or changing a status-code semantic is **not** an additive change and **must not** land on `/api/v1`.
+- **Breaking changes ship to `/api/v2` with a six-month deprecation overlap.** When a breaking change is genuinely required post-MVP, it lands behind a new `/api/v2` mount. The previous version (`/api/v1`) continues to serve for **six months** from the day `/api/v2` ships its first route in the affected domain. During the overlap, both versions are maintained; after the overlap, the deprecated route on `/api/v1` returns `410 Gone` with an error envelope pointing clients at the `/api/v2` replacement.
+- **The six-month clock runs per route, not per version.** Adding a single breaking route under `/api/v2` does not start a deprecation clock on the entire `/api/v1` surface — only on the matching route. Routes that never had a breaking change continue indefinitely under `/api/v1`.
+
+**Rejected — unversioned mount (`/api/*`)**: Forces every breaking change to be either a coordinated client rollout or a silent failure for older clients. No safety margin for slow mobile rollouts.
+
+**Rejected — date-versioned mount (`/api/2026-05`)**: Solves the per-change versioning problem but explodes the URL surface and complicates RPC-client typing against `@repo/api`'s `AppType`. Acceptable for some industries (Stripe) but disproportionate for an athlete-portal scope.
+
+**Rejected — header-based versioning (`Accept: application/vnd.athportal.v2+json`)**: Hides the version from caches, CDN routing rules, log dashboards, and operator-readable URLs. Worse ergonomics for the same correctness guarantees as path-versioned mounts.
+
+**Consequences**:
+- The `apps/api/src/routes/v1/**` directory shape is a load-bearing convention — moving a router out of that tree is a breaking change subject to this ADR.
+- Foundation Epics that touch the API entrypoint (router composition, OpenAPI emission, Hono RPC client typing) reference this ADR rather than re-deciding the prefix.
+- Post-MVP, every Epic that lands routes has a checklist item: "is this additive? if not, does it belong under `/api/v2`?". The answer lives in the Epic PR body.
+- The six-month overlap is a **floor**, not a ceiling. Specific routes may be carried longer when client telemetry shows non-trivial residual traffic; shortening below six months requires an ADR superseding this one.
+- Cross-references: `docs/architecture.md` § 1 (Tech Stack) names the `/api/v1` mount as the API workspace's entrypoint; this ADR is the authoritative rule it points back to.
+
+---
+
+## 2026-05-17 — `quality` workflow is the canonical PR quality gate
+
+**Status**: Accepted (operational pin, Epic #3)
+
+**Context**: Epic #2 landed the [`quality`](../.github/workflows/quality.yml)
+workflow (lint → typecheck → test → build → lint-baseline ratchet) and
+wired it into `pull_request` and `push: main`. Epic #3 needs a single
+named PR gate to declare "required" on the `main` branch ruleset so the
+[branch-protection-setup runbook](./runbooks/branch-protection-setup.md)
+has an unambiguous target. Without an explicit pin, future Epics could
+introduce parallel quality workflows and the "which checks are
+required?" question becomes a recurring review topic.
+
+**Decision**:
+- **The `quality` workflow is the canonical PR quality gate.** It is the
+  required check listed in
+  [`docs/runbooks/branch-protection-setup.md`](./runbooks/branch-protection-setup.md)
+  under "Required status checks" for the `main` branch.
+- New language-, framework-, or domain-level quality steps land **inside**
+  `quality.yml` (as additional steps in the existing job, or as new jobs
+  in the same workflow) rather than as parallel workflows. The required
+  check name stays `quality` for the lifetime of the project.
+- Workflows that are **not** the PR quality gate
+  (`migration-label-guard`, `deploy-staging`, `deploy-production`,
+  future security/governance hooks) live in their own files and are
+  added to the branch-protection rule on their own merits — they do not
+  subsume `quality`'s role.
+- `pnpm run quality:ci-local` MUST remain a faithful local mirror of
+  `quality.yml`'s job chain so contributors can reproduce CI failures
+  offline without a push.
+
+**Consequences**:
+- The branch-protection ruleset has a stable, named target —
+  re-applying it after a fork is mechanical.
+- The "which workflow gates the PR?" question has a single answer at any
+  point in time, which is what the runbook documents.
+- Adding a quality step is a single-file change (`quality.yml`) plus, if
+  the step introduces a new failure mode, a paragraph in
+  [`docs/patterns.md`](./patterns.md). It is **not** a new required
+  check on the ruleset.
+
+---
+
+## ADR-017 — Destructive-migration label, guard workflow, and two-reviewer rule
+
+**Status**: Accepted (2026-05-17, Epic #3)
+
+**Context**: Schema migrations are the highest-risk class of change in
+this repo because they cannot be rolled back by
+[`wrangler rollback`](./runbooks/branch-protection-setup.md) once the
+database has applied them. A `DROP COLUMN`, a `RENAME`, or a
+`NOT NULL ADD` against a populated column is a one-way door — a forward
+fix requires a fresh migration that re-creates state, which under time
+pressure during an incident is the exact wrong shape of work. The same
+PR-level gate that catches code regressions (the `quality` workflow)
+cannot detect this risk class because it operates on lint/type/test
+output, not on a semantic read of the diff. Without an explicit label
+and a workflow that requires it, the destructive change ships when the
+first reviewer is moving fast and the diff happens to be small.
+
+**Decision**:
+- **The `migration::destructive` PR label is the canonical marker for
+  destructive schema changes.** Any PR whose diff adds a `DROP`,
+  `RENAME`, or `NOT NULL ADD` clause inside a Drizzle migration file
+  under `apps/api/**/migrations/**` MUST carry the label. The label is
+  created once via the
+  [branch-protection setup runbook](./runbooks/branch-protection-setup.md#one-time-label-bootstrap)
+  with color `D93F0B` and the description
+  `"PR touches a destructive migration (DROP / RENAME / NOT NULL ADD) — second-approver required"`.
+- **The `migration-label-guard` workflow enforces the label
+  mechanically.** It runs on `pull_request` (opened, synchronize,
+  reopened, labeled, unlabeled), reads the PR diff via the GitHub API,
+  matches added lines against the three destructive patterns above
+  inside the migration path predicate, and fails the check when matches
+  are found without the label. When no migration files are touched the
+  check passes trivially — this is required because the
+  `apps/api/**/migrations/**` directory does not yet exist on every
+  branch.
+- **The two-reviewer rule is enforced procedurally.** GitHub
+  branch-protection's required-approvers count cannot conditionally bump
+  for a single label, so the rule is documented in
+  [`CONTRIBUTING.md` § "Destructive migrations"](../CONTRIBUTING.md#destructive-migrations)
+  and lives in the reviewer's discipline: the first reviewer approves on
+  general merit and explicitly `@`-mentions a second reviewer; the
+  second reviewer's approval is what unlocks the merge. The PR author
+  MUST NOT self-merge a `migration::destructive` PR.
+- **The label and the guard are paired, not redundant.** The guard
+  fails-closed when the label is missing — that is the load-bearing
+  mechanical gate. The two-reviewer rule fails-open by design — it
+  relies on reviewer attention to honor the convention. Both layers are
+  needed: the guard catches "author forgot to label"; the two-reviewer
+  rule catches "author labeled correctly but the change still needs
+  more eyes".
+
+**Rejected — branch-protection rule with conditional required-approvers
+based on label**: GitHub's branch-protection ruleset cannot express
+"require 2 approvers when label X is present, 1 otherwise". The closest
+analog is a CODEOWNERS escalation, which requires a `CODEOWNERS` file
+keyed to migration paths — that approach trades the label visibility (a
+red badge in the PR list) for a hidden CODEOWNERS mapping that authors
+won't notice until they hit the rule.
+
+**Rejected — pre-commit hook that blocks destructive clauses**: A
+local hook fires before the PR exists, can be bypassed with
+`--no-verify`, and is not the reviewer-visible signal the label
+provides. Hooks complement the workflow at most — they do not replace
+it.
+
+**Rejected — workflow that auto-applies the label**: The label is a
+declaration of intent ("I know this is destructive and the migration is
+necessary"), not a side effect of the diff shape. Auto-applying the
+label drops the author's accountability and removes the moment of
+deliberation the label is there to create.
+
+**Consequences**:
+- The `migration::destructive` label is part of the repo's required-PR
+  vocabulary; adding the workflow as a required check on the `main`
+  ruleset is the operator's responsibility per the
+  [branch-protection setup runbook](./runbooks/branch-protection-setup.md#1-required-status-checks).
+- The guard workflow's path predicate (`apps/api/**/migrations/**`) is a
+  load-bearing convention. Moving migrations out of that tree without
+  updating the workflow defeats the gate silently.
+- The guard inspects **added** lines only. A diff that removes a
+  destructive clause (reverting a previous migration) does not re-fire
+  the guard.
+- Cross-references:
+  [`CONTRIBUTING.md`](../CONTRIBUTING.md) (the author-facing rule
+  surface) and
+  [`docs/runbooks/branch-protection-setup.md`](./runbooks/branch-protection-setup.md)
+  (the operator-facing setup runbook) both point back to this ADR.
+  Changes to the policy require superseding this ADR, not editing the
+  downstream documents in isolation.

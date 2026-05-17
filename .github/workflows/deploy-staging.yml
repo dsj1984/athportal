@@ -1,0 +1,172 @@
+name: deploy-staging
+
+# Staging auto-deploy. Triggered on every push to `main`. The full
+# operator-facing runbook lives at docs/runbooks/deploy-staging.md;
+# the architectural rationale (six-step order, hashFiles guards,
+# Environment Secrets boundary) is in Tech Spec #134.
+#
+# Step order (single job so steps run sequentially against the same
+# shared workspace, matching Tech Spec § Environment promotion model):
+#   1. checkout
+#   2. pnpm install --frozen-lockfile
+#   3. node scripts/check-env.mjs           (fail-fast on missing secrets)
+#   4. drizzle-kit migrate (staging)        (guarded: apps/api/**)
+#   5. wrangler deploy --env staging        (guarded: apps/api/**)
+#   6. wrangler pages deploy --staging      (guarded: apps/web/**)
+#   7. sentry-cli releases new + finalize   (guarded: either deploy ran)
+#
+# Every step that touches a staging-scoped credential reads from the
+# `staging` GitHub Environment via `environment: staging` on the job.
+# Repo-level Secrets are intentionally NOT consulted for deploy
+# credentials — see security-baseline.md § Secrets Management.
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# Cancel an in-flight staging deploy when a newer commit lands on main —
+# we want only the freshest tip of main to reach the staging surfaces.
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Staging deploy
+    runs-on: ubuntu-latest
+    environment: staging
+    env:
+      # Turborepo remote cache wiring. TURBO_TOKEN is an Environment
+      # Secret (rotatable); TURBO_TEAM is a repo-level Action variable
+      # (non-secret slug). Both must be present for remote cache hits
+      # to register in the run log per Tech Spec § Caching strategy.
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+      # Foundational env contract — surfaced from the staging
+      # Environment Secret store so `check-env` and the deploy CLIs
+      # can read them. The validator refuses to proceed unless every
+      # key tagged with a `# shape:` marker in `.env.example` is
+      # present and shape-valid.
+      NODE_ENV: production
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+      SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          # The pnpm store is cached here, keyed on pnpm-lock.yaml's
+          # hash, so subsequent runs report a cache hit in the log.
+          cache: pnpm
+
+      - name: Compute SENTRY_RELEASE (short SHA)
+        id: release
+        run: |
+          short_sha=$(git rev-parse --short HEAD)
+          echo "release=${short_sha}" >> "$GITHUB_OUTPUT"
+          echo "SENTRY_RELEASE=${short_sha}" >> "$GITHUB_ENV"
+
+      # ── Step 1: install ────────────────────────────────────────────
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # ── Step 2: validate environment contract ──────────────────────
+      - name: Validate environment (check-env)
+        run: node scripts/check-env.mjs
+
+      # ── Step 3: staging migrations ─────────────────────────────────
+      # Guarded by hashFiles so the step is a green no-op until the
+      # apps/api workspace lands in a later Epic.
+      - name: Detect apps/api workspace
+        id: detect-api
+        run: |
+          if [ -n "$(ls -A apps/api 2>/dev/null || true)" ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run staging migrations (drizzle-kit migrate)
+        if: steps.detect-api.outputs.present == 'true' && hashFiles('apps/api/**') != ''
+        run: pnpm --filter @repo/api exec drizzle-kit migrate
+
+      # ── Step 4: deploy api Worker ──────────────────────────────────
+      - name: Deploy API to Cloudflare Workers (staging)
+        id: deploy-api
+        if: steps.detect-api.outputs.present == 'true' && hashFiles('apps/api/**') != ''
+        run: pnpm --filter @repo/api exec wrangler deploy --env staging
+
+      # ── Step 5: deploy web Pages ───────────────────────────────────
+      - name: Detect apps/web workspace
+        id: detect-web
+        run: |
+          if [ -n "$(ls -A apps/web 2>/dev/null || true)" ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build web for staging
+        if: steps.detect-web.outputs.present == 'true' && hashFiles('apps/web/**') != ''
+        run: pnpm --filter @repo/web run build
+
+      - name: Deploy Web to Cloudflare Pages (staging)
+        id: deploy-web
+        if: steps.detect-web.outputs.present == 'true' && hashFiles('apps/web/**') != ''
+        run: >-
+          pnpm --filter @repo/web exec wrangler pages deploy ./dist
+          --project-name athportal-staging
+          --branch main
+
+      # ── Step 6: Sentry release tagging ─────────────────────────────
+      # Runs only if at least one deploy step actually executed. The
+      # release tag is the short Git SHA, matching .env.example's
+      # SENTRY_RELEASE convention.
+      - name: Install sentry-cli
+        if: >-
+          (steps.deploy-api.outcome == 'success') ||
+          (steps.deploy-web.outcome == 'success')
+        run: npm install --global @sentry/cli@2
+
+      - name: Create Sentry release
+        if: >-
+          (steps.deploy-api.outcome == 'success') ||
+          (steps.deploy-web.outcome == 'success')
+        run: sentry-cli releases new "$SENTRY_RELEASE"
+
+      - name: Finalize Sentry release
+        if: >-
+          (steps.deploy-api.outcome == 'success') ||
+          (steps.deploy-web.outcome == 'success')
+        run: sentry-cli releases finalize "$SENTRY_RELEASE"
+
+      - name: Summarize deploy
+        if: always()
+        run: |
+          {
+            echo "### Staging deploy summary"
+            echo ""
+            echo "- Commit: \`${GITHUB_SHA}\`"
+            echo "- Release tag: \`${SENTRY_RELEASE:-<unset>}\`"
+            echo "- API deploy: ${{ steps.deploy-api.outcome || 'skipped' }}"
+            echo "- Web deploy: ${{ steps.deploy-web.outcome || 'skipped' }}"
+          } >> "$GITHUB_STEP_SUMMARY"

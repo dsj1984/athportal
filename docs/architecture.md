@@ -42,6 +42,8 @@ Single source of truth for cross-workspace types and primitives. Owns:
 
 Hono router on Cloudflare Workers. Composed from per-domain routers under `src/routes/v1/`. Domains correspond to corpus capabilities; only routers for landed Epics exist at any given time.
 
+**Route mount.** All API routes mount under `/api/v1`. Pre-MVP, breaking changes inside `/api/v1` are allowed; post-MVP, `/api/v1` is additive-only and breaking changes ship to `/api/v2` with a six-month deprecation overlap. See [ADR-016 in `docs/decisions.md`](./decisions.md#adr-016--apiv1-route-mount-and-post-mvp-deprecation-policy) for the full policy.
+
 Auth contract: every protected route runs `clerkAuth` then `requireInternalUser`. JIT provisioning ensures a `users` row exists on first authenticated request. The onboarding gate redirects callers with `users.onboarded_at IS NULL` to `/onboarding`.
 
 ### `@repo/web` — `apps/web/`
