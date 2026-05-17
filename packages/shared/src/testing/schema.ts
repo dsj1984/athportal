@@ -18,12 +18,7 @@
  */
 
 import { sql } from 'drizzle-orm';
-import {
-  integer,
-  sqliteTable,
-  text,
-  uniqueIndex,
-} from 'drizzle-orm/sqlite-core';
+import { integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
 
 export const users = sqliteTable(
   'users',
@@ -33,9 +28,7 @@ export const users = sqliteTable(
     email: text('email').notNull(),
     role: text('role').notNull().default('org_admin'),
     onboardedAt: integer('onboarded_at', { mode: 'timestamp' }),
-    createdAt: integer('created_at', { mode: 'timestamp' })
-      .notNull()
-      .default(sql`(unixepoch())`),
+    createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
   },
   (table) => ({
     clerkIdUnique: uniqueIndex('users_clerk_id_unique').on(table.clerkId),
@@ -49,9 +42,7 @@ export const resources = sqliteTable('resources', {
     .notNull()
     .references(() => users.id),
   name: text('name').notNull(),
-  createdAt: integer('created_at', { mode: 'timestamp' })
-    .notNull()
-    .default(sql`(unixepoch())`),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
 });
 
 export const schema = { users, resources };

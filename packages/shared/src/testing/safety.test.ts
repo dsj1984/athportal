@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  SyntheticPiiError,
-  assertSyntheticPii,
-  syntheticEmailSchema,
-} from './safety';
+import { SyntheticPiiError, assertSyntheticPii, syntheticEmailSchema } from './safety';
 
 describe('syntheticEmailSchema', () => {
   it('accepts a synthetic email ending in @example.invalid', () => {
@@ -42,9 +38,7 @@ describe('assertSyntheticPii', () => {
   });
 
   it('throws SyntheticPiiError when a top-level email uses @example.com', () => {
-    expect(() => assertSyntheticPii({ email: 'real@example.com' })).toThrowError(
-      SyntheticPiiError,
-    );
+    expect(() => assertSyntheticPii({ email: 'real@example.com' })).toThrowError(SyntheticPiiError);
   });
 
   it('reports the offending field path on a nested violation', () => {
@@ -68,10 +62,7 @@ describe('assertSyntheticPii', () => {
     let captured: SyntheticPiiError | undefined;
     try {
       assertSyntheticPii({
-        members: [
-          { email: 'ok@example.invalid' },
-          { email: 'oops@example.com' },
-        ],
+        members: [{ email: 'ok@example.invalid' }, { email: 'oops@example.com' }],
       });
     } catch (error) {
       captured = error as SyntheticPiiError;
