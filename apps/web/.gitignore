@@ -1,0 +1,7 @@
+# playwright-bdd generated test files
+.bdd-gen/
+
+# Playwright + Cucumber reporter outputs
+test-results/
+playwright-output/
+playwright-report/
