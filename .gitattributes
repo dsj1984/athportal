@@ -1,0 +1,10 @@
+# Normalize line endings so Windows clones (with `core.autocrlf=true`)
+# don't carry CRLF into the worktree. Without this, Biome's format gate
+# (`lineEnding=lf`) trips on every Story-close pass and the framework's
+# `npx biome format --write` autofix silently no-ops on Windows because
+# `execFileSync` cannot resolve `npx.cmd` without `shell: true`.
+#
+# `text=auto eol=lf` tells Git to store text as LF and check it out as
+# LF regardless of `core.autocrlf`. Binary files are left untouched.
+
+* text=auto eol=lf
