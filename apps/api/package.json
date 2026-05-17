@@ -8,5 +8,9 @@
     "typecheck": "pnpm exec tsc --noEmit -p tsconfig.json",
     "test": "pnpm exec vitest run",
     "build": "exit 0"
+  },
+  "devDependencies": {
+    "@repo/config": "workspace:*",
+    "vitest": "^4.1.6"
   }
 }

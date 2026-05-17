@@ -1,0 +1,19 @@
+{
+  "name": "@repo/config",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./vitest-base": "./vitest.base.ts",
+    "./vitest-contract": "./vitest.contract.ts"
+  },
+  "scripts": {
+    "lint": "exit 0",
+    "typecheck": "pnpm exec tsc --noEmit -p tsconfig.json",
+    "test": "exit 0",
+    "build": "exit 0"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.6"
+  }
+}

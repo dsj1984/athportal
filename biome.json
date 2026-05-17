@@ -15,7 +15,10 @@
       "**/coverage/**",
       ".agents/**",
       ".worktrees/**",
-      "temp/**"
+      ".stryker-tmp/**",
+      "reports/**",
+      "temp/**",
+      "scripts/__fixtures__/**"
     ]
   },
   "formatter": {
