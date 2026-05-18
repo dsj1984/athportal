@@ -26,7 +26,7 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..');
-const BASELINE_PATH = path.join(REPO_ROOT, '.lint-baseline.json');
+const BASELINE_PATH = path.join(REPO_ROOT, 'baselines', 'lint.json');
 const MAX_BUFFER = 50 * 1024 * 1024;
 
 // ---------------------------------------------------------------------------
