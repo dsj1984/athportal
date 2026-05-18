@@ -79,10 +79,28 @@ const typedLint = [
 
 // Per-workspace named configs. Each is a path-scoped layer that workspaces
 // can import directly (or that the default export composes here).
+//
+// The `__testing__/` overlay below points typescript-eslint's project service
+// at apps/api/tsconfig.test.json — the default apps/api/tsconfig.json
+// intentionally excludes `src/**/__testing__/**` so the test-only auth seam
+// (Tech Spec #318 §F) cannot leak into production builds. Without this
+// overlay, ESLint's projectService cannot find the test-tier files and
+// fails with a Parsing error. See the guard contract test at
+// apps/api/src/middleware/__testing__/no-prod-import.contract.test.ts.
 export const apiConfig = [
   {
     files: ['apps/api/**/*.{ts,tsx}'],
     rules: {},
+  },
+  {
+    files: ['apps/api/src/**/__testing__/**/*.{ts,tsx}'],
+    languageOptions: {
+      parserOptions: {
+        projectService: false,
+        project: ['apps/api/tsconfig.test.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
   },
 ];
 
