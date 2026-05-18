@@ -87,3 +87,74 @@ jobs:
           name: mutation-report
           path: reports/mutation/mutation.html
           if-no-files-found: warn
+
+  lighthouse-baseline:
+    name: Lighthouse baseline (per-route +/-3)
+    runs-on: ubuntu-latest
+    # Pulls LIGHTHOUSE_PREVIEW_URL from the `staging` environment so the
+    # baseline gates against the same surface deploy-staging.yml has
+    # promoted. See PRD #195 AC #9 and Tech Spec #196 § F (Nightly).
+    environment: staging
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Chrome for Lighthouse
+        uses: browser-actions/setup-chrome@v1
+        with:
+          chrome-version: stable
+
+      - name: Run lighthouse:check against the staging preview
+        id: lighthouse
+        env:
+          LIGHTHOUSE_PREVIEW_URL: ${{ secrets.LIGHTHOUSE_PREVIEW_URL }}
+        run: |
+          mkdir -p reports/lighthouse
+          set -o pipefail
+          pnpm run lighthouse:check 2>&1 | tee reports/lighthouse/lighthouse-check.log
+
+      - name: Upload Lighthouse trace JSON + check log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-report
+          path: reports/lighthouse/
+          retention-days: 14
+          if-no-files-found: warn
+
+      - name: Post regression summary to the nightly-report issue
+        if: failure() && vars.NIGHTLY_REPORT_ISSUE != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NIGHTLY_REPORT_ISSUE: ${{ vars.NIGHTLY_REPORT_ISSUE }}
+        run: |
+          {
+            echo "### Lighthouse baseline regression — $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+            echo
+            echo "Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            echo
+            echo '```'
+            tail -n 80 reports/lighthouse/lighthouse-check.log || echo '(no log captured)'
+            echo '```'
+          } > /tmp/lh-summary.md
+          gh issue comment "$NIGHTLY_REPORT_ISSUE" --body-file /tmp/lh-summary.md
