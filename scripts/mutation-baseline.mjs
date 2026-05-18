@@ -359,9 +359,7 @@ async function modeCheck({ reportPath }) {
   // Unprimed = no per-workspace rollups, or every per-workspace rollup
   // at score 0. Empty rollup ships as the initial committed envelope so
   // the floor isn't set before the first real Stryker run lands.
-  const workspaceRollupEntries = Object.entries(baseline.rollup ?? {}).filter(
-    ([k]) => k !== '*',
-  );
+  const workspaceRollupEntries = Object.entries(baseline.rollup ?? {}).filter(([k]) => k !== '*');
   const baselineIsUnprimed =
     workspaceRollupEntries.length === 0 ||
     workspaceRollupEntries.every(([, v]) => Number(v?.score ?? 0) === 0);
