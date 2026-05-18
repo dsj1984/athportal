@@ -224,7 +224,7 @@ A baseline graduates from unprimed → enforcing in three steps:
 | bundle-size     | `pnpm run build` (per `turbo.json`)                                                            | `<ws>/dist/**` — when every `build` is `exit 0` the ratchet skips with `no measurable bundles` |
 | mutation        | `pnpm run mutation` (Stryker, hours-long; nightly artifact preferred)                          | `reports/mutation/mutation.json`                                                                |
 | lighthouse      | Lighthouse CLI against a preview env (`LIGHTHOUSE_PREVIEW_URL` env var)                        | computed from headless Chrome run; needs an actual deployed URL                                 |
-| lint            | `biome check` + `eslint .` (see § _Lint baseline ratchet_ above)                                | aggregated in-process                                                                            |
+| lint            | `biome check` + `eslint .` (see § *Lint baseline ratchet* above)                                | aggregated in-process                                                                            |
 
 ### Detecting an unprimed baseline
 
