@@ -45,6 +45,54 @@ const testDir = defineBddConfig({
 const E2E_PORT = Number(process.env.E2E_PORT ?? 4317);
 const E2E_BASE_URL = `http://127.0.0.1:${E2E_PORT}`;
 
+// The per-persona projects are only useful when the operator-owned
+// `CLERK_TESTING_TOKEN_SIGNING_KEY` secret is wired (per docs/patterns.md
+// § Authenticated test sessions). When absent, the global setup short-
+// circuits and the persona `storageState` files never exist — we MUST NOT
+// register projects that point at missing files, because Playwright fails
+// on the first scenario each project tries to load (even when the project
+// matches zero scenarios after `--grep` filtering). Each persona project
+// is also gated to its own `@persona-<name>` tag so the legacy
+// foundation-web-acceptance-smoke scenarios only run on `anonymous`.
+const HAS_TESTING_TOKEN = Boolean(process.env.CLERK_TESTING_TOKEN_SIGNING_KEY);
+
+const personaProjects = HAS_TESTING_TOKEN
+  ? [
+      {
+        name: 'athlete',
+        grep: /@persona-athlete/,
+        use: {
+          ...devices['Desktop Chrome'],
+          storageState: personaStoragePath('athlete'),
+        },
+      },
+      {
+        name: 'coach',
+        grep: /@persona-coach/,
+        use: {
+          ...devices['Desktop Chrome'],
+          storageState: personaStoragePath('coach'),
+        },
+      },
+      {
+        name: 'org-admin',
+        grep: /@persona-org-admin/,
+        use: {
+          ...devices['Desktop Chrome'],
+          storageState: personaStoragePath('org-admin'),
+        },
+      },
+      {
+        name: 'dev-admin',
+        grep: /@persona-dev-admin/,
+        use: {
+          ...devices['Desktop Chrome'],
+          storageState: personaStoragePath('dev-admin'),
+        },
+      },
+    ]
+  : [];
+
 export default defineConfig({
   testDir,
   fullyParallel: true,
@@ -78,34 +126,7 @@ export default defineConfig({
       name: 'anonymous',
       use: { ...devices['Desktop Chrome'] },
     },
-    {
-      name: 'athlete',
-      use: {
-        ...devices['Desktop Chrome'],
-        storageState: personaStoragePath('athlete'),
-      },
-    },
-    {
-      name: 'coach',
-      use: {
-        ...devices['Desktop Chrome'],
-        storageState: personaStoragePath('coach'),
-      },
-    },
-    {
-      name: 'org-admin',
-      use: {
-        ...devices['Desktop Chrome'],
-        storageState: personaStoragePath('org-admin'),
-      },
-    },
-    {
-      name: 'dev-admin',
-      use: {
-        ...devices['Desktop Chrome'],
-        storageState: personaStoragePath('dev-admin'),
-      },
-    },
+    ...personaProjects,
     // Mobile PWA viewport — retained from Epic #4. Runs the same
     // scenarios as `anonymous` against an emulated Pixel 7.
     {
