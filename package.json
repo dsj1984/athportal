@@ -22,6 +22,8 @@
     "lint:baseline:update": "node scripts/lint-baseline.mjs --update",
     "coverage:check": "node scripts/coverage-baseline.mjs --check",
     "coverage:update": "node scripts/coverage-baseline.mjs --update",
+    "mutation:check": "node scripts/mutation-baseline.mjs --check",
+    "mutation:update": "node scripts/mutation-baseline.mjs --update",
     "lint:steps": "node scripts/lint-steps.mjs",
     "lint:steps:fixtures": "node scripts/lint-steps.mjs --fixtures",
     "sync:commands": "node .agents/scripts/sync-claude-commands.js",

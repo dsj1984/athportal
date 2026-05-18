@@ -53,9 +53,15 @@ jobs:
           path: apps/web/test-results/cucumber.json
           if-no-files-found: warn
 
-  mutation:
-    name: Stryker mutation (unit tier)
+  mutation-baseline:
+    name: Stryker mutation + per-workspace baseline (unit tier)
     runs-on: ubuntu-latest
+    # Nightly-only — NOT wired into quality.yml (PR CI). Mutation runs
+    # are too slow to gate merge velocity (PRD #195 § Non-goals) and the
+    # per-workspace ratchet is informational on every other surface.
+    permissions:
+      contents: read
+      issues: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -80,6 +86,13 @@ jobs:
       - name: Run Stryker
         run: pnpm run mutation
 
+      - name: Run mutation:check against baselines/mutation.json
+        id: mutation-check
+        run: |
+          mkdir -p reports/mutation
+          set -o pipefail
+          pnpm run mutation:check 2>&1 | tee reports/mutation/mutation-check.log
+
       - name: Upload mutation HTML report
         if: always()
         uses: actions/upload-artifact@v4
@@ -87,6 +100,34 @@ jobs:
           name: mutation-report
           path: reports/mutation/mutation.html
           if-no-files-found: warn
+
+      - name: Upload mutation JSON report + check log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-baseline
+          path: |
+            reports/mutation/mutation.json
+            reports/mutation/mutation-check.log
+          retention-days: 14
+          if-no-files-found: warn
+
+      - name: Post regression summary to the nightly-report issue
+        if: failure() && steps.mutation-check.outcome == 'failure' && vars.NIGHTLY_REPORT_ISSUE != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NIGHTLY_REPORT_ISSUE: ${{ vars.NIGHTLY_REPORT_ISSUE }}
+        run: |
+          {
+            echo "### Mutation baseline regression — $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+            echo
+            echo "Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            echo
+            echo '```'
+            tail -n 80 reports/mutation/mutation-check.log || echo '(no log captured)'
+            echo '```'
+          } > /tmp/mutation-summary.md
+          gh issue comment "$NIGHTLY_REPORT_ISSUE" --body-file /tmp/mutation-summary.md
 
   lighthouse-baseline:
     name: Lighthouse baseline (per-route +/-3)
