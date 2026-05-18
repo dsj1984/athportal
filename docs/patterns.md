@@ -731,6 +731,101 @@ gates `quality.yml` runs and is intentionally slower. The two scripts
 coexist: iterate with `quality:preview`, then run `quality:ci-local`
 before push to catch anything the diff-narrowed view missed.
 
+## Supply-chain CVE remediation via `pnpm.overrides` {#pnpm-overrides-remediation-pattern}
+
+When `scripts/audit-check.mjs` blocks on a High or Critical advisory in a
+transitive dependency, the remediation hierarchy is fixed by
+[ADR-011](decisions.md#adr-011--supply-chain-cve-gate-is-a-required-check):
+**lift the floor of the vulnerable package via `pnpm.overrides`** when an
+upstream patched version exists. The allow-list (`IGNORED` map in
+`scripts/audit-check.mjs`) is the fallback for the rare advisory with no
+upstream patch and a documented unreachability argument — not the default
+lever.
+
+> **Reviewer rejection criterion.** Allow-list-first solutions when an
+> upstream patch exists are rejected. The PR must add a `pnpm.overrides`
+> entry pinning the patched floor; an `IGNORED` entry alongside an
+> available patch is a review block, not a discussion.
+
+### Four-step walkthrough
+
+The worked example below uses a placeholder advisory ID
+(`GHSA-xxxx-xxxx-xxxx`) and a hypothetical transitive dependency
+(`vulnerable-pkg`). Substitute the real values from `pnpm audit --json`
+output and the GitHub advisory page when remediating an actual finding.
+
+#### 1. `audit-check` fails
+
+`pnpm run audit:check` (CI's `supply-chain-security` job, mirrored
+locally) exits non-zero with a blocking finding:
+
+```text
+BLOCKING High/Critical advisories (1):
+  - GHSA-xxxx-xxxx-xxxx (vulnerable-pkg) severity=high
+    Prototype pollution in vulnerable-pkg <1.4.2
+    https://github.com/advisories/GHSA-xxxx-xxxx-xxxx
+
+Remediate via `pnpm.overrides` in package.json (preferred per ADR-011) or,
+when no upstream patch exists and a documented unreachability argument
+applies, add an IGNORED entry with `reason` + future `revisit` date.
+```
+
+#### 2. Identify the upstream patched version
+
+Open the advisory page (`https://github.com/advisories/GHSA-xxxx-xxxx-xxxx`)
+and read the **Patched versions** field. If a fixed release exists (for
+this example, `>=1.4.2`), continue to step 3 — overrides are the correct
+lever. If no patch exists, the allow-list path applies; document the
+unreachability argument in an `IGNORED` entry per ADR-011 and stop here.
+
+Confirm the patched version range is compatible with the project's
+declared range for that dependency (or any first-party consumers). A
+floor bump that breaks a peer-dep constraint requires a coordinated
+upgrade, not an override.
+
+#### 3. Add the `overrides` entry
+
+Edit the root `package.json` and add the override under the top-level
+`pnpm.overrides` key. The version specifier pins the **minimum** patched
+floor — pnpm resolves the highest version in the range that satisfies all
+consumers, so a `>=` specifier is preferred over a pinned exact version
+unless a known regression rules out a later release.
+
+```jsonc
+{
+  "name": "athportal",
+  "private": true,
+  "pnpm": {
+    "overrides": {
+      // GHSA-xxxx-xxxx-xxxx — prototype pollution in vulnerable-pkg <1.4.2
+      "vulnerable-pkg": ">=1.4.2"
+    }
+  }
+}
+```
+
+#### 4. Pair the override with the audit-finding ID
+
+Every `pnpm.overrides` entry MUST carry a paired comment naming the
+advisory ID that justifies the pin. Without the comment, the override
+reads as a stylistic preference and the next reviewer cannot tell whether
+removing it is safe. The comment is the hygiene artifact ADR-011 calls
+out — `git blame` on the line lands on the PR that introduced the
+finding, and the GHSA URL is one click away.
+
+Comment placement: directly above the override entry, inside the
+`pnpm.overrides` block, in the format
+`// GHSA-xxxx-xxxx-xxxx — <short advisory title>`. JSONC tolerates
+single-line comments inside `package.json` for pnpm-managed workspaces;
+if the file is strict JSON, move the same metadata into an adjacent
+`docs/decisions.md` entry that the override references by commit SHA.
+
+After saving, re-run `pnpm install` to refresh the lockfile and
+`pnpm run audit:check` to confirm the finding clears. Commit the
+`package.json` change, the lockfile update, and (if applicable) any
+documentation cross-reference in a single commit so reviewers see the
+override and the cleared advisory together.
+
 ## How to add a new step
 
 The acceptance tier reads from a small, deliberately constrained step
