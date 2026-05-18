@@ -2,6 +2,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineConfig, devices } from '@playwright/test';
 import { cucumberReporter, defineBddConfig } from 'playwright-bdd';
+import { personaProjects } from './e2e/fixtures/persona-projects';
 
 /**
  * Playwright + playwright-bdd config for the web acceptance tier.
@@ -10,18 +11,18 @@ import { cucumberReporter, defineBddConfig } from 'playwright-bdd';
  *   `tests/features/**` so the same `.feature` files can later be bound by
  *   the v1.0 mobile (Detox) runner without moving files.
  * - `steps` resolves to this workspace's step library under `e2e/steps/`.
- * - Two MVP projects today: a desktop `anonymous` project and an
- *   emulated `chromium-mobile-pwa` viewport. Per-persona projects
- *   (`athlete`, `coach`, `org-admin`, `dev-admin`) are deferred to
- *   GitHub Issue #371 (refactor of the test-auth seam to
- *   `@clerk/testing/playwright`). Until that lands, the 11
- *   persona-required scenarios under `tests/features/identity/**`
- *   stay `@pending`-tagged and never reach the runner.
+ * - One Playwright project per MVP persona (`anonymous`, `athlete`,
+ *   `coach`, `org-admin`, `dev-admin`). Each persona project (other than
+ *   `anonymous`) loads its `storageState` from a cached fixture under
+ *   `apps/web/playwright-output/storage/<persona>.json` that the global
+ *   setup hook mints once per Playwright invocation via the shared
+ *   `signInAs(persona)` seam.
  * - The Cucumber JSON reporter writes to `apps/web/test-results/cucumber.json`
  *   so CI can upload it as a stable artifact path.
  *
  * Tag filtering for CI tiers is applied at invocation time via Playwright's
- * `--grep` flag (e.g., `--grep @smoke` for the PR pipeline).
+ * `--grep` flag (e.g., `--grep @smoke` for the PR pipeline). Scenarios
+ * pick their persona project via `--project=<persona>`.
  */
 // Resolve config-relative paths to absolute so tools that re-evaluate this
 // file from a different cwd (knip's plugin scan on POSIX CI, monorepo
@@ -44,6 +45,10 @@ const testDir = defineBddConfig({
 const E2E_PORT = Number(process.env.E2E_PORT ?? 4317);
 const E2E_BASE_URL = `http://127.0.0.1:${E2E_PORT}`;
 
+// Per-persona Playwright projects live in `./e2e/fixtures/persona-projects.ts`
+// (extracted to keep this config within the ADR-019 maintainability floor).
+// The gate decision and the project descriptors live there together.
+
 export default defineConfig({
   testDir,
   fullyParallel: true,
@@ -51,6 +56,9 @@ export default defineConfig({
   // (screenshots, traces) in `playwright-output/` so `test-results/` stays
   // a stable destination for the Cucumber JSON report consumed by CI.
   outputDir: 'playwright-output',
+  // Mint the per-persona storage-state cache once per invocation, before
+  // any worker starts. The hook delegates to the shared `signInAs` seam.
+  globalSetup: path.resolve(here, './e2e/fixtures/persona-global-setup.ts'),
   reporter: [
     ['list'],
     ['html', { open: 'never' }],
@@ -74,6 +82,7 @@ export default defineConfig({
       name: 'anonymous',
       use: { ...devices['Desktop Chrome'] },
     },
+    ...personaProjects(),
     // Mobile PWA viewport — retained from Epic #4. Runs the same
     // scenarios as `anonymous` against an emulated Pixel 7.
     {

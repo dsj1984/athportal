@@ -83,19 +83,30 @@ describe('baseline stubs (crap + maintainability)', () => {
     }
   });
 
-  it.each(STUBS)('$kind stub ships unprimed (rows[] empty)', ({ file }) => {
+  it.each(STUBS)('$kind baseline carries rows[] (primed in Story #375)', ({ file }) => {
     const doc = loadJson(path.join(BASELINES_DIR, file));
     expect(Array.isArray(doc.rows)).toBe(true);
-    expect(doc.rows).toHaveLength(0);
+    // Story #375 primed crap and maintainability against real
+    // measurements. The previous "ships unprimed (rows[] empty)" pin
+    // captured the pre-priming contract; from #375 forward both
+    // baselines MUST carry rows so the corresponding `*:check` gates
+    // can actually compare against something.
+    expect(doc.rows.length).toBeGreaterThan(0);
   });
 
   it.each(STUBS)(
-    "$kind stub rollup * values are zero placeholders (operator's first :update primes them)",
+    '$kind rollup * carries real measurements (primed in Story #375)',
     ({ file, rollupAxes }) => {
       const doc = loadJson(path.join(BASELINES_DIR, file));
-      for (const axis of rollupAxes) {
-        expect(doc.rollup['*'][axis]).toBe(0);
-      }
+      // Replaces the previous "values are zero placeholders" pin. After
+      // priming, at least one axis MUST be non-zero — otherwise the
+      // `*:check` gate either misread the producer or the producer
+      // emitted no data, both of which we want to fail loud.
+      const someAxisNonZero = rollupAxes.some((axis) => {
+        const v = doc.rollup['*'][axis];
+        return typeof v === 'number' && v !== 0;
+      });
+      expect(someAxisNonZero).toBe(true);
     },
   );
 

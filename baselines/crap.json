@@ -1,14 +1,1149 @@
 {
   "$schema": ".agents/schemas/baselines/crap.schema.json",
+  "generatedAt": "2026-05-18T20:53:39.170Z",
   "kernelVersion": "1.0.0",
-  "generatedAt": "2026-05-17T00:00:00.000Z",
   "rollup": {
     "*": {
-      "p50": 0,
-      "p95": 0,
-      "max": 0,
-      "methodsAbove20": 0
+      "max": 462,
+      "methodsAbove20": 16,
+      "p50": 2,
+      "p95": 42
     }
   },
-  "rows": []
+  "rows": [
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "apps/api/src/index.ts",
+      "startLine": 42
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-2>",
+      "path": "apps/api/src/index.ts",
+      "startLine": 43
+    },
+    {
+      "crap": 2,
+      "method": "authTest",
+      "path": "apps/api/src/middleware/__testing__/auth-test.ts",
+      "startLine": 58
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "apps/api/src/middleware/__testing__/auth-test.ts",
+      "startLine": 59
+    },
+    {
+      "crap": 2,
+      "method": "unauthenticated",
+      "path": "apps/api/src/middleware/auth.ts",
+      "startLine": 59
+    },
+    {
+      "crap": 20,
+      "method": "readSessionCookie",
+      "path": "apps/api/src/middleware/auth.ts",
+      "startLine": 71
+    },
+    {
+      "crap": 20,
+      "method": "readBearerToken",
+      "path": "apps/api/src/middleware/auth.ts",
+      "startLine": 83
+    },
+    {
+      "crap": 2,
+      "method": "extractToken",
+      "path": "apps/api/src/middleware/auth.ts",
+      "startLine": 96
+    },
+    {
+      "crap": 2,
+      "method": "clerkAuth",
+      "path": "apps/api/src/middleware/auth.ts",
+      "startLine": 122
+    },
+    {
+      "crap": 42,
+      "method": "<anon method-1>",
+      "path": "apps/api/src/middleware/auth.ts",
+      "startLine": 123
+    },
+    {
+      "crap": 2,
+      "method": "buildJitCandidate",
+      "path": "apps/api/src/middleware/auth.ts",
+      "startLine": 221
+    },
+    {
+      "crap": 2,
+      "method": "toAuthContext",
+      "path": "apps/api/src/middleware/auth.ts",
+      "startLine": 234
+    },
+    {
+      "crap": 2,
+      "method": "requireInternalUser",
+      "path": "apps/api/src/middleware/auth.ts",
+      "startLine": 269
+    },
+    {
+      "crap": 42,
+      "method": "<anon method-2>",
+      "path": "apps/api/src/middleware/auth.ts",
+      "startLine": 270
+    },
+    {
+      "crap": 2,
+      "method": "lookupBySubject",
+      "path": "apps/api/src/middleware/auth.ts",
+      "startLine": 317
+    },
+    {
+      "crap": 2,
+      "method": "insertIfAbsent",
+      "path": "apps/api/src/middleware/auth.ts",
+      "startLine": 335
+    },
+    {
+      "crap": 6,
+      "method": "normalizeMethod",
+      "path": "apps/api/src/middleware/request-logger.ts",
+      "startLine": 65
+    },
+    {
+      "crap": 12,
+      "method": "routePattern",
+      "path": "apps/api/src/middleware/request-logger.ts",
+      "startLine": 70
+    },
+    {
+      "crap": 2,
+      "method": "requestLogger",
+      "path": "apps/api/src/middleware/request-logger.ts",
+      "startLine": 90
+    },
+    {
+      "crap": 30,
+      "method": "<anon method-1>",
+      "path": "apps/api/src/middleware/request-logger.ts",
+      "startLine": 91
+    },
+    {
+      "crap": 6,
+      "method": "errorClassName",
+      "path": "apps/api/src/middleware/request-logger.ts",
+      "startLine": 157
+    },
+    {
+      "crap": 6,
+      "method": "safeStringify",
+      "path": "apps/api/src/middleware/request-logger.ts",
+      "startLine": 169
+    },
+    {
+      "crap": 6,
+      "method": "<anon method-1>",
+      "path": "apps/api/src/routes/debug/synthetic-failure.ts",
+      "startLine": 102
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-2>",
+      "path": "apps/api/src/routes/debug/synthetic-failure.ts",
+      "startLine": 120
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "apps/api/src/routes/v1/me.ts",
+      "startLine": 23
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "apps/api/src/routes/v1/sign-out.ts",
+      "startLine": 39
+    },
+    {
+      "crap": 30,
+      "method": "parseBody",
+      "path": "apps/api/src/routes/v1/users/role.ts",
+      "startLine": 64
+    },
+    {
+      "crap": 56,
+      "method": "<anon method-1>",
+      "path": "apps/api/src/routes/v1/users/role.ts",
+      "startLine": 131
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-2>",
+      "path": "apps/api/src/routes/v1/users/role.ts",
+      "startLine": 135
+    },
+    {
+      "crap": 30,
+      "method": "<anon method-3>",
+      "path": "apps/api/src/routes/v1/users/role.ts",
+      "startLine": 172
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "apps/api/src/sentry.ts",
+      "startLine": 53
+    },
+    {
+      "crap": 12,
+      "method": "scrubRecord",
+      "path": "apps/api/src/sentry.ts",
+      "startLine": 55
+    },
+    {
+      "crap": 42,
+      "method": "scrubPii",
+      "path": "apps/api/src/sentry.ts",
+      "startLine": 69
+    },
+    {
+      "crap": 6,
+      "method": "initSentry",
+      "path": "apps/api/src/sentry.ts",
+      "startLine": 97
+    },
+    {
+      "crap": 2,
+      "method": "readExtra",
+      "path": "apps/mobile/src/sentry.ts",
+      "startLine": 25
+    },
+    {
+      "crap": 6,
+      "method": "initSentry",
+      "path": "apps/mobile/src/sentry.ts",
+      "startLine": 38
+    },
+    {
+      "crap": 2,
+      "method": "resetObservabilityState",
+      "path": "apps/web/e2e/fixtures/email-inbox.ts",
+      "startLine": 106
+    },
+    {
+      "crap": 42,
+      "method": "globalSetup",
+      "path": "apps/web/e2e/fixtures/persona-global-setup.ts",
+      "startLine": 36
+    },
+    {
+      "crap": 20,
+      "method": "personaProjects",
+      "path": "apps/web/e2e/fixtures/persona-projects.ts",
+      "startLine": 29
+    },
+    {
+      "crap": 6,
+      "method": "personaStoragePath",
+      "path": "apps/web/e2e/fixtures/persona-storage.ts",
+      "startLine": 50
+    },
+    {
+      "crap": 20,
+      "method": "<anon method-1>",
+      "path": "apps/web/e2e/fixtures/static-server.mjs",
+      "startLine": 20
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-2>",
+      "path": "apps/web/e2e/fixtures/static-server.mjs",
+      "startLine": 37
+    },
+    {
+      "crap": 6,
+      "method": "readDocumentedVendors",
+      "path": "apps/web/e2e/helpers/observability/budget.ts",
+      "startLine": 38
+    },
+    {
+      "crap": 6,
+      "method": "assertAVendorIsDocumented",
+      "path": "apps/web/e2e/helpers/observability/budget.ts",
+      "startLine": 57
+    },
+    {
+      "crap": 2,
+      "method": "simulateBudgetOverage",
+      "path": "apps/web/e2e/helpers/observability/budget.ts",
+      "startLine": 75
+    },
+    {
+      "crap": 2,
+      "method": "readRedactionRunbookReferences",
+      "path": "apps/web/e2e/helpers/observability/budget.ts",
+      "startLine": 100
+    },
+    {
+      "crap": 2,
+      "method": "simulateRequestCompletionLogging",
+      "path": "apps/web/e2e/helpers/observability/budget.ts",
+      "startLine": 117
+    },
+    {
+      "crap": 2,
+      "method": "bodyKeysAllowlistSize",
+      "path": "apps/web/e2e/helpers/observability/budget.ts",
+      "startLine": 154
+    },
+    {
+      "crap": 12,
+      "method": "assertProbeIsConfigured",
+      "path": "apps/web/e2e/helpers/observability/probe.ts",
+      "startLine": 45
+    },
+    {
+      "crap": 2,
+      "method": "simulateProbeFailure",
+      "path": "apps/web/e2e/helpers/observability/probe.ts",
+      "startLine": 73
+    },
+    {
+      "crap": 2,
+      "method": "synthesizeSentryPermalink",
+      "path": "apps/web/e2e/helpers/observability/sentry.ts",
+      "startLine": 45
+    },
+    {
+      "crap": 2,
+      "method": "simulateUnhandledError",
+      "path": "apps/web/e2e/helpers/observability/sentry.ts",
+      "startLine": 56
+    },
+    {
+      "crap": 6,
+      "method": "readSyntheticFailureGateExpectedValue",
+      "path": "apps/web/e2e/helpers/observability/sentry.ts",
+      "startLine": 74
+    },
+    {
+      "crap": 2,
+      "method": "rehearsalSwitchIsOpen",
+      "path": "apps/web/e2e/helpers/observability/sentry.ts",
+      "startLine": 99
+    },
+    {
+      "crap": 6,
+      "method": "simulateSyntheticFailure",
+      "path": "apps/web/e2e/helpers/observability/sentry.ts",
+      "startLine": 109
+    },
+    {
+      "crap": 2,
+      "method": "rehearsalSurfaceIsExposed",
+      "path": "apps/web/e2e/helpers/observability/sentry.ts",
+      "startLine": 121
+    },
+    {
+      "crap": 30,
+      "method": "simulateSourcemapUploadGuard",
+      "path": "apps/web/e2e/helpers/observability/sentry.ts",
+      "startLine": 144
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "apps/web/e2e/steps/auth.steps.ts",
+      "startLine": 18
+    },
+    {
+      "crap": 6,
+      "method": "<anon method-2>",
+      "path": "apps/web/e2e/steps/auth.steps.ts",
+      "startLine": 40
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-3>",
+      "path": "apps/web/e2e/steps/auth.steps.ts",
+      "startLine": 52
+    },
+    {
+      "crap": 12,
+      "method": "resolvePagePath",
+      "path": "apps/web/e2e/steps/navigation.steps.ts",
+      "startLine": 21
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "apps/web/e2e/steps/navigation.steps.ts",
+      "startLine": 33
+    },
+    {
+      "crap": 2,
+      "method": "freshState",
+      "path": "apps/web/e2e/steps/observability.steps.ts",
+      "startLine": 58
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "apps/web/e2e/steps/observability.steps.ts",
+      "startLine": 68
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-2>",
+      "path": "apps/web/e2e/steps/observability.steps.ts",
+      "startLine": 77
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-3>",
+      "path": "apps/web/e2e/steps/observability.steps.ts",
+      "startLine": 83
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-4>",
+      "path": "apps/web/e2e/steps/observability.steps.ts",
+      "startLine": 87
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-5>",
+      "path": "apps/web/e2e/steps/observability.steps.ts",
+      "startLine": 91
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-6>",
+      "path": "apps/web/e2e/steps/observability.steps.ts",
+      "startLine": 95
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-7>",
+      "path": "apps/web/e2e/steps/observability.steps.ts",
+      "startLine": 99
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-8>",
+      "path": "apps/web/e2e/steps/observability.steps.ts",
+      "startLine": 103
+    },
+    {
+      "crap": 6,
+      "method": "<anon method-9>",
+      "path": "apps/web/e2e/steps/observability.steps.ts",
+      "startLine": 104
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-10>",
+      "path": "apps/web/e2e/steps/observability.steps.ts",
+      "startLine": 109
+    },
+    {
+      "crap": 6,
+      "method": "<anon method-11>",
+      "path": "apps/web/e2e/steps/observability.steps.ts",
+      "startLine": 110
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-12>",
+      "path": "apps/web/e2e/steps/observability.steps.ts",
+      "startLine": 115
+    },
+    {
+      "crap": 6,
+      "method": "<anon method-13>",
+      "path": "apps/web/e2e/steps/observability.steps.ts",
+      "startLine": 116
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-14>",
+      "path": "apps/web/e2e/steps/observability.steps.ts",
+      "startLine": 121
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-15>",
+      "path": "apps/web/e2e/steps/observability.steps.ts",
+      "startLine": 124
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-16>",
+      "path": "apps/web/e2e/steps/observability.steps.ts",
+      "startLine": 135
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-17>",
+      "path": "apps/web/e2e/steps/observability.steps.ts",
+      "startLine": 143
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-18>",
+      "path": "apps/web/e2e/steps/observability.steps.ts",
+      "startLine": 148
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-19>",
+      "path": "apps/web/e2e/steps/observability.steps.ts",
+      "startLine": 154
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-20>",
+      "path": "apps/web/e2e/steps/observability.steps.ts",
+      "startLine": 173
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-21>",
+      "path": "apps/web/e2e/steps/observability.steps.ts",
+      "startLine": 177
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-22>",
+      "path": "apps/web/e2e/steps/observability.steps.ts",
+      "startLine": 181
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-23>",
+      "path": "apps/web/e2e/steps/observability.steps.ts",
+      "startLine": 185
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-24>",
+      "path": "apps/web/e2e/steps/observability.steps.ts",
+      "startLine": 189
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-25>",
+      "path": "apps/web/e2e/steps/observability.steps.ts",
+      "startLine": 193
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-26>",
+      "path": "apps/web/e2e/steps/observability.steps.ts",
+      "startLine": 197
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-27>",
+      "path": "apps/web/e2e/steps/observability.steps.ts",
+      "startLine": 201
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-28>",
+      "path": "apps/web/e2e/steps/observability.steps.ts",
+      "startLine": 205
+    },
+    {
+      "crap": 2,
+      "method": "assertProbeAlertNames",
+      "path": "apps/web/e2e/steps/observability.steps.ts",
+      "startLine": 209
+    },
+    {
+      "crap": 6,
+      "method": "<anon method-29>",
+      "path": "apps/web/e2e/steps/observability.steps.ts",
+      "startLine": 211
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-30>",
+      "path": "apps/web/e2e/steps/observability.steps.ts",
+      "startLine": 221
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-31>",
+      "path": "apps/web/e2e/steps/observability.steps.ts",
+      "startLine": 225
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-32>",
+      "path": "apps/web/e2e/steps/observability.steps.ts",
+      "startLine": 229
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-33>",
+      "path": "apps/web/e2e/steps/observability.steps.ts",
+      "startLine": 233
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-34>",
+      "path": "apps/web/e2e/steps/observability.steps.ts",
+      "startLine": 237
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-35>",
+      "path": "apps/web/e2e/steps/observability.steps.ts",
+      "startLine": 241
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-36>",
+      "path": "apps/web/e2e/steps/observability.steps.ts",
+      "startLine": 251
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-37>",
+      "path": "apps/web/e2e/steps/observability.steps.ts",
+      "startLine": 256
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-38>",
+      "path": "apps/web/e2e/steps/observability.steps.ts",
+      "startLine": 261
+    },
+    {
+      "crap": 6,
+      "method": "<anon method-39>",
+      "path": "apps/web/e2e/steps/observability.steps.ts",
+      "startLine": 264
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-40>",
+      "path": "apps/web/e2e/steps/observability.steps.ts",
+      "startLine": 270
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-41>",
+      "path": "apps/web/e2e/steps/observability.steps.ts",
+      "startLine": 271
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-42>",
+      "path": "apps/web/e2e/steps/observability.steps.ts",
+      "startLine": 281
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-43>",
+      "path": "apps/web/e2e/steps/observability.steps.ts",
+      "startLine": 285
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-44>",
+      "path": "apps/web/e2e/steps/observability.steps.ts",
+      "startLine": 292
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-45>",
+      "path": "apps/web/e2e/steps/observability.steps.ts",
+      "startLine": 301
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-46>",
+      "path": "apps/web/e2e/steps/observability.steps.ts",
+      "startLine": 312
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-47>",
+      "path": "apps/web/e2e/steps/observability.steps.ts",
+      "startLine": 320
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-48>",
+      "path": "apps/web/e2e/steps/observability.steps.ts",
+      "startLine": 325
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "apps/web/e2e/steps/rbac.steps.ts",
+      "startLine": 25
+    },
+    {
+      "crap": 6,
+      "method": "resolveVisibleConcept",
+      "path": "apps/web/e2e/steps/visibility.steps.ts",
+      "startLine": 23
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "apps/web/e2e/steps/visibility.steps.ts",
+      "startLine": 34
+    },
+    {
+      "crap": 30,
+      "method": "resolveSurfaceName",
+      "path": "apps/web/e2e/steps/visibility.steps.ts",
+      "startLine": 47
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-2>",
+      "path": "apps/web/e2e/steps/visibility.steps.ts",
+      "startLine": 64
+    },
+    {
+      "crap": 6,
+      "method": "<anon method-1>",
+      "path": "apps/web/src/pages/sign-out.ts",
+      "startLine": 41
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-2>",
+      "path": "apps/web/src/pages/sign-out.ts",
+      "startLine": 63
+    },
+    {
+      "crap": 20,
+      "method": "compareWithTolerance",
+      "path": "packages/baselines/src/compare.ts",
+      "startLine": 91
+    },
+    {
+      "crap": 6,
+      "method": "indexRows",
+      "path": "packages/baselines/src/compare.ts",
+      "startLine": 125
+    },
+    {
+      "crap": 6,
+      "method": "readIdentifier",
+      "path": "packages/baselines/src/compare.ts",
+      "startLine": 134
+    },
+    {
+      "crap": 6,
+      "method": "readNumeric",
+      "path": "packages/baselines/src/compare.ts",
+      "startLine": 139
+    },
+    {
+      "crap": 462,
+      "method": "evaluate",
+      "path": "packages/baselines/src/compare.ts",
+      "startLine": 154
+    },
+    {
+      "crap": 20,
+      "method": "formatRejectionMessage",
+      "path": "packages/baselines/src/format.ts",
+      "startLine": 34
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "packages/baselines/src/format.ts",
+      "startLine": 37
+    },
+    {
+      "crap": 42,
+      "method": "formatTolerance",
+      "path": "packages/baselines/src/format.ts",
+      "startLine": 54
+    },
+    {
+      "crap": 12,
+      "method": "formatNumber",
+      "path": "packages/baselines/src/format.ts",
+      "startLine": 69
+    },
+    {
+      "crap": 12,
+      "method": "readBaseline",
+      "path": "packages/baselines/src/io.ts",
+      "startLine": 49
+    },
+    {
+      "crap": 12,
+      "method": "writeBaseline",
+      "path": "packages/baselines/src/io.ts",
+      "startLine": 79
+    },
+    {
+      "crap": 20,
+      "method": "defaultSchemaDir",
+      "path": "packages/baselines/src/schema.ts",
+      "startLine": 50
+    },
+    {
+      "crap": 2,
+      "method": "loadJson",
+      "path": "packages/baselines/src/schema.ts",
+      "startLine": 64
+    },
+    {
+      "crap": 6,
+      "method": "buildValidators",
+      "path": "packages/baselines/src/schema.ts",
+      "startLine": 87
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "packages/baselines/src/schema.ts",
+      "startLine": 92
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-2>",
+      "path": "packages/baselines/src/schema.ts",
+      "startLine": 110
+    },
+    {
+      "crap": 6,
+      "method": "mustGet",
+      "path": "packages/baselines/src/schema.ts",
+      "startLine": 113
+    },
+    {
+      "crap": 12,
+      "method": "formatAjvErrors",
+      "path": "packages/baselines/src/schema.ts",
+      "startLine": 131
+    },
+    {
+      "crap": 2,
+      "method": "serialiseBaseline",
+      "path": "packages/baselines/src/serialise.ts",
+      "startLine": 26
+    },
+    {
+      "crap": 90,
+      "method": "stringifyStable",
+      "path": "packages/baselines/src/serialise.ts",
+      "startLine": 30
+    },
+    {
+      "crap": 6,
+      "method": "stringifyArray",
+      "path": "packages/baselines/src/serialise.ts",
+      "startLine": 50
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "packages/baselines/src/serialise.ts",
+      "startLine": 54
+    },
+    {
+      "crap": 6,
+      "method": "stringifyObject",
+      "path": "packages/baselines/src/serialise.ts",
+      "startLine": 58
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-2>",
+      "path": "packages/baselines/src/serialise.ts",
+      "startLine": 63
+    },
+    {
+      "crap": 2,
+      "method": "indent",
+      "path": "packages/baselines/src/serialise.ts",
+      "startLine": 71
+    },
+    {
+      "crap": 2,
+      "method": "reserialiseFromString",
+      "path": "packages/baselines/src/serialise.ts",
+      "startLine": 82
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "packages/shared/src/db/schema/teams.ts",
+      "startLine": 18
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "packages/shared/src/db/schema/users.ts",
+      "startLine": 36
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-2>",
+      "path": "packages/shared/src/db/schema/users.ts",
+      "startLine": 37
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-3>",
+      "path": "packages/shared/src/db/schema/users.ts",
+      "startLine": 42
+    },
+    {
+      "crap": 2,
+      "method": "redactHeaders",
+      "path": "packages/shared/src/observability/redaction.ts",
+      "startLine": 67
+    },
+    {
+      "crap": 6,
+      "method": "<anon method-1>",
+      "path": "packages/shared/src/observability/redaction.ts",
+      "startLine": 69
+    },
+    {
+      "crap": 90,
+      "method": "redactQueryAndBody",
+      "path": "packages/shared/src/observability/redaction.ts",
+      "startLine": 101
+    },
+    {
+      "crap": 6,
+      "method": "<anon method-2>",
+      "path": "packages/shared/src/observability/redaction.ts",
+      "startLine": 106
+    },
+    {
+      "crap": 6,
+      "method": "canPerform",
+      "path": "packages/shared/src/rbac/policy.ts",
+      "startLine": 40
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "packages/shared/src/rbac/rules.ts",
+      "startLine": 46
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-2>",
+      "path": "packages/shared/src/rbac/rules.ts",
+      "startLine": 47
+    },
+    {
+      "crap": 12,
+      "method": "<anon method-3>",
+      "path": "packages/shared/src/rbac/rules.ts",
+      "startLine": 57
+    },
+    {
+      "crap": 20,
+      "method": "<anon method-4>",
+      "path": "packages/shared/src/rbac/rules.ts",
+      "startLine": 68
+    },
+    {
+      "crap": 12,
+      "method": "<anon method-5>",
+      "path": "packages/shared/src/rbac/rules.ts",
+      "startLine": 80
+    },
+    {
+      "crap": 6,
+      "method": "<anon method-6>",
+      "path": "packages/shared/src/rbac/rules.ts",
+      "startLine": 93
+    },
+    {
+      "crap": 6,
+      "method": "<anon method-7>",
+      "path": "packages/shared/src/rbac/rules.ts",
+      "startLine": 100
+    },
+    {
+      "crap": 2,
+      "method": "rule",
+      "path": "packages/shared/src/rbac/rules.ts",
+      "startLine": 125
+    },
+    {
+      "crap": 6,
+      "method": "buildRuleIndex",
+      "path": "packages/shared/src/rbac/rules.ts",
+      "startLine": 322
+    },
+    {
+      "crap": 2,
+      "method": "findRule",
+      "path": "packages/shared/src/rbac/rules.ts",
+      "startLine": 348
+    },
+    {
+      "crap": 6,
+      "method": "createTestApp",
+      "path": "packages/shared/src/testing/app.ts",
+      "startLine": 101
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "packages/shared/src/testing/app.ts",
+      "startLine": 103
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-2>",
+      "path": "packages/shared/src/testing/app.ts",
+      "startLine": 109
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-3>",
+      "path": "packages/shared/src/testing/app.ts",
+      "startLine": 115
+    },
+    {
+      "crap": 12,
+      "method": "authHeaders",
+      "path": "packages/shared/src/testing/auth.ts",
+      "startLine": 48
+    },
+    {
+      "crap": 12,
+      "method": "resolvePersona",
+      "path": "packages/shared/src/testing/auth.ts",
+      "startLine": 158
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "packages/shared/src/testing/auth.ts",
+      "startLine": 168
+    },
+    {
+      "crap": 12,
+      "method": "requireTestUserPassword",
+      "path": "packages/shared/src/testing/auth.ts",
+      "startLine": 189
+    },
+    {
+      "crap": 12,
+      "method": "signInAs",
+      "path": "packages/shared/src/testing/auth.ts",
+      "startLine": 231
+    },
+    {
+      "crap": 6,
+      "method": "installExitHook",
+      "path": "packages/shared/src/testing/db.ts",
+      "startLine": 37
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "packages/shared/src/testing/db.ts",
+      "startLine": 40
+    },
+    {
+      "crap": 2,
+      "method": "applySchema",
+      "path": "packages/shared/src/testing/db.ts",
+      "startLine": 44
+    },
+    {
+      "crap": 2,
+      "method": "freshDb",
+      "path": "packages/shared/src/testing/db.ts",
+      "startLine": 74
+    },
+    {
+      "crap": 2,
+      "method": "closeAllTestDbs",
+      "path": "packages/shared/src/testing/db.ts",
+      "startLine": 99
+    },
+    {
+      "crap": 2,
+      "method": "Greeting",
+      "path": "packages/shared/src/testing/examples/Greeting.tsx",
+      "startLine": 11
+    },
+    {
+      "crap": 2,
+      "method": "sum",
+      "path": "packages/shared/src/testing/examples/sum.ts",
+      "startLine": 7
+    },
+    {
+      "crap": 30,
+      "method": "isPlainObject",
+      "path": "packages/shared/src/testing/safety.ts",
+      "startLine": 66
+    },
+    {
+      "crap": 12,
+      "method": "joinPath",
+      "path": "packages/shared/src/testing/safety.ts",
+      "startLine": 75
+    },
+    {
+      "crap": 56,
+      "method": "walk",
+      "path": "packages/shared/src/testing/safety.ts",
+      "startLine": 85
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "packages/shared/src/testing/safety.ts",
+      "startLine": 87
+    },
+    {
+      "crap": 2,
+      "method": "assertSyntheticPii",
+      "path": "packages/shared/src/testing/safety.ts",
+      "startLine": 113
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "packages/shared/src/testing/schema.ts",
+      "startLine": 33
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-2>",
+      "path": "packages/shared/src/testing/schema.ts",
+      "startLine": 43
+    },
+    {
+      "crap": 6,
+      "method": "seedUser",
+      "path": "packages/shared/src/testing/seeds.ts",
+      "startLine": 33
+    },
+    {
+      "crap": 6,
+      "method": "seedResource",
+      "path": "packages/shared/src/testing/seeds.ts",
+      "startLine": 66
+    }
+  ]
 }

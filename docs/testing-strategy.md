@@ -327,15 +327,19 @@ reused verbatim — do not author a near-match.
 - **`Given I am signed in as {string}`** — defined in
   [`apps/web/e2e/steps/auth.steps.ts`](../apps/web/e2e/steps/auth.steps.ts).
   Accepts the persona labels `'athlete'`, `'coach'`, `'org admin'`,
-  `'dev admin'` (and `'anonymous'`). Mints a real Clerk testing-token
-  JWT for the named persona via the seam at
-  [`packages/shared/src/testing/auth.ts`](../packages/shared/src/testing/auth.ts)
-  and plants the `__session` cookie on the browser context. There is no
-  dev-only auth bypass; the seam targets a real Clerk **test instance**.
-  An unknown label throws a `TypeError` listing the accepted spellings —
-  scenario typos fail loudly. See
+  `'dev admin'` (and `'anonymous'`). Drives Clerk's canonical
+  `@clerk/testing/playwright` sign-in helper for the named persona via
+  the seam at
+  [`packages/shared/src/testing/auth.ts`](../packages/shared/src/testing/auth.ts),
+  signing in as the seeded test-instance user
+  (`<persona>@example.com`) with the shared
+  `CLERK_TEST_USER_PASSWORD`. There is no dev-only auth bypass; the
+  seam targets a real Clerk **test instance**. An unknown label throws
+  a `TypeError` listing the accepted spellings — scenario typos fail
+  loudly. See
   [`docs/patterns.md` § *Authenticated test sessions*](patterns.md#authenticated-test-sessions-clerk-test-instance)
-  for the persona ↔ role table and the testing-token rotation runbook.
+  for the persona ↔ role table, the env-var surface, and the rotation
+  runbook.
 - **`Given I am not signed in`** — same file. Clears any session cookie
   planted by a prior step (or by a cached persona `storageState`) so the
   scenario starts from a known anonymous baseline.

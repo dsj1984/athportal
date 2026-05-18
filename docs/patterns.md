@@ -189,6 +189,60 @@ whole-tree Biome and ESLint passes the ratchet needs.
    failure that does not reproduce in `pnpm run lint` is a script bug,
    not a code bug — file an issue rather than working around it.
 
+## Priming a baseline (Story #375 runbook)
+
+The seven baseline ratchets (`coverage`, `crap`, `maintainability`,
+`mutation`, `bundle-size`, `lighthouse`, `lint`) all share a common
+contract: each `*:check` script either **fails on a regression** or
+**fails-loud / skips-with-warning** when the baseline is *unprimed* — an
+empty zero-rollup snapshot from before any real measurement landed. An
+unprimed baseline is **not** a protective gate; it is decoration that
+will pass green on a PR that's actually regressing the underlying
+metric.
+
+A baseline graduates from unprimed → enforcing in three steps:
+
+1. **Generate a measurement.** Run the producer (`pnpm run test:coverage`
+   for coverage, `pnpm run build` for bundle-size, the nightly Stryker
+   job for mutation, etc.). The producer writes the artifact the
+   ratchet reads.
+2. **Snapshot.** Run `pnpm run <kind>:update`. The script reads the
+   artifact, writes `baselines/<kind>.json` with real rollups + rows,
+   and commits the diff alongside the producer change in the same PR.
+3. **Prove the gate bites.** Open a draft PR that deliberately regresses
+   the metric by an amount that crosses the gate's tolerance (e.g. -3pp
+   on coverage with the ADR-015 -2pp floor), confirm the `*:check`
+   fails, restore. Link both runs from the PR description.
+
+### Per-baseline producer commands
+
+| Baseline        | Producer                                                                                       | Where it writes                                                                                 |
+| --------------- | ---------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| coverage        | per-workspace `pnpm --filter <ws> exec vitest run --coverage` — CI's `pnpm run test:coverage` writes only root `coverage/coverage-final.json`, but the ratchet reads per-workspace files. **Producer/consumer alignment is the open work for #384.** | `<ws>/coverage/coverage-final.json`                                                              |
+| crap            | reuses coverage output (no separate producer)                                                  | reads `<ws>/coverage/coverage-final.json` + source AST                                          |
+| maintainability | `pnpm run maintainability:update` runs the producer inline                                     | computed from source AST; no intermediate artifact                                              |
+| bundle-size     | `pnpm run build` (per `turbo.json`)                                                            | `<ws>/dist/**` — when every `build` is `exit 0` the ratchet skips with `no measurable bundles` |
+| mutation        | `pnpm run mutation` (Stryker, hours-long; nightly artifact preferred)                          | `reports/mutation/mutation.json`                                                                |
+| lighthouse      | Lighthouse CLI against a preview env (`LIGHTHOUSE_PREVIEW_URL` env var)                        | computed from headless Chrome run; needs an actual deployed URL                                 |
+| lint            | `biome check` + `eslint .` (see § *Lint baseline ratchet* above)                                | aggregated in-process                                                                            |
+
+### Detecting an unprimed baseline
+
+Each `*:check` script tells you which side it's on:
+
+- **Unprimed (gate skips, prints a warn):** `[coverage-baseline] baseline
+  is unprimed (all workspace rollups are 0); skipping the -2pp gate.`
+  / `[bundle-size-baseline] no measurable bundles found (no dist
+  output on disk); skipping the gate.`
+- **Unprimed (gate fails loud):** `[lighthouse-baseline]
+  LIGHTHOUSE_PREVIEW_URL is not set. Configure it on the staging
+  GitHub Environment...`
+- **Primed (gate is live):** `[coverage-baseline] ok — 6 workspace(s)
+  within the -2pp floor` / `[maintainability-baseline] ok —
+  rollup['*'].min=81.713 (floor 70, 63 file(s))`
+
+Fail-loud is acceptable — it surfaces the gap on every CI run. Skip-with-warn is the dangerous one: green PR, no protection.
+
 ## Coverage baseline ratchet
 
 The coverage ratchet keeps per-workspace line / branch / function
@@ -904,13 +958,15 @@ override and the cleared advisory together.
 ## Authenticated test sessions (Clerk test instance)
 
 Acceptance suites that need to drive a protected route sign in once per
-persona via a Clerk testing-token JWT minted by the seam at
+persona by calling the canonical
+[`@clerk/testing/playwright`](https://clerk.com/docs/testing/playwright/overview)
+helper from the seam at
 [`packages/shared/src/testing/auth.ts`](../packages/shared/src/testing/auth.ts).
 The seam targets a **Clerk test instance** — never the production
-instance — and is consumed by the `signInAs(persona)` Playwright fixture
+instance — and is consumed by the `signInAs({ page, persona })` fixture
 plus the canonical Gherkin step
-`Given I am signed in as {string}`. There is no dev-only auth bypass; the
-seam mints **real Clerk testing tokens** against a real Clerk test
+`Given I am signed in as {string}`. There is no dev-only auth bypass;
+sign-in drives the real Clerk client SDK against a real Clerk test
 instance per the security baseline
 ([`.agents/rules/security-baseline.md`](../.agents/rules/security-baseline.md)).
 
@@ -920,80 +976,95 @@ Four user accounts live on the Clerk **test instance** (operator-owned —
 created via the Clerk dashboard, not via this repo). Each maps to a
 persona consumed by the test-auth seam:
 
-| Persona     | Seeded email             | Role         | Org / Team scope                      |
-| ----------- | ------------------------ | ------------ | ------------------------------------- |
-| `athlete`   | `athlete@test.invalid`   | `member`     | —                                     |
-| `coach`     | `coach@test.invalid`     | `team_admin` | seed org A, seed team A-1             |
-| `org admin` | `org-admin@test.invalid` | `org_admin`  | seed org A                            |
-| `dev admin` | `dev-admin@test.invalid` | `dev_admin`  | —                                     |
+| Persona     | Seeded email             | Role         | Org / Team scope          |
+| ----------- | ------------------------ | ------------ | ------------------------- |
+| `athlete`   | `athlete@example.com`    | `member`     | —                         |
+| `coach`     | `coach@example.com`      | `team_admin` | seed org A, seed team A-1 |
+| `org admin` | `org-admin@example.com`  | `org_admin`  | seed org A                |
+| `dev admin` | `dev-admin@example.com`  | `dev_admin`  | —                         |
 
-These email addresses use the `.invalid` TLD per
-[RFC 2606](https://datatracker.ietf.org/doc/html/rfc2606) so they cannot
-collide with a real inbox. The persona labels (`'athlete'`, `'coach'`,
-`'org admin'`, `'dev admin'`) are the exact strings the Gherkin step
-`Given I am signed in as {string}` accepts.
-
-The synthetic-PII guard
+These email addresses use the `@example.com` synthetic domain reserved
+by [RFC 2606](https://datatracker.ietf.org/doc/html/rfc2606) for
+documentation and testing. Clerk's email validator rejects the `.invalid`
+TLD, so the persona fixtures and the contract-tier synthetic-PII guard
 ([`packages/shared/src/testing/safety.ts`](../packages/shared/src/testing/safety.ts))
-ensures fixtures never leak a real address into the suite.
+— which still pins `.invalid` for DB seeds — intentionally diverge: the
+persona table is the only place `@example.com` is accepted, and the
+synthetic-PII guard remains the gate for everything that touches the DB.
 
-### Seam status (deferred — see Issue #371)
+The persona labels (`'athlete'`, `'coach'`, `'org admin'`, `'dev admin'`)
+are the exact strings the Gherkin step `Given I am signed in as {string}`
+accepts.
 
-The acceptance-tier sign-in path is currently a **deferred placeholder**.
-Story #329 / Task #348 shipped an implementation that signed JWTs locally
-with a `CLERK_TESTING_TOKEN_SIGNING_KEY` env var expected to come from
-the Clerk dashboard — but Clerk does not expose such a key in any
-dashboard surface. Testing tokens are server-minted by Clerk's API
-(`clerkClient.testingTokens.createTestingToken()` in `@clerk/backend`),
-not signed client-side. The phantom env var has been removed; the seam
-is being rewritten in **[Issue #371](https://github.com/dsj1984/athportal/issues/371)**
-to use `@clerk/testing/playwright`'s `clerk.signIn` API.
+### Required env vars
 
-What still works today:
+Three operator-owned env vars drive the seam:
 
-- `authHeaders(user)` for contract-tier sign-in headers (unchanged).
-- `signInAs('anonymous')` returning an empty `StorageState` (unchanged).
-- `resolvePersona(label)` and the `PERSONA_FIXTURES` table (unchanged —
-  the persona ↔ role mapping is stable and inherited by #371).
+| Env var                       | Purpose                                                                                                                                                                                                                  |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `CLERK_SECRET_KEY`            | Test-instance secret key. Consumed by `@clerk/testing/playwright`'s `clerkSetup()`.                                                                                                                                       |
+| `CLERK_TEST_USER_PASSWORD`    | Single shared password used by all four seeded users. Consumed by `signInAs(...)`.                                                                                                                                        |
+| `CLERK_TEST_PERSONAS_READY`   | Opt-in flag (`'1'`) that arms the per-persona Playwright projects and the global-setup storage mint. Stays unset until the persona-specific protected web surfaces tracked by [Issue #383](https://github.com/dsj1984/athportal/issues/383) land. |
 
-What throws clearly pointing at #371:
+`CLERK_SECRET_KEY` and `CLERK_TEST_USER_PASSWORD` are **only valid on
+the test instance** — leaking them cannot compromise production users.
+They are stored in GitHub Secrets and in each contributor's local
+`.env`; only placeholders ship in
+[`.env.example`](../.env.example). `CLERK_TEST_PERSONAS_READY` is a
+plain config flag — it carries no secret material and lives in the
+workflow's `env:` block (or a contributor's `.env`) directly.
 
-- `signInAs('athlete' | 'coach' | 'org-admin' | 'dev-admin')`.
-- The Gherkin step `Given I am signed in as {string}` for any
-  non-anonymous persona — invoked only by `@pending`-tagged scenarios
-  today, so the throw is never reached in CI.
+The previous Clerk testing-token signing key (`CLERK_TESTING_TOKEN_SIGNING_KEY`)
+is no longer used — testing tokens are minted server-side by Clerk
+using `CLERK_SECRET_KEY`, and the dashboard-exported "signing key"
+concept never existed in Clerk's product.
 
-### Rotation runbook (until #371 lands)
+### Operator runbook — seeding the test users
 
-Only two Clerk secrets are operationally active for this repo today:
+One-time setup per Clerk test instance:
 
-1. **`CLERK_PUBLISHABLE_KEY` / `PUBLIC_CLERK_PUBLISHABLE_KEY`** — the
-   Clerk Publishable key (`pk_test_...` for the test instance). Used by
-   `apps/web` server- and client-side and by `apps/api` server-side.
-2. **`CLERK_SECRET_KEY`** — the Clerk Secret key (`sk_test_...` for the
-   test instance). Used by `apps/api`'s auth middleware and (once #371
-   lands) by the Playwright seam to call
-   `clerkClient.testingTokens.createTestingToken()`.
+1. **Switch to the test instance.** Sign in to the Clerk dashboard and
+   confirm the instance picker shows the test/development instance
+   (never production).
+2. **Create the four users.** Under **Users → Create user**, add each
+   row from the table above. Email-verify each entry; the test instance
+   auto-verifies in most projects.
+3. **Set a shared password.** Generate one strong random password
+   (≥20 characters, mixed case + digits + symbols, no ambiguous
+   characters like `0` / `O` / `1` / `l`) and use it as the password
+   for all four users.
+4. **Publish secrets.** Add `CLERK_TEST_USER_PASSWORD` (the same shared
+   password) and `CLERK_SECRET_KEY` (the test-instance secret key from
+   the dashboard's API keys page) to the repo's GitHub Actions secrets.
+5. **Populate local `.env`.** Each contributor pastes the same two
+   values into their gitignored `.env`. Never commit the real
+   values — `.env.example` carries placeholders only.
 
-To rotate either:
+### Rotation runbook
 
-1. **Rotate in the Clerk dashboard.** Open the test instance →
-   **Configure → Developers → API keys** (or **Instance → API keys**
-   depending on dashboard version) and regenerate the key. Revoke the
-   prior key once the new one is confirmed in CI.
-2. **Refresh GitHub Secrets** for the affected secret(s) via
-   `gh secret set <NAME> --repo dsj1984/athportal` (reads stdin, value
-   never lands in shell history).
-3. **Bump the local `.env`.** Refresh from `.env.example` placeholders
-   and paste the new value(s). The committed `.env.example` carries
-   placeholders only — never real keys.
-4. **Confirm CI is green.** Push a no-op commit (or re-run the latest
+Rotate quarterly or immediately on suspected exposure:
+
+1. **Rotate the password in Clerk.** For each seeded user, generate a
+   new shared password and update all four user records in the Clerk
+   dashboard. (To rotate `CLERK_SECRET_KEY`, generate a new secret key
+   under **API Keys → Standard** on the test instance and revoke the
+   previous one.)
+2. **Refresh GitHub Secrets.** Update `CLERK_TEST_USER_PASSWORD` (and
+   `CLERK_SECRET_KEY` if rotated) under the repo's Actions secrets.
+   The acceptance workflow
+   ([`.github/workflows/quality.yml`](../.github/workflows/quality.yml))
+   reads them at job start; no workflow edit is required.
+3. **Bump the local `.env`.** Every engineer refreshes the matching
+   line in their gitignored `.env`.
+4. **Re-run the acceptance smoke locally.** Run
+   `pnpm --filter @repo/web exec bddgen && pnpm --filter @repo/web test:e2e -- --grep @smoke`
+   to confirm the per-persona `storageState` cache regenerates against
+   the new credentials. Stale cache files under
+   `apps/web/playwright-output/storage/` are safe to delete — the
+   fixture re-creates them on the next run.
+5. **Confirm CI is green.** Push a no-op commit (or re-run the latest
    CI job) and verify the `acceptance-smoke` job passes before closing
    the rotation ticket.
-
-Once Issue #371 lands, this runbook gains a "seed user passwords" step
-covering the four test-instance personas (`athlete@test.invalid`,
-`coach@test.invalid`, `org-admin@test.invalid`, `dev-admin@test.invalid`).
 
 ## Protecting an API route
 
@@ -1147,19 +1218,17 @@ Feature: Coach invites an athlete
 ```
 
 The accepted persona labels are `'athlete'`, `'coach'`, `'org admin'`,
-`'dev admin'`, and `'anonymous'`. The step calls `resolvePersona(label)`
-from the seam at
-[`packages/shared/src/testing/auth.ts`](../packages/shared/src/testing/auth.ts).
-An unknown label throws a `TypeError` listing the accepted spellings.
-
-**Status (today).** The non-anonymous branches of the step are
-deferred pending Issue #371 (rewrite of the seam to
-`@clerk/testing/playwright`). Until that issue resolves, persona-required
-scenarios in `tests/features/identity/**` must remain `@pending`-tagged;
-the step body throws with a pointer to #371 if any scenario drops the
-tag prematurely. The seam's persona ↔ role mapping (in `PERSONA_FIXTURES`)
-is stable and will be inherited by the refactor. There is no dev-only
-auth bypass at any point.
+`'dev admin'`, and `'anonymous'`. Under the hood the step calls
+`resolvePersona(label)` and `signInAs({ page, persona })` from the seam
+at
+[`packages/shared/src/testing/auth.ts`](../packages/shared/src/testing/auth.ts),
+which drives `@clerk/testing/playwright`'s `clerk.signIn` against the
+Clerk test instance using the seeded persona's email and the shared
+`CLERK_TEST_USER_PASSWORD`. Clerk plants the session cookies on the
+Playwright context; the per-persona Playwright projects persist that
+context via `storageState` so subsequent scenarios resume the session
+without re-signing-in. There is no dev-only auth bypass; an unknown
+label throws a `TypeError` listing the accepted spellings.
 
 Scenario authoring constraints (cross-cutting with
 [`docs/testing-strategy.md` § Forbidden Patterns](testing-strategy.md#forbidden-patterns)):
@@ -1170,7 +1239,8 @@ Scenario authoring constraints (cross-cutting with
 - Do not author a near-match for `Given I am signed in as {string}`.
   Reuse the canonical phrase verbatim; widen the persona table via a
   follow-up Story if a new role is genuinely needed.
-- The testing-token signing key follows the rotation runbook in
+- The test-user password and test-instance secret key follow the
+  rotation runbook in
   [§ *Authenticated test sessions (Clerk test instance)*](#authenticated-test-sessions-clerk-test-instance)
   above.
 
