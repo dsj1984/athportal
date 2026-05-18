@@ -1,4 +1,3 @@
-@pending
 Feature: A maintainer can discover the redaction allowlist and the widening template
 
   AC-7 requires that the redaction allowlist is self-documenting: a
