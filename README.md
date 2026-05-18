@@ -58,11 +58,37 @@ push to `main`, and one is manually dispatched.
 
 [`.github/workflows/quality.yml`](./.github/workflows/quality.yml)
 
-Chains lint → typecheck → test → build → lint-baseline ratchet on
-`ubuntu-latest`. Required check on the `main` branch ruleset. Uses no
-secrets and runs against `permissions: contents: read` only.
+Fans out 13 parallel jobs on `ubuntu-latest` covering lint, typecheck,
+test, build, six ratchet baselines (lint / coverage / CRAP /
+maintainability / bundle-size — mutation + Lighthouse run nightly), the
+supply-chain CVE gate (ADR-011), two secret scanners (TruffleHog +
+gitleaks), the BDD step-vocabulary linter, and a single Playwright-bdd
+`@smoke` acceptance scenario. Uses no secrets and runs against
+`permissions: contents: read` only (with narrowly-scoped writes on the
+secret-scan jobs for SARIF upload).
 
 `pnpm run quality:ci-local` mirrors the same chain locally.
+
+#### Merge gates (required checks on `main`)
+
+Every job above (plus `Guard destructive migrations` from
+[`migration-label-guard.yml`](./.github/workflows/migration-label-guard.yml))
+is enforced as a **required status check** on `main`. The full set is
+14 checks; PRs cannot merge until every one is green. The authoritative
+table — including each check's source workflow, what it gates, and its
+documented escape hatch (allow-list, `:update` script, or `rationale`
+bump per the relevant ADR) — lives in
+[`docs/runbooks/branch-protection-setup.md`](./docs/runbooks/branch-protection-setup.md).
+The exact JSON used to apply the rule is preserved at
+[`docs/runbooks/main-protection.json`](./docs/runbooks/main-protection.json)
+so the configuration is reproducible.
+
+The design philosophy: every gate is **reasonable to meet on a
+healthy codebase** and ships with a documented escape hatch for the
+genuinely-unfixable case. Mutation testing and Lighthouse audits
+(expensive, flake-prone) run on the nightly schedule instead of PR CI —
+they surface regressions in the nightly report rather than blocking
+individual PRs.
 
 ### `migration-label-guard.yml` — every PR
 
