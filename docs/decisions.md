@@ -528,3 +528,27 @@ The mandrel framework default for this dimension targets the rollup `min` axis w
 - The 70 floor is a **policy floor**, not a calibration floor. Future kernel changes (e.g. a different MI variant, a different parser) bump `kernelVersion` on the envelope and may shift typical scores; the ADR floor stays at 70 unless a new ADR supersedes this one with a documented re-calibration argument.
 - Per-file scoring is the same kernel CRAP uses (`typhonjs-escomplex` with the `typescript: true` parse flag). Parse failures return `null` and the row is dropped from the envelope — a zero MI would be a phantom floor violation no source change can fix.
 - Cross-references: [`docs/patterns.md` § "Maintainability baseline ratchet"](./patterns.md#maintainability-baseline-ratchet) is the operator-facing refresh runbook; the [`.agents/schemas/baselines/maintainability.schema.json`](../.agents/schemas/baselines/maintainability.schema.json) schema description names the floor target (rollup `min`) explicitly and is the ported contract from mandrel; the [Epic #6 Tech Spec](https://github.com/dsj1984/athportal/issues/196) carries the dimension's harness rationale.
+
+---
+
+## Policy — Observability redaction allowlist widenings
+
+**Status:** Accepted (2026-05-17, Epic #5, Story #256)
+
+The redaction allowlist module at
+[`packages/shared/src/observability/redaction.ts`](../packages/shared/src/observability/redaction.ts)
+is the single trust boundary for log egress to the managed sink. Per
+[ADR-012](#adr-012--observability-vendor-stack-mvp-beta), tightening the
+allowlist is a one-line PR; **widening it requires a dedicated ADR.**
+
+- **Operator-facing reference:** [`docs/ops/observability-redaction.md`](./ops/observability-redaction.md)
+  — explains the Day 1 allowlist, why each key is on it, and what the module exports.
+- **ADR template every widening PR instantiates:** [`docs/decisions/_template-redaction-widening.md`](./decisions/_template-redaction-widening.md)
+  — copy to `docs/decisions/ADR-NNN-<short-name>.md`, fill in
+  Context / Decision / Consequences / Privacy posture / Rollback, and submit
+  alongside the source change and the matching test-suite extension.
+
+The ≥95% branch-coverage floor on `redaction.ts` (enforced in
+[`packages/shared/vitest.config.ts`](../packages/shared/vitest.config.ts)) is
+the mechanical companion to this policy — a widening PR that forgets to
+extend the test suite fails CI before review.
