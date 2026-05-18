@@ -6,3 +6,8 @@
  * without reaching into subpaths.
  */
 export { LogEventSchema, type LogEvent } from './observability/log-event';
+export {
+  RedactionAllowlist,
+  redactHeaders,
+  redactQueryAndBody,
+} from './observability/redaction';
