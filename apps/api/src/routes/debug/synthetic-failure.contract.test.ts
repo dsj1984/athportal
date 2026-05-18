@@ -84,11 +84,9 @@ describe('POST /api/v1/_debug/synthetic-failure — gate closed', () => {
     const app = createApp();
 
     // Act
-    const res = await app.request(
-      '/api/v1/_debug/synthetic-failure',
-      { method: 'POST' },
-      { OBSERVABILITY_SYNTHETIC_FAILURE_ENABLED: 'false' } satisfies RouteEnv,
-    );
+    const res = await app.request('/api/v1/_debug/synthetic-failure', { method: 'POST' }, {
+      OBSERVABILITY_SYNTHETIC_FAILURE_ENABLED: 'false',
+    } satisfies RouteEnv);
 
     // Assert
     expect(res.status).toBe(404);
@@ -121,11 +119,9 @@ describe('POST /api/v1/_debug/synthetic-failure — gate open', () => {
 
     // Act — Hono converts the throw into a 500 by default; the contract
     // we lock here is that captureException receives the typed error.
-    const res = await app.request(
-      '/api/v1/_debug/synthetic-failure',
-      { method: 'POST' },
-      { OBSERVABILITY_SYNTHETIC_FAILURE_ENABLED: 'true' } satisfies RouteEnv,
-    );
+    const res = await app.request('/api/v1/_debug/synthetic-failure', { method: 'POST' }, {
+      OBSERVABILITY_SYNTHETIC_FAILURE_ENABLED: 'true',
+    } satisfies RouteEnv);
 
     // Assert — handler did throw; Hono surfaced a 5xx (the alert path
     // downstream of captureException is exercised by the Sentry SDK in
@@ -149,11 +145,9 @@ describe('POST /api/v1/_debug/synthetic-failure — gate open', () => {
     const app = createApp();
 
     // Act
-    const res = await app.request(
-      '/api/v1/_debug/synthetic-failure',
-      { method: 'GET' },
-      { OBSERVABILITY_SYNTHETIC_FAILURE_ENABLED: 'true' } satisfies RouteEnv,
-    );
+    const res = await app.request('/api/v1/_debug/synthetic-failure', { method: 'GET' }, {
+      OBSERVABILITY_SYNTHETIC_FAILURE_ENABLED: 'true',
+    } satisfies RouteEnv);
 
     // Assert
     expect(res.status).toBe(404);

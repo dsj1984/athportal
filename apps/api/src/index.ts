@@ -10,10 +10,7 @@
 
 import { Hono } from 'hono';
 import { type RequestLoggerEnv, requestLogger } from './middleware/request-logger';
-import {
-  type SyntheticFailureEnv,
-  syntheticFailureRoute,
-} from './routes/debug/synthetic-failure';
+import { type SyntheticFailureEnv, syntheticFailureRoute } from './routes/debug/synthetic-failure';
 
 type AppEnv = RequestLoggerEnv & SyntheticFailureEnv;
 
