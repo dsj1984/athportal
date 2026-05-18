@@ -40,4 +40,17 @@ export {
   type SeedResourceInput,
   type SeedUserOverrides,
 } from './seeds';
-export { authHeaders, type AuthUserLike } from './auth';
+export {
+  authHeaders,
+  mintTestingToken,
+  PERSONA_FIXTURES,
+  resolvePersona,
+  sessionCookieFor,
+  signInAs,
+  type AuthUserLike,
+  type Persona,
+  type PersonaFixture,
+  type PersonaRole,
+  type StorageState,
+  type StorageStateCookie,
+} from './auth';
