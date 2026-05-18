@@ -69,9 +69,15 @@ importers:
 
   apps/api:
     dependencies:
+      '@repo/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       '@sentry/cloudflare':
         specifier: ^10.53.1
         version: 10.53.1
+      hono:
+        specifier: ^4.6.13
+        version: 4.12.19
     devDependencies:
       '@repo/config':
         specifier: workspace:*
