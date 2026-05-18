@@ -30,12 +30,14 @@ import {
   TOLERANCE_PP,
   aggregateCoverageFinal,
   buildEnvelope,
+  collectMeasurements,
   compareTolerance,
   discoverWorkspaces,
   formatRejectionMessage,
   parseArgs,
   rollupRows,
   serialise,
+  workspaceForPath,
 } from '../coverage-baseline.mjs';
 
 // ---------------------------------------------------------------------------
@@ -357,7 +359,7 @@ describe('formatRejectionMessage', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Unprimed baseline (the shipped baselines/coverage.json)
+// Shipped baselines/coverage.json (primed under Story #384)
 // ---------------------------------------------------------------------------
 
 describe('shipped baselines/coverage.json', () => {
@@ -371,7 +373,7 @@ describe('shipped baselines/coverage.json', () => {
     expect(doc.kernelVersion).toBe(KERNEL_VERSION);
   });
 
-  it('carries the envelope shape (rollup."*" with three required axes, empty rows)', () => {
+  it('carries the envelope shape (rollup."*" with three required axes, rows array)', () => {
     const doc = JSON.parse(fs.readFileSync(baselinePath, 'utf8'));
     expect(doc.rollup).toBeDefined();
     expect(doc.rollup['*']).toBeDefined();
@@ -380,14 +382,20 @@ describe('shipped baselines/coverage.json', () => {
       expect(typeof doc.rollup['*'][axis]).toBe('number');
     }
     expect(Array.isArray(doc.rows)).toBe(true);
-    expect(doc.rows).toHaveLength(0);
   });
 
-  it('ships unprimed (rollup."*" all zero)', () => {
+  it('is primed (rollup."*" has non-zero coverage on every axis)', () => {
     const doc = JSON.parse(fs.readFileSync(baselinePath, 'utf8'));
-    expect(doc.rollup['*'].lines).toBe(0);
-    expect(doc.rollup['*'].branches).toBe(0);
-    expect(doc.rollup['*'].functions).toBe(0);
+    expect(doc.rollup['*'].lines).toBeGreaterThan(0);
+    expect(doc.rollup['*'].branches).toBeGreaterThan(0);
+    expect(doc.rollup['*'].functions).toBeGreaterThan(0);
+  });
+
+  it('carries per-workspace rollups for every workspace under apps/* and packages/*', () => {
+    const doc = JSON.parse(fs.readFileSync(baselinePath, 'utf8'));
+    for (const ws of discoverWorkspaces(repoRoot)) {
+      expect(doc.rollup, `missing rollup for ${ws}`).toHaveProperty(ws);
+    }
   });
 });
 
@@ -421,6 +429,159 @@ describe('discoverWorkspaces', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'cov-baseline-empty-'));
     try {
       expect(discoverWorkspaces(root)).toEqual([]);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// workspaceForPath (path → workspace partition — Story #384)
+// ---------------------------------------------------------------------------
+
+describe('workspaceForPath', () => {
+  const repoRoot = '/r';
+  const workspaces = ['apps/api', 'apps/web', 'packages/shared'];
+
+  it('matches an absolute path inside a workspace', () => {
+    expect(workspaceForPath('/r/apps/api/src/x.ts', workspaces, repoRoot)).toBe('apps/api');
+    expect(workspaceForPath('/r/packages/shared/src/y.ts', workspaces, repoRoot)).toBe(
+      'packages/shared',
+    );
+  });
+
+  it('returns null for paths outside any declared workspace', () => {
+    expect(workspaceForPath('/r/scripts/foo.mjs', workspaces, repoRoot)).toBe(null);
+    expect(workspaceForPath('/r/tests/features/a.feature', workspaces, repoRoot)).toBe(null);
+  });
+
+  it('does not match a sibling whose name is a prefix-only substring of the path', () => {
+    // "apps/apifoo" must not match the "apps/api" workspace.
+    expect(workspaceForPath('/r/apps/apifoo/src/x.ts', workspaces, repoRoot)).toBe(null);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// collectMeasurements (producer/consumer alignment — Story #384)
+// ---------------------------------------------------------------------------
+
+describe('collectMeasurements — merged root coverage (Option B)', () => {
+  // Build a synthetic repo with apps/api and packages/shared workspaces
+  // plus a root-level coverage/coverage-final.json that carries rows for
+  // both workspaces and one path outside any workspace.
+  function buildSyntheticRepo() {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'cov-merged-'));
+    for (const ws of ['apps/api', 'packages/shared']) {
+      fs.mkdirSync(path.join(root, ws), { recursive: true });
+      fs.writeFileSync(path.join(root, ws, 'package.json'), `{"name":"@repo/${ws}"}`);
+    }
+    fs.mkdirSync(path.join(root, 'coverage'), { recursive: true });
+    // 80% lines in apps/api, 50% lines in packages/shared, plus an
+    // out-of-workspace path that must be dropped.
+    const merged = {
+      [path.join(root, 'apps/api/src/a.ts')]: makeCoverageFinal({
+        statementsHit: 8,
+        statementsTotal: 10,
+        branchesHit: 2,
+        branchesTotal: 4,
+        functionsHit: 1,
+        functionsTotal: 1,
+      }),
+      [path.join(root, 'packages/shared/src/b.ts')]: makeCoverageFinal({
+        statementsHit: 5,
+        statementsTotal: 10,
+        branchesHit: 2,
+        branchesTotal: 4,
+        functionsHit: 1,
+        functionsTotal: 2,
+      }),
+      [path.join(root, 'scripts/orphan.mjs')]: makeCoverageFinal({
+        statementsHit: 0,
+        statementsTotal: 10,
+        branchesHit: 0,
+        branchesTotal: 0,
+        functionsHit: 0,
+        functionsTotal: 1,
+      }),
+    };
+    fs.writeFileSync(path.join(root, 'coverage', 'coverage-final.json'), JSON.stringify(merged));
+    return root;
+  }
+
+  it('partitions a single root coverage-final.json by workspace prefix', () => {
+    const root = buildSyntheticRepo();
+    try {
+      const { workspaceRollups, rows } = collectMeasurements({ repoRoot: root });
+      expect(workspaceRollups['apps/api']).toEqual({ lines: 80, branches: 50, functions: 100 });
+      expect(workspaceRollups['packages/shared']).toEqual({
+        lines: 50,
+        branches: 50,
+        functions: 50,
+      });
+      // Rows include only paths inside a declared workspace, normalised
+      // to repo-relative POSIX. The scripts/ orphan is dropped.
+      const paths = rows.map((r) => r.path).sort();
+      expect(paths).toEqual(['apps/api/src/a.ts', 'packages/shared/src/b.ts']);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('falls back to per-workspace files when the root coverage is absent', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'cov-fallback-'));
+    try {
+      const ws = 'apps/api';
+      const wsDir = path.join(root, ws);
+      fs.mkdirSync(path.join(wsDir, 'coverage'), { recursive: true });
+      fs.writeFileSync(path.join(wsDir, 'package.json'), `{"name":"@repo/${ws}"}`);
+      const perWs = {
+        [path.join(wsDir, 'src/a.ts')]: makeCoverageFinal({
+          statementsHit: 7,
+          statementsTotal: 10,
+          branchesHit: 0,
+          branchesTotal: 0,
+          functionsHit: 1,
+          functionsTotal: 1,
+        }),
+      };
+      fs.writeFileSync(path.join(wsDir, 'coverage', 'coverage-final.json'), JSON.stringify(perWs));
+
+      const { workspaceRollups } = collectMeasurements({ repoRoot: root });
+      expect(workspaceRollups[ws]).toEqual({ lines: 70, branches: 100, functions: 100 });
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('reports zero rollups for workspaces absent from the merged coverage', () => {
+    // packages/shared exists in the synthetic repo but has no rows in
+    // the merged coverage — it should rollup as zero (still primed,
+    // separate from the unprimed-baseline guard).
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'cov-partial-'));
+    try {
+      for (const ws of ['apps/api', 'packages/shared']) {
+        fs.mkdirSync(path.join(root, ws), { recursive: true });
+        fs.writeFileSync(path.join(root, ws, 'package.json'), `{"name":"@repo/${ws}"}`);
+      }
+      fs.mkdirSync(path.join(root, 'coverage'), { recursive: true });
+      const merged = {
+        [path.join(root, 'apps/api/src/a.ts')]: makeCoverageFinal({
+          statementsHit: 10,
+          statementsTotal: 10,
+          branchesHit: 0,
+          branchesTotal: 0,
+          functionsHit: 1,
+          functionsTotal: 1,
+        }),
+      };
+      fs.writeFileSync(path.join(root, 'coverage', 'coverage-final.json'), JSON.stringify(merged));
+      const { workspaceRollups } = collectMeasurements({ repoRoot: root });
+      expect(workspaceRollups['apps/api']).toEqual({ lines: 100, branches: 100, functions: 100 });
+      expect(workspaceRollups['packages/shared']).toEqual({
+        lines: 0,
+        branches: 0,
+        functions: 0,
+      });
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }

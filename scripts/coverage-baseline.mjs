@@ -124,10 +124,32 @@ export function discoverWorkspaces(repoRoot = REPO_ROOT) {
 
 // Returns the path to a workspace's coverage-final.json (relative to the
 // workspace root), or null when the workspace has not yet produced
-// coverage output.
+// coverage output. Used by the per-workspace fallback path.
 function workspaceCoverageFinal(wsDir, repoRoot = REPO_ROOT) {
   const p = path.join(repoRoot, wsDir, 'coverage', 'coverage-final.json');
   return fs.existsSync(p) ? p : null;
+}
+
+// Returns the path to the repo-root coverage-final.json (produced by the
+// root `pnpm run test:coverage` command, which runs Vitest at the
+// workspace level and emits a single merged Istanbul report covering
+// every workspace's source files), or null when it has not been
+// produced yet.
+function rootCoverageFinal(repoRoot = REPO_ROOT) {
+  const p = path.join(repoRoot, 'coverage', 'coverage-final.json');
+  return fs.existsSync(p) ? p : null;
+}
+
+// Map an absolute file path back to its workspace directory ("apps/api",
+// "packages/shared", …) using the list discovered from
+// pnpm-workspace.yaml. Returns null when the path lives outside every
+// workspace (e.g. scripts/, root-level test fixtures).
+export function workspaceForPath(absPath, workspaces, repoRoot = REPO_ROOT) {
+  const rel = path.relative(repoRoot, absPath).split(path.sep).join('/');
+  for (const ws of workspaces) {
+    if (rel === ws || rel.startsWith(`${ws}/`)) return ws;
+  }
+  return null;
 }
 
 // Parse a single coverage-final.json file (Istanbul/V8 shape) and yield
@@ -312,14 +334,68 @@ export function serialise(envelope) {
 // Modes
 // ---------------------------------------------------------------------------
 
-function collectMeasurements({ coverageRoot, repoRoot = REPO_ROOT } = {}) {
+export function collectMeasurements({ coverageRoot, repoRoot = REPO_ROOT } = {}) {
   const workspaces = discoverWorkspaces(repoRoot);
+
+  // Producer/consumer alignment (Story #384): the root
+  // `pnpm run test:coverage` command emits a single merged
+  // coverage-final.json at `<repoRoot>/coverage/coverage-final.json`
+  // covering every workspace's source files. When that artifact is
+  // present we read it and partition rows by workspace prefix. The
+  // per-workspace fallback (`<ws>/coverage/coverage-final.json`) is
+  // retained so `pnpm --filter <ws> exec vitest run --coverage`
+  // workflows still feed the ratchet when no merged artifact exists.
+  const overrideRoot = coverageRoot ?? repoRoot;
+  const mergedPath = coverageRoot
+    ? path.join(coverageRoot, 'coverage', 'coverage-final.json')
+    : rootCoverageFinal(repoRoot);
+
+  if (mergedPath && fs.existsSync(mergedPath)) {
+    return collectFromMerged({ mergedPath, workspaces, repoRoot });
+  }
+  return collectFromPerWorkspace({ coverageRoot: overrideRoot, workspaces, repoRoot });
+}
+
+function collectFromMerged({ mergedPath, workspaces, repoRoot }) {
+  let parsed;
+  try {
+    parsed = JSON.parse(fs.readFileSync(mergedPath, 'utf8'));
+  } catch (err) {
+    throw new Error(`[coverage-baseline] failed to parse ${mergedPath}: ${err.message}`);
+  }
+  const allRows = aggregateCoverageFinal(parsed);
+  const workspaceRollups = {};
+  const rowsByWorkspace = new Map();
+  for (const ws of workspaces) {
+    rowsByWorkspace.set(ws, []);
+  }
+  const rows = [];
+  for (const r of allRows) {
+    const ws = workspaceForPath(r.path, workspaces, repoRoot);
+    const rel = path.relative(repoRoot, r.path).split(path.sep).join('/');
+    const row = { path: rel, lines: r.lines, branches: r.branches, functions: r.functions };
+    if (ws) {
+      rowsByWorkspace.get(ws).push(row);
+      rows.push(row);
+    }
+    // Files outside any declared workspace (e.g. scripts/) are dropped
+    // from per-workspace rollups and from the row list — the ratchet
+    // operates on workspace-owned source only.
+  }
+  for (const ws of workspaces) {
+    workspaceRollups[ws] = rollupRows(rowsByWorkspace.get(ws));
+  }
+  return { workspaceRollups, rows };
+}
+
+function collectFromPerWorkspace({ coverageRoot, workspaces, repoRoot }) {
   const workspaceRollups = {};
   const rows = [];
   for (const ws of workspaces) {
-    const wsRoot = coverageRoot
-      ? path.join(coverageRoot, ws, 'coverage', 'coverage-final.json')
-      : workspaceCoverageFinal(ws, repoRoot);
+    const wsRoot =
+      coverageRoot && coverageRoot !== repoRoot
+        ? path.join(coverageRoot, ws, 'coverage', 'coverage-final.json')
+        : workspaceCoverageFinal(ws, repoRoot);
     if (!wsRoot || !fs.existsSync(wsRoot)) {
       // No coverage output yet for this workspace — treat as zero
       // rollup. The operator must run `pnpm run test:coverage` before
@@ -334,7 +410,6 @@ function collectMeasurements({ coverageRoot, repoRoot = REPO_ROOT } = {}) {
       throw new Error(`[coverage-baseline] failed to parse ${wsRoot}: ${err.message}`);
     }
     const wsRows = aggregateCoverageFinal(parsed);
-    // Normalise paths to repo-relative POSIX for the envelope rows.
     for (const r of wsRows) {
       const rel = path.relative(repoRoot, r.path).split(path.sep).join('/');
       rows.push({ path: rel, lines: r.lines, branches: r.branches, functions: r.functions });
