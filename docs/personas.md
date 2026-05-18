@@ -10,7 +10,7 @@
 
 Personas don't exist in isolation — they sit inside a structural graph that the [thesis in `features.md`](./features.md#thesis) depends on:
 
-```
+```text
 Organization (1)
   └── Team (1..n)
         ├── Coach (1..n per team)

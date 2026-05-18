@@ -13,11 +13,13 @@
 **Context**: Inline Drizzle ORM query logic scattered across Hono route handlers creates deep coupling between HTTP concerns and database access, makes handlers hard to unit-test in isolation, and produces duplicated query fragments across routes.
 
 **Decision**:
+
 - Introduce a `src/queries/` directory in `@repo/api` with one file per domain (e.g. `teams.queries.ts`, `users.queries.ts`, `events.queries.ts`).
 - Each query module exports typed async functions that accept a `db` instance and return typed results. **No Drizzle query-builder code lives outside these modules.**
 - Route handlers import from `src/queries/` and are forbidden from constructing Drizzle queries directly.
 
 **Consequences**:
+
 - Query functions are individually unit-testable against an in-memory SQLite instance without spinning up a Hono server.
 - New developers have a single discoverable location for all database-access patterns.
 - Query reuse across routes is explicit rather than copy-pasted.
@@ -31,11 +33,13 @@
 **Context**: Without a central handler, every route grows its own try/catch block and error response shapes drift — some return `{ error: string }`, others `{ message: string }`, some leak raw exception messages to the client.
 
 **Decision**:
+
 - Introduce a `withErrorHandler(handler)` utility in `apps/api/src/lib/errors.ts` that wraps any Hono route handler in a standardized try/catch.
 - All caught errors are mapped to the canonical `{ success: false, error: { code, message } }` shape defined in `@repo/shared/schemas`.
 - Complement with `findOrFail(queryFn)` (throws typed 404) and `requireOwnership(record, userId)` (throws typed 403) to eliminate the most common inline guard patterns.
 
 **Consequences**:
+
 - Error response shape is guaranteed consistent across all routes — the contract every contract test asserts against.
 - Route-handler code is leaner (the happy path only).
 - `findOrFail` and `requireOwnership` are reusable across all domains without per-handler boilerplate.
@@ -49,11 +53,13 @@
 **Context**: Ad-hoc inline implementations of common UI states (loading spinners, empty-state placeholders, user avatars) proliferate across feature components if unmanaged — identical JSX duplicated across dozens of files with inconsistent accessibility attributes and styling.
 
 **Decision**:
+
 - Create a `src/components/ui/` directory in `@repo/web` housing reusable primitives (`LoadingSpinner.tsx`, `EmptyState.tsx`, `Avatar.tsx`, etc.).
 - Each component exports a typed props interface and follows the project accessibility baseline (WCAG 2.1 AA).
 - Feature components import from `@/components/ui/`. Inline re-implementations are deleted.
 
 **Consequences**:
+
 - Single implementation to maintain and accessibility-audit.
 - Consistent visual behaviour across all surfaces.
 - Props interfaces are exported, enabling consumers to extend or compose without guessing the API.
@@ -67,11 +73,13 @@
 **Context**: Test files constructing raw database records inline using `{ id: 'test-1', name: 'Test User', ... }` literals are brittle (schema changes require hunting down every test), incomplete (missing required fields silently default to `undefined`), and inconsistently shaped across the suite.
 
 **Decision**:
+
 - Introduce a test data factory in `packages/shared/src/testing/factories/` that exports a typed builder for each major entity (`buildUser`, `buildTeam`, `buildEvent`, …).
 - Each builder accepts a partial override object and merges it with safe, realistic defaults. Defaults are derived from the Zod schema to stay in sync with validation rules.
 - All API and shared unit/contract tests that construct test records use these builders exclusively.
 
 **Consequences**:
+
 - Schema changes require updating one factory function rather than dozens of test files.
 - Test intent is clearer — overrides express only the data relevant to the specific scenario.
 - Factories serve as living documentation of the minimum valid shape for each entity.
@@ -85,12 +93,14 @@
 **Context**: New users synced from Clerk can hit authenticated API endpoints before the `user.created` webhook finishes writing the corresponding row into `users`, producing spurious 401s and empty dashboards. Inferring "needs onboarding" from sentinel values (`first_name === 'Unknown'`, `dob IS NULL`) and a dismissible client-side modal lets users close the flow without completing it.
 
 **Decision**:
+
 - Add a dedicated `onboarded_at` (`TEXT`, nullable, ISO 8601) column to `users` as the single source of truth for onboarding completion.
 - `requireInternalUser` middleware (`apps/api/src/middleware/auth.ts`) performs a **Just-In-Time** upsert: if no row exists for the verified Clerk ID, insert a placeholder row inline and continue the request. This decouples the app from Clerk webhook latency.
 - Enforce onboarding server-side via Astro SSR middleware (`apps/web/src/middleware.ts`). Authenticated users whose `onboarded_at` is `NULL` are redirected to `/onboarding` with HTTP 307, except on `/onboarding` itself, `/api/*`, and asset routes.
 - Replace any dismissible modal with a dedicated full-page route (`/onboarding`) that submits to `POST /api/v1/auth/onboard`. The endpoint validates the payload with `OnboardUserInputSchema` (Zod) and stamps `onboarded_at`.
 
 **Consequences**:
+
 - The Clerk webhook is no longer on the critical path for user creation; webhook race conditions are eliminated.
 - Onboarding cannot be skipped from the client — the gate is enforced by server middleware.
 - Every authenticated user is guaranteed to have either a fully-onboarded row or a placeholder row awaiting onboarding — no 404/401 "user not found" state remains.
@@ -104,11 +114,13 @@
 **Context**: User-visible content (highlights, comments, posts) needs full lifecycle management. Hard deletes break referential integrity for mentions, likes, and downstream analytics. Storing share passwords requires a trust model that never exposes plaintext even to operators with DB access.
 
 **Decision**:
+
 - Use **soft deletes** uniformly on user-visible content via a nullable `deleted_at` (ISO 8601) column. All read queries filter `deleted_at IS NULL`; cascade-deletion of child rows on parent delete is a write-time responsibility of the query module.
 - Store share passwords as **bcrypt hashes** (cost factor ≥12 per the security baseline) in dedicated `*_password_hash` columns. The API hashes on write with `bcrypt.hash` and verifies on the unlock endpoint with `bcrypt.compare`. Plaintext passwords are never persisted and never echoed in responses.
 - For idempotent toggle actions (likes, bookmarks), model them as join tables with unique composite indexes rather than denormalized counters on the parent row — keeps the write path idempotent and avoids lock contention.
 
 **Consequences**:
+
 - Recovery of accidentally deleted content is a data-layer decision rather than a customer-support escalation — any retention job can reinstate rows by clearing `deleted_at`.
 - Analytics queries must explicitly filter `WHERE deleted_at IS NULL` or they will double-count deleted rows.
 - Share password rotation is a single `PATCH` — the old hash is overwritten; passing `null` clears it (public link).
@@ -122,11 +134,13 @@
 **Context**: The client-supplied `Content-Type` header on a multipart part is trivially spoofed (an attacker can upload an SVG or HTML file labelled `image/png` and serve XSS to every viewer). A malformed image of the wrong dimensions also degrades the surface that renders it.
 
 **Decision**:
+
 - Upload endpoints **ignore the multipart `Content-Type` header entirely.** The handler reads the file bytes, sniffs the magic-number signature, and accepts only the explicitly-allowed MIME types. Anything else is rejected with `error.code = INVALID_FILE_TYPE`.
 - Byte-size and dimension caps are enforced server-side before the asset is persisted. Failures return `FILE_TOO_LARGE` or `IMAGE_TOO_SMALL` so the client can render a precise message.
 - Only upload endpoints may write asset URL columns (`cover_photo_url`, `avatar_url`, etc.). Profile/entity `PATCH` routes strip those fields if present, removing the URL-string surface from the trust boundary.
 
 **Consequences**:
+
 - Spoofed-MIME XSS via any upload surface is not reachable from a normal upload.
 - Client-side validation is a UX optimization only — the server is the source of truth.
 - Any color/CSS values accepted from users (e.g. branding colors) are regex-validated before being injected as CSS custom properties, closing the matching style-injection vector.
@@ -140,6 +154,7 @@
 **Context**: Discoverable entities (organizations, teams, events, tournaments) need stable, human-readable URLs for anonymous read access by search engines and share links. They cannot be addressable only by opaque UUIDs gated behind authentication.
 
 **Decision**:
+
 - Add `slug` (unique, kebab-case, generated by a shared `slugify` util in `@repo/shared`) and `isPublic` (boolean, default `false`) columns to every publicly-discoverable entity.
 - Introduce a `publicRead` middleware in `apps/api` that opens specific GET routes to anonymous callers and applies an **IP-keyed token-bucket rate limit** (separate from the authenticated quota).
 - Public detail pages resolve by slug first, falling back to ID for back-compat. Slug routes are canonical; ID routes 301-redirect to the slug variant when a slug is present.
@@ -147,6 +162,7 @@
 - Slug uniqueness is enforced at the DB level; the slugify util appends a numeric suffix on collision so authors are not blocked at write time.
 
 **Consequences**:
+
 - Search engines can index public pages; structured-data and OG/Twitter card emitters standardize the per-page head.
 - Anonymous abuse surface is bounded by the IP rate limiter — exceeding the bucket returns `429` with `RATE_LIMITED`.
 
@@ -159,6 +175,7 @@
 **Context**: Without a canonical document telling authors where a given assertion belongs, "where do I put this test?" consumes review cycles and produces flaky, overlapping coverage. The submodule-tracked `.agents/rules/testing-standards.md` defines a three-tier pyramid (unit, contract, acceptance) and a bidirectional placement rule; the project needs a project-level companion that maps those generic rules onto concrete tools and workspaces.
 
 **Decision**:
+
 - Adopt a three-tier pyramid — **unit** (Vitest, pure logic, colocated), **contract** (Vitest + ephemeral SQLite, `*.contract.test.ts`, wire shape + DB side-effects), **acceptance** (Playwright-bdd with `.feature` files; Detox binder at v1.0) — as the canonical testing model.
 - Codify the **assertion-placement rule**: HTTP status codes, wire shapes, error envelopes, and DB-state assertions live **only** at the contract tier. User-visible outcomes live **only** at the acceptance tier. Pure logic lives **only** at the unit tier. Duplicated assertions across tiers are review blockers.
 - Publish [`docs/testing-strategy.md`](./testing-strategy.md) as the project-level single source of truth and point `AGENTS.md`, `CLAUDE.md`, and `docs/patterns.md` at it rather than duplicating rules.
@@ -166,6 +183,7 @@
 - Provide a shared contract-test harness in `@repo/shared/src/testing/` (`freshDb()` / `createTestApp()` / `seedUser()`) so contract tests never hand-roll DB bootstraps.
 
 **Consequences**:
+
 - Authors pick a tier deterministically by the class of assertion — review cycles stop re-litigating placement.
 - RBAC correctness is covered exhaustively at the unit tier (every `(role, resource, action)` triple) and re-enforced at the contract tier on real routes.
 
@@ -178,6 +196,7 @@
 **Context**: When mobile native apps ship at v1.0, the BDD acceptance runner must bind the shared `tests/features/**` Gherkin corpus to a mobile step library so cross-platform scenarios execute on iOS and Android without duplicating authoring. The two candidates evaluated in the legacy project were Detox and Maestro.
 
 **Decision**:
+
 - **Adopt Detox** as the mobile acceptance runner. Bindings live at `apps/mobile/e2e/steps/**`; the binder that converts `tests/features/**` into Jest+Detox tests lives at `apps/mobile/e2e/bind-features.mjs`.
 - **Mirror the web runner's step-library organization** in Detox (`auth.steps.ts`, `navigation.steps.ts`, `form.steps.ts`, `visibility.steps.ts`, `rbac.steps.ts`, …). New cross-platform step phrases land on both platforms in the same change.
 - **Extend `scripts/lint-steps.mjs`** to cover both `apps/web/e2e/steps/**` and `apps/mobile/e2e/steps/**` with the same forbidden-pattern list — one linter, one vocabulary contract.
@@ -187,6 +206,7 @@
 **Rejected — Maestro as primary runner**: Maestro flows are YAML, not TypeScript; there is no analogue to a step-definition file. Adding a new cross-platform phrase requires editing an adapter script rather than a `.steps.ts` file beside its web twin, and the forbidden-pattern linter cannot be applied to YAML without parallel maintenance.
 
 **Consequences**:
+
 - Step-library and linter parity is structural, not aspirational.
 - Tag-filtered project matrix (`smoke` / `risk-high` / `nightly` / `default`) carries over from web to mobile unchanged.
 - A Cucumber-compatible report from Detox+Jest keeps downstream report ingestion (`/sprint-testing`) working without a new format.
@@ -200,6 +220,7 @@
 **Context**: The security baseline requires `pnpm audit` to run before every release. Without a required CI gate, that rule is unenforced — a reachable High/Critical advisory can land on `main` silently.
 
 **Decision**:
+
 - **Promote a `supply-chain-security` job to a required check** on `main`. `build-and-e2e` (and any mobile equivalents) list it in `needs:` so a failed audit blocks the deploy-targeted pipeline.
 - **Block on High and Critical advisories.** A `scripts/audit-check.mjs --level=high --prod` script exits non-zero on any unsuppressed High/Critical advisory in the production graph. Moderate findings surface in the JSON artifact for review but do not block.
 - **`pnpm.overrides` is the primary remediation lever.** When a transitive CVE has a patched upstream version, the fix lands as an `overrides` entry in `package.json` — not as a silenced advisory.
@@ -207,6 +228,7 @@
 - **Upload `audit.json` as a 14-day artifact** so reviewers can triage Moderate findings without re-running the audit locally.
 
 **Consequences**:
+
 - `main` cannot ship a new reachable High/Critical advisory without an explicit suppression.
 - Override entries become a hygiene artifact — each pinning a security floor has a paired audit-finding ID.
 
@@ -219,6 +241,7 @@
 **Context**: The MVP beta needs the minimum viable production stack to leave a black-box state: error tracking across runtimes, structured logs with edge-side PII redaction, latency/error dashboards on top-N routes, external uptime probes, and an alert path that reaches the operator.
 
 **Decision**:
+
 - **Sentry** is the error-tracking vendor across `apps/api`, `apps/web`, and (at v1.0) `apps/mobile`. First-party SDKs cover all runtimes (`@sentry/cloudflare`, `@sentry/astro` + `@sentry/react`, later `@sentry/react-native`). Sourcemap upload wired into CI per runtime.
 - **Cloudflare Workers Analytics Engine + Logpush** is the structured-log + dashboard surface for `apps/api`. The AE binding (`LOG_AE`) lands one row per request from the request-completion logger middleware; Logpush forwards full structured payloads to a managed sink for retention and search.
 - **Better Stack** is the external uptime-probe vendor. Probes MUST be hosted by a vendor independent of Cloudflare so a Cloudflare-side outage cannot silence its own alerts.
@@ -231,6 +254,7 @@
 **Rejected — Cloudflare tail logs only**: Tail logs do not symbolicate stack traces against uploaded sourcemaps; do not cover web SSR errors or mobile JS crashes.
 
 **Consequences**:
+
 - The redaction allowlist at `packages/shared/src/observability/redaction.ts` is the single trust boundary for log egress.
 - A synthetic-failure endpoint (gated by env flag) is the operator's validated end-to-end alert path.
 
@@ -243,6 +267,7 @@
 **Context**: The production deploy pipeline needs (a) staging deploys with no approval friction so every push to `main` rolls forward immediately, (b) production deploys behind a manual-approval gate that cannot be bypassed by accidentally tagging a release or merging a hot-fix, (c) per-environment secret scoping, and (d) a documented rollback procedure with an audit trail.
 
 **Decision**:
+
 - **Two workflows, two environments, two triggers.** `.github/workflows/deploy-staging.yml` is triggered on `push` to `main` and binds every job to `environment: staging`. `.github/workflows/deploy-production.yml` is triggered on `workflow_dispatch` only — no `push` or `schedule` trigger — and binds every job to `environment: production`.
 - **GitHub Environments are the safety boundary.** Secrets, approvers, and deploy targets live in the Environment, not on the repo. The production Environment carries a Required-reviewers protection rule with at least one named approver. Nothing in the workflow YAML can bypass it.
 - **`scripts/check-env.mjs --deploy --env <name>`** is the per-environment fail-fast. Each deploy workflow runs this as a `validate-*-config` job that every deploy job depends on.
@@ -254,6 +279,7 @@
 **Rejected — push-triggered production with branch protection**: This repo doesn't use PRs; branch-protection-based reviewers don't apply.
 
 **Consequences**:
+
 - A leaked staging credential cannot reach production.
 - Production rollback is operator-driven via the production workflow; staging is untouched.
 
@@ -266,6 +292,7 @@
 **Context**: Bundle-size baselines live in `baselines/bundle-size.json` and `.size-limit.json`. Without an ADR, the lowest-friction reaction to a failing build is to bump the budget — that path defeats the gate and silently raises the regression bar over time. Cloudflare Workers also impose a hard 1 MiB compressed upload cap; raising that is not negotiable.
 
 **Decision**:
+
 - **An overrun is a regression to fix by default.** When `pnpm bundle-size:check` fails, the first remediation is to land the change without the size delta (strip a dependency, lazy-load the surface, split into a route off the critical path). Bumping the budget is the **last** lever, not the first.
 - **Raising a budget requires a paired `rationale` update in the same change**, naming the dependency or feature that justifies the headroom. Bumps exceeding +25% of the previous limit additionally name the alternative considered and why it was rejected.
 - **The Cloudflare 1 MiB compressed Worker cap is non-negotiable.** The script warns at 90% of cap and fails at 100% regardless of per-bundle budget. Approaching the cap triggers a planning Story for a Worker split, not a budget bump.
@@ -277,6 +304,7 @@
 **Rejected — auto-bump on first overrun**: Directly subverts the gate's intent — converts it into an audit log no one reads.
 
 **Consequences**:
+
 - The `rationale` field becomes the per-bundle changelog.
 - Approaching the 1 MiB cap is a planning trigger, not a budget edit.
 
@@ -289,6 +317,7 @@
 **Context**: Coverage % without a per-package ratchet lets a package decay from 88% to 30% silently while passing every other gate. The seven-baseline quality-ratchet model requires a dedicated coverage floor alongside lint, CRAP, maintainability, mutation, lighthouse, and bundle-size.
 
 **Decision**:
+
 - Adopt a per-workspace coverage baseline at `baselines/coverage.json` gated by `scripts/coverage-baseline.mjs`.
 - **Floor per workspace = `current − 2 percentage points`** (absolute, not relative). The check runs in the `test` and `test-mobile` jobs immediately after coverage capture.
 - Refresh procedure: run `pnpm test:coverage` → `pnpm coverage:update` (overwrites the baseline file with current values + `generatedAt` timestamp + tolerance metadata) → commit with subject `chore(baseline): refresh coverage baseline (-2pp buffer)`.
@@ -299,6 +328,7 @@
 **Rejected — per-metric tolerances (lines vs branches vs functions vs statements)**: Premature complexity. The JSON shape supports it later without breaking the file format.
 
 **Consequences**:
+
 - Coverage drift is visible at CI time, not at quarterly audit.
 - The check is per-workspace, not aggregate — a 5pp drop in `@repo/mobile` cannot be hidden by a 5pp gain in `@repo/api`.
 - The initial commit ships unprimed (`primed: false`, `null` per-workspace entries). The operator runs `pnpm test:coverage && pnpm coverage:update` once to prime real numbers.
@@ -312,6 +342,7 @@
 **Context**: The HTTP API surface needs a single, stable mount point so clients (web, mobile-web PWA, later native mobile) can pin to a versioned base URL without re-discovering route shape on every release. Pre-MVP, the API is still finding its shape — every Epic that lands routes may legitimately need to rename a path, restructure a payload, or remove a field that turned out to be wrong. Post-MVP, the same flexibility is a stability liability: a paying client cannot tolerate a silent breaking change to `GET /api/v1/teams/:id`. The project also needs an explicit answer to "what happens when we *do* need to break a v1 contract after MVP launch?" so the question doesn't get re-litigated per Epic.
 
 **Decision**:
+
 - **All API routes mount under `/api/v1`.** Every router under `apps/api/src/routes/v1/**` composes onto this prefix; no route ships at `/api/<anything-else>` or at the bare `/` path (excepting the health probe `/api/v1/health` and any Cloudflare-required well-known endpoints). The `v1` segment is a literal, not a build-time variable — clients pin to it directly.
 - **Pre-MVP, breaking changes inside `/api/v1` are allowed.** Until MVP launch the API has no external paying clients; the cost of a renamed path or restructured payload is bounded to the same-PR client update. Document the breakage in the Epic's PR body and update the matching Zod schema in `@repo/shared` in the same change — `architecture.md` § 5 (Safety Constraints) already requires this pairing.
 - **Post-MVP, `/api/v1` is additive-only.** Once MVP ships, `/api/v1` accepts only backwards-compatible changes: new routes, new optional request fields, new response fields. Removing a field, renaming a path, tightening a validator, or changing a status-code semantic is **not** an additive change and **must not** land on `/api/v1`.
@@ -325,6 +356,7 @@
 **Rejected — header-based versioning (`Accept: application/vnd.athportal.v2+json`)**: Hides the version from caches, CDN routing rules, log dashboards, and operator-readable URLs. Worse ergonomics for the same correctness guarantees as path-versioned mounts.
 
 **Consequences**:
+
 - The `apps/api/src/routes/v1/**` directory shape is a load-bearing convention — moving a router out of that tree is a breaking change subject to this ADR.
 - Foundation Epics that touch the API entrypoint (router composition, OpenAPI emission, Hono RPC client typing) reference this ADR rather than re-deciding the prefix.
 - Post-MVP, every Epic that lands routes has a checklist item: "is this additive? if not, does it belong under `/api/v2`?". The answer lives in the Epic PR body.
@@ -347,6 +379,7 @@ introduce parallel quality workflows and the "which checks are
 required?" question becomes a recurring review topic.
 
 **Decision**:
+
 - **The `quality` workflow is the canonical PR quality gate.** It is the
   required check listed in
   [`docs/runbooks/branch-protection-setup.md`](./runbooks/branch-protection-setup.md)
@@ -365,6 +398,7 @@ required?" question becomes a recurring review topic.
   offline without a push.
 
 **Consequences**:
+
 - The branch-protection ruleset has a stable, named target —
   re-applying it after a fork is mechanical.
 - The "which workflow gates the PR?" question has a single answer at any
@@ -394,6 +428,7 @@ and a workflow that requires it, the destructive change ships when the
 first reviewer is moving fast and the diff happens to be small.
 
 **Decision**:
+
 - **The `migration::destructive` PR label is the canonical marker for
   destructive schema changes.** Any PR whose diff adds a `DROP`,
   `RENAME`, or `NOT NULL ADD` clause inside a Drizzle migration file
@@ -448,6 +483,7 @@ label drops the author's accountability and removes the moment of
 deliberation the label is there to create.
 
 **Consequences**:
+
 - The `migration::destructive` label is part of the repo's required-PR
   vocabulary; adding the workflow as a required check on the `main`
   ruleset is the operator's responsibility per the
@@ -477,6 +513,7 @@ deliberation the label is there to create.
 The dimension is per-method (not per-file or per-workspace) because CRAP is a method-level metric and rolling it up to file or workspace granularity erases the signal — a workspace's average CRAP can stay flat while one method's score doubles. The existing six dimensions already prove that per-row ratchets land cleanly on this stack ([`scripts/lint-baseline.mjs`](../scripts/lint-baseline.mjs), [`scripts/coverage-baseline.mjs`](../scripts/coverage-baseline.mjs)), and the shared envelope contract supports a `rows: [{path, method, startLine, crap}]` shape directly.
 
 **Decision**:
+
 - Adopt a per-method CRAP baseline at `baselines/crap.json` gated by [`scripts/crap-baseline.mjs`](../scripts/crap-baseline.mjs).
 - **Tolerance per method = `current ≤ prev × 1.05`** (relative-5%, lower-is-better). A method whose CRAP score rises by 5% or less of the prior baseline value passes; a method whose score rises by more than 5% fails the gate. The relative form scales naturally — a method scoring 4 has a 0.2-point headroom, a method scoring 100 has a 5-point headroom — so the ratchet stays meaningful across the score range.
 - **Row identity = `path:startLine:method`**. A refactor that moves a method down by one line is a row rename (the prior row identifier disappears, a new one appears with `prev = 0`); the new row is treated as a fresh registration that does not fire the gate. This matches the harness's "deletions are never regressions" invariant from [Story #210](../packages/baselines/src/compare.ts).
@@ -490,6 +527,7 @@ The dimension is per-method (not per-file or per-workspace) because CRAP is a me
 **Rejected — flat absolute cap (e.g. `crap ≤ 20` for every method)**: The cap matches the conventional CRAP refactor threshold and is captured in the rollup's `methodsAbove20` axis for visibility, but using it as the gate would block legitimate complex code that has invested in coverage. Methods above 20 are surfaced via the rollup; they are not auto-failed.
 
 **Consequences**:
+
 - CRAP regressions are visible at CI time, not at quarterly audit. The `crap-baseline` job in [`.github/workflows/quality.yml`](../.github/workflows/quality.yml) is the binding gate.
 - The script's `:update` path is the only writer of `baselines/crap.json`. Hand-edits are rejected by reviewers and would be caught at the next `:update` because the canonical row order and the stable JSON serialisation produce byte-identical output across runs.
 - The initial commit ships unprimed (empty rows, zero rollup) per the ADR-015 precedent; the operator runs `pnpm run crap:update` once after this Epic merges to prime real measurements.
@@ -507,6 +545,7 @@ The dimension is per-method (not per-file or per-workspace) because CRAP is a me
 The mandrel framework default for this dimension targets the rollup `min` axis with a floor of 70, not a per-row `mi` tolerance: a single file dragging the whole-repo min below 70 is the canonical "this module needs to be split or simplified" signal, while files above the floor have already paid their structural-hygiene cost. Per-row tolerance is also possible — the harness supports it via `compareWithTolerance(..., { axes: ['mi'] })` — but a per-row ratchet would either be too tight (every refactor that touches a borderline file would re-baseline) or too loose (a 5% relative tolerance on a file scoring 100 allows a five-point drop, which on a 0–171 scale is meaningful drift). The rollup `min` floor sidesteps both failure modes by anchoring the gate to the project's worst-scoring file regardless of how the per-row values churn.
 
 **Decision**:
+
 - Adopt a per-file MI baseline at `baselines/maintainability.json` gated by [`scripts/maintainability-baseline.mjs`](../scripts/maintainability-baseline.mjs).
 - **The gate is `rollup['*'].min >= 70`** (the mandrel framework default). A `:check` run that finds the whole-repo min below 70 fails non-zero and the stderr log names the file whose MI matches the min — the file dragging the gate down. Per-row `mi` values are recorded and surfaced via the per-component rollups (`apps/<name>`, `packages/<name>`) for visibility, but **only the rollup `*` `min` axis fires the gate**.
 - **The floor lives in ADR-019, not in the baseline file.** `:update` regenerates the snapshot from the current tree; it does not lower the floor. A refreshed `baselines/maintainability.json` whose `rollup['*'].min` is below 70 still fails `:check`. Moving the floor requires a new ADR superseding this one — the baseline file is a measurement, not a policy.
@@ -522,6 +561,7 @@ The mandrel framework default for this dimension targets the rollup `min` axis w
 **Rejected — module-level MI from the `worstMethod` field** (per-method MI): MI is canonically a module-level metric; rolling up per-method MI to the file level erases the signal the file-level MI carries (Halstead volume across the whole module, not a worst-method outlier). CRAP is the per-method dimension; MI is the per-file companion. The two dimensions are complementary, not redundant.
 
 **Consequences**:
+
 - Maintainability regressions are visible at CI time, not at quarterly audit. The `maintainability-baseline` job in [`.github/workflows/quality.yml`](../.github/workflows/quality.yml) is the binding gate.
 - The script's `:update` path is the only writer of `baselines/maintainability.json`. Hand-edits are rejected by reviewers and would be caught at the next `:update` because the canonical row order and the stable JSON serialisation produce byte-identical output across runs.
 - The initial commit ships unprimed (empty rows, zero rollup) per the ADR-015 and ADR-018 precedents; the operator runs `pnpm run maintainability:update` once after this Epic merges to prime real measurements. Until the prime, the script's `:check` mode emits a skip-the-gate message — the unprimed envelope is the green light by design.
@@ -540,3 +580,4 @@ New ADRs adopt a one-file-per-record layout under [`docs/decisions/`](./decision
 - [`0003-uptime-vendor.md`](./decisions/0003-uptime-vendor.md) — Better Stack as the external uptime-probe vendor (Story #254). Probes hosted on infrastructure independent of Cloudflare (AWS / Hetzner / GCP probe network); three monitors at 60-second cadence with two-consecutive-failure threshold; IaC at `infra/uptime/betterstack.yml`. Builds on ADR-012 (observability vendor stack).
 - [`0004-acceptance-email-capture.md`](./decisions/0004-acceptance-email-capture.md) — In-memory `EmailInbox` fixture (not a Mailpit container) as the email-capture mechanism for the Epic #5 observability acceptance scenarios (Story #307). Vendor emails originate from SaaS — fidelity is identical between the two designs, so the cheaper hermetic option wins. Builds on ADR-009 (BDD acceptance layer) and ADR-012 (observability vendor stack).
 - [`0005-dependency-update-posture.md`](./decisions/0005-dependency-update-posture.md) — Renovate (not Dependabot) as the scheduled dependency-update bot (Story #311). Weekly Monday window in `America/New_York`, vendor-family grouping, patch / minor auto-merge, major-version approval via the Dependency Dashboard, `vulnerabilityAlerts` running out-of-band. Builds on ADR-011 (supply-chain CVE gate) — Renovate proposes updates; the CVE gate decides whether they ship.
+- [`0006-local-hook-stack.md`](./decisions/0006-local-hook-stack.md) — Local hook stack v1: `knip` (strict, no baseline; `--include files,dependencies` at pre-push and full strict pass in CI), `markdownlint-cli2` (relaxed line-length and table-style; full repo at pre-push, staged at pre-commit), `secretlint` (pre-commit only — TruffleHog + gitleaks cover the post-push window), and the first `.husky/pre-push` (sequential `typecheck → lint → knip:fast → lint:baseline:check → lint:steps`, < 15 s wall-clock target). Story #310.

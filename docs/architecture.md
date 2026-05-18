@@ -66,7 +66,7 @@ Expo (React Native) workspace. Does not exist at MVP. Wired in as part of the v1
 
 Clerk webhooks are a defensive sync only. The primary path is **Just-In-Time** provisioning in middleware:
 
-```
+```text
 Browser → Clerk session → apps/web middleware → @repo/api middleware/auth.ts
   └→ requireInternalUser():
        ├─ if users row exists by clerkId → attach to context
@@ -78,7 +78,7 @@ This eliminates the "Clerk webhook race" where a webhook had not landed before t
 
 ### 3.2 Mux direct upload + playback
 
-```
+```text
 Web UI → POST /api/v1/media/upload-sessions (returns Mux signed-upload URL)
   → client uploads bytes directly to Mux
   → Mux fires webhook → /webhooks/mux → highlights.status = 'preparing' → 'ready' | 'errored'

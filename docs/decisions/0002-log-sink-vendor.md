@@ -71,7 +71,7 @@ substitution).
 LogEvent per request. At MVP beta volume — back-of-envelope ~100k
 requests/day from a few hundred athletes and coaches — each event
 serializes to roughly 1.5 KB after redaction (headers + redacted query
-+ a handful of metadata fields). 100k events × 1.5 KB = 150 MB/day,
+plus a handful of metadata fields). 100k events × 1.5 KB = 150 MB/day,
 ~4.5 GB/month. The Team-plan ceiling above carries 30-day retention
 headroom for a single-month traffic spike up to ~10× the estimate
 before crossing $30/month.

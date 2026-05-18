@@ -24,7 +24,10 @@ land in subsequent Epics. Capability tracking lives on
 | Lint (type-aware) | ESLint 9 (flat) + `typescript-eslint` | per-workspace `eslint.config.*` |
 | TypeScript | strict | [`tsconfig.base.json`](./tsconfig.base.json) |
 | Lint baseline ratchet | [`scripts/lint-baseline.mjs`](./scripts/lint-baseline.mjs) | snapshot at [`.lint-baseline.json`](./.lint-baseline.json) |
-| Commit hooks | Husky (pre-commit, commit-msg) + commitlint | [`commitlint.config.js`](./commitlint.config.js) |
+| Commit hooks | Husky (pre-commit, commit-msg, pre-push) + commitlint + lint-staged | [`commitlint.config.js`](./commitlint.config.js), [`lint-staged.config.js`](./lint-staged.config.js) |
+| Cross-file dead-code | knip (strict, no baseline — ADR-0006) | [`knip.config.ts`](./knip.config.ts) |
+| Markdown lint | markdownlint-cli2 (defaults + relaxed line-length / table-style) | [`.markdownlint.jsonc`](./.markdownlint.jsonc) |
+| Local secret scan | secretlint (recommended preset; pre-commit only — ADR-0006) | [`.secretlintrc.json`](./.secretlintrc.json), [`.secretlintignore`](./.secretlintignore) |
 
 See [`docs/patterns.md` § _Linting: Biome ↔ ESLint scope boundary_](docs/patterns.md#linting-biome--eslint-scope-boundary)
 for which tool owns which rule class.
@@ -36,16 +39,48 @@ for which tool owns which rule class.
 ```bash
 pnpm install                       # install workspace deps
 cp .env.example .env               # placeholders only — fill in locally
-pnpm run lint                      # Biome + ESLint
+pnpm run lint                      # Biome + ESLint + markdownlint (parallel)
+pnpm run lint:secrets              # secretlint (matches the pre-commit gate)
+pnpm run knip:strict               # full unused-files / -exports / -deps pass
 pnpm run typecheck                 # TypeScript across all workspaces
 pnpm run test                      # Vitest across all workspaces
 pnpm run build                     # Turbo build
-pnpm run quality:ci-local          # the full CI chain (lint → typecheck → test → build → baseline)
+pnpm run quality:ci-local          # the full CI chain (lint → typecheck → test → build → baseline + knip + lint:md + lint:secrets)
 ```
 
 PR titles follow Conventional Commits (`feat:`, `fix:`, `chore:`, …) —
 the squash-merge title becomes the commit on `main` and is parsed by
 release-please. The `commit-msg` Husky hook enforces the same locally.
+
+---
+
+## Local hooks
+
+Three Husky hooks fire in front of every commit and push. The full
+rationale (per-surface posture, wall-clock budgets, why each gate fires
+where it does) is in [ADR-0006](./docs/decisions/0006-local-hook-stack.md).
+
+| Hook | When it runs | What it gates | Authoritative file |
+| --- | --- | --- | --- |
+| `pre-commit` | `git commit` | Refuses changes under `.agents/` (submodule); biome on staged files; lint-staged fan-out (markdownlint on staged `.md`, secretlint on all staged); step-vocabulary linter on staged step / feature files | [`.husky/pre-commit`](./.husky/pre-commit) |
+| `commit-msg` | `git commit` (after message edit) | commitlint against `@commitlint/config-conventional` — non-conventional subjects are rejected | [`.husky/commit-msg`](./.husky/commit-msg) |
+| `pre-push` | `git push` | Sequential, fail-fast: `typecheck → lint (biome + eslint + markdownlint, parallel inside) → knip:fast → lint:baseline:check → lint:steps`. Wall-clock target < 15 s on a clean tree | [`.husky/pre-push`](./.husky/pre-push) |
+
+**`--no-verify` policy.** Bypassing any of the three hooks
+(`git commit --no-verify`, `git push --no-verify`, `--no-gpg-sign`, or
+any equivalent flag) is **forbidden without explicit operator
+authorization** per [`.agents/rules/git-conventions.md`](./.agents/rules/git-conventions.md)
+§ "Push Validation & Reliability". If a hook fails, investigate the
+underlying cause and fix it; do not paper over a failure with `--no-verify`.
+
+**Local mirror of CI.** The pre-push chain is intentionally a
+**subset** of the CI gate in [`quality.yml`](./.github/workflows/quality.yml).
+CI re-runs everything plus the slow gates that don't fit a sub-15 s
+budget (coverage / CRAP / maintainability / bundle-size baselines,
+mutation testing, lighthouse audits, the supply-chain audit, the
+TruffleHog + gitleaks secret-scanner pair). A green pre-push does not
+guarantee a green PR — it guarantees that the cheapest-to-detect
+regression classes are caught before the push reaches the remote.
 
 ---
 

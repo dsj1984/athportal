@@ -1,0 +1,33 @@
+#!/usr/bin/env sh
+# Pre-push hook — Athlete Portal.
+#
+# Local-mirror of the PR-blocking quality gates so a push never sends
+# work that CI will reject. The chain is sequential and fail-fast; no
+# `--no-verify` escape hatch is sanctioned (see `.agents/rules/git-conventions.md`
+# § Push Validation & Reliability and ADR-0006).
+#
+# Order:
+#   1. typecheck     — strict TS across all workspaces (fastest fail).
+#   2. lint          — biome + eslint + markdownlint (parallelized in
+#                      the `lint` task itself).
+#   3. knip:fast     — files + dependencies surfaces only; the strict
+#                      unused-exports run is CI-only (it traverses the
+#                      whole type graph and is too slow for a push hook).
+#   4. lint:baseline — guards against new biome warnings (ratchet).
+#   5. lint:steps    — BDD step-vocabulary linter; cheap and noisy when
+#                      a developer renames a step without updating the
+#                      vocabulary.
+#
+# secretlint runs on pre-commit only (staged scope). At push time the
+# committed history is already past the local trust boundary;
+# TruffleHog + gitleaks own the post-push window via CI.
+#
+# Wall-clock target: < 15s on a clean tree.
+
+set -e
+
+pnpm run typecheck
+pnpm run lint
+pnpm run knip:fast
+pnpm run lint:baseline:check
+pnpm run lint:steps

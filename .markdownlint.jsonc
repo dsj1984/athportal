@@ -1,0 +1,25 @@
+{
+  // markdownlint-cli2 config — see https://github.com/DavidAnson/markdownlint
+  // Defaults are mostly accepted; only the line-length rule is relaxed
+  // because the project's prose wraps at natural break points (and many
+  // tables / links would otherwise violate). Auto-generated ADR blocks and
+  // README tables exceed 80 cols by design.
+  "default": true,
+  "MD013": false,
+  // MD024 — duplicate headings: allow same heading text in different
+  // sections (common in ADR files with repeated "Status / Context /
+  // Decision / Consequences" headings).
+  "MD024": { "siblings_only": true },
+  // MD033 — inline HTML: permit common embed/expand patterns used in
+  // GitHub-flavored markdown.
+  "MD033": false,
+  // MD041 — first line h1: not every doc starts with an h1 (some lead
+  // with a callout blockquote).
+  "MD041": false,
+  // MD060 — table column style: the project's tables embed markdown
+  // links and varying-width cells; auto-aligning every pipe would
+  // require either visually wide tables or constant re-formatting on
+  // every edit. The compact `| col | col |` style is the de-facto
+  // convention.
+  "MD060": false
+}
