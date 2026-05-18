@@ -1,0 +1,20 @@
+diff --git a/src-js/raw-transfer/supported.js b/src-js/raw-transfer/supported.js
+index 33d5e2b05af2b881a2e1ddf543508ace709c251e..9be70be75a70be97cfabcfccecfa3c2d5f8160e6 100644
+--- a/src-js/raw-transfer/supported.js
++++ b/src-js/raw-transfer/supported.js
+@@ -47,6 +47,15 @@ function rawTransferRuntimeSupported() {
+   const isNode = global.process?.release?.name === "node";
+   if (!isNode) return false;
+ 
++  // Local patch (athportal): Windows V8 caps ArrayBuffer at ~2 GiB by default,
++  // but oxc-parser's raw-transfer path requires a ~6 GiB ArrayBuffer
++  // (BUFFER_SIZE + BUFFER_ALIGN). The allocation throws RangeError at the
++  // first parseSync call on Windows even though Node >= 22 reports raw
++  // transfer as supported. Fall back to the JSON path on win32 — slower
++  // but correct. See upstream issue for tracking; remove this patch once
++  // oxc-parser detects platform-level ArrayBuffer limits itself.
++  if (global.process?.platform === "win32") return false;
++
+   const match = process.version?.match(/^v(\d+)\./);
+   return !!match && match[1] * 1 >= 22;
+ }
