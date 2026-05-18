@@ -101,9 +101,7 @@ describe('aggregateCoverageFinal', () => {
   it('reports 100% on empty counter maps (no statements is treated as fully covered)', () => {
     const json = { '/abs/src/a.ts': { s: {}, b: {}, f: {} } };
     const rows = aggregateCoverageFinal(json);
-    expect(rows).toEqual([
-      { path: '/abs/src/a.ts', lines: 100, branches: 100, functions: 100 },
-    ]);
+    expect(rows).toEqual([{ path: '/abs/src/a.ts', lines: 100, branches: 100, functions: 100 }]);
   });
 
   it('computes percentages from hit / total counters', () => {
