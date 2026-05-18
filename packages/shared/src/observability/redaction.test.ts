@@ -19,11 +19,7 @@
  * configured threshold and fail CI — that is the gate Story #256 lands.
  */
 import { describe, expect, it } from 'vitest';
-import {
-  RedactionAllowlist,
-  redactHeaders,
-  redactQueryAndBody,
-} from './redaction';
+import { RedactionAllowlist, redactHeaders, redactQueryAndBody } from './redaction';
 
 const REQ_URL = 'https://api.example.invalid/api/v1/things';
 
@@ -38,13 +34,7 @@ function jsonRequest(body: unknown): Request {
 describe('RedactionAllowlist', () => {
   it('exposes the expected Day 1 header allowlist', () => {
     expect([...RedactionAllowlist.headers].sort()).toEqual(
-      [
-        'accept-language',
-        'cf-ipcountry',
-        'cf-ray',
-        'user-agent',
-        'x-request-id',
-      ].sort(),
+      ['accept-language', 'cf-ipcountry', 'cf-ray', 'user-agent', 'x-request-id'].sort(),
     );
   });
 
@@ -116,9 +106,7 @@ describe('redactHeaders', () => {
 
 describe('redactQueryAndBody — query strings', () => {
   it('copies every allowlisted query key (case-sensitive)', async () => {
-    const req = new Request(
-      `${REQ_URL}?cursor=abc&limit=20&order=asc&sort=name`,
-    );
+    const req = new Request(`${REQ_URL}?cursor=abc&limit=20&order=asc&sort=name`);
     expect(await redactQueryAndBody(req)).toEqual({
       cursor: 'abc',
       limit: '20',
@@ -190,10 +178,7 @@ describe('redactQueryAndBody — exhaustive branch coverage of body parsing', ()
   // that may add to the Set; it tears the addition back down in a
   // try/finally so other tests see the Day 1 posture.
 
-  async function withWidenedBody(
-    keys: string[],
-    fn: () => Promise<void>,
-  ): Promise<void> {
+  async function withWidenedBody(keys: string[], fn: () => Promise<void>): Promise<void> {
     for (const k of keys) RedactionAllowlist.bodyKeys.add(k);
     try {
       await fn();

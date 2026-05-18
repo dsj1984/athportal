@@ -98,9 +98,7 @@ export function redactHeaders(headers: Headers): Record<string, string> {
  * `req.json()` / `req.text()` continues to work — the redactor never
  * consumes the body the handler will need.
  */
-export async function redactQueryAndBody(
-  req: Request,
-): Promise<Record<string, string>> {
+export async function redactQueryAndBody(req: Request): Promise<Record<string, string>> {
   const out: Record<string, string> = {};
 
   // Query first — cheap, synchronous, no body consumption.
@@ -147,11 +145,12 @@ export async function redactQueryAndBody(
     return out;
   }
 
-  for (const key of Object.keys(parsed as Record<string, unknown>)) {
+  const obj = parsed as Record<string, unknown>;
+  for (const key of Object.keys(obj)) {
     if (RedactionAllowlist.bodyKeys.has(key)) {
       // JSON.parse never produces `undefined` values, so `String(value)`
       // is safe — there is no realistic undefined branch to guard.
-      out[key] = String((parsed as Record<string, unknown>)[key]);
+      out[key] = String(obj[key]);
     }
   }
 
