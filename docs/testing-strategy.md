@@ -179,6 +179,40 @@ describe('PATCH /api/v1/<resource>/:id', () => {
 - Contract tests run under `pnpm run test` — no separate Turbo pipeline.
 - Every happy path needs at least one negative-path partner (validation error, authz failure, 404).
 
+#### Authenticated routes — `createTestApp(db, { actor })`
+
+Contract tests for protected routes use the two-argument form of
+`createTestApp` to skip the JWT-validation stage while leaving every
+other middleware in the chain — including `requireInternalUser`'s JIT
+lookup — running real production code. The optional `actor` is an
+`AuthContext` (`{ userId, clerkSubjectId, email, role, orgId, teamId }`)
+that the test-auth seam writes into `c.var.auth` (and
+`c.var.clerkSubjectId`) on every request.
+
+```ts
+import { type AuthContext, createTestApp, freshDb } from '@repo/shared/testing';
+
+const db = await freshDb();
+const actor: AuthContext = {
+  userId: 'u_coach_1',
+  clerkSubjectId: 'user_test_coach',
+  email: 'coach@test.invalid',
+  role: 'team_admin',
+  orgId: 'org_test_a',
+  teamId: 'team_test_a_1',
+};
+const app = createTestApp(db, { actor });
+// app.request(...) sees c.var.auth === actor on every call.
+```
+
+Use the legacy single-argument form (`createTestApp(db)`) for anonymous
+or 401-path tests. The `{ actor }` option swaps **only** the
+JWT-validation stage; `requireInternalUser` and every route handler
+downstream run unchanged from production. See
+[`apps/api/src/routes/v1/me.actor.contract.test.ts`](../apps/api/src/routes/v1/me.actor.contract.test.ts)
+for the load-bearing reference test that pins this contract across the
+four MVP personas.
+
 ### Acceptance — user journey (Gherkin)
 
 Location: `tests/features/**/*.feature` at the repo root. Step definitions live under `apps/web/e2e/steps/**` (and `apps/mobile/e2e/steps/**` once the mobile runner wires in at v1.0).
@@ -284,6 +318,27 @@ Coverage targets apply to production code. Test helpers, fixtures, and generated
 - **A test is flaky** → check its tier first. Flakiness in an acceptance spec almost always means the assertion should be a contract-tier check; flakiness in a unit test almost always means hidden I/O needs to be mocked.
 
 ---
+
+## Canonical step vocabulary
+
+The phrases below are load-bearing across multiple Epics and MUST be
+reused verbatim — do not author a near-match.
+
+- **`Given I am signed in as {string}`** — defined in
+  [`apps/web/e2e/steps/auth.steps.ts`](../apps/web/e2e/steps/auth.steps.ts).
+  Accepts the persona labels `'athlete'`, `'coach'`, `'org admin'`,
+  `'dev admin'` (and `'anonymous'`). Mints a real Clerk testing-token
+  JWT for the named persona via the seam at
+  [`packages/shared/src/testing/auth.ts`](../packages/shared/src/testing/auth.ts)
+  and plants the `__session` cookie on the browser context. There is no
+  dev-only auth bypass; the seam targets a real Clerk **test instance**.
+  An unknown label throws a `TypeError` listing the accepted spellings —
+  scenario typos fail loudly. See
+  [`docs/patterns.md` § _Authenticated test sessions_](patterns.md#authenticated-test-sessions-clerk-test-instance)
+  for the persona ↔ role table and the testing-token rotation runbook.
+- **`Given I am not signed in`** — same file. Clears any session cookie
+  planted by a prior step (or by a cached persona `storageState`) so the
+  scenario starts from a known anonymous baseline.
 
 ## Adding a new step
 
