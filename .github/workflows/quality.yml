@@ -284,3 +284,36 @@ jobs:
 
       - name: Build
         run: pnpm run build
+
+  bundle-size-baseline:
+    name: Bundle-size baseline (1 MiB Worker cap + per-bundle gzippedKb, ADR-014)
+    needs: [build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build (re-run so wrangler dist is on disk for measurement)
+        run: pnpm run build
+
+      - name: Bundle-size baseline check
+        run: pnpm run bundle-size:check
