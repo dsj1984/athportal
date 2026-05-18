@@ -1,4 +1,3 @@
-@pending
 Feature: A fork pull request without Sentry credentials still passes CI
 
   Contributors who open a pull request from a fork have no access to the
