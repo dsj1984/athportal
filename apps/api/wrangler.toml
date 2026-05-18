@@ -1,0 +1,41 @@
+# Cloudflare Workers configuration for @repo/api.
+#
+# This file is intentionally minimal at MVP — the API workspace currently
+# exports only the scaffolded `apps/api/src/index.ts` and is not deployed
+# from here yet. Subsequent Stories add the Hono entrypoint, Analytics
+# Engine binding, and Logpush block called out in Tech Spec #246.
+#
+# Secrets policy (per .agents/rules/security-baseline.md § Secrets Management
+# and Skill: cloudflare-workers § 2.4):
+#   - Real secret values are NEVER committed to this file. They are set
+#     out-of-band with `wrangler secret put <NAME> --env <staging|production>`
+#     and stored encrypted in Cloudflare.
+#   - The `# required-secrets:` block below is the source of truth for
+#     which secrets MUST be set per-environment before deploy. Adding a
+#     secret to runtime code requires adding its name here in the same
+#     PR so operators have a single list to provision against.
+
+name = "athportal-api"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+
+# required-secrets (set via `wrangler secret put` per environment;
+# never committed with a value):
+#   - OBSERVABILITY_ALERT_EMAIL
+#       Single operator-email distribution list of record (ADR-012 §
+#       "Alerting channel"). Consumed by future Workers-side alert
+#       routing — every observability vendor in this Epic (Sentry,
+#       Better Stack uptime, the managed log sink) renders alert
+#       destinations from this single channel so the on-call rotation
+#       never requires application or IaC changes. The Better Stack IaC
+#       at infra/uptime/betterstack.yml already references the same
+#       env var name; the Workers-side reference is declared here so
+#       both apply paths name the same secret.
+#       Provision: `wrangler secret put OBSERVABILITY_ALERT_EMAIL --env staging`
+#                  `wrangler secret put OBSERVABILITY_ALERT_EMAIL --env production`
+
+[env.staging]
+name = "athportal-api-staging"
+
+[env.production]
+name = "athportal-api-production"
