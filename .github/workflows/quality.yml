@@ -515,6 +515,13 @@ jobs:
       - name: Build
         run: pnpm run build
 
+      - name: Upload dist artifact (consumed by bundle-size-baseline)
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-bundle
+          path: apps/*/dist/**
+          if-no-files-found: error
+
   # ── Sourcemap-upload rehearsal (Epic #5 / Story #259) ──────────────
   # One job per runtime that exercises the same composite the real
   # staging / production deploy workflows will invoke. The composite's
@@ -678,8 +685,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build (re-run so wrangler dist is on disk for measurement)
-        run: pnpm run build
+      - name: Download dist artifact (produced by `build`)
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-bundle
+          path: apps
 
       - name: Bundle-size baseline check
         run: pnpm run bundle-size:check
