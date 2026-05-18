@@ -47,7 +47,14 @@ const ACTIONS: ReadonlyArray<Action> = ['create', 'read', 'update', 'delete', 'l
  * The set of context-guard shapes used in the rules table. Naming
  * matches the predicate so the EXPECTED table is human-scannable.
  */
-type Shape = 'allow' | 'deny' | 'sameOrg' | 'sameTeam' | 'isOwner' | 'sameOrgWithLastAdmin';
+type Shape =
+  | 'allow'
+  | 'deny'
+  | 'sameOrg'
+  | 'sameTeam'
+  | 'isOwner'
+  | 'lastAdmin'
+  | 'sameOrgWithLastAdmin';
 
 /**
  * Encoding of the rules table from the test's perspective.
@@ -75,8 +82,8 @@ const EXPECTED: Record<Role, Record<Resource, Record<Action, Shape>>> = {
     user: {
       create: 'allow',
       read: 'allow',
-      update: 'allow',
-      delete: 'allow',
+      update: 'lastAdmin',
+      delete: 'lastAdmin',
       list: 'allow',
     },
     invitation: {
@@ -194,6 +201,7 @@ const POSITIVE_CTX: Record<Shape, RbacContext> = {
     resourceTeamId: 'team-1',
   },
   isOwner: { actorId: 'user-1', resourceOwnerId: 'user-1' },
+  lastAdmin: { remainingAdminsAfter: 1 },
   sameOrgWithLastAdmin: {
     actorOrgId: 'org-A',
     resourceOrgId: 'org-A',
@@ -215,6 +223,7 @@ const NEGATIVE_CTX: Record<Shape, RbacContext> = {
     resourceTeamId: 'team-2',
   },
   isOwner: { actorId: 'user-1', resourceOwnerId: 'user-2' },
+  lastAdmin: { remainingAdminsAfter: 0 },
   sameOrgWithLastAdmin: {
     actorOrgId: 'org-A',
     resourceOrgId: 'org-A',
@@ -231,6 +240,7 @@ const POSITIVE_VERDICT: Record<Shape, boolean> = {
   sameOrg: true,
   sameTeam: true,
   isOwner: true,
+  lastAdmin: true,
   sameOrgWithLastAdmin: true,
 };
 
@@ -240,6 +250,7 @@ const NEGATIVE_VERDICT: Record<Shape, boolean> = {
   sameOrg: false,
   sameTeam: false,
   isOwner: false,
+  lastAdmin: false,
   sameOrgWithLastAdmin: false,
 };
 
@@ -551,7 +562,7 @@ describe('predicates — boolean branch coverage', () => {
   });
 });
 
-describe('canPerform — last-admin invariant (Story D placeholder)', () => {
+describe('canPerform — last-admin invariant (Story #340)', () => {
   it('refuses an org_admin user.update that would drop the last admin', () => {
     expect(
       canPerform('org_admin', 'user', 'update', {
@@ -582,13 +593,52 @@ describe('canPerform — last-admin invariant (Story D placeholder)', () => {
     ).toBe(false);
   });
 
-  it('refuses when remainingAdminsAfter is not supplied', () => {
+  it('refuses when remainingAdminsAfter is not supplied (org_admin path)', () => {
     expect(
       canPerform('org_admin', 'user', 'update', {
         actorOrgId: 'org-A',
         resourceOrgId: 'org-A',
       }),
     ).toBe(false);
+  });
+
+  it('refuses a dev_admin user.update that would drop the last admin', () => {
+    // The platform root still cannot break the last-admin invariant
+    // — even allow-all roles are gated by this rule (Tech Spec #318
+    // §E).
+    expect(
+      canPerform('dev_admin', 'user', 'update', {
+        remainingAdminsAfter: 0,
+      }),
+    ).toBe(false);
+  });
+
+  it('allows a dev_admin user.update when at least one admin remains', () => {
+    expect(
+      canPerform('dev_admin', 'user', 'update', {
+        remainingAdminsAfter: 1,
+      }),
+    ).toBe(true);
+  });
+
+  it('refuses a dev_admin user.delete that would drop the last admin', () => {
+    expect(
+      canPerform('dev_admin', 'user', 'delete', {
+        remainingAdminsAfter: 0,
+      }),
+    ).toBe(false);
+  });
+
+  it('allows a dev_admin user.delete when at least one admin remains', () => {
+    expect(
+      canPerform('dev_admin', 'user', 'delete', {
+        remainingAdminsAfter: 2,
+      }),
+    ).toBe(true);
+  });
+
+  it('refuses a dev_admin user.update when remainingAdminsAfter is not supplied', () => {
+    expect(canPerform('dev_admin', 'user', 'update', {})).toBe(false);
   });
 });
 

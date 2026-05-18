@@ -13,10 +13,13 @@
  *   inline `actorOrgId === resourceOrgId` snippets. The same
  *   predicate is reused across many rules.
  * - The last-admin guard (`lastAdminGuard`) is its own predicate.
- *   Story D (last-admin enforcement) will wire the same predicate
- *   into the `org_admin` / `user` / `update` and `delete` slots —
- *   the slot exists today; the data populating it is the caller's
- *   responsibility (it must read `remainingAdminsAfter` inside the
+ *   Story D (last-admin enforcement, Story #340) wires it into the
+ *   `org_admin` / `user` / `update` and `delete` slots via
+ *   `sameOrgWithLastAdmin`, and into the `dev_admin` / `user` /
+ *   `update` and `delete` slots directly. Even the platform root
+ *   role MUST NOT be allowed to demote or delete the last admin
+ *   in an org — the data populating `remainingAdminsAfter` is the
+ *   caller's responsibility (it must read the count inside the
  *   same transaction as the mutation).
  * - Predicates take a single `RbacContext`. They are pure — no I/O,
  *   no `Date.now()`, no caller closures.
@@ -154,8 +157,20 @@ export const RULES: ReadonlyArray<Rule> = [
   rule('dev_admin', 'team', 'list', allow),
   rule('dev_admin', 'user', 'create', allow),
   rule('dev_admin', 'user', 'read', allow),
-  rule('dev_admin', 'user', 'update', allow),
-  rule('dev_admin', 'user', 'delete', allow),
+  rule(
+    'dev_admin',
+    'user',
+    'update',
+    lastAdminGuard,
+    'platform root still refused when demoting the last admin in any org; caller populates remainingAdminsAfter',
+  ),
+  rule(
+    'dev_admin',
+    'user',
+    'delete',
+    lastAdminGuard,
+    'platform root still refused when deleting the last admin in any org; caller populates remainingAdminsAfter',
+  ),
   rule('dev_admin', 'user', 'list', allow),
   rule('dev_admin', 'invitation', 'create', allow),
   rule('dev_admin', 'invitation', 'read', allow),
