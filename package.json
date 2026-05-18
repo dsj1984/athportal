@@ -24,6 +24,8 @@
     "coverage:update": "node scripts/coverage-baseline.mjs --update",
     "crap:check": "node scripts/crap-baseline.mjs --check",
     "crap:update": "node scripts/crap-baseline.mjs --update",
+    "maintainability:check": "node scripts/maintainability-baseline.mjs --check",
+    "maintainability:update": "node scripts/maintainability-baseline.mjs --update",
     "lint:steps": "node scripts/lint-steps.mjs",
     "lint:steps:fixtures": "node scripts/lint-steps.mjs --fixtures",
     "sync:commands": "node .agents/scripts/sync-claude-commands.js",
