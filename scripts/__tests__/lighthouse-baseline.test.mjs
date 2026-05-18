@@ -17,10 +17,6 @@
 //
 // Runs under the existing `scripts` vitest project (vitest.workspace.ts).
 
-import { readFileSync } from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -35,14 +31,6 @@ import {
   parseArgs,
   resolveRouteUrl,
 } from '../lighthouse-baseline.mjs';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = path.resolve(__dirname, '..', '..');
-const BASELINE_FILE = path.join(REPO_ROOT, 'baselines', 'lighthouse.json');
-
-function loadBaselineJson() {
-  return JSON.parse(readFileSync(BASELINE_FILE, 'utf8'));
-}
 
 describe('lighthouse-baseline argv parsing', () => {
   it('defaults to --check', () => {
@@ -280,22 +268,16 @@ describe('lighthouse-baseline envelope construction', () => {
 });
 
 describe('lighthouse-baseline default routes', () => {
-  it('declares the three MVP routes shipped in the unprimed baseline', () => {
+  it('declares the three MVP routes', () => {
     expect(DEFAULT_ROUTES).toEqual(['/', '/athletes/[slug]', '/teams/[slug]']);
   });
 
-  it('the committed baselines/lighthouse.json rows[] match DEFAULT_ROUTES', () => {
-    const doc = loadBaselineJson();
-    expect(doc.rows.map((r) => r.route).sort()).toEqual([...DEFAULT_ROUTES].sort());
-  });
-
-  it('the committed baseline ships unprimed (every metric on every row is 0)', () => {
-    const doc = loadBaselineJson();
-    for (const row of doc.rows) {
-      expect(row.performance).toBe(0);
-      expect(row.accessibility).toBe(0);
-      expect(row.bestPractices).toBe(0);
-      expect(row.seo).toBe(0);
-    }
-  });
+  // The previous "committed baselines/lighthouse.json rows[] match
+  // DEFAULT_ROUTES" and "ships unprimed (every metric on every row is 0)"
+  // pins were dropped in Story #375 alongside the placeholder
+  // baselines/lighthouse.json itself: the file suggested protection that
+  // wasn't real (the script fails-loud on missing LIGHTHOUSE_PREVIEW_URL,
+  // so the gate stays honest about being unwired). Follow-up #380
+  // restores the baseline once a preview environment is wired and the
+  // gate has a real measurement to defend.
 });
