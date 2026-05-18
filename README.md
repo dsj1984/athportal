@@ -177,6 +177,7 @@ and unreadable from any job that doesn't declare the matching
 | `SENTRY_DSN_WEB` | _(not in `check-env` contract)_ | both environments | Per-runtime DSN consumed by `apps/web/astro.config.ts` + `apps/web/src/sentry.ts`. Blank → integration is skipped. |
 | `SENTRY_DSN_MOBILE` | _(not in `check-env` contract)_ | both environments (EAS for native builds) | Per-runtime DSN consumed by `apps/mobile/src/sentry.ts` (Expo init wrapper). Blank → init returns null. |
 | `SENTRY_AUTH_TOKEN` | `nonempty` | both environments | Used only by `sentry-cli releases new + finalize` and per-runtime sourcemap upload at build time. Scoped per-environment. |
+| `OBSERVABILITY_ALERT_EMAIL` | _(not in `check-env` contract)_ | both environments | **Single operator-email distribution list of record** (ADR-012 § "Alerting channel"). Every observability vendor — Sentry alert rules, Better Stack uptime failure rules, future log-sink anomaly rules — routes here. Distribution-list shape (not a personal inbox) so the on-call rotation never requires a config change. Consumed by [`infra/uptime/betterstack.yml`](./infra/uptime/betterstack.yml) at apply time and by `apps/api/wrangler.toml` as a Workers secret. |
 | `TURBO_TOKEN` | _(not in `check-env` contract)_ | both environments | Turborepo remote-cache token. Rotatable. |
 
 ### Required at deploy time (Action variables, non-secret)
