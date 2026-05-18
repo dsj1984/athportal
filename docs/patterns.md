@@ -58,28 +58,55 @@ When adding a new lint rule:
 
 ## Lint baseline ratchet
 
-The baseline ratchet keeps lint warnings **monotonically non-increasing**
-across the codebase. It is a CI gate: a PR cannot introduce a net warning
-to any file (or to the total) without explicitly re-snapshotting the
-baseline.
+The baseline ratchet runs **two channels** against every PR (Story #373):
+
+- **Errors → zero, always.** Any non-zero `errorCount` in the current
+  aggregate fails the gate, independent of what the committed baseline
+  records. `--update` refuses to absorb errors into a new snapshot — they
+  must be fixed in source. This is what catches lint errors in files the
+  per-workspace `lint` scripts miss today (config files, e2e steps, repo
+  scripts — they only run `eslint src` per workspace).
+- **Warnings ratchet downward.** Per-file warning regressions and any
+  net-total warning increase fail the gate. Warnings are
+  `--update`-absorbable when a regression is intentional (a new rule that
+  flags existing call sites that will be cleaned up incrementally).
+
+A PR cannot introduce a new error to any file, and cannot introduce a net
+warning to any file (or to the total), without explicitly re-snapshotting
+the baseline.
 
 ### Files and entrypoints
 
-- `scripts/lint-baseline.mjs` — the ratchet script. Pure Node ESM, no
-  build step. Runs Biome (`--reporter=json`) and ESLint
-  (`--format=json`) with `child_process.spawnSync({ shell: false })` so
-  it behaves identically under PowerShell and bash. Per-file *warning*
-  counts are aggregated into a stable `{ totalWarnings, byFile }`
-  envelope; `byFile` keys are sorted lexicographically so successive
-  runs against an unchanged tree produce byte-identical JSON.
-- `.lint-baseline.json` — the committed snapshot. The single source of
-  truth for "how many warnings each file is allowed to have". Diffs against
-  this file are the gate.
-- `pnpm run lint:baseline:check` — runs `node scripts/lint-baseline.mjs
-  --check`. Exits non-zero if any file gained warnings or the total
-  increased.
-- `pnpm run lint:baseline:update` — runs `node scripts/lint-baseline.mjs
-  --update`. Rewrites `.lint-baseline.json` from the current tree.
+- [`scripts/lint-baseline.mjs`](../scripts/lint-baseline.mjs) — the
+  ratchet script. Pure Node ESM, no build step. Runs Biome
+  (`--reporter=json`) and ESLint (`--format=json`) with
+  `child_process.spawnSync({ shell: false })` so it behaves identically
+  under PowerShell and bash. Per-file warning **and error** counts are
+  aggregated into the shared baseline envelope
+  ([`.agents/schemas/baselines/lint.schema.json`](../.agents/schemas/baselines/lint.schema.json));
+  rows are sorted lexicographically so successive runs against an
+  unchanged tree produce byte-identical JSON.
+- [`baselines/lint.json`](../baselines/lint.json) — the committed
+  snapshot. Once Story #373 landed, `rollup.*.errorCount` is `0` and stays
+  there.
+- [`tsconfig.tooling.json`](../tsconfig.tooling.json) — root tooling
+  tsconfig that lets typescript-eslint's project service locate
+  workspace-level config files (Vitest, Playwright, Astro, Drizzle, app
+  configs) and the web e2e step library. The
+  [`eslint.config.mjs`](../eslint.config.mjs) tooling overlay points at
+  this file and scopes a few typed-lint rules (`@typescript-eslint/no-unsafe-*`,
+  `@typescript-eslint/require-await`) off for these glue paths — those
+  rules add real value in `src/` but generate noise in framework configs
+  that read untyped env (Astro `import.meta.env`) and in BDD step bodies
+  that are uniformly `async` for binder consistency. Mirror this pattern
+  when adding new top-level TS files outside any workspace's `tsconfig.json`
+  `include`.
+- `pnpm run lint:baseline:check` — runs the script in check mode. Exits
+  non-zero if **any** error appears, any file gained warnings, or the
+  warning total increased.
+- `pnpm run lint:baseline:update` — runs the script in update mode.
+  Rewrites `baselines/lint.json` from the current tree. Refuses to run
+  while errors exist.
 
 ### Relationship to `quality:preview`
 
@@ -102,26 +129,36 @@ whole-tree Biome and ESLint passes the ratchet needs.
 
 ### Runbook
 
-1. **You ran `pnpm run lint:baseline:check` and it failed.** Read the
-   stderr listing — it names the files that gained warnings, the previous
-   per-file count, and the new count. The fix-first path is to address
-   the new warnings (Biome and ESLint output the rule names; fix at the
-   call site or, if the rule is genuinely wrong for the codebase, raise
-   a ticket to disable it project-wide).
-2. **The new warnings are intentional** (e.g. you adopted a new
-   rule and have not yet fixed every existing site). Re-run
+1. **`pnpm run lint:baseline:check` failed with `errors: N (blocking)`.**
+   The check found `N` ESLint / Biome errors that the per-workspace lint
+   scripts did not catch. Read the per-file list in stderr, run
+   `pnpm exec eslint <file>` and `pnpm exec biome check <file>` against
+   each named file to reproduce, fix in source, re-run check. **You cannot
+   absorb errors with `--update`** — the script refuses, on the grounds
+   that the error floor is zero and silently absorbing them defeats the
+   gate. If a rule is genuinely wrong for a tooling file, scope it off in
+   the [`eslint.config.mjs`](../eslint.config.mjs) tooling overlay (same
+   shape as the existing `no-unsafe-*` / `require-await` scoping) and
+   document why in the comment.
+2. **`pnpm run lint:baseline:check` failed with a warning regression.**
+   Read the stderr listing — it names the files that gained warnings, the
+   previous per-file count, and the new count. Fix the new warnings at
+   the call site, OR if the change is intentional re-run
    `pnpm run lint:baseline:update`, inspect the diff on
-   `.lint-baseline.json` to confirm it matches the change you expect,
-   and commit the snapshot alongside the source change. Reviewers should
-   see *both* the warning-introducing change and the baseline bump in
-   the same PR.
-3. **You fixed warnings and the baseline now over-counts.** That is the
-   happy path — the ratchet only blocks regressions, but a snapshot that
-   over-counts hides future improvement. Run
-   `pnpm run lint:baseline:update` and commit the lowered snapshot so
-   the next contributor cannot quietly re-introduce the warnings you
-   just removed.
-4. **Editor noise / local-only failures.** The ratchet runs the same
+   [`baselines/lint.json`](../baselines/lint.json) to confirm the bump
+   matches the change you expect, and commit the snapshot alongside the
+   source change. Reviewers should see *both* the warning-introducing
+   change and the baseline bump in the same PR.
+3. **You fixed warnings and the baseline now over-counts.** Run
+   `pnpm run lint:baseline:update` and commit the lowered snapshot so the
+   next contributor cannot quietly re-introduce the warnings you just
+   removed.
+4. **A new top-level TS file (config, build script, glue) added in your
+   PR fails parsing.** Add the file's path to
+   [`tsconfig.tooling.json`](../tsconfig.tooling.json)'s `include`, and
+   add the matching glob to the `files` array in
+   [`eslint.config.mjs`](../eslint.config.mjs)'s `toolingConfig` overlay.
+5. **Editor noise / local-only failures.** The ratchet runs the same
    linters as `pnpm run lint` and `pnpm exec eslint .`, so a `--check`
    failure that does not reproduce in `pnpm run lint` is a script bug,
    not a code bug — file an issue rather than working around it.

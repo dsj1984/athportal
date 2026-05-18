@@ -510,7 +510,7 @@ export function modeUpdate({ repoRoot = REPO_ROOT, now = new Date() } = {}) {
   return 0;
 }
 
-export function modeCheck({ repoRoot = REPO_ROOT, now = new Date() } = {}) {
+export function modeCheck({ repoRoot = REPO_ROOT } = {}) {
   const baselinePath = path.join(repoRoot, 'baselines', 'bundle-size.json');
   const sizeLimitPath = path.join(repoRoot, '.size-limit.json');
   if (!fs.existsSync(baselinePath)) {

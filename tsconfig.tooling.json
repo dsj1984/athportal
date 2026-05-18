@@ -1,0 +1,21 @@
+{
+  "//": "Tooling tsconfig — type-checks workspace tooling files (Vitest, Playwright, Astro, Drizzle, app/build configs) and the web e2e step library. Consumed only by ESLint via the overlay in eslint.config.mjs so typescript-eslint's projectService can locate these files; production builds and per-workspace `pnpm typecheck` runs do NOT consume this tsconfig. Lives at the repo root so a single overlay covers every workspace.",
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": [
+    "vitest.config.ts",
+    "vitest.workspace.ts",
+    "knip.config.ts",
+    "apps/api/vitest.config.ts",
+    "apps/web/vitest.config.ts",
+    "apps/web/playwright.config.ts",
+    "apps/web/astro.config.ts",
+    "apps/web/e2e/**/*.ts",
+    "apps/mobile/app.config.ts",
+    "packages/baselines/vitest.config.ts",
+    "packages/shared/vitest.config.ts",
+    "packages/shared/drizzle.config.ts"
+  ]
+}

@@ -348,7 +348,7 @@ function lintCorpus({ stepFiles, featureFiles, checkUnused = true }) {
     list.push(step);
     byKey.set(key, list);
   }
-  for (const [key, list] of byKey.entries()) {
+  for (const [, list] of byKey.entries()) {
     if (list.length < 2) continue;
     const distinctFiles = new Set(list.map((s) => s.file));
     if (distinctFiles.size < 2) continue;

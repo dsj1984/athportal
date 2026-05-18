@@ -4,14 +4,20 @@
 // Lint baseline ratchet for the athportal monorepo.
 //
 // Runs Biome (`--reporter=json`) and ESLint (`--format=json`), aggregates
-// per-file *warning* counts across both reporters into the shared baseline
-// envelope (`.agents/schemas/baselines/lint.schema.json`), and either:
+// per-file warning AND error counts across both reporters into the shared
+// baseline envelope (`.agents/schemas/baselines/lint.schema.json`), and
+// either:
 //
 //   --check    (default) compare the aggregate against `baselines/lint.json`
-//              and exit non-zero on any per-file warning regression or net
-//              total warning increase.
+//              and exit non-zero when EITHER (a) any non-zero `errorCount`
+//              appears in the current aggregate (the error contract is
+//              zero — Story #373) OR (b) any per-file warning regression
+//              or net-total warning increase shows up.
 //   --update   write the aggregate to `baselines/lint.json` so the snapshot
-//              becomes the new ceiling.
+//              becomes the new ceiling. Only the warning channel is
+//              ratchet-absorbable via `--update`; non-zero errors must be
+//              fixed in source — the gate refuses to record them as a new
+//              floor.
 //
 // Envelope shape (per `.agents/schemas/baselines/lint.schema.json`):
 //
@@ -341,9 +347,19 @@ export function serialise(envelope) {
 }
 
 // ---------------------------------------------------------------------------
-// Tolerance comparison — per-file warning ratchet + net-total
-// non-increasing. Errors are recorded for visibility but the gate is
-// warning-keyed (errors break the build at the linter step itself).
+// Tolerance comparison — two-channel gate (Story #373):
+//
+//   • Errors are non-negotiable. Any non-zero errorCount in the current
+//     aggregate fails the gate, independent of the baseline. Errors that
+//     the per-workspace `lint` scripts miss (because they only run against
+//     `src/`) surface here; we cannot let them sit silently.
+//
+//   • Warnings ratchet downward. Per-file warning regressions and any
+//     net-total warning increase fail the gate. Operators can intentionally
+//     trade warning count by running `--update` after a fix.
+//
+// Pre-#373 behaviour gated on warnings only. The schema already carried
+// errorCount for visibility; this change makes it load-bearing.
 // ---------------------------------------------------------------------------
 
 export function compareTolerance(baseline, current) {
@@ -354,7 +370,8 @@ export function compareTolerance(baseline, current) {
       warningCount: Number(row.warningCount ?? 0),
     });
   }
-  const regressions = [];
+  const warningRegressions = [];
+  const errorFiles = [];
   for (const row of current.rows ?? []) {
     const prev = baseByFile.get(row.path) ?? { errorCount: 0, warningCount: 0 };
     const next = {
@@ -362,36 +379,55 @@ export function compareTolerance(baseline, current) {
       warningCount: Number(row.warningCount ?? 0),
     };
     if (next.warningCount > prev.warningCount) {
-      regressions.push({
+      warningRegressions.push({
         file: row.path,
         prev: prev.warningCount,
         count: next.warningCount,
       });
     }
+    if (next.errorCount > 0) {
+      errorFiles.push({ file: row.path, count: next.errorCount });
+    }
   }
-  const baseTotal = Number(baseline?.rollup?.['*']?.warningCount ?? 0);
-  const currTotal = Number(current?.rollup?.['*']?.warningCount ?? 0);
+  const baseWarn = Number(baseline?.rollup?.['*']?.warningCount ?? 0);
+  const currWarn = Number(current?.rollup?.['*']?.warningCount ?? 0);
+  const currErrors = Number(current?.rollup?.['*']?.errorCount ?? 0);
   return {
-    regressions,
-    baseTotal,
-    currTotal,
-    totalDelta: currTotal - baseTotal,
+    warningRegressions,
+    errorFiles,
+    currErrors,
+    baseWarn,
+    currWarn,
+    warnDelta: currWarn - baseWarn,
   };
 }
 
-export function formatRejectionMessage({ regressions, baseTotal, currTotal, totalDelta }) {
+export function formatRejectionMessage({
+  warningRegressions,
+  errorFiles,
+  currErrors,
+  baseWarn,
+  currWarn,
+  warnDelta,
+}) {
   const lines = ['[lint-baseline] ❌ baseline regression detected'];
+  if (currErrors > 0) {
+    lines.push(`  errors: ${currErrors} (blocking — error contract is zero)`);
+    for (const e of errorFiles) {
+      lines.push(`    ${e.file}: ${e.count} error${e.count === 1 ? '' : 's'}`);
+    }
+  }
   lines.push(
-    `  totalWarnings: baseline=${baseTotal} current=${currTotal} (Δ=${totalDelta >= 0 ? '+' : ''}${totalDelta})`,
+    `  totalWarnings: baseline=${baseWarn} current=${currWarn} (Δ=${warnDelta >= 0 ? '+' : ''}${warnDelta})`,
   );
-  if (regressions.length > 0) {
+  if (warningRegressions.length > 0) {
     lines.push('  files that gained warnings:');
-    for (const r of regressions) {
+    for (const r of warningRegressions) {
       lines.push(`    ${r.file}: ${r.prev} → ${r.count} (+${r.count - r.prev})`);
     }
   }
   lines.push(
-    '  Fix the new warnings, or — if the regression is intentional — re-run `pnpm run lint:baseline:update`.',
+    '  Fix the errors and any new warnings, or — if a warning regression is intentional — re-run `pnpm run lint:baseline:update`. Errors cannot be absorbed via update.',
   );
   return lines.join('\n');
 }
@@ -402,9 +438,27 @@ export function formatRejectionMessage({ regressions, baseTotal, currTotal, tota
 
 function modeUpdate(now = new Date()) {
   const envelope = aggregate(now);
+  const errors = envelope.rollup['*'].errorCount;
+  if (errors > 0) {
+    // Refuse to record errors as a new floor. The error contract is zero
+    // (Story #373) — absorbing errors via `--update` would silently make
+    // the gate green again. Operator must fix the errors first.
+    process.stderr.write(
+      `[lint-baseline] ❌ refused to update — current aggregate has ${errors} error${errors === 1 ? '' : 's'}. ` +
+        `Errors cannot be absorbed into the baseline. Fix them in source, then re-run --update.\n`,
+    );
+    for (const row of envelope.rows) {
+      if (row.errorCount > 0) {
+        process.stderr.write(
+          `  ${row.path}: ${row.errorCount} error${row.errorCount === 1 ? '' : 's'}\n`,
+        );
+      }
+    }
+    return 1;
+  }
   writeBaseline(BASELINE_PATH, envelope);
   process.stdout.write(
-    `[lint-baseline] wrote ${path.relative(REPO_ROOT, BASELINE_PATH).split(path.sep).join('/')} — totalWarnings=${envelope.rollup['*'].warningCount}, files=${envelope.rows.length}\n`,
+    `[lint-baseline] wrote ${path.relative(REPO_ROOT, BASELINE_PATH).split(path.sep).join('/')} — errors=0, totalWarnings=${envelope.rollup['*'].warningCount}, files=${envelope.rows.length}\n`,
   );
   return 0;
 }
@@ -419,9 +473,11 @@ function modeCheck(now = new Date()) {
     return 1;
   }
   const result = compareTolerance(baseline, current);
-  if (result.regressions.length === 0 && result.totalDelta <= 0) {
+  const clean =
+    result.currErrors === 0 && result.warningRegressions.length === 0 && result.warnDelta <= 0;
+  if (clean) {
     process.stdout.write(
-      `[lint-baseline] ok — totalWarnings=${result.currTotal} (baseline ${result.baseTotal})\n`,
+      `[lint-baseline] ok — errors=0, totalWarnings=${result.currWarn} (baseline ${result.baseWarn})\n`,
     );
     return 0;
   }
