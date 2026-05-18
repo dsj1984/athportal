@@ -29,6 +29,8 @@ monitors:
     regions:
       - us-east-1
       - eu-west-1
+    failure_threshold: 2
+    alert_destination: ${OBSERVABILITY_ALERT_EMAIL}
 
   - id: web-origin
     name: Web origin (athportal)
@@ -39,6 +41,8 @@ monitors:
     regions:
       - us-east-1
       - eu-west-1
+    failure_threshold: 2
+    alert_destination: ${OBSERVABILITY_ALERT_EMAIL}
 
   - id: auth-callback
     name: Auth callback (athportal)
@@ -51,3 +55,5 @@ monitors:
     regions:
       - us-east-1
       - eu-west-1
+    failure_threshold: 2
+    alert_destination: ${OBSERVABILITY_ALERT_EMAIL}
