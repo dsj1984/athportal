@@ -1,0 +1,9 @@
+{
+  "//": "Test-tier tsconfig for @repo/api. Used by Vitest and ESLint to type-check test files (including the test-only auth seam under src/middleware/__testing__/) that the default tsconfig.json intentionally excludes. The default tsconfig MUST keep __testing__/ excluded so production builds (Worker bundling) cannot pull in the test-only adapter — see Tech Spec #318 §F and the regression guard at src/middleware/__testing__/no-prod-import.contract.test.ts.",
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": "src"
+  },
+  "include": ["src/**/*"]
+}
