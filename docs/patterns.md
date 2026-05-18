@@ -256,12 +256,20 @@ with that ADR.
 ### Files and entrypoints
 
 - [`scripts/coverage-baseline.mjs`](../scripts/coverage-baseline.mjs) —
-  the ratchet script. Pure Node ESM, no build step. Reads each
-  workspace's `coverage/coverage-final.json` (produced by Vitest's V8
-  coverage reporter), aggregates per-file `lines` / `branches` /
-  `functions` percentages, and rolls them up into the shared
-  baseline-envelope shape (`$schema`, `kernelVersion`, `generatedAt`,
-  `rollup`, `rows`). Rollup keys and row paths are sorted
+  the ratchet script. Pure Node ESM, no build step. Reads the
+  merged root-level `coverage/coverage-final.json` produced by
+  `pnpm run test:coverage` (Vitest's V8 reporter, configured at
+  [`vitest.config.ts`](../vitest.config.ts) to write a single artifact
+  spanning every workspace's `src/`). The script partitions rows by
+  workspace prefix using the list discovered from
+  [`pnpm-workspace.yaml`](../pnpm-workspace.yaml), aggregates per-file
+  `lines` / `branches` / `functions` percentages, and rolls them up
+  into the shared baseline-envelope shape (`$schema`, `kernelVersion`,
+  `generatedAt`, `rollup`, `rows`). When the merged artifact is
+  absent the script falls back to per-workspace
+  `<ws>/coverage/coverage-final.json` files — that path supports
+  `pnpm --filter <ws> exec vitest run --coverage` workflows and is
+  not exercised in CI. Rollup keys and row paths are sorted
   lexicographically so successive runs against an unchanged tree
   produce byte-identical JSON.
 - [`baselines/coverage.json`](../baselines/coverage.json) — the
@@ -283,14 +291,16 @@ with that ADR.
 
 ### Refresh procedure
 
-1. **Produce coverage reports.** Run `pnpm run test:coverage` to drive
-   Vitest's V8 reporter under every workspace. Each workspace emits its
-   own `coverage/coverage-final.json`.
+1. **Produce the coverage report.** Run `pnpm run test:coverage`. Root
+   Vitest emits a single merged `coverage/coverage-final.json` at the
+   repo root covering every workspace's source files. Producer and
+   consumer agree on this path — see ADR-015 and Story #384 for the
+   alignment history.
 2. **Regenerate the baseline.** Run `pnpm run coverage:update`. The
-   script re-reads every workspace's coverage report, computes the
-   per-workspace rollup, and rewrites `baselines/coverage.json` in
-   place. The output is byte-identical across runs against an unchanged
-   tree.
+   script reads the merged report, partitions rows by workspace
+   prefix, computes the per-workspace rollup, and rewrites
+   `baselines/coverage.json` in place. The output is byte-identical
+   across runs against an unchanged tree.
 3. **Inspect the diff.** Open `baselines/coverage.json` against the
    prior commit. Confirm every per-workspace rollup change is
    justified — a drop is a regression and should not be re-baselined
@@ -341,10 +351,12 @@ hand-edit and must be reverted.
    the first `--update` after this Story merges primes the real
    measurements.
 5. **Editor noise / local-only failures.** The ratchet consumes the
-   same `coverage-final.json` files Vitest produces, so a `--check`
-   failure that does not reproduce after `pnpm run test:coverage` is
-   a stale coverage report — delete each workspace's
-   `coverage/` directory and rerun.
+   same merged `coverage/coverage-final.json` Vitest produces, so a
+   `--check` failure that does not reproduce after
+   `pnpm run test:coverage` is a stale coverage report — delete the
+   root `coverage/` directory (and any per-workspace `coverage/`
+   left over from `pnpm --filter <ws> exec vitest run --coverage`
+   runs) and rerun.
 
 ## CRAP baseline ratchet
 
