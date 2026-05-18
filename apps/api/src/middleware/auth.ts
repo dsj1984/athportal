@@ -23,7 +23,7 @@
 
 import { verifyToken } from '@clerk/backend';
 import { users } from '@repo/shared/db/schema';
-import { eq, sql } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import type { MiddlewareHandler } from 'hono';
 import type { Env } from '../env';
 
@@ -32,7 +32,7 @@ import type { Env } from '../env';
  * promises `clerkSubjectId`; `requireInternalUser` extends the
  * `c.var.auth` shape downstream with the resolved internal user.
  */
-export interface ClerkAuthVariables {
+interface ClerkAuthVariables {
   clerkSubjectId: string;
 }
 
@@ -46,7 +46,7 @@ export type ClerkAuthEnv = {
  * RBAC-layer codes (`FORBIDDEN`, `LAST_ADMIN`, …) live in their own
  * routes. `UNAUTHENTICATED` is the only code this middleware emits.
  */
-export type AuthErrorCode = 'UNAUTHENTICATED';
+type AuthErrorCode = 'UNAUTHENTICATED';
 
 interface AuthErrorBody {
   readonly success: false;
@@ -171,7 +171,7 @@ export interface AuthContext {
   readonly teamId: string | null;
 }
 
-export interface RequireInternalUserVariables extends ClerkAuthVariables {
+interface RequireInternalUserVariables extends ClerkAuthVariables {
   db: InternalUserDb;
   auth: AuthContext;
 }
@@ -192,7 +192,7 @@ export type RequireInternalUserEnv = {
  * Task only ships the middleware that consumes whatever handle the
  * upstream provides.
  */
-export type InternalUserDb = unknown;
+type InternalUserDb = unknown;
 
 /**
  * Defaults used when JIT-inserting a never-before-seen Clerk subject.
@@ -374,6 +374,3 @@ interface DrizzleInsertChain {
   };
 }
 
-// Re-export for callers that want to assert wire-shape invariants in
-// tests without re-deriving the SQL `unixepoch()` literal.
-export const __jit_sql = { now: sql`(unixepoch())` };
