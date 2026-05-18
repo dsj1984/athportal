@@ -21,10 +21,12 @@ export type {
 
 export { BASELINE_KINDS } from './types.js';
 
-// IO + AJV validation surface (read/write with envelope + per-kind
-// validation, byte-identical serialisation).
+// IO + AJV validation surface.
 export { readBaseline, writeBaseline } from './io.js';
 export type { BaselineIoOptions } from './io.js';
 export { serialiseBaseline, reserialiseFromString } from './serialise.js';
 
-// Compare + format surface lands in Task #240.
+// Tolerance comparison + rejection-message formatting.
+export { compareWithTolerance, evaluate } from './compare.js';
+export type { CompareConfig, Row } from './compare.js';
+export { formatRejectionMessage } from './format.js';
