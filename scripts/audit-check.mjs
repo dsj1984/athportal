@@ -143,11 +143,16 @@ const SURFACED_SEVERITIES = new Set(['moderate', 'high', 'critical']);
  */
 export function runPnpmAudit({ cwd = process.cwd() } = {}) {
   return new Promise((resolveResult, rejectResult) => {
-    const pnpmCmd = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm';
-    const child = spawn(pnpmCmd, ['audit', '--json', '--prod'], {
+    // On Windows, `pnpm` resolves to `pnpm.cmd`/`pnpm.ps1` which Node's
+    // direct-exec path (shell: false) cannot launch — that triggers
+    // EINVAL. Enabling `shell: true` lets the OS dispatcher pick the
+    // right wrapper and is the same idiom used by other scripts that
+    // shell out to package-manager binaries.
+    const useShell = process.platform === 'win32';
+    const child = spawn('pnpm', ['audit', '--json', '--prod'], {
       cwd,
       stdio: ['ignore', 'pipe', 'pipe'],
-      shell: false,
+      shell: useShell,
     });
     let stdout = '';
     let stderr = '';
@@ -356,10 +361,18 @@ async function main() {
 }
 
 // Only execute when invoked directly (not when imported by tests).
+// `fileURLToPath(import.meta.url)` normalizes Windows paths the same way
+// the runtime normalizes `process.argv[1]`, so the equality holds whether
+// the script was launched as `node scripts/audit-check.mjs`, via
+// `pnpm run audit:check`, or as a temp-dir copy in the CLI tests.
+import { fileURLToPath } from 'node:url';
+
 const invokedDirectly = (() => {
+  if (!process.argv[1]) {
+    return false;
+  }
   try {
-    const argvUrl = new URL(`file://${process.argv[1].replace(/\\/g, '/')}`).href;
-    return argvUrl === import.meta.url;
+    return fileURLToPath(import.meta.url) === process.argv[1];
   } catch {
     return false;
   }
