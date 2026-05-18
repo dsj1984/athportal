@@ -34,8 +34,30 @@ compatibility_date = "2025-01-01"
 #       Provision: `wrangler secret put OBSERVABILITY_ALERT_EMAIL --env staging`
 #                  `wrangler secret put OBSERVABILITY_ALERT_EMAIL --env production`
 
+# Analytics Engine binding consumed by the request-completion middleware
+# at apps/api/src/middleware/request-logger.ts (Story #257). Every
+# request handled by the Worker writes exactly one row into this dataset
+# via env.ANALYTICS.writeDataPoint — the structured-log + dashboard
+# surface named in ADR-012 § "Observability vendor stack".
+#
+# The dataset name is the same in staging and production so the Logpush
+# job below can target a single dataset regardless of which environment
+# emits the row; the per-environment routing is handled by the deploy
+# step that sets the Logpush destination URL.
+[[analytics_engine_datasets]]
+binding = "ANALYTICS"
+dataset = "athportal_request_log"
+
 [env.staging]
 name = "athportal-api-staging"
 
+[[env.staging.analytics_engine_datasets]]
+binding = "ANALYTICS"
+dataset = "athportal_request_log"
+
 [env.production]
 name = "athportal-api-production"
+
+[[env.production.analytics_engine_datasets]]
+binding = "ANALYTICS"
+dataset = "athportal_request_log"
