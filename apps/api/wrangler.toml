@@ -33,6 +33,23 @@ compatibility_date = "2025-01-01"
 #       both apply paths name the same secret.
 #       Provision: `wrangler secret put OBSERVABILITY_ALERT_EMAIL --env staging`
 #                  `wrangler secret put OBSERVABILITY_ALERT_EMAIL --env production`
+#
+# optional-secrets (rehearsal-time only; default UNSET in every
+# environment, set transiently during the staging-only rehearsal
+# procedure and unset immediately after):
+#   - OBSERVABILITY_SYNTHETIC_FAILURE_ENABLED
+#       Gates the POST /api/v1/_debug/synthetic-failure endpoint
+#       (Story #275, Tech Spec #246 § "Synthetic-failure endpoint
+#       exposure surface"). The route returns 404 unless the value is
+#       the literal string `true`. The runbook procedure at
+#       docs/ops/observability-runbook.md § "Synthetic-failure
+#       rehearsal" is the only sanctioned path that flips this on, and
+#       it ALWAYS flips it off in the same operator session. The flag
+#       is set in **staging only** — production MUST leave it unset.
+#       Provision (staging-only, transient):
+#         `wrangler secret put OBSERVABILITY_SYNTHETIC_FAILURE_ENABLED --env staging`
+#       Disarm (mandatory final step of every rehearsal):
+#         `wrangler secret delete OBSERVABILITY_SYNTHETIC_FAILURE_ENABLED --env staging`
 
 # Analytics Engine binding consumed by the request-completion middleware
 # at apps/api/src/middleware/request-logger.ts (Story #257). Every
