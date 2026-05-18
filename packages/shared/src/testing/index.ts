@@ -45,10 +45,8 @@ export {
 } from './seeds';
 export {
   authHeaders,
-  mintTestingToken,
   PERSONA_FIXTURES,
   resolvePersona,
-  sessionCookieFor,
   signInAs,
   type AuthUserLike,
   type Persona,

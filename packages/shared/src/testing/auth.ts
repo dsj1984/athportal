@@ -6,24 +6,26 @@
  * 1. **Contract tier** — `authHeaders(user)` (Epic #4 / Story #172).
  *    Returns the `Authorization` + `x-clerk-user-id` header bag the
  *    Hono contract harness wants for `app.request(path, { headers })`.
- *    Unchanged by this Story.
+ *    Working as designed.
  *
- * 2. **Acceptance tier** — `signInAs(persona)` (Story #329 / Task #348).
- *    Mints a real Clerk testing-token JWT against a Clerk **test
- *    instance** and returns a Playwright `StorageState` whose
- *    `__session` cookie carries that JWT. There is no dev-only auth
- *    bypass — the seam targets the real Clerk SDK against a real test
- *    instance per the security baseline
- *    (`.agents/rules/security-baseline.md`).
+ * 2. **Acceptance tier** — `signInAs(persona)`. Currently a deferred
+ *    placeholder. Story #329 / Task #348 shipped an implementation that
+ *    signed JWTs locally with a `CLERK_TESTING_TOKEN_SIGNING_KEY` env
+ *    var expected to be a Clerk-issued RSA private key — but Clerk
+ *    does not expose such a key (testing tokens are server-minted via
+ *    `clerkClient.testingTokens.createTestingToken()`, not signed
+ *    client-side). The phantom env var and the broken JWT-signing path
+ *    have been removed; the seam is being rewritten in **Issue #371**
+ *    to use `@clerk/testing/playwright`'s `clerk.signIn` API. Until
+ *    that lands, `signInAs(persona)` throws with a reference to the
+ *    issue, except `signInAs('anonymous')` which still returns an
+ *    empty StorageState for explicit signed-out projects.
  *
  * Per docs/architecture.md §1 the auth provider is Clerk
- * (`@clerk/astro` at MVP). The seam keeps the persona ↔ role mapping
- * documented at one place (this file) so the Gherkin step
- * `Given I am signed in as {string}` and the per-persona Playwright
- * projects (`apps/web/playwright.config.ts`) resolve identically.
+ * (`@clerk/astro` at MVP). The persona ↔ role mapping below is the
+ * single source of truth and is kept here so Issue #371 inherits a
+ * stable contract.
  */
-
-import { signJwt } from '@clerk/backend/jwt';
 
 // ---------------------------------------------------------------------------
 // Contract-tier helper (unchanged from Story #172 / Task #181)
@@ -198,127 +200,41 @@ export interface StorageState {
 }
 
 /**
- * Cookie domain for the `__session` cookie the seam plants. Defaults to
- * `127.0.0.1` to match Playwright's `webServer.url` in
- * `apps/web/playwright.config.ts`. Override with the
- * `E2E_STORAGE_COOKIE_DOMAIN` env var when running against a preview
- * environment.
- */
-function sessionCookieDomain(): string {
-  return process.env.E2E_STORAGE_COOKIE_DOMAIN ?? '127.0.0.1';
-}
-
-/**
- * Read the Clerk testing-token signing key from the environment. The key
- * is **only valid on the Clerk test instance** — see
- * `docs/patterns.md` § _Authenticated test sessions (Clerk test instance)_
- * for the rotation runbook.
- *
- * Throws if missing so a forgotten environment variable fails the run
- * fast rather than silently producing unsigned tokens.
- */
-function requireTestingTokenKey(): string {
-  const key = process.env.CLERK_TESTING_TOKEN_SIGNING_KEY;
-  if (!key || typeof key !== 'string') {
-    throw new Error(
-      'signInAs: CLERK_TESTING_TOKEN_SIGNING_KEY is not set. ' +
-        'Set it from the Clerk dashboard (Test Instance → API Keys → Testing Tokens). ' +
-        'See docs/patterns.md § Authenticated test sessions (Clerk test instance).',
-    );
-  }
-  return key;
-}
-
-/**
- * Mint a Clerk testing-token JWT for the supplied persona's fixture.
- *
- * The token's `sub` is the persona's `clerkSubjectId`; the `iss` is the
- * test-instance Clerk issuer. The Clerk SDK accepts this JWT as a valid
- * session on the test instance and rejects it on the production
- * instance — leaking the signing key cannot compromise production
- * users.
- *
- * Exported separately from `signInAs` so callers that only need the
- * raw JWT (e.g. a contract test driving the production middleware with
- * a real signed token) can request it without building a StorageState.
- */
-export async function mintTestingToken(persona: Persona): Promise<string> {
-  if (persona === 'anonymous') {
-    throw new TypeError(
-      'mintTestingToken: the "anonymous" persona has no session — call signInAs("anonymous") if you want an empty StorageState.',
-    );
-  }
-  const fixture = PERSONA_FIXTURES[persona];
-  if (!fixture) {
-    throw new TypeError(`mintTestingToken: unknown persona ${JSON.stringify(persona)}`);
-  }
-  const key = requireTestingTokenKey();
-  const issuedAt = Math.floor(Date.now() / 1000);
-  const expiresAt = issuedAt + 60 * 60; // 1 hour — well within Playwright suite lifetime
-  const payload: Record<string, unknown> = {
-    sub: fixture.clerkSubjectId,
-    iss: process.env.CLERK_TEST_INSTANCE_ISSUER ?? 'https://test.clerk.invalid',
-    iat: issuedAt,
-    exp: expiresAt,
-    nbf: issuedAt,
-    azp: process.env.CLERK_TEST_INSTANCE_AZP ?? 'https://test.clerk.invalid',
-    email: fixture.email,
-    role: fixture.role,
-    org_id: fixture.orgId,
-    team_id: fixture.teamId,
-  };
-  // Clerk's `@clerk/backend/jwt` `signJwt` accepts an RSA key (PEM
-  // string or JSON Web Key). The testing-token signing key shipped by
-  // Clerk's dashboard is an RSA private key — RS256 is the only
-  // algorithm the test instance accepts. Keeping the algorithm pinned
-  // here means a key rotation that swaps algorithms (vanishingly
-  // unlikely on Clerk's side) fails loud rather than silently producing
-  // unverifiable tokens.
-  return signJwt(payload, key, { algorithm: 'RS256' });
-}
-
-/**
- * Build the `__session` cookie record Playwright wants when restoring a
- * `StorageState`. Carries `HttpOnly` + `Secure` + `SameSite=Lax` per the
- * security baseline.
- */
-export async function sessionCookieFor(persona: Persona): Promise<StorageStateCookie> {
-  const token = await mintTestingToken(persona);
-  const expires = Math.floor(Date.now() / 1000) + 60 * 60;
-  return {
-    name: '__session',
-    value: token,
-    domain: sessionCookieDomain(),
-    path: '/',
-    expires,
-    httpOnly: true,
-    secure: true,
-    sameSite: 'Lax',
-  };
-}
-
-/**
- * Acceptance-tier sign-in entry point. Returns a Playwright
- * `StorageState` whose `__session` cookie carries a real Clerk
- * testing-token JWT for the requested persona.
+ * Acceptance-tier sign-in entry point — currently a deferred placeholder.
  *
  * - `signInAs('anonymous')` returns an empty `StorageState` (no cookies,
- *   no origins) — useful when a project wants an explicit signed-out
- *   baseline.
+ *   no origins). Useful for projects that want an explicit signed-out
+ *   baseline; works today.
+ * - `signInAs('athlete' | 'coach' | 'org-admin' | 'dev-admin')` throws
+ *   a clear error pointing at **Issue #371**, which tracks the rewrite
+ *   to `@clerk/testing/playwright`'s `clerk.signIn` API. The previous
+ *   implementation (Story #329 / Task #348) signed JWTs locally with a
+ *   `CLERK_TESTING_TOKEN_SIGNING_KEY` env var Clerk does not actually
+ *   expose — see the issue body for the full root-cause analysis.
  * - `signInAs('unknown')` throws a `TypeError` listing the accepted
- *   persona spellings.
+ *   persona spellings (unchanged).
  *
- * Callers that already have a label coming from a Gherkin step pass
- * the label through `resolvePersona(label).persona` first, or call
- * `signInAs` with the resolved key directly.
+ * Callers that already have a label coming from a Gherkin step should
+ * pass the label through `resolvePersona(label).persona` first, or
+ * call `signInAs` with the resolved key directly.
  */
-export async function signInAs(persona: Persona): Promise<StorageState> {
+export function signInAs(persona: Persona): Promise<StorageState> {
   if (persona === 'anonymous') {
-    return { cookies: [], origins: [] };
+    return Promise.resolve({ cookies: [], origins: [] });
   }
-  const cookie = await sessionCookieFor(persona);
-  return {
-    cookies: [cookie],
-    origins: [],
-  };
+  if (!PERSONA_FIXTURES[persona]) {
+    return Promise.reject(
+      new TypeError(
+        `signInAs: unknown persona ${JSON.stringify(persona)}. ` +
+          "Accepted personas: 'anonymous', 'athlete', 'coach', 'org-admin', 'dev-admin'.",
+      ),
+    );
+  }
+  return Promise.reject(
+    new Error(
+      `signInAs(${JSON.stringify(persona)}): the acceptance-tier test-auth seam is currently deferred ` +
+        'pending the refactor to @clerk/testing/playwright (see GitHub Issue #371). ' +
+        "Only signInAs('anonymous') is implemented today.",
+    ),
+  );
 }

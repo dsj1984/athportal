@@ -862,55 +862,63 @@ The synthetic-PII guard
 ([`packages/shared/src/testing/safety.ts`](../packages/shared/src/testing/safety.ts))
 ensures fixtures never leak a real address into the suite.
 
-### Testing-token signing key
+### Seam status (deferred — see Issue #371)
 
-The Clerk test instance exposes a per-instance **testing-token signing
-key**. The seam uses `@clerk/backend`'s testing-tokens helpers to mint
-short-lived JWTs accepted by the Clerk SDK on the test instance only.
-The key:
+The acceptance-tier sign-in path is currently a **deferred placeholder**.
+Story #329 / Task #348 shipped an implementation that signed JWTs locally
+with a `CLERK_TESTING_TOKEN_SIGNING_KEY` env var expected to come from
+the Clerk dashboard — but Clerk does not expose such a key in any
+dashboard surface. Testing tokens are server-minted by Clerk's API
+(`clerkClient.testingTokens.createTestingToken()` in `@clerk/backend`),
+not signed client-side. The phantom env var has been removed; the seam
+is being rewritten in **[Issue #371](https://github.com/dsj1984/athportal/issues/371)**
+to use `@clerk/testing/playwright`'s `clerk.signIn` API.
 
-- is stored in `CLERK_TESTING_TOKEN_SIGNING_KEY` (see
-  [`.env.example`](../.env.example)).
-- is **only valid on the test instance** — leaking it cannot compromise
-  production users.
-- is treated as a secret: real values live in environment variables and
-  GitHub Secrets; only the placeholder appears in `.env.example`.
+What still works today:
 
-### Rotation runbook
+- `authHeaders(user)` for contract-tier sign-in headers (unchanged).
+- `signInAs('anonymous')` returning an empty `StorageState` (unchanged).
+- `resolvePersona(label)` and the `PERSONA_FIXTURES` table (unchanged —
+  the persona ↔ role mapping is stable and inherited by #371).
 
-Rotate the test-instance keys quarterly or immediately on suspected
-exposure. The runbook is:
+What throws clearly pointing at #371:
 
-1. **Rotate in the Clerk dashboard.** Sign in to the Clerk dashboard,
-   switch to the test instance, open **API Keys → Testing Tokens**, and
-   generate a new signing key. Revoke the prior key once the new key is
-   confirmed in CI. (At the same time, rotate the test-instance
-   Publishable and Secret keys via **API Keys → Standard** if the
-   rotation is responding to a leak.)
-2. **Refresh GitHub Secrets.** Update `CLERK_TESTING_TOKEN_SIGNING_KEY`
-   (and, if rotated, `CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY`) in
-   the repository's GitHub Actions secrets. The acceptance workflow
-   ([`.github/workflows/quality.yml`](../.github/workflows/quality.yml))
-   reads these at job start; no workflow edit is required.
-3. **Bump the local `.env`.** Every engineer with a local `.env`
-   refreshes their copy from `.env.example` placeholders and pastes the
-   new values from the dashboard. The committed `.env.example` carries
+- `signInAs('athlete' | 'coach' | 'org-admin' | 'dev-admin')`.
+- The Gherkin step `Given I am signed in as {string}` for any
+  non-anonymous persona — invoked only by `@pending`-tagged scenarios
+  today, so the throw is never reached in CI.
+
+### Rotation runbook (until #371 lands)
+
+Only two Clerk secrets are operationally active for this repo today:
+
+1. **`CLERK_PUBLISHABLE_KEY` / `PUBLIC_CLERK_PUBLISHABLE_KEY`** — the
+   Clerk Publishable key (`pk_test_...` for the test instance). Used by
+   `apps/web` server- and client-side and by `apps/api` server-side.
+2. **`CLERK_SECRET_KEY`** — the Clerk Secret key (`sk_test_...` for the
+   test instance). Used by `apps/api`'s auth middleware and (once #371
+   lands) by the Playwright seam to call
+   `clerkClient.testingTokens.createTestingToken()`.
+
+To rotate either:
+
+1. **Rotate in the Clerk dashboard.** Open the test instance →
+   **Configure → Developers → API keys** (or **Instance → API keys**
+   depending on dashboard version) and regenerate the key. Revoke the
+   prior key once the new one is confirmed in CI.
+2. **Refresh GitHub Secrets** for the affected secret(s) via
+   `gh secret set <NAME> --repo dsj1984/athportal` (reads stdin, value
+   never lands in shell history).
+3. **Bump the local `.env`.** Refresh from `.env.example` placeholders
+   and paste the new value(s). The committed `.env.example` carries
    placeholders only — never real keys.
-4. **Re-run the acceptance smoke locally.** Run
-   `pnpm --filter @repo/web exec bddgen && pnpm --filter @repo/web test:e2e -- --grep @smoke`
-   to confirm the per-persona `storageState` cache regenerates against
-   the new key. Stale cache files under
-   `apps/web/playwright-output/storage/` are safe to delete — the
-   fixture re-creates them on the next run.
-5. **Confirm CI is green.** Push a no-op commit (or re-run the latest
-   CI job) and verify the `acceptance-smoke` job passes against the new
-   key before closing the rotation ticket.
+4. **Confirm CI is green.** Push a no-op commit (or re-run the latest
+   CI job) and verify the `acceptance-smoke` job passes before closing
+   the rotation ticket.
 
-Operator note: seeded test-user accounts and their passwords are
-provisioned in the Clerk dashboard and are out of scope for this repo.
-The rotation runbook above covers the testing-token signing key — user
-account credentials rotate independently through the dashboard's user
-management surface.
+Once Issue #371 lands, this runbook gains a "seed user passwords" step
+covering the four test-instance personas (`athlete@test.invalid`,
+`coach@test.invalid`, `org-admin@test.invalid`, `dev-admin@test.invalid`).
 
 ## Protecting an API route
 
@@ -1064,14 +1072,19 @@ Feature: Coach invites an athlete
 ```
 
 The accepted persona labels are `'athlete'`, `'coach'`, `'org admin'`,
-`'dev admin'`, and `'anonymous'`. Under the hood the step calls
-`resolvePersona(label)` and `sessionCookieFor(persona)` from the seam
-at
-[`packages/shared/src/testing/auth.ts`](../packages/shared/src/testing/auth.ts),
-mints a real Clerk testing-token JWT against the Clerk test instance,
-and plants the `__session` cookie on the Playwright context. There is no
-dev-only auth bypass; an unknown label throws a `TypeError` listing the
-accepted spellings.
+`'dev admin'`, and `'anonymous'`. The step calls `resolvePersona(label)`
+from the seam at
+[`packages/shared/src/testing/auth.ts`](../packages/shared/src/testing/auth.ts).
+An unknown label throws a `TypeError` listing the accepted spellings.
+
+**Status (today).** The non-anonymous branches of the step are
+deferred pending Issue #371 (rewrite of the seam to
+`@clerk/testing/playwright`). Until that issue resolves, persona-required
+scenarios in `tests/features/identity/**` must remain `@pending`-tagged;
+the step body throws with a pointer to #371 if any scenario drops the
+tag prematurely. The seam's persona ↔ role mapping (in `PERSONA_FIXTURES`)
+is stable and will be inherited by the refactor. There is no dev-only
+auth bypass at any point.
 
 Scenario authoring constraints (cross-cutting with
 [`docs/testing-strategy.md` § Forbidden Patterns](testing-strategy.md#forbidden-patterns)):

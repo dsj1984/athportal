@@ -10,7 +10,7 @@
  * codes inside step bodies — live in
  * `.agents/rules/gherkin-standards.md` and `docs/testing-strategy.md`.
  */
-import { resolvePersona, sessionCookieFor } from '@repo/shared/testing';
+import { resolvePersona } from '@repo/shared/testing';
 import { createBdd } from 'playwright-bdd';
 
 const { Given } = createBdd();
@@ -23,28 +23,31 @@ Given('I am a first-time visitor to the public welcome page', async () => {
 });
 
 /**
- * Canonical sign-in step for the test-auth seam (Story #329).
+ * Canonical sign-in step — phrase contract preserved across the refactor.
  *
- * Resolves the persona label (`'athlete'`, `'coach'`, `'org admin'`,
- * `'dev admin'`) via `resolvePersona`, mints a real Clerk testing-token
- * session for that persona, and plants the `__session` cookie on the
- * browser context. The shared seam at `packages/shared/src/testing/auth.ts`
- * is the single source of truth for persona ↔ role mapping — there is no
- * dev-only auth bypass in this step body.
+ * The body currently throws because the underlying seam at
+ * `packages/shared/src/testing/auth.ts` is deferred pending Issue #371
+ * (rewrite to `@clerk/testing/playwright`'s `clerk.signIn` API). The
+ * persona scenarios that consume this step in `tests/features/identity/**`
+ * are all `@pending`-tagged so the throw is never reached in CI;
+ * dropping a `@pending` tag without resolving #371 surfaces the throw
+ * with a clear pointer to the rewrite.
  *
- * Unknown labels surface as a `TypeError` from `resolvePersona` so a
- * scenario typo fails loudly rather than silently signing in as the
- * wrong persona.
+ * `resolvePersona` still runs first so a scenario typo continues to fail
+ * loudly with the canonical "Accepted personas" message.
  */
-Given('I am signed in as {string}', async ({ context }, personaLabel: string) => {
-  const fixture = resolvePersona(personaLabel);
-  const cookie = await sessionCookieFor(fixture.persona);
-  await context.addCookies([cookie]);
+Given('I am signed in as {string}', async (_, personaLabel: string) => {
+  resolvePersona(personaLabel);
+  throw new Error(
+    `Given I am signed in as "${personaLabel}": the test-auth seam is deferred ` +
+      'pending the refactor to @clerk/testing/playwright (see GitHub Issue #371). ' +
+      'Persona-required scenarios must remain @pending-tagged until that issue resolves.',
+  );
 });
 
 /**
- * Canonical signed-out baseline. Clears any session cookie planted by a
- * prior step (or by a cached persona `storageState`) so the scenario
+ * Canonical signed-out baseline. Clears any session cookie a prior step
+ * (or a cached persona `storageState`) may have planted so the scenario
  * starts from a known anonymous baseline.
  */
 Given('I am not signed in', async ({ context }) => {
