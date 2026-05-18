@@ -12,13 +12,13 @@
 // child-process boundary here is the validator's own CLI surface, not an
 // external service.
 
+import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { copyFileSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, it } from 'node:test';
-import assert from 'node:assert/strict';
+import { fileURLToPath } from 'node:url';
 
 import { parseEnvExample, validateEnv } from './check-env.mjs';
 
@@ -126,6 +126,27 @@ describe('validateEnv shape vocabulary', () => {
       assert.equal(failures[0].shape, shapeCase.shape);
     });
   }
+
+  // DATABASE_URL ships as libsql://… in the staging GitHub Environment
+  // (Turso's canonical scheme). The `url` shape MUST accept libsql: so
+  // check-env stops rejecting the canonical form; this case pins that
+  // contract alongside the http/https one.
+  it('accepts a libsql:// URL under the `url` shape', () => {
+    const entries = parseEnvExample('# shape: url\nDATABASE_URL=ignored');
+    const failures = validateEnv(entries, {
+      DATABASE_URL: 'libsql://athportal-staging-dsj1984.aws-us-east-1.turso.io',
+    });
+    assert.deepEqual(failures, []);
+  });
+
+  it('still rejects unsupported schemes under the `url` shape', () => {
+    const entries = parseEnvExample('# shape: url\nDATABASE_URL=ignored');
+    const failures = validateEnv(entries, {
+      DATABASE_URL: 'ftp://example.invalid/db',
+    });
+    assert.equal(failures.length, 1);
+    assert.equal(failures[0].reason, 'shape-mismatch');
+  });
 });
 
 describe('check-env CLI: exit code + stderr key surfacing', () => {
