@@ -46,4 +46,21 @@ export interface Env {
   ANALYTICS: AnalyticsEngineDataset;
   RUNTIME_ENV?: 'development' | 'staging' | 'production';
   RELEASE_SHA?: string;
+
+  /**
+   * Clerk backend secret key (`sk_test_...` or `sk_live_...`). Required
+   * at runtime for `clerkAuth` to validate Clerk-issued session tokens
+   * via `@clerk/backend`. Stored as a Worker secret in production;
+   * loaded from `.dev.vars` (gitignored) in local dev.
+   */
+  CLERK_SECRET_KEY: string;
+
+  /**
+   * Clerk frontend publishable key (`pk_test_...` or `pk_live_...`).
+   * The API does not parse this value directly, but Clerk's backend SDK
+   * derives the expected token issuer from it for authorized-party
+   * checks. Surfaced on Env so apps/web and apps/api share one source
+   * of truth at deploy time.
+   */
+  CLERK_PUBLISHABLE_KEY: string;
 }

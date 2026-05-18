@@ -37,6 +37,12 @@ const config: KnipConfig = {
         'src/sentry.ts',
         'src/env.ts',
         'src/routes/**/*.ts',
+        // Test-only auth adapter under `__testing__/` — imported by the
+        // contract test `no-prod-import.contract.test.ts` (Story #342 /
+        // Task #355) and is the API-side mirror of the shared test-auth
+        // seam. Listed explicitly because the multi-project vitest config
+        // does not surface it as an auto-discovered entry to knip.
+        'src/middleware/__testing__/**/*.ts',
         'vitest.config.ts',
       ],
     },
@@ -44,6 +50,14 @@ const config: KnipConfig = {
       entry: [
         'src/index.ts',
         'src/sentry.ts',
+        // Astro middleware — auto-loaded by Astro at request time but not
+        // auto-discovered by knip's Astro plugin (Story #328 / Task #331).
+        'src/middleware.ts',
+        // Astro routes — `.astro` pages are discovered by the Astro plugin
+        // but `.ts` endpoints (e.g., `src/pages/sign-out.ts` from Story
+        // #328 / Task #333) are not; declared here so knip follows the
+        // surface.
+        'src/pages/**/*.{ts,astro}',
         'astro.config.ts',
         'playwright.config.ts',
         'vitest.config.ts',
@@ -57,7 +71,11 @@ const config: KnipConfig = {
       // expo-updates — synthesized by knip's `expo` plugin (every Expo
       //   app is expected to declare it for OTA). Not actually used by
       //   the current app shell; will be added when OTA lands.
-      ignoreDependencies: ['@repo/config', 'expo-updates'],
+      // @clerk/clerk-expo — declared by Epic #7 / Story #328 to prove
+      //   package selection for the v1.0 native sign-in flow; no source
+      //   consumes it yet because the native app shell does not exist
+      //   at MVP. Wired in by the v1.0 native-apps Epic.
+      ignoreDependencies: ['@repo/config', 'expo-updates', '@clerk/clerk-expo'],
     },
     'packages/baselines': {
       entry: ['src/index.ts'],

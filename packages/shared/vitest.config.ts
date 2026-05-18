@@ -32,6 +32,20 @@ export default mergeConfig(
             functions: 95,
             lines: 95,
           },
+          // Story #327 (Epic #7): the RBAC policy module's
+          // correctness is load-bearing for every protected route.
+          // The unit suite walks the cartesian product of
+          // (role, resource, action) and exercises every branch
+          // of the scope/owner/last-admin predicates; pin the
+          // floor at ≥95% so a future widening of the rules
+          // table that forgets to extend `policy.test.ts` fails
+          // CI rather than silently shipping uncovered branches.
+          'src/rbac/**': {
+            statements: 95,
+            branches: 95,
+            functions: 95,
+            lines: 95,
+          },
         },
       },
       projects: [

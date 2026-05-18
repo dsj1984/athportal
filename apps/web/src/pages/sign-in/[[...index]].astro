@@ -1,0 +1,14 @@
+---
+// apps/web/src/pages/sign-in/[[...index]].astro
+//
+// Clerk-hosted sign-in surface. Renders the `<SignIn />` component from
+// `@clerk/astro/components` so the Tech Spec's US-1 (email + password)
+// and US-2 (magic link) flows can run end-to-end. Magic-link is enabled
+// at the Clerk instance level; no per-page wiring is required.
+//
+// Story #328 (Task #334) — Clerk SDK wiring for the web runtime.
+
+import { SignIn } from '@clerk/astro/components';
+---
+
+<SignIn />

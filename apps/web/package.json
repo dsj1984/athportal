@@ -19,6 +19,7 @@
     "vitest": "^4.1.6"
   },
   "dependencies": {
+    "@clerk/astro": "^3.2.4",
     "@sentry/astro": "^10.53.1"
   }
 }
