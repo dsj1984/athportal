@@ -157,6 +157,36 @@ jobs:
       - name: CRAP baseline check
         run: pnpm run crap:check
 
+  maintainability-baseline:
+    name: Maintainability baseline (rollup `*` min >= 70, ADR-019)
+    needs: [lint, typecheck]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Maintainability baseline check
+        run: pnpm run maintainability:check
+
   acceptance-smoke:
     name: Acceptance smoke (@smoke)
     needs: [lint, typecheck]
