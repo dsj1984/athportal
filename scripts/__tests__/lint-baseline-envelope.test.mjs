@@ -288,14 +288,14 @@ describe('compareTolerance', () => {
   });
 
   it('reads baseline & current rollup totals from the rollup."*" envelope shape', () => {
-    const baseline = envelopeWith(
-      [{ path: 'src/a.ts', errorCount: 0, warningCount: 2 }],
-      { errorCount: 0, warningCount: 2 },
-    );
-    const current = envelopeWith(
-      [{ path: 'src/a.ts', errorCount: 0, warningCount: 4 }],
-      { errorCount: 0, warningCount: 4 },
-    );
+    const baseline = envelopeWith([{ path: 'src/a.ts', errorCount: 0, warningCount: 2 }], {
+      errorCount: 0,
+      warningCount: 2,
+    });
+    const current = envelopeWith([{ path: 'src/a.ts', errorCount: 0, warningCount: 4 }], {
+      errorCount: 0,
+      warningCount: 4,
+    });
     const result = compareTolerance(baseline, current);
     expect(result.baseTotal).toBe(2);
     expect(result.currTotal).toBe(4);
