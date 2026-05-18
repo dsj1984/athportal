@@ -94,8 +94,12 @@ jobs:
         run: node scripts/check-env.mjs
 
       # ── Step 3: staging migrations ─────────────────────────────────
-      # Guarded by hashFiles so the step is a green no-op until the
-      # apps/api workspace lands in a later Epic.
+      # Guards are intentionally narrow: each step only fires when its
+      # specific config file exists. The previous `hashFiles('apps/api/**')`
+      # check matched any scaffolding under apps/api (e.g. package.json
+      # + src stubs) and tried to run drizzle-kit before it was a
+      # dependency. The per-capability guards below make each step a
+      # green no-op until the actual config lands.
       - name: Detect apps/api workspace
         id: detect-api
         run: |
@@ -106,13 +110,13 @@ jobs:
           fi
 
       - name: Run staging migrations (drizzle-kit migrate)
-        if: steps.detect-api.outputs.present == 'true' && hashFiles('apps/api/**') != ''
+        if: steps.detect-api.outputs.present == 'true' && hashFiles('apps/api/drizzle.config.*') != ''
         run: pnpm --filter @repo/api exec drizzle-kit migrate
 
       # ── Step 4: deploy api Worker ──────────────────────────────────
       - name: Deploy API to Cloudflare Workers (staging)
         id: deploy-api
-        if: steps.detect-api.outputs.present == 'true' && hashFiles('apps/api/**') != ''
+        if: steps.detect-api.outputs.present == 'true' && hashFiles('apps/api/wrangler.toml') != ''
         run: pnpm --filter @repo/api exec wrangler deploy --env staging
 
       # ── Step 5: deploy web Pages ───────────────────────────────────
