@@ -27,6 +27,7 @@ import { type RequestLoggerEnv, requestLogger } from './middleware/request-logge
 import { type SyntheticFailureEnv, syntheticFailureRoute } from './routes/debug/synthetic-failure';
 import { meRoute } from './routes/v1/me';
 import { signOutRoute } from './routes/v1/sign-out';
+import { userRoleRoute } from './routes/v1/users/role';
 
 type AppEnv = RequestLoggerEnv & SyntheticFailureEnv & ClerkAuthEnv;
 
@@ -58,6 +59,9 @@ app.use('/api/v1/*', requireInternalUser());
 // 6) Protected routes.
 app.route('/api/v1/me', meRoute);
 app.route('/api/v1/sign-out', signOutRoute);
+// PATCH /api/v1/users/:id/role — last-admin invariant route. The
+// child router defines `/:id/role` so we mount at `/api/v1/users`.
+app.route('/api/v1/users', userRoleRoute);
 
 export default app.fetch;
 export { app };

@@ -15,6 +15,10 @@
     "./db/schema": {
       "types": "./dist/db/schema/index.d.ts",
       "import": "./src/db/schema/index.ts"
+    },
+    "./rbac": {
+      "types": "./dist/rbac/index.d.ts",
+      "import": "./src/rbac/index.ts"
     }
   },
   "scripts": {
