@@ -484,6 +484,220 @@ by definition a hand-edit and must be reverted.
    persistent parse failure usually indicates a syntactic experiment
    that should not be on the main branch.
 
+## Bundle-size baseline ratchet
+
+The bundle-size ratchet enforces two distinct contracts on every
+PR:
+
+1. **Per-bundle compressed budgets** declared in `.size-limit.json`
+   (one entry per shipped bundle). A `gzippedKb` measurement that
+   exceeds its budget fails the gate.
+2. **The non-negotiable Cloudflare Workers 1 MiB compressed cap.**
+   The Worker bundle is `apps/api worker` by convention. The script
+   warns at 90% of the cap and fails at 100%, regardless of the
+   per-bundle budget. Approaching the cap is a Worker-split
+   planning trigger — not a budget bump.
+
+Both contracts are policy-anchored in [ADR-014](decisions.md). The
+gate is *regression-first, bump-last*: the lowest-friction reaction
+to a failing `:check` is to revert the size delta (strip a
+dependency, lazy-load the surface, route-split onto an off-critical
+path), not to bump the budget. Bumping is the **last** lever, and
+when used it requires a paired changelog entry on the same
+`.size-limit.json` bundle row.
+
+### Files and entrypoints
+
+- [`scripts/bundle-size-baseline.mjs`](../scripts/bundle-size-baseline.mjs)
+  — the ratchet script. Pure Node ESM, no build step. Reads
+  `.size-limit.json`, measures `gzipSync` against each bundle's
+  `path` on disk, rolls the per-row sizes into the shared baseline-
+  envelope shape, and either `:check`s the current measurements
+  against budgets and the 1 MiB Worker cap, or `:update`s
+  `baselines/bundle-size.json` from the current tree.
+- [`.size-limit.json`](../.size-limit.json) — the per-bundle budget
+  + changelog file. One entry per shipped bundle:
+
+  ```json
+  {
+    "name": "apps/api worker",
+    "path": "apps/api/dist/worker.js",
+    "gzippedKb": 320,
+    "rationale": "initial baseline; matches MVP route surface",
+    "lastRevised": "2026-05-17",
+    "approvedBy": "@dsj1984"
+  }
+  ```
+
+  `name` is the row key in `baselines/bundle-size.json`. `path` is
+  the file (or glob) measured. `gzippedKb` is the budget enforced.
+  `rationale`, `lastRevised`, and `approvedBy` are the per-bundle
+  changelog fields ADR-014 requires when bumping `gzippedKb`
+  upward — the `rationale` field is the changelog itself, not
+  decoration.
+
+- [`baselines/bundle-size.json`](../baselines/bundle-size.json) —
+  the committed snapshot. Shape fixed by
+  [`.agents/schemas/baselines/bundle-size.schema.json`](../.agents/schemas/baselines/bundle-size.schema.json)
+  via the shared
+  [`baseline-envelope.schema.json`](../.agents/schemas/baselines/baseline-envelope.schema.json).
+  Per-row entries carry `{ bundle, rawKb, gzippedKb }`; the
+  whole-repo `*` rollup carries `{ totalKb, gzippedKb }`. Rows
+  sorted by `bundle` so re-emission is byte-identical.
+- `pnpm run bundle-size:check` — runs
+  `node scripts/bundle-size-baseline.mjs --check`. Exits non-zero
+  on (a) Worker compressed > 1 MiB, (b) any bundle over its budget,
+  or (c) a budget bump unaccompanied by a `rationale`/`lastRevised`
+  update. The PR-blocking
+  [`bundle-size-baseline` job in `quality.yml`](../.github/workflows/quality.yml)
+  is the CI binding; it depends on the `build` job so the wrangler
+  dist output is on disk before measurement.
+- `pnpm run bundle-size:update` — runs
+  `node scripts/bundle-size-baseline.mjs --update`. Regenerates
+  `baselines/bundle-size.json` from the current tree.
+
+### Revision procedure (regression-first, bump-last)
+
+ADR-014 defines a strict ordering for responding to a failing
+`bundle-size:check`. Reviewers MUST walk the steps in order.
+
+1. **Read the failure log.** The script names the failing bundle,
+   its declared budget, and the current measured `gzippedKb`. The
+   Worker cap failure carries the rejection string
+   `Worker 1 MiB cap exceeded` so it is easy to grep for in CI
+   logs.
+2. **Regression-first.** Default assumption: an overrun is a
+   regression. Identify what landed in the same PR that pushed the
+   bundle over — a new dependency, an inlined large constant, a
+   route surface that pulled in a previously tree-shaken module.
+   Remove or defer the size delta:
+   - Strip the dependency (use a lighter alternative, write a
+     micro-helper, drop the feature).
+   - Lazy-load the surface (dynamic `import()`, route-level code
+     split).
+   - Move the code off the critical path (Worker → background
+     job, web island → user-triggered surface).
+3. **Bump-last.** Only when the size delta is *justified* —
+   typically a deliberate dependency upgrade or a planned feature
+   that genuinely needs the bytes — is the budget itself the right
+   lever. Bumping is governed by ADR-014 § Decision:
+   1. Update `gzippedKb` on the `.size-limit.json` bundle row.
+   2. Update `rationale` on the same row to name the dependency
+      or feature that justifies the new headroom. The field is the
+      per-bundle changelog; reviewers MUST be able to read the
+      file and reconstruct *why* the budget moved over its
+      lifetime.
+   3. Update `lastRevised` to the current ISO date.
+   4. Update `approvedBy` (optional but recommended) to the
+      reviewer or operator handle who signed off on the bump.
+   5. If the bump exceeds **+25% of the previous limit**, the
+      `rationale` MUST also name the alternative considered and
+      why it was rejected (per ADR-014). This is a code-review
+      enforcement, not a script check — the script guarantees the
+      `rationale` field is present, not that its content is
+      exhaustive.
+4. **Worker cap is special.** The 1 MiB Cloudflare compressed cap
+   does **not** participate in the bump procedure. Approaching the
+   cap (warn threshold = 90%) triggers a planning Story for a
+   Worker split — break the Worker into smaller deployments, move
+   non-hot routes onto a separate Worker, or split the API surface
+   across Workers per domain. **Never** bump past the cap by
+   editing `.size-limit.json`; the script ignores per-bundle
+   budgets for the Worker row when the cap is breached.
+5. **Refresh the baseline.** After landing the source change (or
+   the bump-with-rationale), run `pnpm run bundle-size:update`.
+   The script re-measures, rewrites `baselines/bundle-size.json`,
+   and the next `:check` against an unchanged tree is byte-
+   identical. Commit the refreshed baseline alongside the source
+   change — a baseline-only PR is a smell.
+
+### Worked examples
+
+**Legitimate dependency-upgrade bump (accepted).** An Epic upgrades
+the API's auth library from `lucia@2` to a v3 release whose
+bundle ships an extra 4 KiB gzipped of compatibility shims. The
+operator:
+
+- Lands the upgrade and runs `pnpm run bundle-size:check`. It
+  fails: `apps/api worker: 322.10 KiB gzipped (budget 320.00 KiB,
+  Δ=+2.10 KiB)`.
+- Verifies the increase is genuine (tree-shaking confirmed; no
+  duplicate copies on the dep graph).
+- Edits `.size-limit.json`:
+  - `gzippedKb` raised from `320` to `325` (5 KiB headroom for
+    future minor revisions of the same dep — keeps successive
+    `lucia` patch releases off the gate).
+  - `rationale` updated: `"lucia v3 compatibility shims add ~4 KiB
+    gzipped vs v2; tree-shaking verified; alternative considered:
+    pin to v2 — rejected because v2 ships no security patches
+    after 2026-04"`.
+  - `lastRevised` updated to today's date.
+- Runs `pnpm run bundle-size:update` and commits both files in the
+  same PR. The script accepts the bump because both `rationale`
+  and `lastRevised` are present and updated on the same row.
+
+**Accidental regression bump (rejected).** A PR raises
+`gzippedKb` from `320` to `350` on `.size-limit.json` to clear a
+red CI step but does **not** update `rationale` or `lastRevised`.
+
+- `pnpm run bundle-size:check` fails with
+  `[bundle-size-baseline] ❌ bundle budget raised without paired
+  rationale update — apps/api worker: budget 320.00 → 350.00 KiB
+  (missing 'rationale' and 'lastRevised')`.
+- The script refuses the bump even though `350 KiB < 1024 KiB`
+  (well under the Worker cap). The rationale-paired check is the
+  per-bundle changelog enforcement; ADR-014 treats an unpaired
+  bump as silently raising the regression bar over time.
+- Remediation: revert the budget change, do the work to drop the
+  size delta, and either land the source fix (no `.size-limit.json`
+  change needed) or land a real bump-with-rationale per the
+  worked example above.
+
+### Hand-edit rejection rule
+
+`baselines/bundle-size.json` is **not** a hand-edited file.
+Reviewers MUST reject any PR that hand-edits the snapshot — the
+only path to update it is to re-run
+`pnpm run bundle-size:update`. The script's serialiser sorts
+keys, sorts rows by `bundle`, and emits a trailing newline so
+byte-identical re-emission is the invariant.
+
+`.size-limit.json`, by contrast, **is** a hand-edited file — it is
+the per-bundle budget + changelog source of truth. The script
+guarantees the file is valid JSON shaped as an array; reviewers
+guarantee the `rationale` content is meaningful and the bump
+ordering (ADR-014) was respected.
+
+### Runbook
+
+1. **You ran `pnpm run bundle-size:check` and it failed.** Read
+   the stderr listing — the rejection string names whether the
+   failure was the 1 MiB Worker cap, a per-bundle budget, or an
+   unpaired bump. Walk the revision procedure above starting at
+   step 2.
+2. **The Worker is at 90%+ of the cap (warning only).** Plan a
+   Worker-split Story now — do not wait for the next dep upgrade
+   to push the build over the cliff. The warning is the script
+   telling you the buffer is gone.
+3. **A new bundle was added to `.size-limit.json`.** The first
+   `:check` against a newly-declared bundle has no prior baseline
+   row to compare against; the rationale-paired check skips it.
+   Run `pnpm run bundle-size:update` to prime the row.
+4. **A bundle file does not exist on disk yet** (pre-build state,
+   as `apps/api` sits today before the wrangler build target
+   lands). The script gracefully no-ops the missing row — the
+   gate stays a pass and emits a stdout hint to run
+   `pnpm run build && pnpm run bundle-size:update` once the build
+   target lands. This is the state the freshly-committed
+   [`baselines/bundle-size.json`](../baselines/bundle-size.json)
+   ships in.
+5. **`baselines/bundle-size.json` diverges from current
+   measurements but `:check` passes.** That is fine — the
+   baseline file is informational on the read side. The gate is
+   keyed off `.size-limit.json` budgets, not off baseline drift.
+   Run `pnpm run bundle-size:update` to refresh the snapshot when
+   you want the committed file to reflect current reality.
+
 ## Local quality gate (`quality:ci-local`)
 
 `pnpm run quality:ci-local` is the **local mirror** of the
