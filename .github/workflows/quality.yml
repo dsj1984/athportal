@@ -94,6 +94,39 @@ jobs:
       - name: Test
         run: pnpm run test
 
+  coverage-baseline:
+    name: Coverage baseline (-2pp per workspace, ADR-015)
+    needs: [lint, typecheck]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate coverage reports
+        run: pnpm run test:coverage
+
+      - name: Coverage baseline check
+        run: pnpm run coverage:check
+
   acceptance-smoke:
     name: Acceptance smoke (@smoke)
     needs: [lint, typecheck]
