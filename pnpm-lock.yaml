@@ -36,9 +36,6 @@ importers:
       '@commitlint/config-conventional':
         specifier: ^21.0.1
         version: 21.0.1
-      '@repo/baselines':
-        specifier: workspace:*
-        version: link:packages/baselines
       '@stryker-mutator/core':
         specifier: ^9.2.0
         version: 9.6.1(@types/node@25.8.0)
