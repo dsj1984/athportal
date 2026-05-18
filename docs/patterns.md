@@ -126,6 +126,109 @@ whole-tree Biome and ESLint passes the ratchet needs.
    failure that does not reproduce in `pnpm run lint` is a script bug,
    not a code bug — file an issue rather than working around it.
 
+## Coverage baseline ratchet
+
+The coverage ratchet keeps per-workspace line / branch / function
+coverage **within 2 absolute percentage points of the committed
+baseline**. It is a CI gate: a PR cannot drop any workspace's coverage
+more than 2pp on any axis without explicitly re-snapshotting the
+baseline. The 2pp tolerance is the policy fixed in
+[ADR-015](decisions.md) — the script and this runbook move together
+with that ADR.
+
+### Files and entrypoints
+
+- [`scripts/coverage-baseline.mjs`](../scripts/coverage-baseline.mjs) —
+  the ratchet script. Pure Node ESM, no build step. Reads each
+  workspace's `coverage/coverage-final.json` (produced by Vitest's V8
+  coverage reporter), aggregates per-file `lines` / `branches` /
+  `functions` percentages, and rolls them up into the shared
+  baseline-envelope shape (`$schema`, `kernelVersion`, `generatedAt`,
+  `rollup`, `rows`). Rollup keys and row paths are sorted
+  lexicographically so successive runs against an unchanged tree
+  produce byte-identical JSON.
+- [`baselines/coverage.json`](../baselines/coverage.json) — the
+  committed snapshot. The single source of truth for "how much
+  coverage each workspace is required to maintain". Diffs against this
+  file are the gate. The shape is fixed by
+  [`.agents/schemas/baselines/coverage.schema.json`](../.agents/schemas/baselines/coverage.schema.json)
+  via the shared
+  [`baseline-envelope.schema.json`](../.agents/schemas/baselines/baseline-envelope.schema.json).
+- `pnpm run coverage:check` — runs
+  `node scripts/coverage-baseline.mjs --check`. Exits non-zero if any
+  workspace dropped more than 2pp on any axis (lines, branches,
+  functions). The PR-blocking
+  [`coverage-baseline` job in `quality.yml`](../.github/workflows/quality.yml)
+  is the CI binding.
+- `pnpm run coverage:update` — runs
+  `node scripts/coverage-baseline.mjs --update`. Regenerates
+  `baselines/coverage.json` from the current tree.
+
+### Refresh procedure
+
+1. **Produce coverage reports.** Run `pnpm run test:coverage` to drive
+   Vitest's V8 reporter under every workspace. Each workspace emits its
+   own `coverage/coverage-final.json`.
+2. **Regenerate the baseline.** Run `pnpm run coverage:update`. The
+   script re-reads every workspace's coverage report, computes the
+   per-workspace rollup, and rewrites `baselines/coverage.json` in
+   place. The output is byte-identical across runs against an unchanged
+   tree.
+3. **Inspect the diff.** Open `baselines/coverage.json` against the
+   prior commit. Confirm every per-workspace rollup change is
+   justified — a drop is a regression and should not be re-baselined
+   without an accompanying source change. A rise is the happy path and
+   should be committed so the next contributor cannot quietly
+   re-introduce the missing coverage.
+4. **Commit the snapshot alongside the source change.** Reviewers
+   should see *both* the source change and the baseline bump in the
+   same PR. A baseline-only PR is a smell — it means the floor moved
+   without a code reason.
+
+### Hand-edit rejection rule
+
+`baselines/coverage.json` is **not** a hand-edited file. Reviewers MUST
+reject any PR that hand-edits the snapshot — the only path to update
+it is to re-run `pnpm run coverage:update`. This mirrors the
+hand-edit rejection rule the other dimension runbooks (lint, CRAP,
+maintainability, mutation, lighthouse, bundle-size) enforce.
+
+The script's serialiser sorts keys at every depth and appends a
+trailing newline so byte-identical re-emission is the invariant —
+any commit that drifts the file off that shape is by definition a
+hand-edit and must be reverted.
+
+### Runbook
+
+1. **You ran `pnpm run coverage:check` and it failed.** Read the
+   stderr listing — it names the workspace, the axis (lines / branches
+   / functions), the prior percentage, the current percentage, and the
+   pp delta. The fix-first path is to add tests for the under-covered
+   code paths the V8 reporter highlights (open
+   `<workspace>/coverage/index.html` to see which files dropped).
+2. **The drop is intentional** (e.g. you deleted a feature and its
+   tests went with it, lowering the workspace's denominator). Re-run
+   `pnpm run coverage:update`, inspect the diff on
+   `baselines/coverage.json` to confirm it matches the change you
+   expect, and commit the snapshot alongside the source change.
+3. **A newly-registered workspace under `apps/*` or `packages/*`.**
+   The ratchet treats a new workspace as a pass on the first check
+   (no prior rollup to compare against). Run
+   `pnpm run coverage:update` to prime the workspace; the next
+   `--check` enforces the floor.
+4. **Baseline is unprimed** (every per-workspace rollup is `0`). The
+   ratchet skips the gate and prints a hint that the operator must
+   run `pnpm run coverage:update` once to establish the floor. This is
+   the state the freshly-committed
+   [`baselines/coverage.json`](../baselines/coverage.json) ships in;
+   the first `--update` after this Story merges primes the real
+   measurements.
+5. **Editor noise / local-only failures.** The ratchet consumes the
+   same `coverage-final.json` files Vitest produces, so a `--check`
+   failure that does not reproduce after `pnpm run test:coverage` is
+   a stale coverage report — delete each workspace's
+   `coverage/` directory and rerun.
+
 ## Local quality gate (`quality:ci-local`)
 
 `pnpm run quality:ci-local` is the **local mirror** of the
