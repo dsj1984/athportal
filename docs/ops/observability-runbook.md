@@ -320,6 +320,48 @@ recent event delivered within seconds.
 
 ---
 
+## Nightly Lighthouse baseline setup
+
+The nightly workflow ([`.github/workflows/nightly.yml`](../../.github/workflows/nightly.yml))
+runs `pnpm run lighthouse:check` against a staging preview URL pulled from
+the `LIGHTHOUSE_PREVIEW_URL` Environment Secret on the `staging` GitHub
+Environment. Until the secret is set, the job exits non-zero with an
+actionable `LIGHTHOUSE_PREVIEW_URL is not set` message — the unprimed-skip
+path inside `scripts/lighthouse-baseline.mjs` only fires once the preview
+URL is configured.
+
+### Setting the secret
+
+After the next staging deploy URL is finalized, set the secret from the
+operator workstation (or any host with `gh auth login` against the repo):
+
+```bash
+gh secret set --env staging LIGHTHOUSE_PREVIEW_URL --body "https://<staging-url>"
+```
+
+Notes:
+
+- The secret is per-environment, not repo-level. `gh secret set` without
+  `--env staging` would write a repo-level secret that the nightly job
+  cannot read (the `lighthouse-baseline` job declares `environment: staging`
+  so only Environment-scoped secrets are visible).
+- The URL must be the base origin (`https://host`), without a trailing
+  path. The script appends the per-route slug from `baselines/lighthouse.json`.
+- Rotate by re-running the same command with the new URL. There is no
+  separate "unset" command — `gh secret delete --env staging LIGHTHOUSE_PREVIEW_URL`
+  removes it and the nightly job returns to the actionable-failure state.
+
+### Priming the baseline
+
+The baseline at [`baselines/lighthouse.json`](../../baselines/lighthouse.json)
+ships unprimed (every route at score 0). With the secret set, the nightly
+job's `lighthouse:check` step exits 0 with a "baseline is unprimed" message
+until an operator runs `pnpm run lighthouse:update` against the staging
+preview to capture the first real measurements. Commit the regenerated
+baseline; the next nightly enforces the +/-3 per-metric / per-route band.
+
+---
+
 ## Related
 
 - [ADR-012 — Observability vendor stack (MVP beta)](../decisions.md#adr-012--observability-vendor-stack-mvp-beta)
