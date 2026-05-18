@@ -30,9 +30,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 // route module's import side-effects run. The variable is reassigned in
 // `beforeEach` so each test gets a fresh `vi.fn()` and the call counts
 // do not leak between cases.
-const captureExceptionMock = vi.fn();
+const captureExceptionMock = vi.fn<(error: unknown) => void>();
 vi.mock('@sentry/cloudflare', () => ({
-  captureException: (...args: unknown[]) => captureExceptionMock(...args),
+  captureException: (error: unknown): void => {
+    captureExceptionMock(error);
+  },
 }));
 
 import { syntheticFailureRoute } from './synthetic-failure';
@@ -70,7 +72,7 @@ describe('POST /api/v1/_debug/synthetic-failure — gate closed', () => {
     // Assert — wire shape
     expect(res.status).toBe(404);
     expect(res.status).not.toBe(403);
-    const body = await res.json();
+    const body = (await res.json()) as unknown;
     expect(body).toMatchObject({ success: false, error: { code: 'NOT_FOUND' } });
 
     // Assert — capture path not exercised
