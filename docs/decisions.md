@@ -528,3 +528,13 @@ The mandrel framework default for this dimension targets the rollup `min` axis w
 - The 70 floor is a **policy floor**, not a calibration floor. Future kernel changes (e.g. a different MI variant, a different parser) bump `kernelVersion` on the envelope and may shift typical scores; the ADR floor stays at 70 unless a new ADR supersedes this one with a documented re-calibration argument.
 - Per-file scoring is the same kernel CRAP uses (`typhonjs-escomplex` with the `typescript: true` parse flag). Parse failures return `null` and the row is dropped from the envelope — a zero MI would be a phantom floor violation no source change can fix.
 - Cross-references: [`docs/patterns.md` § "Maintainability baseline ratchet"](./patterns.md#maintainability-baseline-ratchet) is the operator-facing refresh runbook; the [`.agents/schemas/baselines/maintainability.schema.json`](../.agents/schemas/baselines/maintainability.schema.json) schema description names the floor target (rollup `min`) explicitly and is the ported contract from mandrel; the [Epic #6 Tech Spec](https://github.com/dsj1984/athportal/issues/196) carries the dimension's harness rationale.
+
+---
+
+## ADR 0003 — Uptime probe vendor selection (Better Stack default)
+
+**Status**: Accepted (2026-05-17, Epic #5 — Story #254)
+
+Full ADR at [`docs/decisions/0003-uptime-vendor.md`](./decisions/0003-uptime-vendor.md).
+
+Refines ADR-012's "Better Stack is the external uptime-probe vendor" clause with the per-vendor evaluation that backs the default, the substitute set (Pingdom, Uptime.com), the explicit independence-from-Cloudflare rationale, and the seat-cost / probe-frequency floor (Team plan, $29/month seat, 60-second probe interval). IaC encoding lives at [`infra/uptime/betterstack.yml`](../infra/uptime/betterstack.yml).
