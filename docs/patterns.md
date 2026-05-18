@@ -912,6 +912,180 @@ The rotation runbook above covers the testing-token signing key — user
 account credentials rotate independently through the dashboard's user
 management surface.
 
+## Protecting an API route
+
+Every protected route under `/api/v1/*` runs through the two-stage
+middleware chain in
+[`apps/api/src/middleware/auth.ts`](../apps/api/src/middleware/auth.ts).
+The composition is mounted once at the app boundary; individual routes
+inherit it.
+
+```ts
+// apps/api/src/index.ts (composition root — pattern shown for reference)
+import { Hono } from 'hono';
+import { clerkAuth, requireInternalUser } from './middleware/auth';
+
+const app = new Hono();
+
+// Stage 1 — every request: validate the Clerk session token.
+//   - Reads __session cookie or Authorization: Bearer …
+//   - Verifies against CLERK_SECRET_KEY via @clerk/backend.
+//   - On failure: 401 { success: false, error: { code: 'UNAUTHENTICATED', … } }
+//   - On success: writes c.var.clerkSubjectId.
+app.use('*', clerkAuth());
+
+// Stage 2 — protected surface: JIT-provision the internal users row.
+//   - Fast path: SELECT users WHERE clerk_subject_id = :sub.
+//   - Miss: INSERT … ON CONFLICT DO NOTHING RETURNING *  → re-SELECT on conflict.
+//   - On success: writes c.var.auth (AuthContext) for downstream handlers.
+app.use('/api/v1/*', requireInternalUser());
+
+// Route handlers read c.var.auth and pass (role, resource, action) into
+// canPerform() from @repo/shared/rbac before any state change.
+app.get('/api/v1/me', (c) => {
+  const { userId, email, role } = c.var.auth;
+  return c.json({ success: true, data: { id: userId, email, role } });
+});
+```
+
+Authorization is a **separate concern** from authentication. Inside a
+route handler, after the auth middleware has populated `c.var.auth`,
+call `canPerform(role, resource, action, ctx)` from
+[`packages/shared/src/rbac/policy.ts`](../packages/shared/src/rbac/policy.ts)
+to gate any state mutation. The policy is exhaustively unit-tested
+across `(role, resource, action)` triples — never re-derive authorization
+logic inline in a route.
+
+Mounting rules:
+
+- `clerkAuth()` MUST mount before `requireInternalUser()`. The second
+  middleware reads `c.var.clerkSubjectId`; without the first stage it
+  has nothing to look up and defensively returns 401.
+- Public routes (e.g. health, OAuth callbacks) MUST be defined **before**
+  the `app.use('*', clerkAuth())` line, or carry an explicit
+  authentication bypass per the security baseline. Today the only
+  unauthenticated surface is the health endpoint at `/api/v1/health` —
+  expand the list deliberately, never accidentally.
+- Stack traces and internal error details MUST NOT be returned to the
+  caller. The middleware emits only the canonical `UNAUTHENTICATED`
+  envelope; route handlers do the same for their own failure codes
+  (`FORBIDDEN`, `NOT_FOUND`, etc.).
+
+Constraints from `AGENTS.md` §Safety Constraints and the architecture
+doc apply to this file: `apps/api/src/middleware/auth.ts` is
+security-critical and changes require explicit review.
+
+## Writing an authenticated test
+
+Test-tier choices for an authenticated surface:
+
+| What you are testing | Tier | Tooling |
+| --- | --- | --- |
+| Pure logic the route depends on (e.g. RBAC policy) | Unit | Vitest, no `createTestApp` |
+| Route returns the right wire shape / status / DB row for a given persona | Contract | `createTestApp(db, { actor })` |
+| User journeys end-to-end (sign-in redirects, banners, role-gated UI) | Acceptance | Playwright + `Given I am signed in as {string}` |
+
+### Contract tier — `createTestApp(db, { actor })`
+
+The two-argument form of `createTestApp` from
+[`packages/shared/src/testing/app.ts`](../packages/shared/src/testing/app.ts)
+swaps **only** the JWT-validation stage. The downstream
+`requireInternalUser` middleware runs unchanged from production — the
+test exercises the real JIT lookup, real `AuthContext` composition, and
+real route handler.
+
+```ts
+// apps/api/src/routes/v1/<resource>/__tests__/patch.contract.test.ts
+import { type AuthContext, createTestApp, freshDb } from '@repo/shared/testing';
+import { users } from '@repo/shared/db/schema';
+import { requireInternalUser } from '../../../middleware/auth';
+import { resourceRoute } from '../resource';
+
+const coach: AuthContext = {
+  userId: 'u_coach_1',
+  clerkSubjectId: 'user_test_coach',
+  email: 'coach@test.invalid',
+  role: 'team_admin',
+  orgId: 'org_test_a',
+  teamId: 'team_test_a_1',
+};
+
+it('lets a team_admin update their own team resource', async () => {
+  // Arrange — seed the users row so requireInternalUser's fast-path hits.
+  const db = await freshDb();
+  await db.insert(users).values({
+    id: coach.userId,
+    clerkSubjectId: coach.clerkSubjectId,
+    email: coach.email,
+    role: coach.role,
+    orgId: coach.orgId,
+    teamId: coach.teamId,
+  }).run();
+
+  const app = createTestApp(db, { actor: coach })
+    .use('/api/v1/*', requireInternalUser())
+    .route('/api/v1', resourceRoute);
+
+  // Act
+  const res = await app.request('/api/v1/resources/r_1', {
+    method: 'PATCH',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ name: 'Renamed' }),
+  });
+
+  // Assert — wire shape + DB side-effect.
+  expect(res.status).toBe(200);
+  expect(await res.json()).toMatchObject({ success: true, data: { name: 'Renamed' } });
+});
+```
+
+For 401 / anonymous-path tests, use the **single-argument** form
+(`createTestApp(db)`) — no actor is bound, `c.var.auth` is undefined,
+and any handler that reads it surfaces the same `UNAUTHENTICATED`
+envelope production emits. See
+[`apps/api/src/routes/v1/me.actor.contract.test.ts`](../apps/api/src/routes/v1/me.actor.contract.test.ts)
+for the reference test that pins this contract across the four MVP
+personas.
+
+### Acceptance tier — `Given I am signed in as {persona}`
+
+Acceptance scenarios sign in once per persona via the canonical Gherkin
+step defined in
+[`apps/web/e2e/steps/auth.steps.ts`](../apps/web/e2e/steps/auth.steps.ts):
+
+```gherkin
+@identity::coach @domain::roster
+Feature: Coach invites an athlete
+
+  Scenario: The athlete appears on the roster once they accept
+    Given I am signed in as "coach"
+    When I invite an athlete by email and they accept the invitation
+    Then I see the athlete listed on my team roster
+```
+
+The accepted persona labels are `'athlete'`, `'coach'`, `'org admin'`,
+`'dev admin'`, and `'anonymous'`. Under the hood the step calls
+`resolvePersona(label)` and `sessionCookieFor(persona)` from the seam
+at
+[`packages/shared/src/testing/auth.ts`](../packages/shared/src/testing/auth.ts),
+mints a real Clerk testing-token JWT against the Clerk test instance,
+and plants the `__session` cookie on the Playwright context. There is no
+dev-only auth bypass; an unknown label throws a `TypeError` listing the
+accepted spellings.
+
+Scenario authoring constraints (cross-cutting with
+[`docs/testing-strategy.md` § Forbidden Patterns](testing-strategy.md#forbidden-patterns)):
+
+- Acceptance scenarios assert **user-visible outcomes only**. HTTP
+  status codes, JSON shapes, and DB row state belong in the matching
+  contract test, not in the `.feature` file.
+- Do not author a near-match for `Given I am signed in as {string}`.
+  Reuse the canonical phrase verbatim; widen the persona table via a
+  follow-up Story if a new role is genuinely needed.
+- The testing-token signing key follows the rotation runbook in
+  [§ *Authenticated test sessions (Clerk test instance)*](#authenticated-test-sessions-clerk-test-instance)
+  above.
+
 ## How to add a new step
 
 The acceptance tier reads from a small, deliberately constrained step

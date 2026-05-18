@@ -61,6 +61,20 @@ What currently exists on `main` / `epic/2`:
   the full acceptance corpus and the Stryker mutation report. See
   [`docs/testing-strategy.md`](docs/testing-strategy.md) for the tier
   decision matrix and forbidden patterns.
+- **Authentication:** Clerk (`@clerk/astro` on web; `@clerk/backend` JWT
+  verification in the Worker) is wired end-to-end — `clerkAuth` validates
+  the session token then `requireInternalUser` performs JIT user
+  provisioning at
+  [`apps/api/src/middleware/auth.ts`](apps/api/src/middleware/auth.ts);
+  RBAC policy decisions run through `canPerform(role, resource, action)`
+  in [`packages/shared/src/rbac/`](packages/shared/src/rbac/); the
+  test-auth seam at
+  [`packages/shared/src/testing/auth.ts`](packages/shared/src/testing/auth.ts)
+  mints real Clerk testing-token JWTs against a Clerk test instance and
+  feeds both the `createTestApp(db, { actor })` contract harness
+  ([`packages/shared/src/testing/app.ts`](packages/shared/src/testing/app.ts))
+  and the Gherkin step `Given I am signed in as {string}`
+  ([`apps/web/e2e/steps/auth.steps.ts`](apps/web/e2e/steps/auth.steps.ts)).
 - **Agent framework:** `.agents/` (submodule, do not edit directly),
   `.agentrc.json`, `.claude/` (harness settings + generated command
   mirrors), and a `temp/` scratch directory excluded from git.

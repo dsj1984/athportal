@@ -15,7 +15,7 @@
 | API | Cloudflare Workers, Hono router, OpenAPI via `@hono/zod-openapi` | `apps/api/` |
 | Database | Turso (libSQL) via Drizzle ORM; ephemeral SQLite for tests | `packages/shared/src/db/` |
 | Validation | Zod at every system boundary | `packages/shared/src/schemas/` |
-| Auth | Clerk (`@clerk/astro` at MVP; `@clerk/clerk-expo` at v1.0). Email+password AND magic link both first-class at MVP. JIT user provisioning in middleware. | `apps/api/src/middleware/auth.ts` |
+| Auth | Clerk (`@clerk/astro` at MVP; `@clerk/clerk-expo` at v1.0). Email+password AND magic link both first-class at MVP. Worker-side: `clerkAuth` validates the session token via `@clerk/backend` `verifyToken`, then `requireInternalUser` JIT-provisions the `users` row and attaches the `AuthContext` to `c.var.auth`. | `apps/api/src/middleware/auth.ts` |
 | Media | Mux direct uploads + HLS playback; Cloudflare Images for non-video assets | `apps/api/src/routes/v1/media/` |
 | Notifications (MVP) | Web Push only | — |
 | Notifications (v1.0) | APNS + FCM via Expo push pipeline | — |
@@ -68,13 +68,19 @@ Clerk webhooks are a defensive sync only. The primary path is **Just-In-Time** p
 
 ```text
 Browser → Clerk session → apps/web middleware → @repo/api middleware/auth.ts
+  └→ clerkAuth():
+       ├─ extract __session cookie or Authorization: Bearer token
+       ├─ verifyToken() against CLERK_SECRET_KEY
+       └─ on success: c.var.clerkSubjectId = sub  (else 401 UNAUTHENTICATED)
   └→ requireInternalUser():
-       ├─ if users row exists by clerkId → attach to context
-       └─ else → INSERT users row → attach to context
+       ├─ SELECT users WHERE clerk_subject_id = :sub  (fast path)
+       ├─ else INSERT … ON CONFLICT(clerk_subject_id) DO NOTHING RETURNING *
+       ├─ on conflict (parallel inserter won): re-SELECT
+       └─ c.var.auth = { userId, clerkSubjectId, email, role, orgId, teamId }
   └→ if users.onboarded_at IS NULL → redirect to /onboarding
 ```
 
-This eliminates the "Clerk webhook race" where a webhook had not landed before the first authenticated request. A `userLegalAgreements` table records terms/privacy acceptance stamped at the close of onboarding.
+This eliminates the "Clerk webhook race" where a webhook had not landed before the first authenticated request. Under n parallel first-touch requests for the same subject, exactly one row exists in `users` and every request succeeds with the same `userId` — no `SQLITE_CONSTRAINT` surfaces to the caller. A `userLegalAgreements` table records terms/privacy acceptance stamped at the close of onboarding.
 
 ### 3.2 Mux direct upload + playback
 
