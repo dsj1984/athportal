@@ -11,6 +11,10 @@
     "./testing": {
       "types": "./dist/testing/index.d.ts",
       "import": "./src/testing/index.ts"
+    },
+    "./db/schema": {
+      "types": "./dist/db/schema/index.d.ts",
+      "import": "./src/db/schema/index.ts"
     }
   },
   "scripts": {
@@ -21,7 +25,7 @@
   },
   "dependencies": {
     "better-sqlite3": "^12.10.0",
-    "drizzle-orm": "^0.36.4",
+    "drizzle-orm": "^0.45.2",
     "hono": "^4.6.13",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
@@ -35,6 +39,7 @@
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
     "@vitejs/plugin-react": "^5.0.0",
+    "drizzle-kit": "^0.30.0",
     "jsdom": "^26.0.0",
     "vitest": "^4.1.6"
   }

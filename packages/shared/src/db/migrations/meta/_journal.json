@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1779112425915,
+      "tag": "0000_auth_and_rbac",
+      "breakpoints": true
+    }
+  ]
+}

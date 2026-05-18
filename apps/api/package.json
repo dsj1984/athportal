@@ -11,12 +11,15 @@
   },
   "devDependencies": {
     "@repo/config": "workspace:*",
+    "@types/better-sqlite3": "^7.6.12",
+    "better-sqlite3": "^12.10.0",
     "vitest": "^4.1.6"
   },
   "dependencies": {
     "@clerk/backend": "^3.4.9",
     "@repo/shared": "workspace:*",
     "@sentry/cloudflare": "^10.53.1",
+    "drizzle-orm": "^0.45.2",
     "hono": "^4.6.13"
   }
 }
