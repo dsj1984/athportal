@@ -9,6 +9,11 @@ overrides:
   '@clerk/clerk-expo@<2.19.36': '>=2.19.36'
   '@clerk/clerk-react@<5.61.6': '>=5.61.6'
 
+patchedDependencies:
+  oxc-parser@0.130.0:
+    hash: kfymkjdaassjjoj4b7nngcpqmi
+    path: patches/oxc-parser@0.130.0.patch
+
 importers:
 
   .:
@@ -14070,7 +14075,7 @@ snapshots:
       get-tsconfig: 4.14.0
       jiti: 2.7.0
       minimist: 1.2.8
-      oxc-parser: 0.130.0
+      oxc-parser: 0.130.0(patch_hash=kfymkjdaassjjoj4b7nngcpqmi)
       oxc-resolver: 11.19.1(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)
       picomatch: 4.0.4
       smol-toml: 1.6.1
@@ -15240,7 +15245,7 @@ snapshots:
     transitivePeerDependencies:
       - zod
 
-  oxc-parser@0.130.0:
+  oxc-parser@0.130.0(patch_hash=kfymkjdaassjjoj4b7nngcpqmi):
     dependencies:
       '@oxc-project/types': 0.130.0
     optionalDependencies:
