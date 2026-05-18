@@ -99,18 +99,21 @@ describe('baseline stubs (crap + maintainability)', () => {
     },
   );
 
-  it.each(STUBS)('$kind stub validates under AJV against its per-kind schema', ({ file, schemaFile }) => {
-    const ajv = buildAjv();
-    const schema = loadJson(path.join(SCHEMA_DIR, schemaFile));
-    const validate = ajv.compile(schema);
-    const doc = loadJson(path.join(BASELINES_DIR, file));
-    const ok = validate(doc);
-    if (!ok) {
-      // eslint-disable-next-line no-console
-      console.error(`AJV errors for ${file}:`, validate.errors);
-    }
-    expect(ok).toBe(true);
-  });
+  it.each(STUBS)(
+    '$kind stub validates under AJV against its per-kind schema',
+    ({ file, schemaFile }) => {
+      const ajv = buildAjv();
+      const schema = loadJson(path.join(SCHEMA_DIR, schemaFile));
+      const validate = ajv.compile(schema);
+      const doc = loadJson(path.join(BASELINES_DIR, file));
+      const ok = validate(doc);
+      if (!ok) {
+        // eslint-disable-next-line no-console
+        console.error(`AJV errors for ${file}:`, validate.errors);
+      }
+      expect(ok).toBe(true);
+    },
+  );
 
   it.each(STUBS)(
     "$kind stub's $schema pointer targets the matching per-kind schema",
