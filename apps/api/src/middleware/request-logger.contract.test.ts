@@ -34,9 +34,7 @@ function createAnalyticsStub(): AnalyticsStub {
   };
 }
 
-function createAppWithStub(analytics: AnalyticsStub): {
-  app: Hono<{ Bindings: RequestLoggerEnv }>;
-} {
+function createApp(): { app: Hono<{ Bindings: RequestLoggerEnv }> } {
   const app = new Hono<{ Bindings: RequestLoggerEnv }>();
   app.use('*', requestLogger());
   app.get('/ping', (c) => c.json({ ok: true }));
@@ -66,7 +64,7 @@ describe('requestLogger() — redaction contract', () => {
   it('drops disallowed PII headers from LogEvent.metadata', async () => {
     // Arrange
     const analytics = createAnalyticsStub();
-    const { app } = createAppWithStub(analytics);
+    const { app } = createApp();
 
     // Act
     const res = await app.request(
@@ -102,7 +100,7 @@ describe('requestLogger() — redaction contract', () => {
   it('drops disallowed PII body fields from LogEvent.metadata', async () => {
     // Arrange
     const analytics = createAnalyticsStub();
-    const { app } = createAppWithStub(analytics);
+    const { app } = createApp();
 
     // Act — body carries PII the allowlist must not surface
     const res = await app.request(
@@ -141,7 +139,7 @@ describe('requestLogger() — redaction contract', () => {
   it('writes exactly one event per request including 5xx failure paths', async () => {
     // Arrange
     const analytics = createAnalyticsStub();
-    const { app } = createAppWithStub(analytics);
+    const { app } = createApp();
 
     // Act — handler throws; Hono converts to 500
     const res = await app.request('/boom', { method: 'GET' }, bindings(analytics));
@@ -162,7 +160,7 @@ describe('requestLogger() — redaction contract', () => {
   it('writes exactly one event per request for 4xx handler responses', async () => {
     // Arrange
     const analytics = createAnalyticsStub();
-    const { app } = createAppWithStub(analytics);
+    const { app } = createApp();
 
     // Act — handler returns 404 explicitly
     const res = await app.request('/notfound-handler', { method: 'GET' }, bindings(analytics));
