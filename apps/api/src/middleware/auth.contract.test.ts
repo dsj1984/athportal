@@ -305,3 +305,102 @@ function eqSubjectFilter(subject: string) {
   const { eq } = require('drizzle-orm') as typeof import('drizzle-orm');
   return eq(users.clerkSubjectId, subject);
 }
+
+// ---------------------------------------------------------------------------
+// Task #346 — Anonymous-route sweep + session cookie security flags
+// ---------------------------------------------------------------------------
+//
+// Tasks #341/#343/#344 each shipped their own contract assertions
+// alongside the code under test. Task #346 is the security-critical
+// gate: every protected route refuses anonymous callers with the same
+// envelope, and any `Set-Cookie` our server emits for `__session`
+// carries `HttpOnly` + `Secure` + `SameSite=Lax`.
+//
+// The sweep iterates the route table so adding a new `/api/v1/*` route
+// without auth coverage becomes a review-time miss (the sweep would
+// not exercise it). When a new protected route is added, append it
+// here.
+
+import { meRoute } from '../routes/v1/me';
+import { signOutRoute } from '../routes/v1/sign-out';
+
+interface ProtectedRoute {
+  readonly path: string;
+  readonly method: 'GET' | 'POST';
+  readonly mountWith: (app: Hono<RequireInternalUserEnv>) => void;
+}
+
+const PROTECTED_ROUTES: readonly ProtectedRoute[] = [
+  {
+    path: '/api/v1/me',
+    method: 'GET',
+    mountWith: (app) => app.route('/api/v1/me', meRoute),
+  },
+  {
+    path: '/api/v1/sign-out',
+    method: 'POST',
+    mountWith: (app) => app.route('/api/v1/sign-out', signOutRoute),
+  },
+];
+
+function buildProtectedApp(
+  db: ReturnType<typeof freshProductionDb>,
+  mount: ProtectedRoute['mountWith'],
+) {
+  const app = new Hono<RequireInternalUserEnv>();
+  app.use('*', async (c, next) => {
+    c.set('db', db);
+    await next();
+  });
+  app.use('*', clerkAuth());
+  app.use('*', requireInternalUser());
+  mount(app);
+  return app;
+}
+
+describe('Anonymous-route sweep across /api/v1/* (Task #346)', () => {
+  for (const route of PROTECTED_ROUTES) {
+    it(`${route.method} ${route.path} returns 401 UNAUTHENTICATED for anonymous callers`, async () => {
+      const app = buildProtectedApp(freshProductionDb(), route.mountWith);
+      const res = await app.request(route.path, { method: route.method }, env);
+
+      expect(res.status).toBe(401);
+      expect(await res.json()).toMatchObject({
+        success: false,
+        error: { code: 'UNAUTHENTICATED' },
+      });
+    });
+  }
+});
+
+describe('Session cookie security flags (Task #346)', () => {
+  it('Set-Cookie issued on a fresh sign-in flow carries HttpOnly + Secure + SameSite=Lax', async () => {
+    // Our API does not issue the Clerk `__session` cookie itself — Clerk's
+    // hosted sign-in flow does. The only `Set-Cookie` our routes emit is
+    // the sign-out clear, which MUST mirror Clerk's issuance flags so a
+    // downgraded re-issue is impossible. Asserting this header on the
+    // sign-out path is the contract gate for the cookie-flag posture
+    // (Tech Spec #318 §Security, security-baseline §"Transport & Headers").
+    mockedVerifyToken.mockResolvedValueOnce({
+      data: { sub: 'user_cookie_flags' },
+    } as unknown as Awaited<ReturnType<typeof verifyToken>>);
+
+    const app = buildProtectedApp(freshProductionDb(), (a) =>
+      a.route('/api/v1/sign-out', signOutRoute),
+    );
+
+    const res = await app.request(
+      '/api/v1/sign-out',
+      { method: 'POST', headers: { cookie: '__session=valid' } },
+      env,
+    );
+
+    expect(res.status).toBe(204);
+    const setCookie = res.headers.get('set-cookie');
+    expect(setCookie).not.toBeNull();
+    expect(setCookie).toMatch(/^__session=/);
+    expect(setCookie).toMatch(/HttpOnly/i);
+    expect(setCookie).toMatch(/Secure/i);
+    expect(setCookie).toMatch(/SameSite=Lax/i);
+  });
+});
