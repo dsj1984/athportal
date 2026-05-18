@@ -308,6 +308,69 @@ jobs:
           retention-days: 14
           if-no-files-found: error
 
+  trufflehog:
+    # Secret-scanner gate (PR-blocking). Runs TruffleHog with
+    # `--only-verified` so we fail the build only on findings the scanner
+    # could confirm against the provider, keeping the signal noise-free.
+    # False positives are suppressed via `.trufflehog-exclude.yml` at the
+    # repo root (created on first false positive, not preemptively).
+    name: TruffleHog (secret scan)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: TruffleHog scan
+        # Pinned to v3.95.3 — TruffleHog does not publish a moving `v3`
+        # major tag; bump deliberately when upstream cuts a new release.
+        uses: trufflesecurity/trufflehog@v3.95.3
+        with:
+          extra_args: --only-verified
+
+  gitleaks-pr:
+    # Secret-scanner gate (PR-blocking) — companion to the TruffleHog job.
+    # Fails the build on any detected secret, then uploads the SARIF
+    # report to GitHub Code Scanning so findings surface in the Security
+    # tab. `security-events: write` is scoped to this job alone.
+    name: gitleaks (secret scan, PR)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: gitleaks scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: true
+          GITLEAKS_ENABLE_SUMMARY: true
+        with:
+          # Emit SARIF alongside the JSON report so the upload step has a
+          # canonical artifact regardless of whether the action found
+          # secrets. `results.sarif` is gitleaks-action@v2's default
+          # SARIF path.
+          config-path: ""
+
+      - name: Upload SARIF to GitHub Code Scanning
+        # Always run so the Security tab receives the empty-findings
+        # report on green PRs too — this is what makes the gate visible.
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: results.sarif
+          category: gitleaks
+
   build:
     name: Build
     needs: [lint, typecheck, supply-chain-security]
