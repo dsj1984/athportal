@@ -120,7 +120,7 @@ operator-confirmed Story #285 task that activates the alert.
 | --- | --- | --- | --- | --- |
 | **Sentry** | Org spend cap at $26/month | **2026-05-17 23:18 UTC** | Operator (`OBSERVABILITY_ALERT_EMAIL` distribution list, org-owner address) | Sentry org → Settings → Subscription → Spend cap, screenshot captured for the operations runbook screenshot directory (link to be added in a follow-on update). |
 | **Log sink (Better Stack Logs)** | Monthly-ingest anomaly rule at $30/month | **2026-05-17 23:14 UTC** | Operator (`OBSERVABILITY_ALERT_EMAIL` distribution list) | Captured in the Better Stack Logs anomaly-rule console; screenshot path to be linked from the operations runbook in a follow-on update. |
-| **Uptime (Better Stack)** | Seat-count alert at 1 seat | _pending — appended by Task #299_ | _pending_ | _pending_ |
+| **Uptime (Better Stack)** | Seat-count alert at 1 seat | **2026-05-17 23:22 UTC** | Operator (`OBSERVABILITY_ALERT_EMAIL` distribution list) | Better Stack → Team settings → Members → seat-count alert, screenshot captured for the operations runbook screenshot directory (link to be added in a follow-on update). |
 
 The screenshot column links into the operations runbook's vendor-console
 screenshot directory once captured; until then, the operator-confirmed
