@@ -29,11 +29,7 @@ export default defineConfig({
           environment: 'node',
           globals: false,
           include: ['apps/**/src/**/*.test.ts', 'packages/**/src/**/*.test.ts'],
-          exclude: [
-            '**/*.contract.test.{ts,tsx}',
-            '**/dist/**',
-            '**/node_modules/**',
-          ],
+          exclude: ['**/*.contract.test.{ts,tsx}', '**/dist/**', '**/node_modules/**'],
         },
       },
       {
@@ -43,11 +39,7 @@ export default defineConfig({
           environment: 'jsdom',
           globals: false,
           include: ['apps/**/src/**/*.test.tsx', 'packages/**/src/**/*.test.tsx'],
-          exclude: [
-            '**/*.contract.test.{ts,tsx}',
-            '**/dist/**',
-            '**/node_modules/**',
-          ],
+          exclude: ['**/*.contract.test.{ts,tsx}', '**/dist/**', '**/node_modules/**'],
         },
       },
       {

@@ -1,5 +1,5 @@
-import { defineConfig, mergeConfig } from 'vitest/config';
 import { vitestBaseConfig } from '@repo/config/vitest-base';
+import { defineConfig, mergeConfig } from 'vitest/config';
 
 /**
  * @repo/baselines is a Node-only utility package — the read/write/compare/

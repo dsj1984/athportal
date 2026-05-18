@@ -56,6 +56,31 @@ When adding a new lint rule:
    it" — stop. That is the conflict case; Biome wins. Disable the ESLint
    rule instead.
 
+### What each workspace's `lint` script covers (post-Story #374)
+
+Every workspace's `lint` script runs `pnpm exec biome check . && pnpm
+exec eslint .` against the workspace cwd. The intersection of the
+workspace tree with `biome.json` `files.include` and
+`eslint.config.mjs` `files`/`ignores` produces the actual lint set —
+which now includes:
+
+- workspace `src/**`,
+- workspace-root config files (`vitest.config.ts`,
+  `playwright.config.ts`, `astro.config.ts`, `app.config.ts`,
+  `drizzle.config.ts`, `vitest.base.ts`, `vitest.contract.ts`),
+- the web `e2e/**` step library.
+
+Pre-Story #374 the scripts only checked `src/`. Anything outside `src/`
+was invisible to the workspace gate, IDE-on-save, and pre-commit; the
+only catcher was the root baseline sweep. The widened scope makes the
+workspace gate honest with the baseline gate.
+
+When adding a new top-level TS file outside `src/` (a new config, a new
+glue script), add its glob to **both** `biome.json` `files.include`
+**and** the `eslint.config.mjs` `toolingConfig` overlay so the two
+linters stay aligned. Story #373's `tsconfig.tooling.json` already
+covers the typed-lint side.
+
 ## Lint baseline ratchet
 
 The baseline ratchet runs **two channels** against every PR (Story #373):
@@ -63,9 +88,10 @@ The baseline ratchet runs **two channels** against every PR (Story #373):
 - **Errors → zero, always.** Any non-zero `errorCount` in the current
   aggregate fails the gate, independent of what the committed baseline
   records. `--update` refuses to absorb errors into a new snapshot — they
-  must be fixed in source. This is what catches lint errors in files the
-  per-workspace `lint` scripts miss today (config files, e2e steps, repo
-  scripts — they only run `eslint src` per workspace).
+  must be fixed in source. Story #374 widened the per-workspace `lint`
+  scripts so this channel now catches **the same surface** as the root
+  baseline sweep — no more silent gaps between `pnpm --filter <ws> run
+  lint` and `pnpm run lint:baseline:check`.
 - **Warnings ratchet downward.** Per-file warning regressions and any
   net-total warning increase fail the gate. Warnings are
   `--update`-absorbable when a regression is intentional (a new rule that

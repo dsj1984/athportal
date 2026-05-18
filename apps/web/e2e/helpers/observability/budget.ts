@@ -100,12 +100,8 @@ export interface RedactionRunbookReferences {
 export function readRedactionRunbookReferences(): RedactionRunbookReferences {
   const source = fs.readFileSync(REDACTION_RUNBOOK, 'utf8');
   return {
-    referencesAllowlistModule: source.includes(
-      'packages/shared/src/observability/redaction.ts',
-    ),
-    referencesWideningTemplate: source.includes(
-      'docs/decisions/_template-redaction-widening.md',
-    ),
+    referencesAllowlistModule: source.includes('packages/shared/src/observability/redaction.ts'),
+    referencesWideningTemplate: source.includes('docs/decisions/_template-redaction-widening.md'),
   };
 }
 
@@ -125,16 +121,19 @@ export async function simulateRequestCompletionLogging(): Promise<string> {
   const personalEmail = 'subject-under-test@example.invalid';
   const personalPhone = '+1-555-0100';
 
-  const req = new Request(`https://example.invalid/?cursor=abc&email=${encodeURIComponent(personalEmail)}`, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      'user-agent': 'acceptance-test/1.0',
-      'x-request-id': requestId,
-      cookie: 'should_not_pass=' + personalEmail,
+  const req = new Request(
+    `https://example.invalid/?cursor=abc&email=${encodeURIComponent(personalEmail)}`,
+    {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'user-agent': 'acceptance-test/1.0',
+        'x-request-id': requestId,
+        cookie: 'should_not_pass=' + personalEmail,
+      },
+      body: JSON.stringify({ email: personalEmail, phone: personalPhone, query: 'hello' }),
     },
-    body: JSON.stringify({ email: personalEmail, phone: personalPhone, query: 'hello' }),
-  });
+  );
 
   const allowedHeaders = redactHeaders(req.headers);
   const allowedQueryAndBody = await redactQueryAndBody(req);

@@ -19,27 +19,23 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { expect } from '@playwright/test';
 import { createBdd } from 'playwright-bdd';
+import { emailInbox, logSink, resetObservabilityState } from '../fixtures/email-inbox';
 import {
-  emailInbox,
-  logSink,
-  resetObservabilityState,
-} from '../fixtures/email-inbox';
-import {
-  bodyKeysAllowlistSize,
   assertAVendorIsDocumented,
+  bodyKeysAllowlistSize,
   readRedactionRunbookReferences,
   simulateBudgetOverage,
   simulateRequestCompletionLogging,
 } from '../helpers/observability/budget';
 import {
-  assertProbeIsConfigured,
   type ProbeName,
+  assertProbeIsConfigured,
   simulateProbeFailure,
 } from '../helpers/observability/probe';
 import {
+  type SourcemapGuardResult,
   rehearsalSurfaceIsExposed,
   simulateSourcemapUploadGuard,
-  type SourcemapGuardResult,
   simulateSyntheticFailure,
   simulateUnhandledError,
 } from '../helpers/observability/sentry';
@@ -105,25 +101,19 @@ When('an unhandled error is thrown during a user interaction', async () => {
 });
 
 Then('the operator receives an alert email naming the Workers runtime', async () => {
-  const matches = emailInbox.findAll(
-    (r) => r.vendor === 'sentry' && r.names.runtime === 'Workers',
-  );
+  const matches = emailInbox.findAll((r) => r.vendor === 'sentry' && r.names.runtime === 'Workers');
   expect(matches.length).toBeGreaterThan(0);
   expect(matches[0].subject).toContain('Workers');
 });
 
 Then('the operator receives an alert email naming the Astro runtime', async () => {
-  const matches = emailInbox.findAll(
-    (r) => r.vendor === 'sentry' && r.names.runtime === 'Astro',
-  );
+  const matches = emailInbox.findAll((r) => r.vendor === 'sentry' && r.names.runtime === 'Astro');
   expect(matches.length).toBeGreaterThan(0);
   expect(matches[0].subject).toContain('Astro');
 });
 
 Then('the operator receives an alert email naming the Expo runtime', async () => {
-  const matches = emailInbox.findAll(
-    (r) => r.vendor === 'sentry' && r.names.runtime === 'Expo',
-  );
+  const matches = emailInbox.findAll((r) => r.vendor === 'sentry' && r.names.runtime === 'Expo');
   expect(matches.length).toBeGreaterThan(0);
   expect(matches[0].subject).toContain('Expo');
 });
@@ -271,9 +261,7 @@ When("that vendor's monthly spend exceeds its documented ceiling", async () => {
 Then('the operator receives an alert email naming the offending vendor', async () => {
   expect(state.documentedVendor).toBeDefined();
   const matches = emailInbox.findAll(
-    (r) =>
-      r.vendor === 'sentry-billing' &&
-      r.names.overspentVendor === state.documentedVendor,
+    (r) => r.vendor === 'sentry-billing' && r.names.overspentVendor === state.documentedVendor,
   );
   expect(matches.length).toBeGreaterThan(0);
   expect(matches[0].subject).toContain(state.documentedVendor as string);
@@ -290,12 +278,9 @@ Then('the alert email references the observability budget runbook', async () => 
 // AC-6 — Fork pull-request CI safety.
 // ────────────────────────────────────────────────────────────────────────────
 
-Given(
-  'a contributor opens a pull request from a fork without Sentry credentials',
-  async () => {
-    state.forkPullRequestOpen = true;
-  },
-);
+Given('a contributor opens a pull request from a fork without Sentry credentials', async () => {
+  state.forkPullRequestOpen = true;
+});
 
 When('the continuous integration build runs against that pull request', async () => {
   expect(state.forkPullRequestOpen).toBe(true);

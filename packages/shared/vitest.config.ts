@@ -1,6 +1,6 @@
+import { vitestBaseConfig } from '@repo/config/vitest-base';
 import react from '@vitejs/plugin-react';
 import { defineConfig, mergeConfig } from 'vitest/config';
-import { vitestBaseConfig } from '@repo/config/vitest-base';
 
 /**
  * @repo/shared hosts cross-stack helpers, including React-component
@@ -56,11 +56,7 @@ export default mergeConfig(
             environment: 'jsdom',
             globals: false,
             include: ['src/**/*.test.{ts,tsx}'],
-            exclude: [
-              '**/*.contract.test.{ts,tsx}',
-              '**/dist/**',
-              '**/node_modules/**',
-            ],
+            exclude: ['**/*.contract.test.{ts,tsx}', '**/dist/**', '**/node_modules/**'],
           },
         },
         {
