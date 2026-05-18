@@ -33,5 +33,3 @@ export const vitestContractConfig = mergeConfig(
     },
   }),
 );
-
-export default vitestContractConfig;

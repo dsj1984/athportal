@@ -17,8 +17,6 @@
  * Story #172 / Task #181.
  */
 
-import type { User } from './schema';
-
 /**
  * Minimum shape `authHeaders` needs from a user record. Accepts any
  * object exposing `clerkId` (a full `User` from the schema works, as does
@@ -45,6 +43,3 @@ export function authHeaders(user: AuthUserLike): Record<string, string> {
     'content-type': 'application/json',
   };
 }
-
-/** Re-export the `User` row type so consumers can write `authHeaders(user as User)` succinctly. */
-export type { User };

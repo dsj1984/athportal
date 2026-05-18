@@ -516,7 +516,7 @@ when used it requires a paired changelog entry on the same
   against budgets and the 1 MiB Worker cap, or `:update`s
   `baselines/bundle-size.json` from the current tree.
 - [`.size-limit.json`](../.size-limit.json) — the per-bundle budget
-  + changelog file. One entry per shipped bundle:
+  - changelog file. One entry per shipped bundle:
 
   ```json
   {

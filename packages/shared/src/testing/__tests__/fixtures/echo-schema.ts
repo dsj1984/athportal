@@ -23,9 +23,6 @@ export const messages = sqliteTable('messages', {
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
 });
 
-export type Message = typeof messages.$inferSelect;
-export type NewMessage = typeof messages.$inferInsert;
-
 /**
  * Raw SQL to apply the messages fixture table to a `freshDb()` handle.
  *

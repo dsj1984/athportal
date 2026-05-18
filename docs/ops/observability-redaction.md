@@ -52,7 +52,7 @@ is gated by ADR.
 
 `cursor`, `limit`, `order`, `sort` are the canonical pagination + sort
 parameters across `/api/v1/**`. They are never set to user identifiers.
-Filters that *would* carry identifiers (e.g. `?email=...`) are out of scope
+Filters that _would_ carry identifiers (e.g. `?email=...`) are out of scope
 and are not added here.
 
 ## What the redaction module exports

@@ -261,15 +261,19 @@ when it lands per Tech Spec #246 § "Core Components" row 13.
    by default) and the planned trigger window.
 2. **Set the synthetic-failure flag in staging.** From an authenticated
    shell with the staging Cloudflare credentials:
+
    ```bash
    wrangler secret put OBSERVABILITY_SYNTHETIC_FAILURE_ENABLED --env staging
    # paste the value: true
    ```
+
 3. **Fire the synthetic-failure endpoint once.** From an authenticated
    shell with read access to the staging origin:
+
    ```bash
    curl -X POST https://api-staging.athportal/api/v1/_debug/synthetic-failure
    ```
+
    The handler throws `SyntheticFailureError`; the Workers Sentry SDK
    captures the exception and the matching Sentry alert rule fires into
    the operator-email distribution list.
@@ -282,9 +286,11 @@ when it lands per Tech Spec #246 § "Core Components" row 13.
    single most common rehearsal mistake; the next ambient deploy will
    re-evaluate the flag and the endpoint will start throwing on every
    real probe. Unset with:
+
    ```bash
    wrangler secret delete OBSERVABILITY_SYNTHETIC_FAILURE_ENABLED --env staging
    ```
+
 6. **Confirm the endpoint returns to `404`.** Re-run the `curl` from
    step 3; the expected response is `404`, indistinguishable from a
    non-existent route (per Tech Spec #246 § "Synthetic-failure endpoint

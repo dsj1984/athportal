@@ -1,13 +1,14 @@
 #!/usr/bin/env sh
 # Pre-commit hook — Athlete Portal.
 #
-# Two-stage guard:
+# Three-stage guard:
 #   1. Block any staged path under `.agents/` (the framework submodule).
 #      Per AGENTS.md §Safety Constraints, that directory is managed only
 #      via `/agents-update` — direct edits are forbidden.
-#   2. Run Biome against the staged set only (`--staged`) so the hook stays
-#      fast on large diffs. `--no-errors-on-unmatched` keeps the hook quiet
-#      when staged paths fall outside Biome's configured globs.
+#   2. Run lint-staged (biome + markdownlint + secretlint) on the staged
+#      set only so the hook stays fast on large diffs. The per-extension
+#      fan-out lives in lint-staged.config.js.
+#   3. Run the step-definition linter against staged step/feature files.
 
 # --- 1. .agents/ write-guard ---------------------------------------------
 staged_agents=$(git diff --cached --name-only --diff-filter=ACMR | grep '^\.agents/' || true)
@@ -22,8 +23,12 @@ if [ -n "$staged_agents" ]; then
 	exit 1
 fi
 
-# --- 2. Biome on staged files --------------------------------------------
+# --- 2. Biome + lint-staged on staged files ------------------------------
+# Biome's --staged mode keeps biome's organize-imports and formatter
+# scoped to the staged set; lint-staged.config.js then runs markdownlint
+# (md only) and secretlint (any extension) against the same set.
 pnpm exec biome check --staged --no-errors-on-unmatched
+pnpm exec lint-staged
 
 # --- 3. Step-definition linter on staged step/feature files --------------
 # `lint:steps --staged` short-circuits via `git diff --cached --name-only` and

@@ -37,7 +37,7 @@ it proposes updates; the CVE gate decides whether they ship.
 
 Run these AFTER the PR for this Story merges to `main`:
 
-1. **Install the Renovate GitHub App.** Open https://github.com/apps/renovate in a browser while signed in as the `dsj1984` account.
+1. **Install the Renovate GitHub App.** Open <https://github.com/apps/renovate> in a browser while signed in as the `dsj1984` account.
 2. **Click "Configure"** (top-right). On the "Install Renovate" page, select `dsj1984` (your user account).
 3. **Select repositories.** Choose **"Only select repositories"** (do NOT pick "All repositories" — limit scope explicitly). In the dropdown, check `dsj1984/athportal`.
 4. **Click "Install"** (or "Save" if Renovate is already installed on other repos and you're just adding this one). GitHub will redirect back to Renovate's dashboard.

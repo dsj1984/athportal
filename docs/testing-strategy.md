@@ -8,7 +8,7 @@
 
 ## The Pyramid
 
-```
+```text
         ┌───────────────────────────────────┐
         │   BDD Acceptance                  │  ← Playwright + playwright-bdd
         │   User journeys, visual outcomes  │     tests/features/**/*.feature

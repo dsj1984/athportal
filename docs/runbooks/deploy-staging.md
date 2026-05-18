@@ -150,8 +150,8 @@ zone. The token's permission profile is:
 
 - **Account** → Workers Scripts → Edit
 - **Account** → Cloudflare Pages → Edit
-- **Zone** → Workers Routes → Edit *(only if the staging Worker is
-  bound to a custom zone; omit for `*.workers.dev` deploys)*
+- **Zone** → Workers Routes → Edit _(only if the staging Worker is
+  bound to a custom zone; omit for `*.workers.dev` deploys)_
 
 To rotate:
 

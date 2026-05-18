@@ -26,7 +26,7 @@ import type { Context, MiddlewareHandler } from 'hono';
  * real binding's signature is wider; we only call writeDataPoint with
  * the LogEvent envelope.
  */
-export interface AnalyticsEngineBinding {
+interface AnalyticsEngineBinding {
   writeDataPoint: (event: LogEvent) => void;
 }
 

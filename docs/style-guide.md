@@ -201,10 +201,10 @@ h1, h2, h3, h4, h5, h6, .font-display {
 
 Applies to the shared `EmptyState` primitive and dashboard widgets that render a zero-data state (`MiniProfileCard`, `TeamsWidget`, `ActionWidget`, `UnifiedFeed`, introduced in Epic #298).
 
-- **Title** — Sentence case, one short line. Describe the absence in the user's own frame (e.g., "No teams yet", "Nothing in your feed yet"). Avoid negative framings like "Failed to load" unless the state is actually an error.
-- **Description** — One sentence that explains *why* the surface is empty and hints at the next step. Keep under ~140 characters.
-- **Call-to-action** — Every empty state should include a single primary CTA button that routes to the action that resolves the empty state (e.g., "Join a team", "Complete your profile"). Use sentence case for the button label. Omit the CTA only when there is no meaningful action the user can take.
-- **Tone** — Active and empathetic. Avoid apologetic phrasing ("Sorry, …") and filler ("Looks like…"). Never blame the user.
+* **Title** — Sentence case, one short line. Describe the absence in the user's own frame (e.g., "No teams yet", "Nothing in your feed yet"). Avoid negative framings like "Failed to load" unless the state is actually an error.
+* **Description** — One sentence that explains *why* the surface is empty and hints at the next step. Keep under ~140 characters.
+* **Call-to-action** — Every empty state should include a single primary CTA button that routes to the action that resolves the empty state (e.g., "Join a team", "Complete your profile"). Use sentence case for the button label. Omit the CTA only when there is no meaningful action the user can take.
+* **Tone** — Active and empathetic. Avoid apologetic phrasing ("Sorry, …") and filler ("Looks like…"). Never blame the user.
 
 ---
 
@@ -260,24 +260,25 @@ All new interactive elements added by Epic #267 use the `section-element-action`
 | `SharedPostViewer.tsx` | `shared-post-viewer`, `share-unlock-input`, `share-unlock-button` |
 
 **Rule**: Never delete or rename a `data-testid` without updating the corresponding spec file in `apps/web/e2e/` in the same commit.
+
 ## Profile Branding Surface (Epic #407)
 
 Owners can personalize the public profile hero via:
 
-- **Cover image** — a wide banner image above the profile header. Rendered with
+* **Cover image** — a wide banner image above the profile header. Rendered with
   `aspect-ratio: 3 / 1` and a top-to-bottom gradient mask so the header card
   sits cleanly over the bottom third. URL is stored on `users.cover_image_url`.
-- **Accent color** — a hex color applied to (a) the top-right glow blob in the
+* **Accent color** — a hex color applied to (a) the top-right glow blob in the
   profile header and (b) a tinted border on the header card. Fallback is the
   brand gradient. Stored on `users.accent_color`, validated as `#RGB` / `#RRGGBB`.
-- **Signature stat** — an `users.signature_stat_key` pointer into the athlete's
+* **Signature stat** — an `users.signature_stat_key` pointer into the athlete's
   verified stats collection. Surfaced in the public response; UI treatment
   (highlighted stat / sport-scoped filter) is deferred to a future sprint
   (ADR-056).
-- **Featured reel** — owner-pinned highlight rendered as a Mux iframe player in
+* **Featured reel** — owner-pinned highlight rendered as a Mux iframe player in
   the main column. Pin is stored on `users.featured_highlight_id`; dangling ids
   silently degrade to null (no crash).
-- **Verified badge** — rendered when any of the athlete's rosters carries
+* **Verified badge** — rendered when any of the athlete's rosters carries
   `isVerified = 1`. The badge uses emerald `bg-emerald-500/10 text-emerald-300`
   tokens and sits inline with the "Athlete Profile" kicker.
 
@@ -311,11 +312,11 @@ card backgrounds, and text sizing across all profile forms.
 
 Profile interactions use subtle animations for a premium feel:
 
-- **Tab switching**: 150ms opacity + translateY fade-in via `requestAnimationFrame`
+* **Tab switching**: 150ms opacity + translateY fade-in via `requestAnimationFrame`
   in the Astro island script.
-- **ComboboxMulti chips**: `chip-in` scale-in keyframe on add, scale-out + fade
+* **ComboboxMulti chips**: `chip-in` scale-in keyframe on add, scale-out + fade
   on remove (100ms `ease-out`).
-- **Save pulse**: `success-pulse` ring animation (600ms) triggered via
+* **Save pulse**: `success-pulse` ring animation (600ms) triggered via
   `useSavePulse` hook after successful form saves.
 
 All animations are defined in `apps/web/src/styles/global.css` and referenced via
@@ -359,7 +360,7 @@ never reach the DOM:
 The `/explore` shell uses a single light-on-surface card grid for both list
 and grid views — the toggle changes density (1-up vs 3-up), not chrome. Filter
 chips above the grid use the established muted-pill pattern (`bg-muted/40`
-+ accent on active). The map view shares the same filter strip; the map
+plus accent on active). The map view shares the same filter strip; the map
 canvas occupies the right column on desktop and a full-bleed sheet on
 mobile.
 
@@ -380,7 +381,6 @@ sentence-case ("Registration open"), not title-case.
 **Registration confirmation** (`TournamentRegistrationConfirmation.tsx`) uses
 the platform's success Sun-tinted card with the team name, division, and a
 calendar add-to button — no novel surface treatment.
-
 
 ## Epic #574 — no UI or copy changes (2026-04-20)
 

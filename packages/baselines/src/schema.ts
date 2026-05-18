@@ -140,8 +140,3 @@ export function formatAjvErrors(validator: ValidateFunction, context: string): s
   }
   return lines.join('\n');
 }
-
-// Re-export the schema filename map for callers that need to surface
-// the on-disk artifact path (e.g. the dimension scripts emitting a
-// "validated against X" diagnostic).
-export { ENVELOPE_FILENAME, KIND_TO_SCHEMA_FILENAME, defaultSchemaDir };
