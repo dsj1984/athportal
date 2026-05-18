@@ -1,0 +1,10 @@
+[
+  {
+    "name": "apps/api worker",
+    "path": "apps/api/dist/worker.js",
+    "gzippedKb": 320,
+    "rationale": "initial baseline; placeholder until the wrangler build target lands and Story #198 primes a real measurement against the MVP route surface",
+    "lastRevised": "2026-05-17",
+    "approvedBy": "@dsj1984"
+  }
+]
