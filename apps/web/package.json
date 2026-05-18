@@ -16,5 +16,8 @@
     "@repo/config": "workspace:*",
     "playwright-bdd": "^8.5.1",
     "vitest": "^4.1.6"
+  },
+  "dependencies": {
+    "@sentry/astro": "^10.53.1"
   }
 }

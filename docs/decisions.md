@@ -531,24 +531,8 @@ The mandrel framework default for this dimension targets the rollup `min` axis w
 
 ---
 
-## Policy — Observability redaction allowlist widenings
+## Numbered ADR series under `docs/decisions/`
 
-**Status:** Accepted (2026-05-17, Epic #5, Story #256)
+New ADRs adopt a one-file-per-record layout under [`docs/decisions/`](./decisions/) with a leading four-digit sequence number. They sit alongside (not inside) the seed-set headings above; the seed set is preserved verbatim for historical continuity, while the numbered series is the writing surface for new decisions from Epic #5 onward.
 
-The redaction allowlist module at
-[`packages/shared/src/observability/redaction.ts`](../packages/shared/src/observability/redaction.ts)
-is the single trust boundary for log egress to the managed sink. Per
-[ADR-012](#adr-012--observability-vendor-stack-mvp-beta), tightening the
-allowlist is a one-line PR; **widening it requires a dedicated ADR.**
-
-- **Operator-facing reference:** [`docs/ops/observability-redaction.md`](./ops/observability-redaction.md)
-  — explains the Day 1 allowlist, why each key is on it, and what the module exports.
-- **ADR template every widening PR instantiates:** [`docs/decisions/_template-redaction-widening.md`](./decisions/_template-redaction-widening.md)
-  — copy to `docs/decisions/ADR-NNN-<short-name>.md`, fill in
-  Context / Decision / Consequences / Privacy posture / Rollback, and submit
-  alongside the source change and the matching test-suite extension.
-
-The ≥95% branch-coverage floor on `redaction.ts` (enforced in
-[`packages/shared/vitest.config.ts`](../packages/shared/vitest.config.ts)) is
-the mechanical companion to this policy — a widening PR that forgets to
-extend the test suite fails CI before review.
+- [`0001-sentry-org-and-region.md`](./decisions/0001-sentry-org-and-region.md) — Sentry organization (`athportal`), EU (Frankfurt) data-residency region, and the three-project layout (workers / web / mobile) that Story #255's per-runtime init wrappers depend on. Builds on ADR-012 (observability vendor stack).

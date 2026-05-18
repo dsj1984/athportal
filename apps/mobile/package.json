@@ -1,5 +1,5 @@
 {
-  "name": "@repo/api",
+  "name": "@repo/mobile",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -9,11 +9,15 @@
     "test": "pnpm exec vitest run",
     "build": "exit 0"
   },
+  "dependencies": {
+    "@sentry/react-native": "^8.11.1",
+    "expo-constants": "^55.0.16",
+    "sentry-expo": "^7.2.0"
+  },
   "devDependencies": {
     "@repo/config": "workspace:*",
+    "@types/react": "^19.2.5",
+    "expo": "^55.0.24",
     "vitest": "^4.1.6"
-  },
-  "dependencies": {
-    "@sentry/cloudflare": "^10.53.1"
   }
 }

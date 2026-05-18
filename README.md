@@ -173,7 +173,10 @@ and unreadable from any job that doesn't declare the matching
 | `CLOUDFLARE_API_TOKEN` | `nonempty` | both environments | Scoped to the matching account / project only. The production token MUST NOT be readable from any staging-scoped job — see the production isolation audit. |
 | `CLOUDFLARE_ACCOUNT_ID` | `cloudflare-account-id` | both environments | Cloudflare account that owns the Worker + Pages project for that environment. |
 | `SENTRY_DSN` | `url` | both environments | Distinct DSNs so staging noise doesn't pollute production alerting. |
-| `SENTRY_AUTH_TOKEN` | `nonempty` | both environments | Used only by `sentry-cli releases new + finalize`. Scoped per-environment. |
+| `SENTRY_DSN_WORKERS` | _(not in `check-env` contract)_ | both environments | Per-runtime DSN consumed by `apps/api/src/sentry.ts` (Workers init wrapper). Blank → SDK is a no-op. |
+| `SENTRY_DSN_WEB` | _(not in `check-env` contract)_ | both environments | Per-runtime DSN consumed by `apps/web/astro.config.ts` + `apps/web/src/sentry.ts`. Blank → integration is skipped. |
+| `SENTRY_DSN_MOBILE` | _(not in `check-env` contract)_ | both environments (EAS for native builds) | Per-runtime DSN consumed by `apps/mobile/src/sentry.ts` (Expo init wrapper). Blank → init returns null. |
+| `SENTRY_AUTH_TOKEN` | `nonempty` | both environments | Used only by `sentry-cli releases new + finalize` and per-runtime sourcemap upload at build time. Scoped per-environment. |
 | `TURBO_TOKEN` | _(not in `check-env` contract)_ | both environments | Turborepo remote-cache token. Rotatable. |
 
 ### Required at deploy time (Action variables, non-secret)
