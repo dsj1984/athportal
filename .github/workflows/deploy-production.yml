@@ -152,6 +152,14 @@ jobs:
           else
             echo "present=false" >> "$GITHUB_OUTPUT"
           fi
+          # See deploy-staging.yml for the deploy_ready rationale —
+          # `pnpm exec wrangler` crashes with "Command not found" when
+          # wrangler.toml ships ahead of the wrangler dep.
+          if [ -f apps/api/wrangler.toml ] && grep -q '"wrangler"' apps/api/package.json 2>/dev/null; then
+            echo "deploy_ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "deploy_ready=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Run production migrations (drizzle-kit migrate)
         if: steps.detect-api.outputs.present == 'true' && hashFiles('apps/api/drizzle.config.*') != ''
@@ -160,7 +168,7 @@ jobs:
       # ── Step 4: deploy api Worker ──────────────────────────────────
       - name: Deploy API to Cloudflare Workers (production)
         id: deploy-api
-        if: steps.detect-api.outputs.present == 'true' && hashFiles('apps/api/wrangler.toml') != ''
+        if: steps.detect-api.outputs.deploy_ready == 'true'
         run: pnpm --filter @repo/api exec wrangler deploy --env production
 
       # ── Step 5: deploy web Pages ───────────────────────────────────
@@ -172,14 +180,19 @@ jobs:
           else
             echo "present=false" >> "$GITHUB_OUTPUT"
           fi
+          if grep -q '"wrangler"' apps/web/package.json 2>/dev/null; then
+            echo "deploy_ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "deploy_ready=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Build web for production
-        if: steps.detect-web.outputs.present == 'true' && hashFiles('apps/web/**') != ''
+        if: steps.detect-web.outputs.deploy_ready == 'true'
         run: pnpm --filter @repo/web run build
 
       - name: Deploy Web to Cloudflare Pages (production)
         id: deploy-web
-        if: steps.detect-web.outputs.present == 'true' && hashFiles('apps/web/**') != ''
+        if: steps.detect-web.outputs.deploy_ready == 'true'
         run: >-
           pnpm --filter @repo/web exec wrangler pages deploy ./dist
           --project-name athportal-production
