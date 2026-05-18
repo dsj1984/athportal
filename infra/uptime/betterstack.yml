@@ -1,0 +1,53 @@
+# Better Stack uptime monitor declarations (IaC).
+#
+# This file is the source of truth for the three external uptime probes
+# named in Tech Spec #246 § "Uptime probes". The IaC encoding satisfies
+# ADR 0003 — Uptime probe vendor selection (Better Stack default).
+#
+# Apply procedure: see infra/uptime/README.md.
+#
+# Constraints (do NOT edit without superseding ADR 0003):
+#   - Exactly three monitors, one per target URL.
+#   - Each monitor MUST list >= 2 distinct geographic regions so a
+#     single-region probe-network incident does not silence the alert.
+#   - Probe interval is 60 seconds (Tech Spec #246).
+#   - alert_destination is rendered from ${OBSERVABILITY_ALERT_EMAIL}; it
+#     is never hardcoded so test-vs-production runs can target different
+#     inboxes without forking the file.
+
+version: 1
+vendor: betterstack
+
+monitors:
+  - id: api-health
+    name: API health (athportal)
+    url: https://api-staging.athportal/health
+    method: GET
+    expected_status: 200
+    body_match: '{"ok":true}'
+    interval_seconds: 60
+    regions:
+      - us-east-1
+      - eu-west-1
+
+  - id: web-origin
+    name: Web origin (athportal)
+    url: https://staging.athportal/
+    method: GET
+    expected_status: 200
+    interval_seconds: 60
+    regions:
+      - us-east-1
+      - eu-west-1
+
+  - id: auth-callback
+    name: Auth callback (athportal)
+    url: https://api-staging.athportal/auth/callback
+    method: GET
+    expected_status:
+      - 200
+      - 302
+    interval_seconds: 60
+    regions:
+      - us-east-1
+      - eu-west-1
