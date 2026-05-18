@@ -32,17 +32,48 @@ on newer repos).
 
 Enable **Require status checks to pass before merging** and **Require
 branches to be up to date before merging**, then mark every check below
-as required.
+as required. The full set was applied to `main` as part of **Epic #6 —
+Seven quality baselines, ratchet gates, and supply-chain CVE gate**
+([#6](https://github.com/dsj1984/athportal/issues/6), squash-merged as
+`9ddb542`).
 
-| Check name                | Source workflow                                                                                   | What it gates                                                                  |
-| ------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| `quality`                 | [`.github/workflows/quality.yml`](../../.github/workflows/quality.yml)                            | Lint, typecheck, test, build, lint-baseline ratchet. Established by Epic #2.   |
-| `migration-label-guard`   | `.github/workflows/migration-label-guard.yml` (lands with Epic #3)                                | Blocks destructive migration diffs that lack the `migration::destructive` label. |
+| Check name                                                              | Source workflow                                                                       | What it gates                                                                                                              |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `Lint`                                                                  | [`quality.yml`](../../.github/workflows/quality.yml)                                  | Biome + ESLint clean across every workspace; cheap, deterministic.                                                         |
+| `Typecheck`                                                             | [`quality.yml`](../../.github/workflows/quality.yml)                                  | TypeScript strict mode across every workspace.                                                                             |
+| `Test (unit + contract)`                                                | [`quality.yml`](../../.github/workflows/quality.yml)                                  | Vitest unit + contract suites under `pnpm run test`.                                                                       |
+| `Build`                                                                 | [`quality.yml`](../../.github/workflows/quality.yml)                                  | `pnpm run build` across every workspace; gated on `[lint, typecheck, supply-chain-security]`.                              |
+| `Supply-chain security (ADR-011)`                                       | [`quality.yml`](../../.github/workflows/quality.yml)                                  | `pnpm run audit:check`. Blocks on any unsuppressed High/Critical CVE. **Escape hatch**: `IGNORED` allow-list per [ADR-011](../decisions.md). |
+| `TruffleHog (secret scan)`                                              | [`quality.yml`](../../.github/workflows/quality.yml)                                  | Verified-only secret scan; very low false-positive rate. **Escape hatch**: per-tool ignore file with justification.        |
+| `gitleaks (secret scan, PR)`                                            | [`quality.yml`](../../.github/workflows/quality.yml)                                  | Pattern-based secret scan; SARIF report uploaded to Code Scanning. **Escape hatch**: per-tool ignore file with justification. |
+| `Coverage baseline (-2pp per workspace, ADR-015)`                       | [`quality.yml`](../../.github/workflows/quality.yml)                                  | Per-workspace coverage floor (`current − 2pp`). **Escape hatch**: `pnpm run coverage:update` with rationale in commit body. |
+| `CRAP baseline (relative-5% per method, ADR-018)`                       | [`quality.yml`](../../.github/workflows/quality.yml)                                  | Per-function CRAP ratchet (5% relative tolerance). **Escape hatch**: `pnpm run crap:update`.                               |
+| `Maintainability baseline (rollup `*` min ≥ 70, ADR-019)`               | [`quality.yml`](../../.github/workflows/quality.yml)                                  | Framework-default MI floor on the whole-repo rollup. **Escape hatch**: `pnpm run maintainability:update`.                  |
+| `Bundle-size baseline (1 MiB Worker cap + per-bundle gzippedKb, ADR-014)` | [`quality.yml`](../../.github/workflows/quality.yml)                                | 1 MiB Worker cap non-negotiable (warn at 90%, fail at 100%); per-bundle gzippedKb budgets via `size-limit`. **Bumps require paired `rationale` per [ADR-014](../decisions.md).** |
+| `Lint step definitions`                                                 | [`quality.yml`](../../.github/workflows/quality.yml)                                  | BDD step-vocabulary linter; forbids duplicate phrases and unused steps.                                                    |
+| `Acceptance smoke (@smoke)`                                             | [`quality.yml`](../../.github/workflows/quality.yml)                                  | Single Playwright-bdd `@smoke` scenario; fast user-journey gate.                                                           |
+| `Guard destructive migrations`                                          | [`migration-label-guard.yml`](../../.github/workflows/migration-label-guard.yml)      | Blocks destructive migration diffs lacking the `migration::destructive` label.                                             |
 
-Any additional required checks that already exist on the repo (e.g.
-third-party signing, mandatory CodeQL) stay required — add them to the
-table when they land. The list above is the **Epic #3 baseline**; it is
-additive, not exclusive.
+**Out of scope for PR-blocking** (run nightly only, per the Epic #6
+non-goals): `Mutation baseline` and `Lighthouse baseline`. Both run
+under [`nightly.yml`](../../.github/workflows/nightly.yml) against
+their recorded per-workspace / per-route baselines; regressions surface
+in the nightly report rather than blocking individual PRs.
+
+#### Re-applying the rule via the API
+
+The exact JSON used to apply the rule is preserved at
+[`main-protection.json`](./main-protection.json). To re-apply
+identically:
+
+```bash
+gh api -X PUT repos/<owner>/<repo>/branches/main/protection \
+  --input docs/runbooks/main-protection.json
+```
+
+This is also the canonical procedure for adding a new required check:
+amend the JSON file in the same PR that introduces the workflow, then
+the operator runs the `gh api` call after merge.
 
 ### 2. Pull-request review rules
 

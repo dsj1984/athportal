@@ -1,0 +1,26 @@
+{
+  "required_status_checks": {
+    "strict": true,
+    "contexts": [
+      "Lint",
+      "Typecheck",
+      "Test (unit + contract)",
+      "Build",
+      "Supply-chain security (ADR-011)",
+      "TruffleHog (secret scan)",
+      "gitleaks (secret scan, PR)",
+      "Coverage baseline (-2pp per workspace, ADR-015)",
+      "CRAP baseline (relative-5% per method, ADR-018)",
+      "Maintainability baseline (rollup `*` min >= 70, ADR-019)",
+      "Bundle-size baseline (1 MiB Worker cap + per-bundle gzippedKb, ADR-014)",
+      "Lint step definitions",
+      "Acceptance smoke (@smoke)",
+      "Guard destructive migrations"
+    ]
+  },
+  "enforce_admins": false,
+  "required_pull_request_reviews": null,
+  "restrictions": null,
+  "allow_force_pushes": false,
+  "allow_deletions": false
+}
