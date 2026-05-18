@@ -1,0 +1,106 @@
+# Sourcemap upload composite action — Epic #5 / Story #259.
+#
+# Single composite invoked from every deploy job (Workers / Astro / Expo)
+# in CI to upload built sourcemaps to Sentry. The action is **fail-open**
+# by design: when SENTRY_AUTH_TOKEN is absent (the canonical signal that
+# the workflow is running on a fork PR, where org secrets are not
+# injected), the action exits 0 after emitting a single ::notice:: line.
+# This keeps fork PRs green without leaking credentials and without
+# silently masking real failures inside trusted runs.
+#
+# The fork-safety guard runs as the FIRST step of the action — BEFORE any
+# vendor SDK command — so a missing token never reaches the upload
+# tooling. The remainder of the action (install sentry-cli + dispatch
+# the per-runtime upload command) only runs when the guard passes.
+#
+# Inputs:
+#   runtime   — one of {workers, astro, expo}. Selects the vendor-native
+#               upload command appropriate for the build tool.
+#   build-dir — path (relative to repo root) to the built artifact tree
+#               that contains the sourcemaps to upload. Per Tech Spec
+#               #246: workers -> apps/api/dist, astro -> apps/web/dist,
+#               expo -> apps/mobile/dist.
+#
+# Required env (provided by the calling workflow's job-level env block):
+#   SENTRY_AUTH_TOKEN — auth token with `project:releases` scope. The
+#                       guard checks this directly via $SENTRY_AUTH_TOKEN
+#                       so the action need not declare it as an input.
+#   SENTRY_ORG        — Sentry org slug (vars.SENTRY_ORG).
+#   SENTRY_PROJECT    — Sentry project slug (per-runtime; the calling
+#                       workflow is responsible for setting the right
+#                       value for each runtime's deploy job).
+#   SENTRY_RELEASE    — release tag (short Git SHA). The deploy workflows
+#                       compute this once before invoking the composite.
+
+name: Sentry sourcemap upload
+description: >-
+  Upload built sourcemaps to Sentry for one runtime (workers | astro | expo).
+  Fork-safe: exits 0 with a ::notice:: line when SENTRY_AUTH_TOKEN is unset.
+
+inputs:
+  runtime:
+    description: Runtime whose sourcemaps to upload (workers | astro | expo).
+    required: true
+  build-dir:
+    description: Path to the built artifact tree containing sourcemaps.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    # ── Fork-safety guard ────────────────────────────────────────────
+    # Runs FIRST. When SENTRY_AUTH_TOKEN is empty (fork PR, local
+    # dry-run, or any context that has not provisioned the secret), emit
+    # a single notice and short-circuit the entire composite. The
+    # subsequent steps gate on `steps.guard.outputs.skip` so the upload
+    # tooling is never touched on a token-less run.
+    - name: Fork-safety guard (skip when SENTRY_AUTH_TOKEN is absent)
+      id: guard
+      shell: bash
+      run: |
+        if [ -z "$SENTRY_AUTH_TOKEN" ]; then
+          echo "::notice::Sentry credentials absent — skipping sourcemap upload"
+          echo "skip=true" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+        echo "skip=false" >> "$GITHUB_OUTPUT"
+
+    # ── Install sentry-cli ──────────────────────────────────────────
+    # Pinned to @sentry/cli@2 to match the deploy-staging.yml /
+    # deploy-production.yml install step. The release-tagging steps in
+    # those workflows already pin the same major; keep them in sync.
+    - name: Install sentry-cli
+      if: steps.guard.outputs.skip != 'true'
+      shell: bash
+      run: npm install --global @sentry/cli@2
+
+    # ── Per-runtime upload dispatch ─────────────────────────────────
+    # Each runtime uses the same vendor-native `sentry-cli sourcemaps
+    # upload` invocation — the build tool differs (wrangler / astro /
+    # expo) but the artifacts on disk all conform to Sentry's expected
+    # JS+sourcemap layout, so the upload command is uniform. The
+    # `--release` and `--dist` flags scope the artifacts to the deploy
+    # SHA, matching the release tag created by the staging /
+    # production deploy workflows.
+    - name: Upload sourcemaps for ${{ inputs.runtime }}
+      if: steps.guard.outputs.skip != 'true'
+      shell: bash
+      run: |
+        case "${{ inputs.runtime }}" in
+          workers|astro|expo)
+            ;;
+          *)
+            echo "::error::Unknown runtime '${{ inputs.runtime }}' — expected one of: workers, astro, expo"
+            exit 1
+            ;;
+        esac
+
+        if [ ! -d "${{ inputs.build-dir }}" ]; then
+          echo "::error::build-dir '${{ inputs.build-dir }}' does not exist — did the build step run?"
+          exit 1
+        fi
+
+        sentry-cli sourcemaps upload \
+          --release "$SENTRY_RELEASE" \
+          --dist "${{ inputs.runtime }}" \
+          "${{ inputs.build-dir }}"
