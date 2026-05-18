@@ -48,6 +48,24 @@ compatibility_date = "2025-01-01"
 binding = "ANALYTICS"
 dataset = "athportal_request_log"
 
+# Logpush job that ships the athportal_request_log Analytics Engine
+# dataset to the managed log-sink vendor chosen in
+# docs/decisions/0002-log-sink-vendor.md. The destination URL is a
+# templated env var so no vendor endpoint is hardcoded in this file —
+# the deploy step at .github/workflows/deploy-{staging,production}.yml
+# renders the URL with the per-environment LOGPUSH_SINK_TOKEN secret
+# before invoking `wrangler deploy`. Format is NDJSON so the sink can
+# stream-parse one LogEvent per line without re-framing.
+#
+# The block intentionally references `${LOGPUSH_DESTINATION_URL}` rather
+# than a literal URL: vendor swaps (per ADR-0002's "vendor-substitution
+# is one Story" clause) only need to change the env-var rendering in
+# CI, never this file.
+[[logpush]]
+dataset = "athportal_request_log"
+destination = "${LOGPUSH_DESTINATION_URL}"
+format = "ndjson"
+
 [env.staging]
 name = "athportal-api-staging"
 
@@ -55,9 +73,19 @@ name = "athportal-api-staging"
 binding = "ANALYTICS"
 dataset = "athportal_request_log"
 
+[[env.staging.logpush]]
+dataset = "athportal_request_log"
+destination = "${LOGPUSH_DESTINATION_URL}"
+format = "ndjson"
+
 [env.production]
 name = "athportal-api-production"
 
 [[env.production.analytics_engine_datasets]]
 binding = "ANALYTICS"
 dataset = "athportal_request_log"
+
+[[env.production.logpush]]
+dataset = "athportal_request_log"
+destination = "${LOGPUSH_DESTINATION_URL}"
+format = "ndjson"
