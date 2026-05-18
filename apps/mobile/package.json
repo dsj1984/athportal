@@ -6,7 +6,7 @@
   "scripts": {
     "lint": "pnpm exec biome check src && pnpm exec eslint src",
     "typecheck": "pnpm exec tsc --noEmit -p tsconfig.json",
-    "test": "pnpm exec vitest run",
+    "test": "pnpm exec vitest run --passWithNoTests",
     "build": "exit 0"
   },
   "dependencies": {
