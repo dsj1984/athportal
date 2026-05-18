@@ -53,7 +53,7 @@ the console URL each alert links back to:
 All four vendors render their alert destination from
 `OBSERVABILITY_ALERT_EMAIL`. A vendor-side outage that prevents an alert
 from being delivered to the list MUST be treated as the same incident
-class as the underlying failure — see [§ Performing a rehearsal](#performing-a-rehearsal).
+class as the underlying failure — see [§ Synthetic-failure rehearsal](#synthetic-failure-rehearsal).
 
 ---
 
@@ -90,7 +90,7 @@ on every alert is the same:
 
 If the alert turns out to be a rehearsal (synthetic-failure flag was
 flipped intentionally), reply-all with `"Rehearsal — expected"` and
-proceed to [§ Performing a rehearsal](#performing-a-rehearsal) §
+proceed to [§ Synthetic-failure rehearsal](#synthetic-failure-rehearsal) §
 Confirming the rehearsal fired.
 
 ---
@@ -230,15 +230,19 @@ action.
 
 ---
 
-## Performing a rehearsal
+## Synthetic-failure rehearsal
 
 The synthetic-failure endpoint at `POST /api/v1/_debug/synthetic-failure`
 is the canonical way to confirm that the entire alert path —
 application throw → Sentry capture → Sentry alert rule → operator email
 distribution list — is reachable end-to-end. The endpoint is gated
 behind the `OBSERVABILITY_SYNTHETIC_FAILURE_ENABLED` Workers secret
-(Tech Spec #246 § "Synthetic-failure endpoint") and returns `404` when
-the gate is closed.
+(Tech Spec #246 § "Synthetic-failure endpoint") and returns `404` —
+indistinguishable from a non-existent route, never `403` — when the
+gate is closed. **The flag is set in staging only; it is never set in
+production.** The production Worker MUST refuse to ship with the secret
+configured, and the rehearsal procedure below is the only sanctioned
+path that ever flips the flag on.
 
 The rehearsal cadence is **once per quarter at minimum**, and ad-hoc
 after any change to the alert path (Sentry alert-rule edit,
