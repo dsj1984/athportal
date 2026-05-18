@@ -531,10 +531,24 @@ The mandrel framework default for this dimension targets the rollup `min` axis w
 
 ---
 
-## ADR 0003 — Uptime probe vendor selection (Better Stack default)
+## Policy — Observability redaction allowlist widenings
 
-**Status**: Accepted (2026-05-17, Epic #5 — Story #254)
+**Status:** Accepted (2026-05-17, Epic #5, Story #256)
 
-Full ADR at [`docs/decisions/0003-uptime-vendor.md`](./decisions/0003-uptime-vendor.md).
+The redaction allowlist module at
+[`packages/shared/src/observability/redaction.ts`](../packages/shared/src/observability/redaction.ts)
+is the single trust boundary for log egress to the managed sink. Per
+[ADR-012](#adr-012--observability-vendor-stack-mvp-beta), tightening the
+allowlist is a one-line PR; **widening it requires a dedicated ADR.**
 
-Refines ADR-012's "Better Stack is the external uptime-probe vendor" clause with the per-vendor evaluation that backs the default, the substitute set (Pingdom, Uptime.com), the explicit independence-from-Cloudflare rationale, and the seat-cost / probe-frequency floor (Team plan, $29/month seat, 60-second probe interval). IaC encoding lives at [`infra/uptime/betterstack.yml`](../infra/uptime/betterstack.yml).
+- **Operator-facing reference:** [`docs/ops/observability-redaction.md`](./ops/observability-redaction.md)
+  — explains the Day 1 allowlist, why each key is on it, and what the module exports.
+- **ADR template every widening PR instantiates:** [`docs/decisions/_template-redaction-widening.md`](./decisions/_template-redaction-widening.md)
+  — copy to `docs/decisions/ADR-NNN-<short-name>.md`, fill in
+  Context / Decision / Consequences / Privacy posture / Rollback, and submit
+  alongside the source change and the matching test-suite extension.
+
+The ≥95% branch-coverage floor on `redaction.ts` (enforced in
+[`packages/shared/vitest.config.ts`](../packages/shared/vitest.config.ts)) is
+the mechanical companion to this policy — a widening PR that forgets to
+extend the test suite fails CI before review.

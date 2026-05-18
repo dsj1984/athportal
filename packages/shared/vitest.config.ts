@@ -16,6 +16,24 @@ export default mergeConfig(
   defineConfig({
     plugins: [react()],
     test: {
+      coverage: {
+        provider: 'v8',
+        reporter: ['text', 'json', 'json-summary'],
+        reportsDirectory: 'coverage',
+        // The redaction allowlist is the single trust boundary for log
+        // egress (Epic #5 PRD AC-7, Story #256). Per-file ratchet floor
+        // is ≥95% on every dimension; any future widening of the
+        // allowlist that forgets to extend `redaction.test.ts` will
+        // drop branch coverage below the threshold and fail CI.
+        thresholds: {
+          'src/observability/redaction.ts': {
+            statements: 95,
+            branches: 95,
+            functions: 95,
+            lines: 95,
+          },
+        },
+      },
       projects: [
         {
           extends: false,
