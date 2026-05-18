@@ -22,6 +22,8 @@
 // responsible for the JIT users-row lookup/insert.
 
 import { verifyToken } from '@clerk/backend';
+import { users } from '@repo/shared/db/schema';
+import { eq, sql } from 'drizzle-orm';
 import type { MiddlewareHandler } from 'hono';
 import type { Env } from '../env';
 
@@ -148,3 +150,206 @@ export function clerkAuth(): MiddlewareHandler<ClerkAuthEnv> {
     return undefined;
   };
 }
+
+// ---------------------------------------------------------------------------
+// requireInternalUser — JIT users-row resolution (Task #343)
+// ---------------------------------------------------------------------------
+
+/**
+ * Internal `AuthContext` attached to `c.var.auth` after `requireInternalUser`
+ * runs. Routes downstream read this object instead of the raw Clerk subject.
+ *
+ * Per Tech Spec #318 §D this shape feeds the RBAC `canPerform()` policy.
+ */
+export interface AuthContext {
+  readonly userId: string;
+  readonly clerkSubjectId: string;
+  readonly email: string;
+  readonly role: string;
+  readonly orgId: string | null;
+  readonly teamId: string | null;
+}
+
+export interface RequireInternalUserVariables extends ClerkAuthVariables {
+  db: InternalUserDb;
+  auth: AuthContext;
+}
+
+export type RequireInternalUserEnv = {
+  Bindings: Env;
+  Variables: RequireInternalUserVariables;
+};
+
+/**
+ * Marker type for the Drizzle handle this middleware consumes.
+ *
+ * The middleware does not pin a single driver — `better-sqlite3` in
+ * contract tests vs `@libsql/client` in production — so the handle is
+ * carried as an opaque type at the boundary and casts to the
+ * driver-specific builder happen inside `lookupBySubject` /
+ * `insertIfAbsent`. Production wiring (the libSQL adapter for Cloudflare
+ * Workers) lands with the API-shell Story; this Task only ships the
+ * middleware that consumes whatever handle the upstream provides.
+ */
+// biome-ignore lint/suspicious/noExplicitAny: see comment above.
+export type InternalUserDb = any;
+
+/**
+ * Defaults used when JIT-inserting a never-before-seen Clerk subject.
+ * Every user starts as a `member` (the no-privilege baseline role) and
+ * un-onboarded (`onboarded_at` null) so the Astro middleware's
+ * onboarding-redirect path engages on the next page load.
+ *
+ * Per `.agents/rules/security-baseline.md` — no fallback secrets, no
+ * implicit role escalation. A newly provisioned user has nothing more
+ * than the minimum required to render the onboarding flow.
+ */
+const JIT_DEFAULT_ROLE = 'member';
+
+interface JitCandidate {
+  readonly id: string;
+  readonly clerkSubjectId: string;
+  readonly email: string;
+  readonly role: string;
+}
+
+/**
+ * Build the row we would insert for a brand-new Clerk subject. Pulled
+ * out so the test surface can stub the id/email producers without
+ * duplicating insert logic.
+ */
+function buildJitCandidate(clerkSubjectId: string): JitCandidate {
+  return {
+    id: `u_${crypto.randomUUID()}`,
+    clerkSubjectId,
+    // Email is populated from Clerk by the onboarding flow; on first
+    // JIT we only have the opaque subject id, so we stamp a placeholder
+    // synthetic email that the onboarding update will overwrite. The
+    // value is internal — never logged (the redactor scrubs `email`).
+    email: `${clerkSubjectId}@clerk-jit.invalid`,
+    role: JIT_DEFAULT_ROLE,
+  };
+}
+
+function toAuthContext(row: typeof users.$inferSelect): AuthContext {
+  return {
+    userId: row.id,
+    clerkSubjectId: row.clerkSubjectId,
+    email: row.email,
+    role: row.role,
+    orgId: row.orgId ?? null,
+    teamId: row.teamId ?? null,
+  };
+}
+
+/**
+ * `requireInternalUser` middleware. Runs after `clerkAuth` on `/api/v1/*`
+ * routes and converts the validated Clerk subject id into a row in the
+ * production `users` table, JIT-inserting on first touch.
+ *
+ * Race elimination (Tech Spec #318 §C):
+ *
+ *   1. SELECT users WHERE clerk_subject_id = :sub LIMIT 1
+ *      — fast path: row already exists.
+ *   2. If missing, INSERT … ON CONFLICT(clerk_subject_id) DO NOTHING
+ *      RETURNING *. A parallel inserter for the same subject hits the
+ *      conflict path and RETURNING is empty for the loser.
+ *   3. If RETURNING is empty (conflict path), re-SELECT to pick up the
+ *      row the winner inserted.
+ *
+ * Net effect: under n parallel first-touch requests for one Clerk
+ * subject, exactly one row exists in `users` and every request
+ * succeeds with the same `userId`. No `SQLITE_CONSTRAINT` surfaces to
+ * the caller.
+ *
+ * Reads `c.var.db` (the request-scoped Drizzle handle, set by an
+ * upstream middleware in production and by `createTestApp(db, …)` in
+ * contract tests) and `c.var.clerkSubjectId` (set by `clerkAuth`).
+ */
+export function requireInternalUser(): MiddlewareHandler<RequireInternalUserEnv> {
+  return async (c, next) => {
+    const clerkSubjectId = c.get('clerkSubjectId');
+    if (!clerkSubjectId) {
+      // Defensive: this middleware MUST be mounted after `clerkAuth`.
+      // If we reach here without a subject, treat the request as
+      // unauthenticated rather than crashing or leaking detail.
+      return c.json(unauthenticated('Authentication required.'), 401);
+    }
+
+    const db = c.get('db') as unknown as InternalUserDb | undefined;
+    if (!db) {
+      // Misconfiguration — DB binding missing. Surface 401 (never echo
+      // internal config state).
+      return c.json(unauthenticated('Authentication required.'), 401);
+    }
+
+    // Step 1 — fast path: row already exists.
+    const existing = lookupBySubject(db, clerkSubjectId);
+    if (existing) {
+      c.set('auth', toAuthContext(existing));
+      await next();
+      return undefined;
+    }
+
+    // Step 2 — JIT insert with ON CONFLICT DO NOTHING RETURNING *.
+    const candidate = buildJitCandidate(clerkSubjectId);
+    const inserted = insertIfAbsent(db, candidate);
+    if (inserted) {
+      c.set('auth', toAuthContext(inserted));
+      await next();
+      return undefined;
+    }
+
+    // Step 3 — conflict path: a parallel request won. Re-select.
+    const winner = lookupBySubject(db, clerkSubjectId);
+    if (!winner) {
+      // Unreachable in practice — ON CONFLICT means a row exists.
+      // Surface 401 rather than echo an internal invariant violation.
+      return c.json(unauthenticated('Authentication required.'), 401);
+    }
+
+    c.set('auth', toAuthContext(winner));
+    await next();
+    return undefined;
+  };
+}
+
+function lookupBySubject(
+  db: InternalUserDb,
+  clerkSubjectId: string,
+): typeof users.$inferSelect | null {
+  // biome-ignore lint/suspicious/noExplicitAny: structural Drizzle handle —
+  // the middleware accepts any Drizzle SQLite flavour (better-sqlite3 in
+  // tests, @libsql/client in production), so its query-builder type is
+  // bridged structurally.
+  const rows = (db.select as any)()
+    .from(users)
+    .where(eq(users.clerkSubjectId, clerkSubjectId))
+    .limit(1)
+    .all() as Array<typeof users.$inferSelect>;
+  return rows[0] ?? null;
+}
+
+function insertIfAbsent(
+  db: InternalUserDb,
+  candidate: JitCandidate,
+): typeof users.$inferSelect | null {
+  // biome-ignore lint/suspicious/noExplicitAny: see lookupBySubject — same
+  // structural-Drizzle bridge.
+  const inserted = (db.insert as any)(users)
+    .values({
+      id: candidate.id,
+      clerkSubjectId: candidate.clerkSubjectId,
+      email: candidate.email,
+      role: candidate.role,
+      // created_at / updated_at use schema defaults (unixepoch()).
+    })
+    .onConflictDoNothing({ target: users.clerkSubjectId })
+    .returning()
+    .all() as Array<typeof users.$inferSelect>;
+  return inserted[0] ?? null;
+}
+
+// Re-export for callers that want to assert wire-shape invariants in
+// tests without re-deriving the SQL `unixepoch()` literal.
+export const __jit_sql = { now: sql`(unixepoch())` };

@@ -26,9 +26,35 @@ vi.mock('@clerk/backend', () => ({
 }));
 
 import { verifyToken } from '@clerk/backend';
-import { type ClerkAuthEnv, clerkAuth } from './auth';
+import { users } from '@repo/shared/db/schema';
+import Database from 'better-sqlite3';
+import { drizzle } from 'drizzle-orm/better-sqlite3';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import {
+  type AuthContext,
+  type ClerkAuthEnv,
+  type RequireInternalUserEnv,
+  clerkAuth,
+  requireInternalUser,
+} from './auth';
 
 const mockedVerifyToken = vi.mocked(verifyToken);
+
+const MIGRATION_PATH = join(
+  __dirname,
+  '../../../../packages/shared/src/db/migrations/0000_auth_and_rbac.sql',
+);
+
+function freshProductionDb() {
+  const sqlite = new Database(':memory:');
+  sqlite.pragma('foreign_keys = ON');
+  const migration = readFileSync(MIGRATION_PATH, 'utf8');
+  for (const stmt of migration.split('--> statement-breakpoint').map((s) => s.trim())) {
+    if (stmt.length > 0) sqlite.exec(stmt);
+  }
+  return drizzle(sqlite, { schema: { users } });
+}
 
 function createApp(): Hono<ClerkAuthEnv> {
   const app = new Hono<ClerkAuthEnv>();
@@ -156,3 +182,126 @@ describe('clerkAuth middleware', () => {
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// requireInternalUser (Task #343) — JIT lookup / insert / re-select.
+// ---------------------------------------------------------------------------
+
+function createJitApp(db: ReturnType<typeof freshProductionDb>, subjectId: string) {
+  const app = new Hono<RequireInternalUserEnv>();
+  app.use('*', async (c, next) => {
+    c.set('db', db);
+    c.set('clerkSubjectId', subjectId);
+    await next();
+  });
+  app.use('*', requireInternalUser());
+  app.get('/echo', (c) => {
+    const auth: AuthContext = c.get('auth');
+    return c.json(auth);
+  });
+  return app;
+}
+
+describe('requireInternalUser middleware', () => {
+  it('JIT-inserts a row for an unknown Clerk subject and attaches AuthContext', async () => {
+    const db = freshProductionDb();
+    const subject = 'user_jit_first_touch';
+    const app = createJitApp(db, subject);
+
+    const res = await app.request('/echo', { method: 'GET' });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as AuthContext;
+    expect(body.clerkSubjectId).toBe(subject);
+    expect(body.role).toBe('member');
+    expect(body.userId).toMatch(/^u_/);
+
+    // Exactly one row exists.
+    const rows = db.select().from(users).all();
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.clerkSubjectId).toBe(subject);
+  });
+
+  it('reads an existing user without inserting', async () => {
+    const db = freshProductionDb();
+    const subject = 'user_existing';
+    // Pre-seed.
+    db.insert(users)
+      .values({
+        id: 'u_pre',
+        clerkSubjectId: subject,
+        email: 'pre@example.invalid',
+        role: 'org_admin',
+      })
+      .run();
+
+    const app = createJitApp(db, subject);
+    const res = await app.request('/echo', { method: 'GET' });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as AuthContext;
+    expect(body.userId).toBe('u_pre');
+    expect(body.role).toBe('org_admin');
+
+    const rows = db.select().from(users).all();
+    expect(rows).toHaveLength(1);
+  });
+
+  it('produces exactly one row under n=8 parallel first-touch requests', async () => {
+    const db = freshProductionDb();
+    const subject = 'user_race_target';
+    const app = createJitApp(db, subject);
+
+    const N = 8;
+    const settled = await Promise.all(
+      Array.from({ length: N }, () => app.request('/echo', { method: 'GET' })),
+    );
+
+    // All responses succeeded.
+    for (const res of settled) {
+      expect(res.status).toBe(200);
+    }
+    const bodies = (await Promise.all(settled.map((r) => r.json()))) as AuthContext[];
+
+    // All point at the same internal userId.
+    const ids = new Set(bodies.map((b) => b.userId));
+    expect(ids.size).toBe(1);
+
+    // Exactly one row in users.
+    const rows = db
+      .select()
+      .from(users)
+      .where(eqSubjectFilter(subject))
+      .all();
+    expect(rows).toHaveLength(1);
+
+    // No SQLITE_CONSTRAINT propagated (the fact that every res is 200
+    // already implies this, but spell it out).
+    const totalRows = db.select().from(users).all();
+    expect(totalRows).toHaveLength(1);
+  });
+
+  it('returns 401 UNAUTHENTICATED when DB binding is missing', async () => {
+    const app = new Hono<RequireInternalUserEnv>();
+    app.use('*', async (c, next) => {
+      c.set('clerkSubjectId', 'user_dbless');
+      await next();
+    });
+    app.use('*', requireInternalUser());
+    app.get('/echo', (c) => c.json({ ok: true }));
+
+    const res = await app.request('/echo', { method: 'GET' });
+    expect(res.status).toBe(401);
+    expect(await res.json()).toMatchObject({
+      success: false,
+      error: { code: 'UNAUTHENTICATED' },
+    });
+  });
+});
+
+// Tiny helper — keeps the parallel-first-touch test free of the
+// drizzle-orm import shuffle inline.
+function eqSubjectFilter(subject: string) {
+  // Imported locally to avoid hoisting Drizzle into the top-level
+  // import block where the mocked `verifyToken` lives.
+  const { eq } = require('drizzle-orm') as typeof import('drizzle-orm');
+  return eq(users.clerkSubjectId, subject);
+}
