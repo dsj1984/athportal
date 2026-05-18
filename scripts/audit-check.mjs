@@ -204,9 +204,11 @@ export function normalizeFindings(payload) {
       continue;
     }
     const advisory = /** @type {Record<string, unknown>} */ (value);
-    const ghsa = typeof advisory.github_advisory_id === 'string' ? advisory.github_advisory_id : null;
+    const ghsa =
+      typeof advisory.github_advisory_id === 'string' ? advisory.github_advisory_id : null;
     const id = ghsa ?? key;
-    const severity = typeof advisory.severity === 'string' ? advisory.severity.toLowerCase() : 'unknown';
+    const severity =
+      typeof advisory.severity === 'string' ? advisory.severity.toLowerCase() : 'unknown';
     const moduleName = typeof advisory.module_name === 'string' ? advisory.module_name : 'unknown';
     const title = typeof advisory.title === 'string' ? advisory.title : '';
     const url = typeof advisory.url === 'string' ? advisory.url : null;

@@ -24,11 +24,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import {
-  buildArtifact,
-  normalizeFindings,
-  partitionFindings,
-} from '../audit-check.mjs';
+import { buildArtifact, normalizeFindings, partitionFindings } from '../audit-check.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SCRIPT_PATH = resolve(HERE, '..', 'audit-check.mjs');
@@ -41,14 +37,14 @@ describe('normalizeFindings', () => {
   it('flattens pnpm audit advisories into a typed list', () => {
     const payload = {
       advisories: {
-        '1234': {
+        1234: {
           github_advisory_id: 'GHSA-aaaa-bbbb-cccc',
           severity: 'high',
           module_name: 'lodash',
           title: 'Prototype pollution',
           url: 'https://github.com/advisories/GHSA-aaaa-bbbb-cccc',
         },
-        '5678': {
+        5678: {
           github_advisory_id: 'GHSA-dddd-eeee-ffff',
           severity: 'moderate',
           module_name: 'minimist',
@@ -153,7 +149,9 @@ describe('buildArtifact', () => {
   it('produces a stable, versioned envelope with summary counts and full finding lists', () => {
     const blocking = [{ id: 'b', severity: 'high', module: 'm', title: '', url: null, raw: {} }];
     const suppressed = [{ id: 's', severity: 'high', module: 'm', title: '', url: null, raw: {} }];
-    const surfaced = [{ id: 'm', severity: 'moderate', module: 'm', title: '', url: null, raw: {} }];
+    const surfaced = [
+      { id: 'm', severity: 'moderate', module: 'm', title: '', url: null, raw: {} },
+    ];
     const findings = [...blocking, ...suppressed, ...surfaced];
 
     const artifact = buildArtifact({
@@ -220,18 +218,13 @@ function setupStubSandbox(payload) {
     const stubPath = join(binDir, 'pnpm.cmd');
     // %~dp0 includes a trailing backslash; node receives the absolute
     // path to pnpm-stub.mjs and writes the payload to stdout.
-    writeFileSync(
-      stubPath,
-      `@echo off\r\nnode "%~dp0pnpm-stub.mjs"\r\n`,
-      'utf8',
-    );
+    writeFileSync(stubPath, `@echo off\r\nnode "%~dp0pnpm-stub.mjs"\r\n`, 'utf8');
   } else {
     const stubPath = join(binDir, 'pnpm');
-    writeFileSync(
-      stubPath,
-      `#!/usr/bin/env bash\nexec node "$(dirname "$0")/pnpm-stub.mjs"\n`,
-      { encoding: 'utf8', mode: 0o755 },
-    );
+    writeFileSync(stubPath, `#!/usr/bin/env bash\nexec node "$(dirname "$0")/pnpm-stub.mjs"\n`, {
+      encoding: 'utf8',
+      mode: 0o755,
+    });
   }
 
   // Copy audit-check.mjs into the sandbox so `process.cwd()` (and thus
@@ -285,7 +278,7 @@ describe('audit-check CLI', () => {
   it('exits non-zero on any unsuppressed High advisory (Task #224 AC #1)', () => {
     const ctx = setupStubSandbox({
       advisories: {
-        '1': {
+        1: {
           github_advisory_id: 'GHSA-high-uncovered',
           severity: 'high',
           module_name: 'evil-pkg',
@@ -305,7 +298,7 @@ describe('audit-check CLI', () => {
   it('exits non-zero on any unsuppressed Critical advisory', () => {
     const ctx = setupStubSandbox({
       advisories: {
-        '1': {
+        1: {
           github_advisory_id: 'GHSA-crit-uncovered',
           severity: 'critical',
           module_name: 'evil-pkg',
@@ -324,13 +317,13 @@ describe('audit-check CLI', () => {
   it('writes audit.json with the full findings list to the workspace root (Task #224 AC #2)', () => {
     const ctx = setupStubSandbox({
       advisories: {
-        '1': {
+        1: {
           github_advisory_id: 'GHSA-h',
           severity: 'high',
           module_name: 'a',
           title: 't',
         },
-        '2': {
+        2: {
           github_advisory_id: 'GHSA-m',
           severity: 'moderate',
           module_name: 'b',
@@ -353,7 +346,7 @@ describe('audit-check CLI', () => {
   it('surfaces Moderate findings in audit.json without failing the gate (Task #224 AC #3)', () => {
     const ctx = setupStubSandbox({
       advisories: {
-        '1': {
+        1: {
           github_advisory_id: 'GHSA-mod-only',
           severity: 'moderate',
           module_name: 'm',

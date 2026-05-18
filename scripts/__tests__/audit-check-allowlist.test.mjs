@@ -18,11 +18,7 @@
 // Pyramid tier: unit. `validateAllowList` is pure (input + clock → result).
 
 import { describe, expect, it } from 'vitest';
-import {
-  IGNORED,
-  parseRevisitDate,
-  validateAllowList,
-} from '../audit-check.mjs';
+import { IGNORED, parseRevisitDate, validateAllowList } from '../audit-check.mjs';
 
 const FIXED_NOW = new Date('2026-05-17T00:00:00.000Z');
 
