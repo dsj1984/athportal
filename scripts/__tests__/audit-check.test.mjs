@@ -23,7 +23,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { buildArtifact, normalizeFindings, partitionFindings } from '../audit-check.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));

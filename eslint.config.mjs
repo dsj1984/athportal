@@ -53,6 +53,19 @@ const jsBaseline = {
       fetch: 'readonly',
     },
   },
+  // Underscore-prefixed params/locals signal "intentionally unused" by
+  // long-standing convention (see lib/baselines/refresh-service.js `_args`).
+  // Honor that convention so the no-unused-vars rule does not fight it.
+  rules: {
+    'no-unused-vars': [
+      'error',
+      {
+        argsIgnorePattern: '^_',
+        varsIgnorePattern: '^_',
+        caughtErrorsIgnorePattern: '^_',
+      },
+    ],
+  },
 };
 
 // Typed-lint layer — applies only to TS sources, using TypeScript's project
@@ -118,6 +131,58 @@ export const sharedConfig = [
   },
 ];
 
+// Tooling overlay — points typescript-eslint's project service at
+// tsconfig.tooling.json (root) for the workspace-level config files
+// (Vitest, Playwright, Astro, Drizzle, app/build configs) and the web e2e
+// step library. Without this, those files live outside every workspace's
+// `tsconfig.json` `include`, and projectService fails with `Parsing error:
+// <file> was not found by the project service`. Same shape as the
+// apps/api/__testing__/ overlay above.
+export const toolingConfig = [
+  {
+    files: [
+      'vitest.config.ts',
+      'vitest.workspace.ts',
+      'knip.config.ts',
+      'apps/api/vitest.config.ts',
+      'apps/web/vitest.config.ts',
+      'apps/web/playwright.config.ts',
+      'apps/web/astro.config.ts',
+      'apps/web/e2e/**/*.{ts,tsx}',
+      'apps/mobile/app.config.ts',
+      'packages/baselines/vitest.config.ts',
+      'packages/shared/vitest.config.ts',
+      'packages/shared/drizzle.config.ts',
+    ],
+    languageOptions: {
+      parserOptions: {
+        projectService: false,
+        project: ['tsconfig.tooling.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+    // Tooling-file rule scoping. These rules add real value in `src/`
+    // (production code) but are noise on glue code:
+    //
+    // - `@typescript-eslint/no-unsafe-*` fires on framework configs that
+    //   read env vars whose types escape strict typing (Astro
+    //   `import.meta.env`, transitively-resolved `defineConfig`). The
+    //   right fix is to widen the types upstream, not to silence the
+    //   call site.
+    // - `@typescript-eslint/require-await` fires on playwright-bdd step
+    //   callbacks where the signature is uniformly `async (...) => {}`
+    //   for binder consistency even when a particular body has no
+    //   awaits. The binder accepts both — the keyword is a readability
+    //   convention.
+    rules: {
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/require-await': 'off',
+    },
+  },
+];
+
 export default tseslint.config(
   ignores,
   jsBaseline,
@@ -125,5 +190,6 @@ export default tseslint.config(
   ...apiConfig,
   ...webConfig,
   ...sharedConfig,
+  ...toolingConfig,
   prettier,
 );

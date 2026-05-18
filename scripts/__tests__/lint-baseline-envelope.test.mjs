@@ -248,46 +248,68 @@ describe('compareTolerance', () => {
   it('returns no regressions when current matches baseline', () => {
     const baseline = envelopeWith([{ path: 'src/a.ts', errorCount: 0, warningCount: 2 }]);
     const current = envelopeWith([{ path: 'src/a.ts', errorCount: 0, warningCount: 2 }]);
-    const { regressions, totalDelta } = compareTolerance(baseline, current);
-    expect(regressions).toEqual([]);
-    expect(totalDelta).toBe(0);
+    const { warningRegressions, errorFiles, currErrors, warnDelta } = compareTolerance(
+      baseline,
+      current,
+    );
+    expect(warningRegressions).toEqual([]);
+    expect(errorFiles).toEqual([]);
+    expect(currErrors).toBe(0);
+    expect(warnDelta).toBe(0);
   });
 
-  it('returns no regressions when warnings drop (improving the gate is always allowed)', () => {
+  it('returns no warning regressions when warnings drop (improving the gate is always allowed)', () => {
     const baseline = envelopeWith([{ path: 'src/a.ts', errorCount: 0, warningCount: 5 }]);
     const current = envelopeWith([{ path: 'src/a.ts', errorCount: 0, warningCount: 3 }]);
-    const { regressions, totalDelta } = compareTolerance(baseline, current);
-    expect(regressions).toEqual([]);
-    expect(totalDelta).toBe(-2);
+    const { warningRegressions, warnDelta } = compareTolerance(baseline, current);
+    expect(warningRegressions).toEqual([]);
+    expect(warnDelta).toBe(-2);
   });
 
-  it('flags a per-file regression when a single file gains a warning (the AC fixture)', () => {
+  it('flags a per-file warning regression when a single file gains a warning', () => {
     // Synthetic added-warning fixture: a known file moves from 2 → 3
     // warnings; the gate must fail with a per-file diff line.
     const baseline = envelopeWith([{ path: 'src/a.ts', errorCount: 0, warningCount: 2 }]);
     const current = envelopeWith([{ path: 'src/a.ts', errorCount: 0, warningCount: 3 }]);
     const result = compareTolerance(baseline, current);
-    expect(result.regressions).toHaveLength(1);
-    expect(result.regressions[0]).toEqual({ file: 'src/a.ts', prev: 2, count: 3 });
-    expect(result.totalDelta).toBe(1);
+    expect(result.warningRegressions).toHaveLength(1);
+    expect(result.warningRegressions[0]).toEqual({ file: 'src/a.ts', prev: 2, count: 3 });
+    expect(result.warnDelta).toBe(1);
   });
 
   it('treats a brand-new file with warnings as a regression vs implicit-zero prev', () => {
     const baseline = envelopeWith([]);
     const current = envelopeWith([{ path: 'src/new.ts', errorCount: 0, warningCount: 1 }]);
     const result = compareTolerance(baseline, current);
-    expect(result.regressions).toHaveLength(1);
-    expect(result.regressions[0]).toEqual({ file: 'src/new.ts', prev: 0, count: 1 });
+    expect(result.warningRegressions).toHaveLength(1);
+    expect(result.warningRegressions[0]).toEqual({ file: 'src/new.ts', prev: 0, count: 1 });
   });
 
-  it('ignores error-count drift — the gate is warning-keyed (errors fail at the linter)', () => {
+  it('reports current errors and per-file error rows when any error appears (Story #373)', () => {
+    // New contract: errors are non-negotiable. The current aggregate must
+    // surface its error count and the files carrying them so the gate can
+    // refuse the run independent of baseline state.
     const baseline = envelopeWith([{ path: 'src/a.ts', errorCount: 0, warningCount: 0 }]);
     const current = envelopeWith([{ path: 'src/a.ts', errorCount: 5, warningCount: 0 }]);
     const result = compareTolerance(baseline, current);
-    expect(result.regressions).toEqual([]);
+    expect(result.currErrors).toBe(5);
+    expect(result.errorFiles).toEqual([{ file: 'src/a.ts', count: 5 }]);
   });
 
-  it('reads baseline & current rollup totals from the rollup."*" envelope shape', () => {
+  it('aggregates errors from multiple files into the errorFiles list', () => {
+    const baseline = envelopeWith([]);
+    const current = envelopeWith([
+      { path: 'src/a.ts', errorCount: 2, warningCount: 0 },
+      { path: 'src/b.ts', errorCount: 3, warningCount: 0 },
+    ]);
+    const result = compareTolerance(baseline, current);
+    expect(result.errorFiles).toEqual([
+      { file: 'src/a.ts', count: 2 },
+      { file: 'src/b.ts', count: 3 },
+    ]);
+  });
+
+  it('reads baseline & current rollup warning totals from the rollup."*" envelope shape', () => {
     const baseline = envelopeWith([{ path: 'src/a.ts', errorCount: 0, warningCount: 2 }], {
       errorCount: 0,
       warningCount: 2,
@@ -297,48 +319,72 @@ describe('compareTolerance', () => {
       warningCount: 4,
     });
     const result = compareTolerance(baseline, current);
-    expect(result.baseTotal).toBe(2);
-    expect(result.currTotal).toBe(4);
-    expect(result.totalDelta).toBe(2);
+    expect(result.baseWarn).toBe(2);
+    expect(result.currWarn).toBe(4);
+    expect(result.warnDelta).toBe(2);
   });
 });
 
 // ---------------------------------------------------------------------------
-// formatRejectionMessage — names each regressed file with its prev → next
+// formatRejectionMessage — names each regressed file with its prev → next,
+// and surfaces errors as a separate blocking channel (Story #373).
 // ---------------------------------------------------------------------------
 
 describe('formatRejectionMessage', () => {
-  it('renders a per-file diff line in stderr-friendly shape (the AC)', () => {
+  it('renders a per-file diff line in stderr-friendly shape', () => {
     const msg = formatRejectionMessage({
-      regressions: [{ file: 'src/a.ts', prev: 2, count: 3 }],
-      baseTotal: 2,
-      currTotal: 3,
-      totalDelta: 1,
+      warningRegressions: [{ file: 'src/a.ts', prev: 2, count: 3 }],
+      errorFiles: [],
+      currErrors: 0,
+      baseWarn: 2,
+      currWarn: 3,
+      warnDelta: 1,
     });
-    // The AC says "per-file diff line in stderr" — the rendered message
-    // must name the file and the prev → next transition.
     expect(msg).toMatch(/src\/a\.ts/);
     expect(msg).toMatch(/2 → 3/);
   });
 
   it('names the totalWarnings transition with the signed delta', () => {
     const msg = formatRejectionMessage({
-      regressions: [{ file: 'src/a.ts', prev: 2, count: 3 }],
-      baseTotal: 2,
-      currTotal: 3,
-      totalDelta: 1,
+      warningRegressions: [{ file: 'src/a.ts', prev: 2, count: 3 }],
+      errorFiles: [],
+      currErrors: 0,
+      baseWarn: 2,
+      currWarn: 3,
+      warnDelta: 1,
     });
     expect(msg).toMatch(/baseline=2 current=3 \(Δ=\+1\)/);
   });
 
-  it('mentions the lint:baseline:update remediation path', () => {
+  it('surfaces a blocking error line and per-file counts when currErrors > 0', () => {
     const msg = formatRejectionMessage({
-      regressions: [],
-      baseTotal: 0,
-      currTotal: 1,
-      totalDelta: 1,
+      warningRegressions: [],
+      errorFiles: [
+        { file: 'src/a.ts', count: 2 },
+        { file: 'src/b.ts', count: 1 },
+      ],
+      currErrors: 3,
+      baseWarn: 0,
+      currWarn: 0,
+      warnDelta: 0,
+    });
+    expect(msg).toMatch(/errors: 3/);
+    expect(msg).toMatch(/blocking/i);
+    expect(msg).toMatch(/src\/a\.ts: 2 errors/);
+    expect(msg).toMatch(/src\/b\.ts: 1 error/);
+  });
+
+  it('mentions the lint:baseline:update remediation path AND notes errors are not absorbable', () => {
+    const msg = formatRejectionMessage({
+      warningRegressions: [],
+      errorFiles: [{ file: 'src/a.ts', count: 1 }],
+      currErrors: 1,
+      baseWarn: 0,
+      currWarn: 0,
+      warnDelta: 0,
     });
     expect(msg).toMatch(/lint:baseline:update/);
+    expect(msg).toMatch(/Errors cannot be absorbed/i);
   });
 });
 
@@ -380,13 +426,16 @@ describe('shipped baselines/lint.json', () => {
     expect(paths).toEqual(sorted);
   });
 
-  it('row count equals rollup."*".warningCount + (errors are tracked but not gated)', () => {
-    // Reconcile the rollup with the row contents: the sum of per-row
-    // warningCount must equal rollup."*".warningCount; same for errors.
+  it('rollup totals reconcile with per-row sums for both errors and warnings', () => {
     const doc = JSON.parse(fs.readFileSync(BASELINE_PATH, 'utf8'));
     const sumWarn = doc.rows.reduce((acc, r) => acc + r.warningCount, 0);
     const sumErr = doc.rows.reduce((acc, r) => acc + r.errorCount, 0);
     expect(sumWarn).toBe(doc.rollup['*'].warningCount);
     expect(sumErr).toBe(doc.rollup['*'].errorCount);
+  });
+
+  it('rollup."*".errorCount is zero (Story #373 — error contract is zero)', () => {
+    const doc = JSON.parse(fs.readFileSync(BASELINE_PATH, 'utf8'));
+    expect(doc.rollup['*'].errorCount).toBe(0);
   });
 });
