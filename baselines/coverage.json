@@ -1,0 +1,13 @@
+{
+  "$schema": ".agents/schemas/baselines/coverage.schema.json",
+  "generatedAt": "2026-05-17T00:00:00.000Z",
+  "kernelVersion": "1.0.0",
+  "rollup": {
+    "*": {
+      "branches": 0,
+      "functions": 0,
+      "lines": 0
+    }
+  },
+  "rows": []
+}

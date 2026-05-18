@@ -108,7 +108,6 @@ describe('baseline stubs (crap + maintainability)', () => {
       const doc = loadJson(path.join(BASELINES_DIR, file));
       const ok = validate(doc);
       if (!ok) {
-        // eslint-disable-next-line no-console
         console.error(`AJV errors for ${file}:`, validate.errors);
       }
       expect(ok).toBe(true);

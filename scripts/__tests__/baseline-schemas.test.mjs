@@ -144,7 +144,6 @@ describe('per-kind baseline schemas', () => {
       if (!ok) {
         // Surface AJV errors when the assertion fails so a future row-shape
         // drift is immediately attributable.
-        // eslint-disable-next-line no-console
         console.error(`AJV errors for ${kind}:`, validate.errors);
       }
       expect(ok).toBe(true);
