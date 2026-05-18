@@ -257,9 +257,60 @@ jobs:
       - name: Lint step definitions
         run: pnpm run lint:steps
 
+  supply-chain-security:
+    # ADR-011 — supply-chain CVE gate. Runs `pnpm run audit:check` which
+    # invokes `pnpm audit --json --prod` and fails on any unsuppressed
+    # High/Critical advisory in the production graph. Moderate findings
+    # surface in the uploaded `audit.json` artifact (14-day retention)
+    # without blocking. The IGNORED allow-list in `scripts/audit-check.mjs`
+    # is the suppression mechanism; every entry requires a non-empty
+    # reason and a future revisit date.
+    #
+    # This job is the required check on `main` (configured in branch
+    # protection settings via the GitHub UI). The `build` job below
+    # `needs:` this so a failed audit blocks the deploy-targeted build
+    # output even when branch protection isn't (yet) enforcing the
+    # required-check contract.
+    name: Supply-chain security (ADR-011)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Audit production graph (High/Critical block; Moderate surface)
+        run: pnpm run audit:check
+
+      - name: Upload audit.json artifact (14-day retention)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: supply-chain-audit
+          path: audit.json
+          retention-days: 14
+          if-no-files-found: error
+
   build:
     name: Build
-    needs: [lint, typecheck]
+    needs: [lint, typecheck, supply-chain-security]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

@@ -30,6 +30,7 @@
     "bundle-size:update": "node scripts/bundle-size-baseline.mjs --update",
     "lint:steps": "node scripts/lint-steps.mjs",
     "lint:steps:fixtures": "node scripts/lint-steps.mjs --fixtures",
+    "audit:check": "node scripts/audit-check.mjs",
     "sync:commands": "node .agents/scripts/sync-claude-commands.js",
     "prepare": "node .agents/scripts/sync-claude-commands.js",
     "quality:preview": "node .agents/scripts/quality-preview.js --changed-since HEAD",
