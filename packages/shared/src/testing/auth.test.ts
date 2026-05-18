@@ -1,12 +1,18 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createTestApp } from './app';
-import { PERSONA_FIXTURES, authHeaders, resolvePersona, signInAs } from './auth';
+import { PERSONA_FIXTURES, authHeaders, requireTestUserPassword, resolvePersona } from './auth';
 import { closeAllTestDbs, freshDb } from './db';
 import { seedUser } from './seeds';
 
 afterEach(() => {
   closeAllTestDbs();
 });
+
+// `signInAs` itself drives a live Playwright `page` against the Clerk
+// test instance, so it is exercised at the acceptance tier rather than
+// here. This file covers the pure surface: `authHeaders` (contract
+// tier), `resolvePersona`, the `PERSONA_FIXTURES` mapping invariants,
+// and the `CLERK_TEST_USER_PASSWORD` env-var contract.
 
 describe('authHeaders', () => {
   it('returns a Record<string, string> shape', () => {
@@ -77,27 +83,32 @@ describe('resolvePersona', () => {
     expect(PERSONA_FIXTURES.anonymous.role).toBeNull();
   });
 
-  it('uses .invalid emails for every persona', () => {
+  it('uses @example.com emails for every persona', () => {
+    // Clerk rejects the `.invalid` TLD at the email-validation boundary,
+    // so persona fixtures use `@example.com` (RFC 2606 reserved for
+    // documentation) instead. The contract-tier synthetic-PII guard
+    // (`safety.ts`) still pins `.invalid` for DB seeds.
     for (const fixture of Object.values(PERSONA_FIXTURES)) {
-      expect(fixture.email.endsWith('@test.invalid')).toBe(true);
+      expect(fixture.email.endsWith('@example.com')).toBe(true);
     }
   });
 });
 
-describe('signInAs (deferred placeholder — see Issue #371)', () => {
-  it('returns an empty StorageState for the anonymous persona', async () => {
-    const state = await signInAs('anonymous');
-    expect(state).toEqual({ cookies: [], origins: [] });
+describe('requireTestUserPassword', () => {
+  beforeEach(() => {
+    vi.stubEnv('CLERK_TEST_USER_PASSWORD', '');
   });
 
-  it.each(['athlete', 'coach', 'org-admin', 'dev-admin'] as const)(
-    'throws for the %s persona with a reference to Issue #371',
-    async (persona) => {
-      await expect(signInAs(persona)).rejects.toThrow(/Issue #371/);
-    },
-  );
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
 
-  it('throws a TypeError when called with an unknown persona', async () => {
-    await expect(signInAs('unknown' as unknown as 'athlete')).rejects.toThrow(TypeError);
+  it('returns the env value when set', () => {
+    vi.stubEnv('CLERK_TEST_USER_PASSWORD', 'sentinel-password');
+    expect(requireTestUserPassword()).toBe('sentinel-password');
+  });
+
+  it('throws when the env value is empty', () => {
+    expect(() => requireTestUserPassword()).toThrow(/CLERK_TEST_USER_PASSWORD/);
   });
 });

@@ -3,29 +3,27 @@
  *
  * Two tiers of helpers ship from this module:
  *
- * 1. **Contract tier** — `authHeaders(user)` (Epic #4 / Story #172).
+ * 1. **Contract tier** — `authHeaders(user)` (Story #172 / Task #181).
  *    Returns the `Authorization` + `x-clerk-user-id` header bag the
  *    Hono contract harness wants for `app.request(path, { headers })`.
- *    Working as designed.
+ *    Unchanged by this Story.
  *
- * 2. **Acceptance tier** — `signInAs(persona)`. Currently a deferred
- *    placeholder. Story #329 / Task #348 shipped an implementation that
- *    signed JWTs locally with a `CLERK_TESTING_TOKEN_SIGNING_KEY` env
- *    var expected to be a Clerk-issued RSA private key — but Clerk
- *    does not expose such a key (testing tokens are server-minted via
- *    `clerkClient.testingTokens.createTestingToken()`, not signed
- *    client-side). The phantom env var and the broken JWT-signing path
- *    have been removed; the seam is being rewritten in **Issue #371**
- *    to use `@clerk/testing/playwright`'s `clerk.signIn` API. Until
- *    that lands, `signInAs(persona)` throws with a reference to the
- *    issue, except `signInAs('anonymous')` which still returns an
- *    empty StorageState for explicit signed-out projects.
+ * 2. **Acceptance tier** — `signInAs({ page, persona })` (Story #371).
+ *    Drives the canonical `@clerk/testing/playwright` sign-in helper
+ *    against a Clerk **test instance**. The persona-specific seed users
+ *    (`<persona>@example.com`) and their shared password live in the
+ *    Clerk dashboard; this module owns the persona ↔ identifier ↔ role
+ *    mapping and nothing else.
  *
  * Per docs/architecture.md §1 the auth provider is Clerk
- * (`@clerk/astro` at MVP). The persona ↔ role mapping below is the
- * single source of truth and is kept here so Issue #371 inherits a
- * stable contract.
+ * (`@clerk/astro` at MVP). The seam keeps the persona ↔ role mapping
+ * documented at one place (this file) so the Gherkin step
+ * `Given I am signed in as {string}` and the per-persona Playwright
+ * projects (`apps/web/playwright.config.ts`) resolve identically.
  */
+
+import { clerk } from '@clerk/testing/playwright';
+import type { Page } from '@playwright/test';
 
 // ---------------------------------------------------------------------------
 // Contract-tier helper (unchanged from Story #172 / Task #181)
@@ -59,7 +57,7 @@ export function authHeaders(user: AuthUserLike): Record<string, string> {
 }
 
 // ---------------------------------------------------------------------------
-// Acceptance-tier seam (new — Story #329 / Task #348)
+// Acceptance-tier seam (refactored — Story #371)
 // ---------------------------------------------------------------------------
 
 /**
@@ -74,21 +72,26 @@ export function authHeaders(user: AuthUserLike): Record<string, string> {
 export type Persona = 'anonymous' | 'athlete' | 'coach' | 'org-admin' | 'dev-admin';
 
 /**
- * RBAC role the persona carries inside the application. Mirrors
- * `packages/shared/src/rbac/types.ts` (which lands with Epic #7's
- * production-auth Story). Declared inline here so the testing seam
- * stays self-contained until that module ships.
+ * RBAC role the persona carries inside the application. Mirrors the
+ * canonical role enum in `packages/shared/src/rbac/types.ts`.
  */
 export type PersonaRole = 'dev_admin' | 'org_admin' | 'team_admin' | 'member';
 
 /**
- * Static record bound to each persona. The seeded Clerk test users
- * (`<persona>@test.invalid`) live in the Clerk test instance — this
- * module is the single source of truth for the persona ↔ Clerk-subject
- * ↔ role mapping consumed by acceptance scenarios.
+ * Static record bound to each persona. The seeded Clerk test-instance
+ * users (`<persona>@example.com`) live in the Clerk dashboard — this
+ * module is the single source of truth for the persona ↔ identifier ↔
+ * role mapping consumed by acceptance scenarios.
  *
- * `clerkSubjectId` is the deterministic stub the contract-tier middleware
- * recognises and the testing-token JWT carries as its `sub` claim.
+ * `clerkSubjectId` is the deterministic stub the contract-tier
+ * middleware recognises; the acceptance tier does not consult it
+ * (Clerk owns the real `sub` claim once `clerk.signIn` runs).
+ *
+ * Emails use the `@example.com` synthetic domain (RFC 2606 reserved
+ * for documentation). Clerk rejects the `.invalid` TLD at the
+ * validation boundary so the contract-tier synthetic-PII guard
+ * (`safety.ts`, which still pins `.invalid` for DB seeds) and the
+ * acceptance-tier persona identifiers intentionally diverge.
  */
 export interface PersonaFixture {
   readonly persona: Persona;
@@ -99,16 +102,10 @@ export interface PersonaFixture {
   readonly teamId: string | null;
 }
 
-/**
- * The MVP persona → fixture table. Values are synthetic and use the
- * `.invalid` TLD per RFC 2606 so an inadvertent send can never reach a
- * real inbox. The synthetic-PII guard (`safety.ts`) re-asserts this
- * invariant when a fixture is consumed.
- */
 export const PERSONA_FIXTURES: Readonly<Record<Persona, PersonaFixture>> = Object.freeze({
   anonymous: Object.freeze({
     persona: 'anonymous',
-    email: 'anonymous@test.invalid',
+    email: 'anonymous@example.com',
     clerkSubjectId: 'user_test_anonymous',
     role: null,
     orgId: null,
@@ -116,7 +113,7 @@ export const PERSONA_FIXTURES: Readonly<Record<Persona, PersonaFixture>> = Objec
   }),
   athlete: Object.freeze({
     persona: 'athlete',
-    email: 'athlete@test.invalid',
+    email: 'athlete@example.com',
     clerkSubjectId: 'user_test_athlete',
     role: 'member',
     orgId: null,
@@ -124,7 +121,7 @@ export const PERSONA_FIXTURES: Readonly<Record<Persona, PersonaFixture>> = Objec
   }),
   coach: Object.freeze({
     persona: 'coach',
-    email: 'coach@test.invalid',
+    email: 'coach@example.com',
     clerkSubjectId: 'user_test_coach',
     role: 'team_admin',
     orgId: 'org_test_a',
@@ -132,7 +129,7 @@ export const PERSONA_FIXTURES: Readonly<Record<Persona, PersonaFixture>> = Objec
   }),
   'org-admin': Object.freeze({
     persona: 'org-admin',
-    email: 'org-admin@test.invalid',
+    email: 'org-admin@example.com',
     clerkSubjectId: 'user_test_org_admin',
     role: 'org_admin',
     orgId: 'org_test_a',
@@ -140,7 +137,7 @@ export const PERSONA_FIXTURES: Readonly<Record<Persona, PersonaFixture>> = Objec
   }),
   'dev-admin': Object.freeze({
     persona: 'dev-admin',
-    email: 'dev-admin@test.invalid',
+    email: 'dev-admin@example.com',
     clerkSubjectId: 'user_test_dev_admin',
     role: 'dev_admin',
     orgId: null,
@@ -178,63 +175,74 @@ export function resolvePersona(label: string): PersonaFixture {
   return fixture;
 }
 
-// ---------------------------------------------------------------------------
-// Playwright StorageState shape (subset re-declared to avoid a hard
-// dependency on @playwright/test inside @repo/shared)
-// ---------------------------------------------------------------------------
-
-export interface StorageStateCookie {
-  name: string;
-  value: string;
-  domain: string;
-  path: string;
-  expires: number;
-  httpOnly: boolean;
-  secure: boolean;
-  sameSite: 'Strict' | 'Lax' | 'None';
-}
-
-export interface StorageState {
-  cookies: StorageStateCookie[];
-  origins: Array<{ origin: string; localStorage: Array<{ name: string; value: string }> }>;
+/**
+ * Read the shared seed-user password from the environment. All four
+ * Clerk test-instance users share the same password so a single secret
+ * rotation covers the whole acceptance tier — see
+ * `docs/patterns.md` § _Authenticated test sessions_ for the rotation
+ * runbook.
+ *
+ * Throws if missing so a forgotten environment variable fails the run
+ * fast rather than silently attempting a sign-in with an empty
+ * password.
+ */
+export function requireTestUserPassword(): string {
+  const password = process.env.CLERK_TEST_USER_PASSWORD;
+  if (!password || typeof password !== 'string') {
+    throw new Error(
+      'signInAs: CLERK_TEST_USER_PASSWORD is not set. ' +
+        'Set it to the password shared by the seeded Clerk test-instance users ' +
+        '(athlete@example.com, coach@example.com, org-admin@example.com, ' +
+        'dev-admin@example.com). See docs/patterns.md § Authenticated test sessions.',
+    );
+  }
+  return password;
 }
 
 /**
- * Acceptance-tier sign-in entry point — currently a deferred placeholder.
- *
- * - `signInAs('anonymous')` returns an empty `StorageState` (no cookies,
- *   no origins). Useful for projects that want an explicit signed-out
- *   baseline; works today.
- * - `signInAs('athlete' | 'coach' | 'org-admin' | 'dev-admin')` throws
- *   a clear error pointing at **Issue #371**, which tracks the rewrite
- *   to `@clerk/testing/playwright`'s `clerk.signIn` API. The previous
- *   implementation (Story #329 / Task #348) signed JWTs locally with a
- *   `CLERK_TESTING_TOKEN_SIGNING_KEY` env var Clerk does not actually
- *   expose — see the issue body for the full root-cause analysis.
- * - `signInAs('unknown')` throws a `TypeError` listing the accepted
- *   persona spellings (unchanged).
- *
- * Callers that already have a label coming from a Gherkin step should
- * pass the label through `resolvePersona(label).persona` first, or
- * call `signInAs` with the resolved key directly.
+ * Parameters for `signInAs`. Mirrors `@clerk/testing/playwright`'s
+ * `clerk.signIn` shape — a live Playwright `Page` is required because
+ * Clerk's helper drives sign-in through the client SDK on a real page
+ * that has already loaded Clerk.
  */
-export function signInAs(persona: Persona): Promise<StorageState> {
+export interface SignInAsParams {
+  readonly page: Page;
+  readonly persona: Persona;
+}
+
+/**
+ * Acceptance-tier sign-in entry point. Drives Clerk's official
+ * Playwright testing helper end-to-end:
+ *
+ *   1. Resolves the persona to its seeded email identifier.
+ *   2. Reads the shared `CLERK_TEST_USER_PASSWORD` env var.
+ *   3. Calls `clerk.signIn({ page, signInParams: { strategy: 'password', ... } })`,
+ *      which sets up the Clerk testing token and completes a real
+ *      first-factor sign-in against the test instance.
+ *
+ * The caller is responsible for navigating `page` to a route that
+ * loads Clerk **before** calling `signInAs` (per Clerk's API contract).
+ * In step definitions this is typically the welcome / sign-in surface.
+ *
+ * `signInAs({ page, persona: 'anonymous' })` is a no-op — the
+ * "anonymous" persona has no session. Unknown personas throw at
+ * `resolvePersona` long before this function runs.
+ */
+export async function signInAs({ page, persona }: SignInAsParams): Promise<void> {
   if (persona === 'anonymous') {
-    return Promise.resolve({ cookies: [], origins: [] });
+    return;
   }
-  if (!PERSONA_FIXTURES[persona]) {
-    return Promise.reject(
-      new TypeError(
-        `signInAs: unknown persona ${JSON.stringify(persona)}. ` +
-          "Accepted personas: 'anonymous', 'athlete', 'coach', 'org-admin', 'dev-admin'.",
-      ),
-    );
+  const fixture = PERSONA_FIXTURES[persona];
+  if (!fixture) {
+    throw new TypeError(`signInAs: unknown persona ${JSON.stringify(persona)}`);
   }
-  return Promise.reject(
-    new Error(
-      `signInAs(${JSON.stringify(persona)}): the acceptance-tier test-auth seam is currently deferred ` +
-        'pending the refactor to @clerk/testing/playwright (see GitHub Issue #371). ' +
-        "Only signInAs('anonymous') is implemented today.",
-    ),
-  );
+  const password = requireTestUserPassword();
+  await clerk.signIn({
+    page,
+    signInParams: {
+      strategy: 'password',
+      identifier: fixture.email,
+      password,
+    },
+  });
 }

@@ -322,14 +322,19 @@ jobs:
         run: pnpm --filter @repo/web exec bddgen
 
       - name: Run @smoke scenarios
-        # Today's @smoke gate runs the anonymous + chromium-mobile-pwa
-        # projects only — the per-persona projects (and the
-        # CLERK_TESTING_TOKEN_SIGNING_KEY env binding that previously
-        # gated them) are deferred to GitHub Issue #371 (refactor of
-        # the test-auth seam to @clerk/testing/playwright). When that
-        # issue lands, re-bind the secret here (e.g.
-        # CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}) and the
-        # per-persona projects re-enable in apps/web/playwright.config.ts.
+        # CLERK_TEST_USER_PASSWORD (shared seed-user password) and
+        # CLERK_SECRET_KEY (test-instance secret key consumed by
+        # @clerk/testing/playwright) are operator-owned (per
+        # docs/patterns.md § "Authenticated test sessions"). When either
+        # repo secret is unset — e.g. on a fork PR or before the secret
+        # has been wired — apps/web/e2e/fixtures/persona-global-setup.ts
+        # short-circuits with a one-line warn, and
+        # apps/web/playwright.config.ts omits the per-persona projects
+        # entirely. The legacy anonymous + mobile-PWA projects continue
+        # to run, so the @smoke gate stays meaningful either way.
+        env:
+          CLERK_TEST_USER_PASSWORD: ${{ secrets.CLERK_TEST_USER_PASSWORD }}
+          CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
         run: pnpm --filter @repo/web exec playwright test --grep @smoke
 
       - name: Upload Cucumber JSON

@@ -1,13 +1,13 @@
 {
   "$schema": ".agents/schemas/baselines/crap.schema.json",
-  "generatedAt": "2026-05-18T20:23:33.849Z",
+  "generatedAt": "2026-05-18T20:53:39.170Z",
   "kernelVersion": "1.0.0",
   "rollup": {
     "*": {
       "max": 462,
-      "methodsAbove20": 15,
+      "methodsAbove20": 16,
       "p50": 2,
-      "p95": 30
+      "p95": 42
     }
   },
   "rows": [
@@ -234,6 +234,24 @@
       "startLine": 106
     },
     {
+      "crap": 42,
+      "method": "globalSetup",
+      "path": "apps/web/e2e/fixtures/persona-global-setup.ts",
+      "startLine": 36
+    },
+    {
+      "crap": 20,
+      "method": "personaProjects",
+      "path": "apps/web/e2e/fixtures/persona-projects.ts",
+      "startLine": 29
+    },
+    {
+      "crap": 6,
+      "method": "personaStoragePath",
+      "path": "apps/web/e2e/fixtures/persona-storage.ts",
+      "startLine": 50
+    },
+    {
       "crap": 20,
       "method": "<anon method-1>",
       "path": "apps/web/e2e/fixtures/static-server.mjs",
@@ -342,16 +360,16 @@
       "startLine": 18
     },
     {
-      "crap": 2,
+      "crap": 6,
       "method": "<anon method-2>",
       "path": "apps/web/e2e/steps/auth.steps.ts",
-      "startLine": 39
+      "startLine": 40
     },
     {
       "crap": 2,
       "method": "<anon method-3>",
       "path": "apps/web/e2e/steps/auth.steps.ts",
-      "startLine": 53
+      "startLine": 52
     },
     {
       "crap": 12,
@@ -1005,25 +1023,31 @@
       "crap": 12,
       "method": "authHeaders",
       "path": "packages/shared/src/testing/auth.ts",
-      "startLine": 50
+      "startLine": 48
     },
     {
       "crap": 12,
       "method": "resolvePersona",
       "path": "packages/shared/src/testing/auth.ts",
-      "startLine": 161
+      "startLine": 158
     },
     {
       "crap": 2,
       "method": "<anon method-1>",
       "path": "packages/shared/src/testing/auth.ts",
-      "startLine": 171
+      "startLine": 168
+    },
+    {
+      "crap": 12,
+      "method": "requireTestUserPassword",
+      "path": "packages/shared/src/testing/auth.ts",
+      "startLine": 189
     },
     {
       "crap": 12,
       "method": "signInAs",
       "path": "packages/shared/src/testing/auth.ts",
-      "startLine": 221
+      "startLine": 231
     },
     {
       "crap": 6,
