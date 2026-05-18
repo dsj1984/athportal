@@ -189,6 +189,60 @@ whole-tree Biome and ESLint passes the ratchet needs.
    failure that does not reproduce in `pnpm run lint` is a script bug,
    not a code bug — file an issue rather than working around it.
 
+## Priming a baseline (Story #375 runbook)
+
+The seven baseline ratchets (`coverage`, `crap`, `maintainability`,
+`mutation`, `bundle-size`, `lighthouse`, `lint`) all share a common
+contract: each `*:check` script either **fails on a regression** or
+**fails-loud / skips-with-warning** when the baseline is *unprimed* — an
+empty zero-rollup snapshot from before any real measurement landed. An
+unprimed baseline is **not** a protective gate; it is decoration that
+will pass green on a PR that's actually regressing the underlying
+metric.
+
+A baseline graduates from unprimed → enforcing in three steps:
+
+1. **Generate a measurement.** Run the producer (`pnpm run test:coverage`
+   for coverage, `pnpm run build` for bundle-size, the nightly Stryker
+   job for mutation, etc.). The producer writes the artifact the
+   ratchet reads.
+2. **Snapshot.** Run `pnpm run <kind>:update`. The script reads the
+   artifact, writes `baselines/<kind>.json` with real rollups + rows,
+   and commits the diff alongside the producer change in the same PR.
+3. **Prove the gate bites.** Open a draft PR that deliberately regresses
+   the metric by an amount that crosses the gate's tolerance (e.g. -3pp
+   on coverage with the ADR-015 -2pp floor), confirm the `*:check`
+   fails, restore. Link both runs from the PR description.
+
+### Per-baseline producer commands
+
+| Baseline        | Producer                                                                                       | Where it writes                                                                                 |
+| --------------- | ---------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| coverage        | per-workspace `pnpm --filter <ws> exec vitest run --coverage` (root `test:coverage` writes only `coverage/coverage-final.json`; the ratchet reads per-workspace) | `<ws>/coverage/coverage-final.json`                                                              |
+| crap            | reuses coverage output (no separate producer)                                                  | reads `<ws>/coverage/coverage-final.json` + source AST                                          |
+| maintainability | `pnpm run maintainability:update` runs the producer inline                                     | computed from source AST; no intermediate artifact                                              |
+| bundle-size     | `pnpm run build` (per `turbo.json`)                                                            | `<ws>/dist/**` — when every `build` is `exit 0` the ratchet skips with `no measurable bundles` |
+| mutation        | `pnpm run mutation` (Stryker, hours-long; nightly artifact preferred)                          | `reports/mutation/mutation.json`                                                                |
+| lighthouse      | Lighthouse CLI against a preview env (`LIGHTHOUSE_PREVIEW_URL` env var)                        | computed from headless Chrome run; needs an actual deployed URL                                 |
+| lint            | `biome check` + `eslint .` (see § _Lint baseline ratchet_ above)                                | aggregated in-process                                                                            |
+
+### Detecting an unprimed baseline
+
+Each `*:check` script tells you which side it's on:
+
+- **Unprimed (gate skips, prints a warn):** `[coverage-baseline] baseline
+  is unprimed (all workspace rollups are 0); skipping the -2pp gate.`
+  / `[bundle-size-baseline] no measurable bundles found (no dist
+  output on disk); skipping the gate.`
+- **Unprimed (gate fails loud):** `[lighthouse-baseline]
+  LIGHTHOUSE_PREVIEW_URL is not set. Configure it on the staging
+  GitHub Environment...`
+- **Primed (gate is live):** `[coverage-baseline] ok — 6 workspace(s)
+  within the -2pp floor` / `[maintainability-baseline] ok —
+  rollup['*'].min=81.713 (floor 70, 63 file(s))`
+
+Fail-loud is acceptable — it surfaces the gap on every CI run. Skip-with-warn is the dangerous one: green PR, no protection.
+
 ## Coverage baseline ratchet
 
 The coverage ratchet keeps per-workspace line / branch / function

@@ -1,13 +1,296 @@
 {
   "$schema": ".agents/schemas/baselines/maintainability.schema.json",
+  "generatedAt": "2026-05-18T20:23:55.531Z",
   "kernelVersion": "1.0.0",
-  "generatedAt": "2026-05-17T00:00:00.000Z",
   "rollup": {
     "*": {
-      "min": 0,
-      "p50": 0,
-      "p95": 0
+      "min": 81.713,
+      "p50": 111.681,
+      "p95": 171
+    },
+    "apps/api": {
+      "min": 89.95,
+      "p50": 111.681,
+      "p95": 171
+    },
+    "apps/mobile": {
+      "min": 96.11,
+      "p50": 96.11,
+      "p95": 121.195
+    },
+    "apps/web": {
+      "min": 81.713,
+      "p50": 113.043,
+      "p95": 171
+    },
+    "packages/baselines": {
+      "min": 94.702,
+      "p50": 101.565,
+      "p95": 171
+    },
+    "packages/config": {
+      "min": 104.952,
+      "p50": 104.952,
+      "p95": 115.627
+    },
+    "packages/shared": {
+      "min": 83.455,
+      "p50": 108.708,
+      "p95": 171
     }
   },
-  "rows": []
+  "rows": [
+    {
+      "mi": 171,
+      "path": "apps/api/src/env.ts"
+    },
+    {
+      "mi": 115.473,
+      "path": "apps/api/src/index.ts"
+    },
+    {
+      "mi": 138.232,
+      "path": "apps/api/src/middleware/__testing__/auth-test.ts"
+    },
+    {
+      "mi": 98.813,
+      "path": "apps/api/src/middleware/auth.ts"
+    },
+    {
+      "mi": 103.092,
+      "path": "apps/api/src/middleware/request-logger.ts"
+    },
+    {
+      "mi": 116.953,
+      "path": "apps/api/src/routes/debug/synthetic-failure.ts"
+    },
+    {
+      "mi": 115.469,
+      "path": "apps/api/src/routes/v1/me.ts"
+    },
+    {
+      "mi": 111.461,
+      "path": "apps/api/src/routes/v1/sign-out.ts"
+    },
+    {
+      "mi": 89.95,
+      "path": "apps/api/src/routes/v1/users/role.ts"
+    },
+    {
+      "mi": 111.681,
+      "path": "apps/api/src/sentry.ts"
+    },
+    {
+      "mi": 94.92,
+      "path": "apps/api/vitest.config.ts"
+    },
+    {
+      "mi": 96.11,
+      "path": "apps/mobile/app.config.ts"
+    },
+    {
+      "mi": 121.195,
+      "path": "apps/mobile/src/sentry.ts"
+    },
+    {
+      "mi": 111.698,
+      "path": "apps/web/astro.config.ts"
+    },
+    {
+      "mi": 133.574,
+      "path": "apps/web/e2e/fixtures/email-inbox.ts"
+    },
+    {
+      "mi": 105.55,
+      "path": "apps/web/e2e/fixtures/static-server.mjs"
+    },
+    {
+      "mi": 103.497,
+      "path": "apps/web/e2e/helpers/observability/budget.ts"
+    },
+    {
+      "mi": 106.532,
+      "path": "apps/web/e2e/helpers/observability/probe.ts"
+    },
+    {
+      "mi": 108.206,
+      "path": "apps/web/e2e/helpers/observability/sentry.ts"
+    },
+    {
+      "mi": 131.431,
+      "path": "apps/web/e2e/steps/auth.steps.ts"
+    },
+    {
+      "mi": 171,
+      "path": "apps/web/e2e/steps/form.steps.ts"
+    },
+    {
+      "mi": 121.389,
+      "path": "apps/web/e2e/steps/navigation.steps.ts"
+    },
+    {
+      "mi": 117.922,
+      "path": "apps/web/e2e/steps/observability.steps.ts"
+    },
+    {
+      "mi": 126.029,
+      "path": "apps/web/e2e/steps/rbac.steps.ts"
+    },
+    {
+      "mi": 109.435,
+      "path": "apps/web/e2e/steps/visibility.steps.ts"
+    },
+    {
+      "mi": 81.713,
+      "path": "apps/web/playwright.config.ts"
+    },
+    {
+      "mi": 171,
+      "path": "apps/web/src/index.ts"
+    },
+    {
+      "mi": 149.999,
+      "path": "apps/web/src/middleware.ts"
+    },
+    {
+      "mi": 113.043,
+      "path": "apps/web/src/pages/sign-out.ts"
+    },
+    {
+      "mi": 147.989,
+      "path": "apps/web/src/sentry.ts"
+    },
+    {
+      "mi": 94.92,
+      "path": "apps/web/vitest.config.ts"
+    },
+    {
+      "mi": 94.702,
+      "path": "packages/baselines/src/compare.ts"
+    },
+    {
+      "mi": 101.565,
+      "path": "packages/baselines/src/format.ts"
+    },
+    {
+      "mi": 171,
+      "path": "packages/baselines/src/index.ts"
+    },
+    {
+      "mi": 98.311,
+      "path": "packages/baselines/src/io.ts"
+    },
+    {
+      "mi": 101.045,
+      "path": "packages/baselines/src/schema.ts"
+    },
+    {
+      "mi": 109.238,
+      "path": "packages/baselines/src/serialise.ts"
+    },
+    {
+      "mi": 147.996,
+      "path": "packages/baselines/src/types.ts"
+    },
+    {
+      "mi": 127.151,
+      "path": "packages/baselines/vitest.config.ts"
+    },
+    {
+      "mi": 104.952,
+      "path": "packages/config/vitest.base.ts"
+    },
+    {
+      "mi": 115.627,
+      "path": "packages/config/vitest.contract.ts"
+    },
+    {
+      "mi": 134.551,
+      "path": "packages/shared/drizzle.config.ts"
+    },
+    {
+      "mi": 133.836,
+      "path": "packages/shared/src/db/schema/index.ts"
+    },
+    {
+      "mi": 97.145,
+      "path": "packages/shared/src/db/schema/organizations.ts"
+    },
+    {
+      "mi": 105.085,
+      "path": "packages/shared/src/db/schema/teams.ts"
+    },
+    {
+      "mi": 107.538,
+      "path": "packages/shared/src/db/schema/users.ts"
+    },
+    {
+      "mi": 171,
+      "path": "packages/shared/src/index.ts"
+    },
+    {
+      "mi": 83.455,
+      "path": "packages/shared/src/observability/log-event.ts"
+    },
+    {
+      "mi": 99.315,
+      "path": "packages/shared/src/observability/redaction.ts"
+    },
+    {
+      "mi": 171,
+      "path": "packages/shared/src/rbac/index.ts"
+    },
+    {
+      "mi": 122.978,
+      "path": "packages/shared/src/rbac/policy.ts"
+    },
+    {
+      "mi": 94.363,
+      "path": "packages/shared/src/rbac/rules.ts"
+    },
+    {
+      "mi": 171,
+      "path": "packages/shared/src/rbac/types.ts"
+    },
+    {
+      "mi": 122.027,
+      "path": "packages/shared/src/testing/app.ts"
+    },
+    {
+      "mi": 93.347,
+      "path": "packages/shared/src/testing/auth.ts"
+    },
+    {
+      "mi": 111.005,
+      "path": "packages/shared/src/testing/db.ts"
+    },
+    {
+      "mi": 156.236,
+      "path": "packages/shared/src/testing/examples/Greeting.tsx"
+    },
+    {
+      "mi": 159.877,
+      "path": "packages/shared/src/testing/examples/sum.ts"
+    },
+    {
+      "mi": 171,
+      "path": "packages/shared/src/testing/index.ts"
+    },
+    {
+      "mi": 108.708,
+      "path": "packages/shared/src/testing/safety.ts"
+    },
+    {
+      "mi": 96.955,
+      "path": "packages/shared/src/testing/schema.ts"
+    },
+    {
+      "mi": 96.979,
+      "path": "packages/shared/src/testing/seeds.ts"
+    },
+    {
+      "mi": 83.831,
+      "path": "packages/shared/vitest.config.ts"
+    }
+  ]
 }
