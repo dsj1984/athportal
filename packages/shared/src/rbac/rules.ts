@@ -22,7 +22,7 @@
  *   no `Date.now()`, no caller closures.
  */
 
-import type { Action, Resource, Role, RbacContext } from './types';
+import type { Action, RbacContext, Resource, Role } from './types';
 
 /**
  * Predicate over an `RbacContext`. Returns `true` when the rule
@@ -52,9 +52,7 @@ export const deny: RbacPredicate = () => false;
  * `org_admin` rules consult it for every cross-org check.
  */
 export const sameOrg: RbacPredicate = (ctx) =>
-  Boolean(ctx.actorOrgId) &&
-  Boolean(ctx.resourceOrgId) &&
-  ctx.actorOrgId === ctx.resourceOrgId;
+  Boolean(ctx.actorOrgId) && Boolean(ctx.resourceOrgId) && ctx.actorOrgId === ctx.resourceOrgId;
 
 /**
  * Actor's team matches the resource's team, AND the orgs match.
@@ -77,9 +75,7 @@ export const sameTeam: RbacPredicate = (ctx) =>
  * Both sides MUST be present and non-empty.
  */
 export const isOwner: RbacPredicate = (ctx) =>
-  Boolean(ctx.actorId) &&
-  Boolean(ctx.resourceOwnerId) &&
-  ctx.actorId === ctx.resourceOwnerId;
+  Boolean(ctx.actorId) && Boolean(ctx.resourceOwnerId) && ctx.actorId === ctx.resourceOwnerId;
 
 /**
  * Last-admin guard. Refuses the mutation when applying it would
@@ -92,15 +88,13 @@ export const isOwner: RbacPredicate = (ctx) =>
  * defaulting to allow.
  */
 export const lastAdminGuard: RbacPredicate = (ctx) =>
-  typeof ctx.remainingAdminsAfter === 'number' &&
-  ctx.remainingAdminsAfter > 0;
+  typeof ctx.remainingAdminsAfter === 'number' && ctx.remainingAdminsAfter > 0;
 
 /**
  * `org_admin` updating or deleting a `user` row: both the org-scope
  * AND the last-admin guard must hold.
  */
-export const sameOrgWithLastAdmin: RbacPredicate = (ctx) =>
-  sameOrg(ctx) && lastAdminGuard(ctx);
+export const sameOrgWithLastAdmin: RbacPredicate = (ctx) => sameOrg(ctx) && lastAdminGuard(ctx);
 
 /**
  * Lookup key for the rules table — a `(role, resource, action)` triple.
@@ -173,22 +167,10 @@ export const RULES: ReadonlyArray<Rule> = [
   // Manages everything inside their own org. Cannot create or
   // delete the org itself (that's a `dev_admin` operation);
   // CAN update settings on the org row they own.
-  rule(
-    'org_admin',
-    'organization',
-    'create',
-    deny,
-    'orgs are provisioned by dev_admin only',
-  ),
+  rule('org_admin', 'organization', 'create', deny, 'orgs are provisioned by dev_admin only'),
   rule('org_admin', 'organization', 'read', sameOrg),
   rule('org_admin', 'organization', 'update', sameOrg),
-  rule(
-    'org_admin',
-    'organization',
-    'delete',
-    deny,
-    'orgs are decommissioned by dev_admin only',
-  ),
+  rule('org_admin', 'organization', 'delete', deny, 'orgs are decommissioned by dev_admin only'),
   rule(
     'org_admin',
     'organization',
@@ -243,13 +225,7 @@ export const RULES: ReadonlyArray<Rule> = [
   rule('team_admin', 'team', 'create', deny, 'teams are provisioned by org_admin'),
   rule('team_admin', 'team', 'read', sameTeam),
   rule('team_admin', 'team', 'update', sameTeam),
-  rule(
-    'team_admin',
-    'team',
-    'delete',
-    deny,
-    'teams are decommissioned by org_admin',
-  ),
+  rule('team_admin', 'team', 'delete', deny, 'teams are decommissioned by org_admin'),
   rule(
     'team_admin',
     'team',
@@ -285,13 +261,7 @@ export const RULES: ReadonlyArray<Rule> = [
   // resources they belong to, plus self-update on their own user
   // row. All other actions deny by design.
   rule('member', 'organization', 'create', deny),
-  rule(
-    'member',
-    'organization',
-    'read',
-    sameOrg,
-    'members see their own org (name, branding)',
-  ),
+  rule('member', 'organization', 'read', sameOrg, 'members see their own org (name, branding)'),
   rule('member', 'organization', 'update', deny),
   rule('member', 'organization', 'delete', deny),
   rule('member', 'organization', 'list', deny),
@@ -301,13 +271,7 @@ export const RULES: ReadonlyArray<Rule> = [
   rule('member', 'team', 'delete', deny),
   rule('member', 'team', 'list', deny),
   rule('member', 'user', 'create', deny),
-  rule(
-    'member',
-    'user',
-    'read',
-    sameTeam,
-    'members can read teammates on their own team',
-  ),
+  rule('member', 'user', 'read', sameTeam, 'members can read teammates on their own team'),
   rule(
     'member',
     'user',
@@ -331,24 +295,36 @@ export const RULES: ReadonlyArray<Rule> = [
 ] as const;
 
 /**
- * Internal: map for O(1) lookups. Keyed by the canonical
- * `role|resource|action` string so the policy never iterates the
- * array at request time.
+ * Build an O(1) lookup map from a rules array. Surfaces a duplicate
+ * triple as a module-load error rather than letting the second row
+ * silently win.
+ *
+ * Exported (rather than wrapped in an IIFE) so the duplicate-rule
+ * defense is unit-testable. The module's own `RULE_INDEX` is built
+ * from the exhaustive `RULES` table; tests can call `buildRuleIndex`
+ * with a hand-crafted duplicate to exercise the throw branch.
  */
-const RULE_INDEX: ReadonlyMap<string, Rule> = (() => {
+export function buildRuleIndex(rules: ReadonlyArray<Rule>): ReadonlyMap<string, Rule> {
   const map = new Map<string, Rule>();
-  for (const r of RULES) {
+  for (const r of rules) {
     const key = `${r.role}|${r.resource}|${r.action}`;
     if (map.has(key)) {
       // Authoring error: two rows for the same triple. Surface
-      // loudly at module load so a bad merge is caught in the
-      // first test run rather than producing silent precedence.
+      // loudly so a bad merge is caught in the first test run
+      // rather than producing silent precedence.
       throw new Error(`rbac/rules: duplicate rule for ${key}`);
     }
     map.set(key, r);
   }
   return map;
-})();
+}
+
+/**
+ * Internal: map for O(1) lookups. Keyed by the canonical
+ * `role|resource|action` string so the policy never iterates the
+ * array at request time.
+ */
+const RULE_INDEX: ReadonlyMap<string, Rule> = buildRuleIndex(RULES);
 
 /**
  * Look up a rule by triple. Returns `undefined` for unknown

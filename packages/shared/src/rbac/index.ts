@@ -20,6 +20,7 @@ export type {
 
 export {
   allow,
+  buildRuleIndex,
   deny,
   findRule,
   isOwner,
