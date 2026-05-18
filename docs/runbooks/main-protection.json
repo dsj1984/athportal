@@ -15,7 +15,10 @@
       "Bundle-size baseline (1 MiB Worker cap + per-bundle gzippedKb, ADR-014)",
       "Lint step definitions",
       "Acceptance smoke (@smoke)",
-      "Guard destructive migrations"
+      "Guard destructive migrations",
+      "knip strict (no baseline, ADR-0006)",
+      "Markdown lint (ADR-0006)",
+      "secretlint (ADR-0006)"
     ]
   },
   "enforce_admins": false,
