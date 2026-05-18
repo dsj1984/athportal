@@ -36,12 +36,8 @@ export const users = sqliteTable(
     orgId: text('org_id').references(() => organizations.id),
     teamId: text('team_id').references(() => teams.id),
     onboardedAt: integer('onboarded_at', { mode: 'timestamp' }),
-    createdAt: integer('created_at', { mode: 'timestamp' })
-      .notNull()
-      .default(sql`(unixepoch())`),
-    updatedAt: integer('updated_at', { mode: 'timestamp' })
-      .notNull()
-      .default(sql`(unixepoch())`),
+    createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
+    updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
   },
   (table) => ({
     clerkSubjectIdUnique: uniqueIndex('users_clerk_subject_id_unique').on(table.clerkSubjectId),

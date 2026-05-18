@@ -19,11 +19,7 @@ vi.mock('@clerk/backend', () => ({
 }));
 
 import { verifyToken } from '@clerk/backend';
-import {
-  type RequireInternalUserEnv,
-  clerkAuth,
-  requireInternalUser,
-} from '../../middleware/auth';
+import { type RequireInternalUserEnv, clerkAuth, requireInternalUser } from '../../middleware/auth';
 import { meRoute } from './me';
 
 const mockedVerifyToken = vi.mocked(verifyToken);

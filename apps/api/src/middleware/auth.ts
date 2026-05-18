@@ -95,7 +95,8 @@ function readBearerToken(header: string | null | undefined): string | null {
  */
 function extractToken(req: Request): string | null {
   return (
-    readSessionCookie(req.headers.get('cookie')) ?? readBearerToken(req.headers.get('authorization'))
+    readSessionCookie(req.headers.get('cookie')) ??
+    readBearerToken(req.headers.get('authorization'))
   );
 }
 
