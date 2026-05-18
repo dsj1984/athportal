@@ -12,6 +12,7 @@
     "build": "exit 0"
   },
   "devDependencies": {
+    "@clerk/testing": "^2.0.31",
     "@playwright/test": "^1.60.0",
     "@repo/config": "workspace:*",
     "@repo/shared": "workspace:*",

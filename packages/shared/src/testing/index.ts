@@ -46,12 +46,12 @@ export {
 export {
   authHeaders,
   PERSONA_FIXTURES,
+  requireTestUserPassword,
   resolvePersona,
   signInAs,
   type AuthUserLike,
   type Persona,
   type PersonaFixture,
   type PersonaRole,
-  type StorageState,
-  type StorageStateCookie,
+  type SignInAsParams,
 } from './auth';
