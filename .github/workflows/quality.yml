@@ -494,6 +494,47 @@ jobs:
           runtime: expo
           build-dir: apps/mobile/dist
 
+  sourcemap-upload-workers:
+    name: Sourcemap upload (workers)
+    needs: [build]
+    runs-on: ubuntu-latest
+    env:
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+      SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT_WORKERS }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Compute SENTRY_RELEASE (short SHA)
+        run: echo "SENTRY_RELEASE=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
+
+      - name: Build workers (api)
+        run: pnpm --filter @repo/api run build
+
+      - name: Upload workers sourcemaps via composite
+        uses: ./.github/actions/sourcemap-upload
+        with:
+          runtime: workers
+          build-dir: apps/api/dist
+
   bundle-size-baseline:
     name: Bundle-size baseline (1 MiB Worker cap + per-bundle gzippedKb, ADR-014)
     needs: [build]
