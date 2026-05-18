@@ -1,3 +1,5 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { defineConfig, devices } from '@playwright/test';
 import { cucumberReporter, defineBddConfig } from 'playwright-bdd';
 
@@ -16,8 +18,15 @@ import { cucumberReporter, defineBddConfig } from 'playwright-bdd';
  * Tag filtering for CI tiers is applied at invocation time via Playwright's
  * `--grep` flag (e.g., `--grep @smoke` for the PR pipeline).
  */
+// Resolve config-relative paths to absolute so tools that re-evaluate this
+// file from a different cwd (knip's plugin scan on POSIX CI, monorepo
+// task runners) don't see `../../tests/features` resolved against their
+// own working directory and trip playwright-bdd's startup `featuresRoot`
+// validator. The relative form worked on Windows but failed knip:strict
+// in CI on Linux after Story #310 wired the gate up.
+const here = path.dirname(fileURLToPath(import.meta.url));
 const testDir = defineBddConfig({
-  featuresRoot: '../../tests/features',
+  featuresRoot: path.resolve(here, '../../tests/features'),
   steps: ['./e2e/steps/**/*.ts'],
   outputDir: '.bdd-gen',
   // Skip scenarios tagged @pending so bddgen does not fail compilation
