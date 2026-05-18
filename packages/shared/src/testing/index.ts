@@ -22,6 +22,8 @@ export {
 } from './db';
 export {
   createTestApp,
+  type AuthContext,
+  type CreateTestAppOptions,
   type TestApp,
   type TestAppBindings,
 } from './app';
