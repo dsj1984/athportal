@@ -1,0 +1,75 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", ":dependencyDashboard"],
+  "schedule": ["before 9am on monday"],
+  "timezone": "America/New_York",
+  "platformAutomerge": true,
+  "prConcurrentLimit": 15,
+  "prHourlyLimit": 4,
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 9am on monday"]
+  },
+  "vulnerabilityAlerts": {
+    "labels": ["security"],
+    "schedule": ["at any time"]
+  },
+  "packageRules": [
+    {
+      "matchUpdateTypes": ["patch", "minor"],
+      "automerge": true
+    },
+    {
+      "matchUpdateTypes": ["major"],
+      "automerge": false,
+      "dependencyDashboardApproval": true
+    },
+    {
+      "groupName": "Astro",
+      "matchPackageNames": ["astro", "@astrojs/**"]
+    },
+    {
+      "groupName": "Sentry",
+      "matchPackageNames": ["@sentry/**", "sentry-expo"]
+    },
+    {
+      "groupName": "Cloudflare / Hono",
+      "matchPackageNames": ["hono", "@cloudflare/**", "wrangler"]
+    },
+    {
+      "groupName": "ESLint",
+      "matchPackageNames": [
+        "eslint",
+        "eslint-**",
+        "@typescript-eslint/**",
+        "typescript-eslint",
+        "globals"
+      ]
+    },
+    {
+      "groupName": "Biome",
+      "matchPackageNames": ["@biomejs/**"]
+    },
+    {
+      "groupName": "Vitest",
+      "matchPackageNames": ["vitest", "@vitest/**"]
+    },
+    {
+      "groupName": "Playwright",
+      "matchPackageNames": ["@playwright/**", "playwright-bdd"]
+    },
+    {
+      "groupName": "Expo",
+      "matchPackageNames": ["expo", "expo-**", "@expo/**"]
+    },
+    {
+      "groupName": "Husky / lint-staged",
+      "matchPackageNames": ["husky", "lint-staged"]
+    },
+    {
+      "matchPackageNames": ["node"],
+      "matchManagers": ["nvm"],
+      "automerge": false
+    }
+  ]
+}
