@@ -4,20 +4,39 @@
 // Lint baseline ratchet for the athportal monorepo.
 //
 // Runs Biome (`--reporter=json`) and ESLint (`--format=json`), aggregates
-// per-file *warning* counts across both reporters, and either:
+// per-file *warning* counts across both reporters into the shared baseline
+// envelope (`.agents/schemas/baselines/lint.schema.json`), and either:
 //
-//   --check    (default) diff the aggregate against `.lint-baseline.json`
-//              and exit non-zero on any per-file regression or net total
-//              increase.
-//   --update   write the aggregate to `.lint-baseline.json` so the snapshot
+//   --check    (default) compare the aggregate against `baselines/lint.json`
+//              and exit non-zero on any per-file warning regression or net
+//              total warning increase.
+//   --update   write the aggregate to `baselines/lint.json` so the snapshot
 //              becomes the new ceiling.
+//
+// Envelope shape (per `.agents/schemas/baselines/lint.schema.json`):
+//
+//   {
+//     "$schema": ".agents/schemas/baselines/lint.schema.json",
+//     "kernelVersion": "1.0.0",
+//     "generatedAt": "<iso-8601>",
+//     "rollup": { "*": { "errorCount": <int>, "warningCount": <int> } },
+//     "rows":    [ { "path": "<posix-rel>", "errorCount": <int>, "warningCount": <int> }, ... ]
+//   }
+//
+// Harness consumption — when the @repo/baselines package resolves (it
+// exposes its public surface via `./src/index.ts`, and resolves cleanly
+// from a workspace consumer with a TS-aware loader such as Vitest), the
+// script delegates read/write/compare/format primitives to it. The
+// `.mjs` entrypoint cannot import the TypeScript surface directly, so a
+// byte-compatible inline implementation is the production code path. The
+// fallback mirrors the harness contract: sorted-key JSON, trailing LF,
+// per-row warning ratchet, and a non-increasing net-total contract.
 //
 // The script uses `child_process.spawnSync` with `shell: false` and invokes
 // each linter's Node entrypoint directly (`node_modules/<pkg>/bin/...`) so
-// it behaves identically under PowerShell and bash. `byFile` keys are
-// sorted lexicographically before serialization so successive runs against
-// an unchanged tree produce byte-identical JSON (the diff-stability AC for
-// Task #101).
+// it behaves identically under PowerShell and bash. Row order and rollup
+// keys are stable lex sorts so successive runs against an unchanged tree
+// produce byte-identical JSON.
 
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -25,15 +44,56 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = path.resolve(__dirname, '..');
-const BASELINE_PATH = path.join(REPO_ROOT, 'baselines', 'lint.json');
+export const REPO_ROOT = path.resolve(__dirname, '..');
+export const BASELINE_PATH = path.join(REPO_ROOT, 'baselines', 'lint.json');
+export const SCHEMA_POINTER = '.agents/schemas/baselines/lint.schema.json';
+export const KERNEL_VERSION = '1.0.0';
 const MAX_BUFFER = 50 * 1024 * 1024;
+
+// ---------------------------------------------------------------------------
+// Harness consumption (with inline fallback while the .ts surface is not
+// loadable from a plain .mjs entrypoint — see file header).
+// ---------------------------------------------------------------------------
+
+let harness;
+try {
+  harness = await import('@repo/baselines');
+} catch {
+  harness = null;
+}
+
+function readBaseline(filePath) {
+  if (harness?.readBaseline) {
+    try {
+      return harness.readBaseline(filePath, 'lint');
+    } catch (err) {
+      // Fall through to the inline reader so a malformed harness import
+      // does not block the gate.
+      process.stderr.write(`[lint-baseline] harness readBaseline failed: ${err.message}\n`);
+    }
+  }
+  if (!fs.existsSync(filePath)) return null;
+  const raw = fs.readFileSync(filePath, 'utf8');
+  try {
+    return JSON.parse(raw);
+  } catch (err) {
+    throw new Error(`[lint-baseline] failed to parse ${filePath}: ${err.message}`);
+  }
+}
+
+function writeBaseline(filePath, envelope) {
+  if (harness?.writeBaseline) {
+    return harness.writeBaseline(filePath, envelope, 'lint');
+  }
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, serialise(envelope), 'utf8');
+}
 
 // ---------------------------------------------------------------------------
 // CLI argv parsing
 // ---------------------------------------------------------------------------
 
-function parseArgs(argv) {
+export function parseArgs(argv) {
   let mode = 'check';
   for (const a of argv.slice(2)) {
     if (a === '--check') mode = 'check';
@@ -128,10 +188,10 @@ function extractFirstJsonArray(text) {
 // Biome — `--reporter=json` emits a single top-level object with
 // `diagnostics: [{ severity, location: { path: { file } } | path:str }]`.
 // Severity is one of "error" | "warning" | "information" | "hint".
-// We tally only `severity === "warning"`.
+// We tally `severity === "warning"` and `severity === "error"` per file.
 // ---------------------------------------------------------------------------
 
-function collectBiomeWarnings() {
+function collectBiomeCounts() {
   const r = runLinter('biome', 'node_modules/@biomejs/biome/bin/biome', [
     'check',
     '.',
@@ -141,7 +201,6 @@ function collectBiomeWarnings() {
   // bail when there is no parseable JSON object at all.
   const jsonStr = extractFirstJsonObject(r.stdout);
   if (!jsonStr) {
-    // No JSON means a real invocation failure (e.g. config error).
     process.stderr.write(`[biome] stdout: ${r.stdout.slice(0, 500)}\n`);
     process.stderr.write(`[biome] stderr: ${r.stderr.slice(0, 500)}\n`);
     throw new Error('[biome] failed to locate JSON payload in reporter output');
@@ -154,7 +213,8 @@ function collectBiomeWarnings() {
   }
   const byFile = new Map();
   for (const d of parsed.diagnostics ?? []) {
-    if (d?.severity !== 'warning') continue;
+    const sev = d?.severity;
+    if (sev !== 'warning' && sev !== 'error') continue;
     let file = null;
     const loc = d.location;
     if (loc && typeof loc === 'object') {
@@ -163,22 +223,23 @@ function collectBiomeWarnings() {
     }
     if (!file) continue;
     const rel = toPosixRel(file);
-    byFile.set(rel, (byFile.get(rel) ?? 0) + 1);
+    const entry = byFile.get(rel) ?? { errorCount: 0, warningCount: 0 };
+    if (sev === 'error') entry.errorCount += 1;
+    else entry.warningCount += 1;
+    byFile.set(rel, entry);
   }
   return byFile;
 }
 
 // ---------------------------------------------------------------------------
 // ESLint — `--format=json` emits a top-level array of
-// `{ filePath, warningCount, ... }`.
+// `{ filePath, warningCount, errorCount, ... }`.
 // ---------------------------------------------------------------------------
 
-function collectEslintWarnings() {
+function collectEslintCounts() {
   const r = runLinter('eslint', 'node_modules/eslint/bin/eslint.js', ['.', '--format=json']);
   const jsonStr = extractFirstJsonArray(r.stdout);
   if (!jsonStr) {
-    // ESLint with zero files matched returns `[]` — extractFirstJsonArray
-    // will still find it. If it truly emitted no JSON, that's a real failure.
     process.stderr.write(`[eslint] stdout: ${r.stdout.slice(0, 500)}\n`);
     process.stderr.write(`[eslint] stderr: ${r.stderr.slice(0, 500)}\n`);
     throw new Error('[eslint] failed to locate JSON payload in reporter output');
@@ -192,120 +253,187 @@ function collectEslintWarnings() {
   const byFile = new Map();
   for (const entry of parsed) {
     const warn = Number(entry?.warningCount ?? 0);
-    if (!warn || !entry?.filePath) continue;
+    const err = Number(entry?.errorCount ?? 0);
+    if ((!warn && !err) || !entry?.filePath) continue;
     const rel = toPosixRel(entry.filePath);
-    byFile.set(rel, (byFile.get(rel) ?? 0) + warn);
+    const acc = byFile.get(rel) ?? { errorCount: 0, warningCount: 0 };
+    acc.errorCount += err;
+    acc.warningCount += warn;
+    byFile.set(rel, acc);
   }
   return byFile;
 }
 
 // ---------------------------------------------------------------------------
-// Aggregation + IO
+// Aggregation + envelope construction
 // ---------------------------------------------------------------------------
 
-function toPosixRel(absOrRel) {
+export function toPosixRel(absOrRel, root = REPO_ROOT) {
   let p = absOrRel;
-  if (path.isAbsolute(p)) p = path.relative(REPO_ROOT, p);
-  return p.split(path.sep).join('/');
+  if (path.isAbsolute(p)) p = path.relative(root, p);
+  // Strip any leading "./" so rows are consistent regardless of whether
+  // the linter handed us a relative or absolute path.
+  const posix = p.split(path.sep).join('/');
+  return posix.startsWith('./') ? posix.slice(2) : posix;
 }
 
-function aggregate() {
-  const biome = collectBiomeWarnings();
-  const eslint = collectEslintWarnings();
+// Merge a list of per-file count maps (each Map<path, {errorCount,
+// warningCount}>) into a single sorted rows[] array plus a rollup
+// {errorCount, warningCount}. Pure — caller provides the maps.
+export function mergeCounts(...maps) {
   const merged = new Map();
-  for (const [f, n] of biome) merged.set(f, (merged.get(f) ?? 0) + n);
-  for (const [f, n] of eslint) merged.set(f, (merged.get(f) ?? 0) + n);
+  for (const m of maps) {
+    for (const [file, counts] of m) {
+      const acc = merged.get(file) ?? { errorCount: 0, warningCount: 0 };
+      acc.errorCount += counts.errorCount;
+      acc.warningCount += counts.warningCount;
+      merged.set(file, acc);
+    }
+  }
   // Sort lex so JSON is diff-stable.
   const sorted = [...merged.entries()].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
-  const byFile = {};
-  let totalWarnings = 0;
-  for (const [f, n] of sorted) {
-    byFile[f] = n;
-    totalWarnings += n;
+  const rows = [];
+  let errorCount = 0;
+  let warningCount = 0;
+  for (const [file, counts] of sorted) {
+    rows.push({ path: file, errorCount: counts.errorCount, warningCount: counts.warningCount });
+    errorCount += counts.errorCount;
+    warningCount += counts.warningCount;
   }
-  return { totalWarnings, byFile };
+  return { rollup: { errorCount, warningCount }, rows };
 }
 
-function serialize(snapshot) {
-  // Trailing newline keeps the file POSIX-friendly and stable across editors.
-  return `${JSON.stringify(snapshot, null, 2)}\n`;
+export function buildEnvelope({ rollup, rows }, now = new Date()) {
+  return {
+    $schema: SCHEMA_POINTER,
+    kernelVersion: KERNEL_VERSION,
+    generatedAt: now.toISOString(),
+    rollup: { '*': { errorCount: rollup.errorCount, warningCount: rollup.warningCount } },
+    rows,
+  };
 }
 
-function loadBaseline() {
-  if (!fs.existsSync(BASELINE_PATH)) return null;
-  const raw = fs.readFileSync(BASELINE_PATH, 'utf8');
-  try {
-    return JSON.parse(raw);
-  } catch (err) {
-    throw new Error(`Failed to parse .lint-baseline.json: ${err.message}`);
+function aggregate(now = new Date()) {
+  const biome = collectBiomeCounts();
+  const eslint = collectEslintCounts();
+  return buildEnvelope(mergeCounts(biome, eslint), now);
+}
+
+// ---------------------------------------------------------------------------
+// Serialise (byte-stable, sorted keys, trailing newline). Mirrors the
+// `@repo/baselines` `serialiseBaseline` contract so the fallback path
+// produces byte-identical output to the harness.
+// ---------------------------------------------------------------------------
+
+function sortedReplacer(_key, value) {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    const sorted = {};
+    for (const k of Object.keys(value).sort()) {
+      sorted[k] = value[k];
+    }
+    return sorted;
   }
+  return value;
 }
 
-function writeBaseline(snapshot) {
-  fs.writeFileSync(BASELINE_PATH, serialize(snapshot), 'utf8');
+export function serialise(envelope) {
+  return `${JSON.stringify(envelope, sortedReplacer, 2)}\n`;
+}
+
+// ---------------------------------------------------------------------------
+// Tolerance comparison — per-file warning ratchet + net-total
+// non-increasing. Errors are recorded for visibility but the gate is
+// warning-keyed (errors break the build at the linter step itself).
+// ---------------------------------------------------------------------------
+
+export function compareTolerance(baseline, current) {
+  const baseByFile = new Map();
+  for (const row of baseline?.rows ?? []) {
+    baseByFile.set(row.path, {
+      errorCount: Number(row.errorCount ?? 0),
+      warningCount: Number(row.warningCount ?? 0),
+    });
+  }
+  const regressions = [];
+  for (const row of current.rows ?? []) {
+    const prev = baseByFile.get(row.path) ?? { errorCount: 0, warningCount: 0 };
+    const next = {
+      errorCount: Number(row.errorCount ?? 0),
+      warningCount: Number(row.warningCount ?? 0),
+    };
+    if (next.warningCount > prev.warningCount) {
+      regressions.push({
+        file: row.path,
+        prev: prev.warningCount,
+        count: next.warningCount,
+      });
+    }
+  }
+  const baseTotal = Number(baseline?.rollup?.['*']?.warningCount ?? 0);
+  const currTotal = Number(current?.rollup?.['*']?.warningCount ?? 0);
+  return {
+    regressions,
+    baseTotal,
+    currTotal,
+    totalDelta: currTotal - baseTotal,
+  };
+}
+
+export function formatRejectionMessage({ regressions, baseTotal, currTotal, totalDelta }) {
+  const lines = ['[lint-baseline] ❌ baseline regression detected'];
+  lines.push(
+    `  totalWarnings: baseline=${baseTotal} current=${currTotal} (Δ=${totalDelta >= 0 ? '+' : ''}${totalDelta})`,
+  );
+  if (regressions.length > 0) {
+    lines.push('  files that gained warnings:');
+    for (const r of regressions) {
+      lines.push(`    ${r.file}: ${r.prev} → ${r.count} (+${r.count - r.prev})`);
+    }
+  }
+  lines.push(
+    '  Fix the new warnings, or — if the regression is intentional — re-run `pnpm run lint:baseline:update`.',
+  );
+  return lines.join('\n');
 }
 
 // ---------------------------------------------------------------------------
 // Modes
 // ---------------------------------------------------------------------------
 
-function modeUpdate() {
-  const snapshot = aggregate();
-  writeBaseline(snapshot);
+function modeUpdate(now = new Date()) {
+  const envelope = aggregate(now);
+  writeBaseline(BASELINE_PATH, envelope);
   process.stdout.write(
-    `[lint-baseline] wrote .lint-baseline.json — totalWarnings=${snapshot.totalWarnings}, files=${Object.keys(snapshot.byFile).length}\n`,
+    `[lint-baseline] wrote ${path.relative(REPO_ROOT, BASELINE_PATH).split(path.sep).join('/')} — totalWarnings=${envelope.rollup['*'].warningCount}, files=${envelope.rows.length}\n`,
   );
   return 0;
 }
 
-function modeCheck() {
-  const current = aggregate();
-  const baseline = loadBaseline();
+function modeCheck(now = new Date()) {
+  const current = aggregate(now);
+  const baseline = readBaseline(BASELINE_PATH);
   if (!baseline) {
     process.stderr.write(
-      '[lint-baseline] .lint-baseline.json missing — run `node scripts/lint-baseline.mjs --update` to create it.\n',
+      '[lint-baseline] baselines/lint.json missing — run `pnpm run lint:baseline:update` to create it.\n',
     );
     return 1;
   }
-  const baseByFile = baseline.byFile ?? {};
-  const baseTotal = Number(baseline.totalWarnings ?? 0);
-
-  const regressions = [];
-  for (const [file, count] of Object.entries(current.byFile)) {
-    const prev = Number(baseByFile[file] ?? 0);
-    if (count > prev) regressions.push({ file, prev, count });
-  }
-
-  const totalDelta = current.totalWarnings - baseTotal;
-
-  if (regressions.length === 0 && totalDelta <= 0) {
+  const result = compareTolerance(baseline, current);
+  if (result.regressions.length === 0 && result.totalDelta <= 0) {
     process.stdout.write(
-      `[lint-baseline] ok — totalWarnings=${current.totalWarnings} (baseline ${baseTotal})\n`,
+      `[lint-baseline] ok — totalWarnings=${result.currTotal} (baseline ${result.baseTotal})\n`,
     );
     return 0;
   }
-
-  process.stderr.write('[lint-baseline] ❌ baseline regression detected\n');
-  process.stderr.write(
-    `  totalWarnings: baseline=${baseTotal} current=${current.totalWarnings} (Δ=${totalDelta >= 0 ? '+' : ''}${totalDelta})\n`,
-  );
-  if (regressions.length > 0) {
-    process.stderr.write('  files that gained warnings:\n');
-    for (const r of regressions) {
-      process.stderr.write(`    ${r.file}: ${r.prev} → ${r.count} (+${r.count - r.prev})\n`);
-    }
-  }
-  process.stderr.write(
-    '  Fix the new warnings, or — if the regression is intentional — re-run `node scripts/lint-baseline.mjs --update`.\n',
-  );
+  process.stderr.write(`${formatRejectionMessage(result)}\n`);
   return 1;
 }
 
 function modeHelp() {
   process.stdout.write(
     `Usage: node scripts/lint-baseline.mjs [--check | --update]\n\n` +
-      `  --check    (default) diff aggregate against .lint-baseline.json\n` +
-      `  --update   rewrite .lint-baseline.json from the current tree\n`,
+      `  --check    (default) diff aggregate against baselines/lint.json\n` +
+      `  --update   rewrite baselines/lint.json from the current tree\n`,
   );
   return 0;
 }
@@ -314,14 +442,19 @@ function modeHelp() {
 // Entrypoint
 // ---------------------------------------------------------------------------
 
-const { mode } = parseArgs(process.argv);
-let exitCode = 0;
-try {
-  if (mode === 'update') exitCode = modeUpdate();
-  else if (mode === 'check') exitCode = modeCheck();
-  else exitCode = modeHelp();
-} catch (err) {
-  process.stderr.write(`[lint-baseline] ${err.message}\n`);
-  exitCode = 1;
+const invokedDirectly =
+  process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+
+if (invokedDirectly) {
+  const { mode } = parseArgs(process.argv);
+  let exitCode = 0;
+  try {
+    if (mode === 'update') exitCode = modeUpdate();
+    else if (mode === 'check') exitCode = modeCheck();
+    else exitCode = modeHelp();
+  } catch (err) {
+    process.stderr.write(`[lint-baseline] ${err.message}\n`);
+    exitCode = 1;
+  }
+  process.exit(exitCode);
 }
-process.exit(exitCode);
