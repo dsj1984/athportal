@@ -354,6 +354,136 @@ reverted.
    parse failure usually indicates a syntactic experiment that
    should not be on the main branch.
 
+## Maintainability baseline ratchet
+
+The maintainability ratchet keeps the **whole-repo `rollup['*'].min`
+Maintainability Index (MI) at or above 70** — the mandrel framework's
+default floor for the dimension. MI is a 0–171 scale (higher is better)
+derived from Halstead volume, cyclomatic complexity, and SLOC; a file
+that dips below 70 is the canonical "this module needs to be split or
+simplified" signal. It is a CI gate: a PR cannot lower the whole-repo
+min below 70 without explicitly re-snapshotting the baseline alongside
+a source change that justifies the dip. The floor is policy fixed in
+[ADR-019](decisions.md) — the script and this runbook move together
+with that ADR.
+
+### Files and entrypoints
+
+- [`scripts/maintainability-baseline.mjs`](../scripts/maintainability-baseline.mjs)
+  — the ratchet script. Pure Node ESM, no build step. Walks every JS/TS
+  source under `apps/*` and `packages/*` (skipping tests, fixtures,
+  build output, and ambient types), scores per-file MI via
+  [`typhonjs-escomplex`](https://github.com/typhonjs-node-escomplex/typhonjs-escomplex),
+  and rolls the per-row scores into the shared baseline-envelope shape
+  (`$schema`, `kernelVersion`, `generatedAt`, `rollup`, `rows`). Rows
+  are canonically sorted by `path` so successive runs against an
+  unchanged tree produce byte-identical JSON. Per-component rollup
+  keys auto-populate for each `apps/<name>` and `packages/<name>`
+  workspace discovered in the rows; the `*` key is the whole-repo
+  rollup and is the axis the gate enforces.
+- [`baselines/maintainability.json`](../baselines/maintainability.json)
+  — the committed snapshot. The shape is fixed by
+  [`.agents/schemas/baselines/maintainability.schema.json`](../.agents/schemas/baselines/maintainability.schema.json)
+  via the shared
+  [`baseline-envelope.schema.json`](../.agents/schemas/baselines/baseline-envelope.schema.json).
+  Per-row entries carry `{ path, mi }`; the rollup carries
+  `{ min, p50, p95 }` on every component key.
+- `pnpm run maintainability:check` — runs
+  `node scripts/maintainability-baseline.mjs --check`. Exits non-zero
+  when `rollup['*'].min < 70`. The failure log names the file dragging
+  the whole-repo min down so the fix lands on the responsible source.
+  The PR-blocking
+  [`maintainability-baseline` job in `quality.yml`](../.github/workflows/quality.yml)
+  is the CI binding.
+- `pnpm run maintainability:update` — runs
+  `node scripts/maintainability-baseline.mjs --update`. Regenerates
+  `baselines/maintainability.json` from the current tree.
+
+### Refresh procedure
+
+1. **Inspect the failure.** Run `pnpm run maintainability:check` and
+   read the stderr listing — it names the current
+   `rollup['*'].min`, the configured floor (70), and the worst file
+   whose MI matches the min. That file is the one to fix first.
+2. **Fix-first path.** The expected response to a sub-floor min is to
+   raise the worst file's MI: split a long module, extract a helper,
+   collapse deeply-nested branches, or — when the file is structurally
+   sound but Halstead volume is dragging the score — reduce the number
+   of distinct operators / operands by removing redundant constants
+   and centralising shared imports.
+3. **Regenerate the baseline.** When a dip is intentional and approved
+   (e.g. a new domain module that will be polished in a follow-up
+   Story but currently sits below 70 with a documented plan), run
+   `pnpm run maintainability:update`. The script re-scans the tree,
+   recomputes per-file MI, and rewrites `baselines/maintainability.json`
+   in place. The output is byte-identical across runs against an
+   unchanged tree. Note: regenerating the baseline does **not** lower
+   the floor — the 70 floor lives in ADR-019, not in the snapshot. A
+   refreshed baseline with a min below 70 still fails `:check`. The
+   refresh is appropriate only when the source change has lifted the
+   min back to or above the floor.
+4. **Inspect the diff.** Open `baselines/maintainability.json` against
+   the prior commit. Confirm every per-row movement is justified — a
+   dip is a regression and should not be re-baselined without an
+   accompanying source change. A rise is the happy path and should be
+   committed so the next contributor cannot quietly re-introduce the
+   complexity.
+5. **Commit the snapshot alongside the source change.** Reviewers
+   should see *both* the source change and the baseline refresh in
+   the same PR. A baseline-only PR is a smell — it means the floor's
+   inputs moved without a code reason.
+
+### Hand-edit rejection rule
+
+`baselines/maintainability.json` is **not** a hand-edited file.
+Reviewers MUST reject any PR that hand-edits the snapshot — the only
+path to update it is to re-run `pnpm run maintainability:update`. This
+mirrors the hand-edit rejection rule the other dimension runbooks
+(lint, coverage, CRAP, mutation, lighthouse, bundle-size) enforce.
+
+The script's serialiser sorts keys at every depth, sorts rows by
+`path`, and appends a trailing newline so byte-identical re-emission
+is the invariant — any commit that drifts the file off that shape is
+by definition a hand-edit and must be reverted.
+
+### Runbook
+
+1. **You ran `pnpm run maintainability:check` and it failed.** Read
+   the stderr listing — it names the current `rollup['*'].min`, the
+   floor (70), and the worst file whose MI matches the min. The
+   fix-first path is to refactor that file (split modules, extract
+   helpers, collapse branches) until its MI clears the floor.
+2. **The min sits at or just above 70 on `main`.** That is not a
+   failure — it is the gate working. A PR that drops the min by even
+   one point fails `:check` until the source dip is addressed. Keep
+   the headroom: if the project's worst file scores 75 today, the
+   next refactor target should aim to lift it to 80, not park new
+   complexity at 71.
+3. **A newly-added file scores below 70.** The gate fails on the
+   first `:check` run that sees the new file. Either raise the MI
+   before merging (split / extract) or — if the file is justified at
+   its current shape — accept that the gate will block the PR until
+   the source change lifts the min. The ADR-019 floor is the policy
+   anchor; refreshing the baseline does not relax it.
+4. **Baseline is unprimed** (empty rows + zero rollup). The ratchet
+   skips the gate and prints a hint that the operator must run
+   `pnpm run maintainability:update` once to establish the rollup.
+   This is the state the freshly-committed
+   [`baselines/maintainability.json`](../baselines/maintainability.json)
+   ships in; the first `--update` after this Story merges primes
+   the real measurements.
+5. **Parse failure on a source file.** The kernel returns `null` for
+   any file `typhonjs-escomplex` cannot parse, treating it as
+   unscorable rather than zero-MI. Unscorable files are excluded
+   from the envelope entirely (a zero would be a phantom floor
+   violation no source change can fix). If `maintainability:update`
+   reports fewer rows than expected, run the script with
+   `--scan-root=<workspace>` against a single workspace to narrow
+   the set, then inspect the offending file manually — the
+   underlying parser supports TypeScript via the babel-parser, so a
+   persistent parse failure usually indicates a syntactic experiment
+   that should not be on the main branch.
+
 ## Local quality gate (`quality:ci-local`)
 
 `pnpm run quality:ci-local` is the **local mirror** of the
