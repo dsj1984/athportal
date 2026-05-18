@@ -118,8 +118,11 @@ export async function redactQueryAndBody(
     return out;
   }
 
-  const contentType = req.headers.get('content-type') ?? '';
-  if (!contentType.toLowerCase().includes('application/json')) {
+  // `Headers.get` returns `null` when the header is absent. `null` does
+  // not include any substring, so the includes() check short-circuits
+  // through the same branch as a non-JSON content type.
+  const contentType = req.headers.get('content-type');
+  if (contentType === null || !contentType.toLowerCase().includes('application/json')) {
     return out;
   }
 
@@ -146,8 +149,9 @@ export async function redactQueryAndBody(
 
   for (const key of Object.keys(parsed as Record<string, unknown>)) {
     if (RedactionAllowlist.bodyKeys.has(key)) {
-      const value = (parsed as Record<string, unknown>)[key];
-      out[key] = value === undefined ? '' : String(value);
+      // JSON.parse never produces `undefined` values, so `String(value)`
+      // is safe — there is no realistic undefined branch to guard.
+      out[key] = String((parsed as Record<string, unknown>)[key]);
     }
   }
 
