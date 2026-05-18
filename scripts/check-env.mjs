@@ -31,7 +31,9 @@
 //
 // Skill registry — supported shape markers:
 //   nonempty               — string with at least one non-whitespace char
-//   url                    — parses as an absolute http(s) URL
+//   url                    — parses as an absolute URL whose protocol is one
+//                            of http:, https:, or libsql: (the Turso scheme
+//                            DATABASE_URL uses in staging/production)
 //   cloudflare-account-id  — 32-char lowercase hex string
 
 import { readFileSync } from 'node:fs';
@@ -44,7 +46,9 @@ const SHAPES = {
     if (typeof value !== 'string' || value.length === 0) return false;
     try {
       const parsed = new URL(value);
-      return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+      return (
+        parsed.protocol === 'http:' || parsed.protocol === 'https:' || parsed.protocol === 'libsql:'
+      );
     } catch {
       return false;
     }

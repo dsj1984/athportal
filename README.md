@@ -182,8 +182,9 @@ the deploy before `drizzle-kit migrate` or `wrangler deploy` can run.
 Un-tagged keys in `.env.example` are advisory configuration documentation
 and are **not** enforced.
 
-Supported shape markers: `nonempty`, `url`, `cloudflare-account-id`
-(32-char lowercase hex).
+Supported shape markers: `nonempty`, `url` (absolute URL whose scheme is
+`http:`, `https:`, or `libsql:`), `cloudflare-account-id` (32-char
+lowercase hex).
 
 ### Required at deploy time (Environment Secrets, encrypted)
 
