@@ -254,7 +254,32 @@ function measureRoutes(previewUrl, routes) {
   return rows;
 }
 
+// Detect the unprimed envelope without loading the harness. An unprimed
+// baseline ships either with `rows[]` empty (mutation-style) or with the
+// three MVP routes seeded at score=0 across all four metrics (lighthouse
+// ships the latter so the schema-pin tests can read the row shape). Both
+// shapes mean "no real measurement has been captured yet" — the per-route
+// tolerance gate is meaningless until `--update` runs.
+function isUnprimedBaseline(envelope) {
+  const rows = envelope?.rows ?? [];
+  if (rows.length === 0) return true;
+  return rows.every(
+    (r) =>
+      Number(r?.performance ?? 0) === 0 &&
+      Number(r?.accessibility ?? 0) === 0 &&
+      Number(r?.bestPractices ?? 0) === 0 &&
+      Number(r?.seo ?? 0) === 0,
+  );
+}
+
+const PREVIEW_URL_UNSET_MESSAGE =
+  '[lighthouse-baseline] LIGHTHOUSE_PREVIEW_URL is not set. Configure it on the staging GitHub Environment (`gh secret set --env staging LIGHTHOUSE_PREVIEW_URL <url>`) or pass `--preview-url=<url>` locally.\n';
+
 async function modeUpdate({ previewUrl, routes }) {
+  if (!previewUrl) {
+    process.stderr.write(PREVIEW_URL_UNSET_MESSAGE);
+    return 1;
+  }
   const { writeBaseline } = await loadHarness();
   const targetRoutes = routes && routes.length > 0 ? routes : DEFAULT_ROUTES;
   const rows = measureRoutes(previewUrl, targetRoutes);
@@ -267,15 +292,25 @@ async function modeUpdate({ previewUrl, routes }) {
 }
 
 async function modeCheck({ previewUrl, routes }) {
-  const { compareWithTolerance, formatRejectionMessage, readBaseline } = await loadHarness();
-  const prev = readBaseline(BASELINE_PATH, 'lighthouse');
-  const targetRoutes = routes && routes.length > 0 ? routes : prev.rows.map((r) => r.route);
-  if (targetRoutes.length === 0) {
+  if (!previewUrl) {
+    process.stderr.write(PREVIEW_URL_UNSET_MESSAGE);
+    return 1;
+  }
+  if (!fs.existsSync(BASELINE_PATH)) {
     process.stderr.write(
-      '[lighthouse-baseline] baseline is unprimed (rows[] empty). Run `pnpm run lighthouse:update` against the preview deployment before invoking --check.\n',
+      `[lighthouse-baseline] baseline file missing at ${path.relative(REPO_ROOT, BASELINE_PATH)}\n`,
     );
     return 1;
   }
+  const prev = JSON.parse(fs.readFileSync(BASELINE_PATH, 'utf8'));
+  if (isUnprimedBaseline(prev)) {
+    process.stdout.write(
+      '[lighthouse-baseline] baseline is unprimed (all rows at score 0). Skipping per-route tolerance gate. Run `pnpm run lighthouse:update` against the staging preview to prime the floor.\n',
+    );
+    return 0;
+  }
+  const { compareWithTolerance, formatRejectionMessage } = await loadHarness();
+  const targetRoutes = routes && routes.length > 0 ? routes : prev.rows.map((r) => r.route);
   const rows = measureRoutes(previewUrl, targetRoutes);
   const next = buildEnvelope(rows);
 
@@ -339,9 +374,11 @@ export {
   BASELINE_PATH,
   DEFAULT_ROUTES,
   MVP_FLOORS,
+  PREVIEW_URL_UNSET_MESSAGE,
   ROUTE_BAND_PLUS_MINUS,
   buildEnvelope,
   buildRollup,
+  isUnprimedBaseline,
   modeCheck,
   modeUpdate,
 };

@@ -346,24 +346,33 @@ async function modeUpdate({ reportPath }) {
 }
 
 async function modeCheck({ reportPath }) {
-  const harness = await loadHarness();
-  const baseline = harness.readBaseline(BASELINE_PATH, 'mutation');
-  const measurements = measure({ reportPath });
-  const current = buildEnvelope(measurements);
-
-  // Unprimed baseline (every per-workspace rollup at score 0) is a
-  // green light — the operator has not yet primed the floor. The next
-  // --update establishes the real per-workspace scores.
-  const baselineIsUnprimed = Object.entries(baseline.rollup ?? {})
-    .filter(([k]) => k !== '*')
-    .every(([, v]) => Number(v?.score ?? 0) === 0);
+  // Detect the unprimed envelope without loading the harness so the
+  // skip-path stays operational while `@repo/baselines` still ships
+  // TypeScript-only exports (Story #210 ships the built harness).
+  if (!fs.existsSync(BASELINE_PATH)) {
+    process.stderr.write(
+      `[mutation-baseline] baseline file missing at ${path.relative(REPO_ROOT, BASELINE_PATH)}\n`,
+    );
+    return 1;
+  }
+  const baseline = JSON.parse(fs.readFileSync(BASELINE_PATH, 'utf8'));
+  // Unprimed = no per-workspace rollups, or every per-workspace rollup
+  // at score 0. Empty rollup ships as the initial committed envelope so
+  // the floor isn't set before the first real Stryker run lands.
+  const workspaceRollupEntries = Object.entries(baseline.rollup ?? {}).filter(([k]) => k !== '*');
+  const baselineIsUnprimed =
+    workspaceRollupEntries.length === 0 ||
+    workspaceRollupEntries.every(([, v]) => Number(v?.score ?? 0) === 0);
   if (baselineIsUnprimed) {
     process.stdout.write(
-      '[mutation-baseline] baseline is unprimed (every workspace rollup at score 0). Skipping the 5% tolerance gate. Run `pnpm run mutation:update` after a successful `pnpm run mutation` to establish the floor.\n',
+      '[mutation-baseline] baseline is unprimed (no per-workspace rollups). Skipping the 5% tolerance gate. Run `pnpm run mutation:update` after a successful `pnpm run mutation` to establish the floor.\n',
     );
     return 0;
   }
 
+  const harness = await loadHarness();
+  const measurements = measure({ reportPath });
+  const current = buildEnvelope(measurements);
   const violations = compareWorkspaceRollups(baseline, current, harness);
   if (violations.length === 0) {
     const wsCount = Object.keys(current.rollup).filter((k) => k !== '*').length;
