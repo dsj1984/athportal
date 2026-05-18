@@ -42,7 +42,6 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.0",
-    "@repo/baselines": "workspace:*",
     "@commitlint/cli": "^21.0.1",
     "@commitlint/config-conventional": "^21.0.1",
     "@stryker-mutator/core": "^9.2.0",
