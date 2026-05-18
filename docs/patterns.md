@@ -826,6 +826,92 @@ After saving, re-run `pnpm install` to refresh the lockfile and
 documentation cross-reference in a single commit so reviewers see the
 override and the cleared advisory together.
 
+## Authenticated test sessions (Clerk test instance)
+
+Acceptance suites that need to drive a protected route sign in once per
+persona via a Clerk testing-token JWT minted by the seam at
+[`packages/shared/src/testing/auth.ts`](../packages/shared/src/testing/auth.ts).
+The seam targets a **Clerk test instance** — never the production
+instance — and is consumed by the `signInAs(persona)` Playwright fixture
+plus the canonical Gherkin step
+`Given I am signed in as {string}`. There is no dev-only auth bypass; the
+seam mints **real Clerk testing tokens** against a real Clerk test
+instance per the security baseline
+([`.agents/rules/security-baseline.md`](../.agents/rules/security-baseline.md)).
+
+### Seeded Clerk test users
+
+Four user accounts live on the Clerk **test instance** (operator-owned —
+created via the Clerk dashboard, not via this repo). Each maps to a
+persona consumed by the test-auth seam:
+
+| Persona     | Seeded email             | Role         | Org / Team scope                      |
+| ----------- | ------------------------ | ------------ | ------------------------------------- |
+| `athlete`   | `athlete@test.invalid`   | `member`     | —                                     |
+| `coach`     | `coach@test.invalid`     | `team_admin` | seed org A, seed team A-1             |
+| `org admin` | `org-admin@test.invalid` | `org_admin`  | seed org A                            |
+| `dev admin` | `dev-admin@test.invalid` | `dev_admin`  | —                                     |
+
+These email addresses use the `.invalid` TLD per
+[RFC 2606](https://datatracker.ietf.org/doc/html/rfc2606) so they cannot
+collide with a real inbox. The persona labels (`'athlete'`, `'coach'`,
+`'org admin'`, `'dev admin'`) are the exact strings the Gherkin step
+`Given I am signed in as {string}` accepts.
+
+The synthetic-PII guard
+([`packages/shared/src/testing/safety.ts`](../packages/shared/src/testing/safety.ts))
+ensures fixtures never leak a real address into the suite.
+
+### Testing-token signing key
+
+The Clerk test instance exposes a per-instance **testing-token signing
+key**. The seam uses `@clerk/backend`'s testing-tokens helpers to mint
+short-lived JWTs accepted by the Clerk SDK on the test instance only.
+The key:
+
+- is stored in `CLERK_TESTING_TOKEN_SIGNING_KEY` (see
+  [`.env.example`](../.env.example)).
+- is **only valid on the test instance** — leaking it cannot compromise
+  production users.
+- is treated as a secret: real values live in environment variables and
+  GitHub Secrets; only the placeholder appears in `.env.example`.
+
+### Rotation runbook
+
+Rotate the test-instance keys quarterly or immediately on suspected
+exposure. The runbook is:
+
+1. **Rotate in the Clerk dashboard.** Sign in to the Clerk dashboard,
+   switch to the test instance, open **API Keys → Testing Tokens**, and
+   generate a new signing key. Revoke the prior key once the new key is
+   confirmed in CI. (At the same time, rotate the test-instance
+   Publishable and Secret keys via **API Keys → Standard** if the
+   rotation is responding to a leak.)
+2. **Refresh GitHub Secrets.** Update `CLERK_TESTING_TOKEN_SIGNING_KEY`
+   (and, if rotated, `CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY`) in
+   the repository's GitHub Actions secrets. The acceptance workflow
+   ([`.github/workflows/quality.yml`](../.github/workflows/quality.yml))
+   reads these at job start; no workflow edit is required.
+3. **Bump the local `.env`.** Every engineer with a local `.env`
+   refreshes their copy from `.env.example` placeholders and pastes the
+   new values from the dashboard. The committed `.env.example` carries
+   placeholders only — never real keys.
+4. **Re-run the acceptance smoke locally.** Run
+   `pnpm --filter @repo/web exec bddgen && pnpm --filter @repo/web test:e2e -- --grep @smoke`
+   to confirm the per-persona `storageState` cache regenerates against
+   the new key. Stale cache files under
+   `apps/web/playwright-output/storage/` are safe to delete — the
+   fixture re-creates them on the next run.
+5. **Confirm CI is green.** Push a no-op commit (or re-run the latest
+   CI job) and verify the `acceptance-smoke` job passes against the new
+   key before closing the rotation ticket.
+
+Operator note: seeded test-user accounts and their passwords are
+provisioned in the Clerk dashboard and are out of scope for this repo.
+The rotation runbook above covers the testing-token signing key — user
+account credentials rotate independently through the dashboard's user
+management surface.
+
 ## How to add a new step
 
 The acceptance tier reads from a small, deliberately constrained step
