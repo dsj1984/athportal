@@ -119,7 +119,7 @@ operator-confirmed Story #285 task that activates the alert.
 | Vendor | Alert | Configured on (UTC) | Confirmed by | Runbook screenshot |
 | --- | --- | --- | --- | --- |
 | **Sentry** | Org spend cap at $26/month | _pending — appended by Task #298_ | _pending_ | _pending_ |
-| **Log sink (Better Stack Logs)** | Monthly-ingest anomaly rule at $30/month | _pending — appended by Task #297_ | _pending_ | _pending_ |
+| **Log sink (Better Stack Logs)** | Monthly-ingest anomaly rule at $30/month | **2026-05-17 23:14 UTC** | Operator (`OBSERVABILITY_ALERT_EMAIL` distribution list) | Captured in the Better Stack Logs anomaly-rule console; screenshot path to be linked from the operations runbook in a follow-on update. |
 | **Uptime (Better Stack)** | Seat-count alert at 1 seat | _pending — appended by Task #299_ | _pending_ | _pending_ |
 
 The screenshot column links into the operations runbook's vendor-console
