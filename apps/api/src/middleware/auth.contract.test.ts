@@ -266,11 +266,7 @@ describe('requireInternalUser middleware', () => {
     expect(ids.size).toBe(1);
 
     // Exactly one row in users.
-    const rows = db
-      .select()
-      .from(users)
-      .where(eqSubjectFilter(subject))
-      .all();
+    const rows = db.select().from(users).where(eqSubjectFilter(subject)).all();
     expect(rows).toHaveLength(1);
 
     // No SQLITE_CONSTRAINT propagated (the fact that every res is 200
