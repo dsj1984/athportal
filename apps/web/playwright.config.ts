@@ -20,6 +20,11 @@ const testDir = defineBddConfig({
   featuresRoot: '../../tests/features',
   steps: ['./e2e/steps/**/*.ts'],
   outputDir: '.bdd-gen',
+  // Skip scenarios tagged @pending so bddgen does not fail compilation
+  // on features-first scaffolds whose step definitions have not landed
+  // yet. Remove the tag from a scenario once its matching step library
+  // lands; the scenario then generates and runs on the next CI cycle.
+  tags: 'not @pending',
 });
 
 const E2E_PORT = Number(process.env.E2E_PORT ?? 4317);

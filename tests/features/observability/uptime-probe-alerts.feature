@@ -1,3 +1,4 @@
+@pending
 Feature: Uptime probe failures page the operator per probe target
 
   Three external uptime probes watch the user-visible surfaces of the
