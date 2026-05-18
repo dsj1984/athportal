@@ -53,9 +53,15 @@ jobs:
           path: apps/web/test-results/cucumber.json
           if-no-files-found: warn
 
-  mutation:
-    name: Stryker mutation (unit tier)
+  mutation-baseline:
+    name: Stryker mutation + per-workspace baseline (unit tier)
     runs-on: ubuntu-latest
+    # Nightly-only — NOT wired into quality.yml (PR CI). Mutation runs
+    # are too slow to gate merge velocity (PRD #195 § Non-goals) and the
+    # per-workspace ratchet is informational on every other surface.
+    permissions:
+      contents: read
+      issues: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -80,6 +86,13 @@ jobs:
       - name: Run Stryker
         run: pnpm run mutation
 
+      - name: Run mutation:check against baselines/mutation.json
+        id: mutation-check
+        run: |
+          mkdir -p reports/mutation
+          set -o pipefail
+          pnpm run mutation:check 2>&1 | tee reports/mutation/mutation-check.log
+
       - name: Upload mutation HTML report
         if: always()
         uses: actions/upload-artifact@v4
@@ -87,3 +100,102 @@ jobs:
           name: mutation-report
           path: reports/mutation/mutation.html
           if-no-files-found: warn
+
+      - name: Upload mutation JSON report + check log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-baseline
+          path: |
+            reports/mutation/mutation.json
+            reports/mutation/mutation-check.log
+          retention-days: 14
+          if-no-files-found: warn
+
+      - name: Post regression summary to the nightly-report issue
+        if: failure() && steps.mutation-check.outcome == 'failure' && vars.NIGHTLY_REPORT_ISSUE != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NIGHTLY_REPORT_ISSUE: ${{ vars.NIGHTLY_REPORT_ISSUE }}
+        run: |
+          {
+            echo "### Mutation baseline regression — $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+            echo
+            echo "Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            echo
+            echo '```'
+            tail -n 80 reports/mutation/mutation-check.log || echo '(no log captured)'
+            echo '```'
+          } > /tmp/mutation-summary.md
+          gh issue comment "$NIGHTLY_REPORT_ISSUE" --body-file /tmp/mutation-summary.md
+
+  lighthouse-baseline:
+    name: Lighthouse baseline (per-route +/-3)
+    runs-on: ubuntu-latest
+    # Pulls LIGHTHOUSE_PREVIEW_URL from the `staging` environment so the
+    # baseline gates against the same surface deploy-staging.yml has
+    # promoted. See PRD #195 AC #9 and Tech Spec #196 § F (Nightly).
+    environment: staging
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Chrome for Lighthouse
+        uses: browser-actions/setup-chrome@v1
+        with:
+          chrome-version: stable
+
+      - name: Run lighthouse:check against the staging preview
+        id: lighthouse
+        env:
+          LIGHTHOUSE_PREVIEW_URL: ${{ secrets.LIGHTHOUSE_PREVIEW_URL }}
+        run: |
+          mkdir -p reports/lighthouse
+          set -o pipefail
+          pnpm run lighthouse:check 2>&1 | tee reports/lighthouse/lighthouse-check.log
+
+      - name: Upload Lighthouse trace JSON + check log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-report
+          path: reports/lighthouse/
+          retention-days: 14
+          if-no-files-found: warn
+
+      - name: Post regression summary to the nightly-report issue
+        if: failure() && vars.NIGHTLY_REPORT_ISSUE != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NIGHTLY_REPORT_ISSUE: ${{ vars.NIGHTLY_REPORT_ISSUE }}
+        run: |
+          {
+            echo "### Lighthouse baseline regression — $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+            echo
+            echo "Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            echo
+            echo '```'
+            tail -n 80 reports/lighthouse/lighthouse-check.log || echo '(no log captured)'
+            echo '```'
+          } > /tmp/lh-summary.md
+          gh issue comment "$NIGHTLY_REPORT_ISSUE" --body-file /tmp/lh-summary.md

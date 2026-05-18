@@ -20,8 +20,17 @@
     "build": "turbo run build",
     "lint:baseline:check": "node scripts/lint-baseline.mjs --check",
     "lint:baseline:update": "node scripts/lint-baseline.mjs --update",
+    "coverage:check": "node scripts/coverage-baseline.mjs --check",
+    "coverage:update": "node scripts/coverage-baseline.mjs --update",
+    "crap:check": "node scripts/crap-baseline.mjs --check",
+    "crap:update": "node scripts/crap-baseline.mjs --update",
+    "maintainability:check": "node scripts/maintainability-baseline.mjs --check",
+    "maintainability:update": "node scripts/maintainability-baseline.mjs --update",
+    "bundle-size:check": "node scripts/bundle-size-baseline.mjs --check",
+    "bundle-size:update": "node scripts/bundle-size-baseline.mjs --update",
     "lint:steps": "node scripts/lint-steps.mjs",
     "lint:steps:fixtures": "node scripts/lint-steps.mjs --fixtures",
+    "audit:check": "node scripts/audit-check.mjs",
     "sync:commands": "node .agents/scripts/sync-claude-commands.js",
     "prepare": "node .agents/scripts/sync-claude-commands.js",
     "quality:preview": "node .agents/scripts/quality-preview.js --changed-since HEAD",
@@ -49,5 +58,10 @@
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.59.3",
     "vitest": "^4.1.6"
+  },
+  "pnpm": {
+    "overrides": {
+      "drizzle-orm@<0.45.2": ">=0.45.2"
+    }
   }
 }

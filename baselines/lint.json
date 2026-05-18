@@ -1,0 +1,93 @@
+{
+  "$schema": ".agents/schemas/baselines/lint.schema.json",
+  "generatedAt": "2026-05-18T00:46:21.701Z",
+  "kernelVersion": "1.0.0",
+  "rollup": {
+    "*": {
+      "errorCount": 16,
+      "warningCount": 0
+    }
+  },
+  "rows": [
+    {
+      "errorCount": 1,
+      "path": "apps/api/vitest.config.ts",
+      "warningCount": 0
+    },
+    {
+      "errorCount": 1,
+      "path": "apps/web/e2e/steps/auth.steps.ts",
+      "warningCount": 0
+    },
+    {
+      "errorCount": 1,
+      "path": "apps/web/e2e/steps/form.steps.ts",
+      "warningCount": 0
+    },
+    {
+      "errorCount": 1,
+      "path": "apps/web/e2e/steps/navigation.steps.ts",
+      "warningCount": 0
+    },
+    {
+      "errorCount": 1,
+      "path": "apps/web/e2e/steps/rbac.steps.ts",
+      "warningCount": 0
+    },
+    {
+      "errorCount": 1,
+      "path": "apps/web/e2e/steps/visibility.steps.ts",
+      "warningCount": 0
+    },
+    {
+      "errorCount": 1,
+      "path": "apps/web/playwright.config.ts",
+      "warningCount": 0
+    },
+    {
+      "errorCount": 1,
+      "path": "apps/web/vitest.config.ts",
+      "warningCount": 0
+    },
+    {
+      "errorCount": 1,
+      "path": "lib/baselines/refresh-service.js",
+      "warningCount": 0
+    },
+    {
+      "errorCount": 1,
+      "path": "packages/baselines/vitest.config.ts",
+      "warningCount": 0
+    },
+    {
+      "errorCount": 1,
+      "path": "packages/shared/vitest.config.ts",
+      "warningCount": 0
+    },
+    {
+      "errorCount": 1,
+      "path": "scripts/__tests__/lint-baseline-envelope.test.mjs",
+      "warningCount": 0
+    },
+    {
+      "errorCount": 1,
+      "path": "scripts/check-env.test.mjs",
+      "warningCount": 0
+    },
+    {
+      "errorCount": 1,
+      "path": "scripts/lint-steps.mjs",
+      "warningCount": 0
+    },
+    {
+      "errorCount": 1,
+      "path": "vitest.config.ts",
+      "warningCount": 0
+    },
+    {
+      "errorCount": 1,
+      "path": "vitest.workspace.ts",
+      "warningCount": 0
+    }
+  ]
+}

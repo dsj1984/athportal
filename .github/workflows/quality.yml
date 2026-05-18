@@ -94,6 +94,99 @@ jobs:
       - name: Test
         run: pnpm run test
 
+  coverage-baseline:
+    name: Coverage baseline (-2pp per workspace, ADR-015)
+    needs: [lint, typecheck]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate coverage reports
+        run: pnpm run test:coverage
+
+      - name: Coverage baseline check
+        run: pnpm run coverage:check
+
+  crap-baseline:
+    name: CRAP baseline (relative-5% per method, ADR-018)
+    needs: [lint, typecheck]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: CRAP baseline check
+        run: pnpm run crap:check
+
+  maintainability-baseline:
+    name: Maintainability baseline (rollup `*` min >= 70, ADR-019)
+    needs: [lint, typecheck]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Maintainability baseline check
+        run: pnpm run maintainability:check
+
   acceptance-smoke:
     name: Acceptance smoke (@smoke)
     needs: [lint, typecheck]
@@ -164,9 +257,123 @@ jobs:
       - name: Lint step definitions
         run: pnpm run lint:steps
 
+  supply-chain-security:
+    # ADR-011 — supply-chain CVE gate. Runs `pnpm run audit:check` which
+    # invokes `pnpm audit --json --prod` and fails on any unsuppressed
+    # High/Critical advisory in the production graph. Moderate findings
+    # surface in the uploaded `audit.json` artifact (14-day retention)
+    # without blocking. The IGNORED allow-list in `scripts/audit-check.mjs`
+    # is the suppression mechanism; every entry requires a non-empty
+    # reason and a future revisit date.
+    #
+    # This job is the required check on `main` (configured in branch
+    # protection settings via the GitHub UI). The `build` job below
+    # `needs:` this so a failed audit blocks the deploy-targeted build
+    # output even when branch protection isn't (yet) enforcing the
+    # required-check contract.
+    name: Supply-chain security (ADR-011)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Audit production graph (High/Critical block; Moderate surface)
+        run: pnpm run audit:check
+
+      - name: Upload audit.json artifact (14-day retention)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: supply-chain-audit
+          path: audit.json
+          retention-days: 14
+          if-no-files-found: error
+
+  trufflehog:
+    # Secret-scanner gate (PR-blocking). Runs TruffleHog with
+    # `--only-verified` so we fail the build only on findings the scanner
+    # could confirm against the provider, keeping the signal noise-free.
+    # False positives are suppressed via `.trufflehog-exclude.yml` at the
+    # repo root (created on first false positive, not preemptively).
+    name: TruffleHog (secret scan)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: TruffleHog scan
+        # Pinned to v3.95.3 — TruffleHog does not publish a moving `v3`
+        # major tag; bump deliberately when upstream cuts a new release.
+        uses: trufflesecurity/trufflehog@v3.95.3
+        with:
+          extra_args: --only-verified
+
+  gitleaks-pr:
+    # Secret-scanner gate (PR-blocking) — companion to the TruffleHog job.
+    # Fails the build on any detected secret, then uploads the SARIF
+    # report to GitHub Code Scanning so findings surface in the Security
+    # tab. `security-events: write` is scoped to this job alone.
+    name: gitleaks (secret scan, PR)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: gitleaks scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: true
+          GITLEAKS_ENABLE_SUMMARY: true
+        with:
+          # Emit SARIF alongside the JSON report so the upload step has a
+          # canonical artifact regardless of whether the action found
+          # secrets. `results.sarif` is gitleaks-action@v2's default
+          # SARIF path.
+          config-path: ""
+
+      - name: Upload SARIF to GitHub Code Scanning
+        # Always run so the Security tab receives the empty-findings
+        # report on green PRs too — this is what makes the gate visible.
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: results.sarif
+          category: gitleaks
+
   build:
     name: Build
-    needs: [lint, typecheck]
+    needs: [lint, typecheck, supply-chain-security]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -191,3 +398,36 @@ jobs:
 
       - name: Build
         run: pnpm run build
+
+  bundle-size-baseline:
+    name: Bundle-size baseline (1 MiB Worker cap + per-bundle gzippedKb, ADR-014)
+    needs: [build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build (re-run so wrangler dist is on disk for measurement)
+        run: pnpm run build
+
+      - name: Bundle-size baseline check
+        run: pnpm run bundle-size:check

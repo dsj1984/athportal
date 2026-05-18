@@ -126,6 +126,578 @@ whole-tree Biome and ESLint passes the ratchet needs.
    failure that does not reproduce in `pnpm run lint` is a script bug,
    not a code bug — file an issue rather than working around it.
 
+## Coverage baseline ratchet
+
+The coverage ratchet keeps per-workspace line / branch / function
+coverage **within 2 absolute percentage points of the committed
+baseline**. It is a CI gate: a PR cannot drop any workspace's coverage
+more than 2pp on any axis without explicitly re-snapshotting the
+baseline. The 2pp tolerance is the policy fixed in
+[ADR-015](decisions.md) — the script and this runbook move together
+with that ADR.
+
+### Files and entrypoints
+
+- [`scripts/coverage-baseline.mjs`](../scripts/coverage-baseline.mjs) —
+  the ratchet script. Pure Node ESM, no build step. Reads each
+  workspace's `coverage/coverage-final.json` (produced by Vitest's V8
+  coverage reporter), aggregates per-file `lines` / `branches` /
+  `functions` percentages, and rolls them up into the shared
+  baseline-envelope shape (`$schema`, `kernelVersion`, `generatedAt`,
+  `rollup`, `rows`). Rollup keys and row paths are sorted
+  lexicographically so successive runs against an unchanged tree
+  produce byte-identical JSON.
+- [`baselines/coverage.json`](../baselines/coverage.json) — the
+  committed snapshot. The single source of truth for "how much
+  coverage each workspace is required to maintain". Diffs against this
+  file are the gate. The shape is fixed by
+  [`.agents/schemas/baselines/coverage.schema.json`](../.agents/schemas/baselines/coverage.schema.json)
+  via the shared
+  [`baseline-envelope.schema.json`](../.agents/schemas/baselines/baseline-envelope.schema.json).
+- `pnpm run coverage:check` — runs
+  `node scripts/coverage-baseline.mjs --check`. Exits non-zero if any
+  workspace dropped more than 2pp on any axis (lines, branches,
+  functions). The PR-blocking
+  [`coverage-baseline` job in `quality.yml`](../.github/workflows/quality.yml)
+  is the CI binding.
+- `pnpm run coverage:update` — runs
+  `node scripts/coverage-baseline.mjs --update`. Regenerates
+  `baselines/coverage.json` from the current tree.
+
+### Refresh procedure
+
+1. **Produce coverage reports.** Run `pnpm run test:coverage` to drive
+   Vitest's V8 reporter under every workspace. Each workspace emits its
+   own `coverage/coverage-final.json`.
+2. **Regenerate the baseline.** Run `pnpm run coverage:update`. The
+   script re-reads every workspace's coverage report, computes the
+   per-workspace rollup, and rewrites `baselines/coverage.json` in
+   place. The output is byte-identical across runs against an unchanged
+   tree.
+3. **Inspect the diff.** Open `baselines/coverage.json` against the
+   prior commit. Confirm every per-workspace rollup change is
+   justified — a drop is a regression and should not be re-baselined
+   without an accompanying source change. A rise is the happy path and
+   should be committed so the next contributor cannot quietly
+   re-introduce the missing coverage.
+4. **Commit the snapshot alongside the source change.** Reviewers
+   should see *both* the source change and the baseline bump in the
+   same PR. A baseline-only PR is a smell — it means the floor moved
+   without a code reason.
+
+### Hand-edit rejection rule
+
+`baselines/coverage.json` is **not** a hand-edited file. Reviewers MUST
+reject any PR that hand-edits the snapshot — the only path to update
+it is to re-run `pnpm run coverage:update`. This mirrors the
+hand-edit rejection rule the other dimension runbooks (lint, CRAP,
+maintainability, mutation, lighthouse, bundle-size) enforce.
+
+The script's serialiser sorts keys at every depth and appends a
+trailing newline so byte-identical re-emission is the invariant —
+any commit that drifts the file off that shape is by definition a
+hand-edit and must be reverted.
+
+### Runbook
+
+1. **You ran `pnpm run coverage:check` and it failed.** Read the
+   stderr listing — it names the workspace, the axis (lines / branches
+   / functions), the prior percentage, the current percentage, and the
+   pp delta. The fix-first path is to add tests for the under-covered
+   code paths the V8 reporter highlights (open
+   `<workspace>/coverage/index.html` to see which files dropped).
+2. **The drop is intentional** (e.g. you deleted a feature and its
+   tests went with it, lowering the workspace's denominator). Re-run
+   `pnpm run coverage:update`, inspect the diff on
+   `baselines/coverage.json` to confirm it matches the change you
+   expect, and commit the snapshot alongside the source change.
+3. **A newly-registered workspace under `apps/*` or `packages/*`.**
+   The ratchet treats a new workspace as a pass on the first check
+   (no prior rollup to compare against). Run
+   `pnpm run coverage:update` to prime the workspace; the next
+   `--check` enforces the floor.
+4. **Baseline is unprimed** (every per-workspace rollup is `0`). The
+   ratchet skips the gate and prints a hint that the operator must
+   run `pnpm run coverage:update` once to establish the floor. This is
+   the state the freshly-committed
+   [`baselines/coverage.json`](../baselines/coverage.json) ships in;
+   the first `--update` after this Story merges primes the real
+   measurements.
+5. **Editor noise / local-only failures.** The ratchet consumes the
+   same `coverage-final.json` files Vitest produces, so a `--check`
+   failure that does not reproduce after `pnpm run test:coverage` is
+   a stale coverage report — delete each workspace's
+   `coverage/` directory and rerun.
+
+## CRAP baseline ratchet
+
+The CRAP ratchet keeps every method's CRAP score **within 5% of its
+committed baseline value**. CRAP is `c² · (1 − cov)³ + c` where `c` is
+cyclomatic complexity and `cov` is the method's coverage ratio — a
+method that gets more branches without compensating coverage rises
+quickly, so the per-method ratchet catches "complexity grew, tests
+didn't" without a flat cap that would penalize disciplined complex
+code. It is a CI gate: a PR cannot raise any method's CRAP score by
+more than 5% without explicitly re-snapshotting the baseline. The 5%
+relative tolerance is the policy fixed in
+[ADR-018](decisions.md) — the script and this runbook move together
+with that ADR.
+
+### Files and entrypoints
+
+- [`scripts/crap-baseline.mjs`](../scripts/crap-baseline.mjs) — the
+  ratchet script. Pure Node ESM, no build step. Walks every JS/TS
+  source under `apps/*` and `packages/*` (skipping tests, fixtures,
+  build output, and ambient types), scores per-method CRAP via
+  [`typhonjs-escomplex`](https://github.com/typhonjs-node-escomplex/typhonjs-escomplex),
+  and rolls the per-row scores into the shared baseline-envelope shape
+  (`$schema`, `kernelVersion`, `generatedAt`, `rollup`, `rows`). Rows
+  are canonically sorted by `(path, startLine, method)` so successive
+  runs against an unchanged tree produce byte-identical JSON.
+- [`baselines/crap.json`](../baselines/crap.json) — the committed
+  snapshot. The single source of truth for "what CRAP score each
+  method is allowed to carry". Diffs against this file are the gate.
+  The shape is fixed by
+  [`.agents/schemas/baselines/crap.schema.json`](../.agents/schemas/baselines/crap.schema.json)
+  via the shared
+  [`baseline-envelope.schema.json`](../.agents/schemas/baselines/baseline-envelope.schema.json).
+- `pnpm run crap:check` — runs
+  `node scripts/crap-baseline.mjs --check`. Exits non-zero if any
+  method's CRAP score rose more than 5% above the prior baseline
+  value. The PR-blocking
+  [`crap-baseline` job in `quality.yml`](../.github/workflows/quality.yml)
+  is the CI binding.
+- `pnpm run crap:update` — runs
+  `node scripts/crap-baseline.mjs --update`. Regenerates
+  `baselines/crap.json` from the current tree.
+
+### Refresh procedure
+
+1. **Inspect the failure.** Run `pnpm run crap:check` and read the
+   stderr listing — it names every regressed method by
+   `path:startLine:method`, prints the prior and current CRAP scores,
+   and names the relative-5% tolerance the violation tripped.
+2. **Fix-first path.** The expected response to a regression is to
+   reduce the method's complexity (extract helpers, collapse branches)
+   or, when the coverage cross-link Epic lands, raise its statement
+   coverage. The script does not auto-suggest a remediation — the
+   reviewer is responsible for confirming the source change matches
+   the score movement.
+3. **Regenerate the baseline.** When the rise is intentional and
+   approved, run `pnpm run crap:update`. The script re-scans the tree,
+   recomputes per-method scores, and rewrites `baselines/crap.json` in
+   place. The output is byte-identical across runs against an
+   unchanged tree.
+4. **Inspect the diff.** Open `baselines/crap.json` against the prior
+   commit. Confirm every per-row movement is justified — a rise is a
+   regression and should not be re-baselined without an accompanying
+   source change. A drop is the happy path and should be committed so
+   the next contributor cannot quietly re-introduce the complexity.
+5. **Commit the snapshot alongside the source change.** Reviewers
+   should see *both* the source change and the baseline bump in the
+   same PR. A baseline-only PR is a smell — it means the floor moved
+   without a code reason.
+
+### Hand-edit rejection rule
+
+`baselines/crap.json` is **not** a hand-edited file. Reviewers MUST
+reject any PR that hand-edits the snapshot — the only path to update
+it is to re-run `pnpm run crap:update`. This mirrors the hand-edit
+rejection rule the other dimension runbooks (lint, coverage,
+maintainability, mutation, lighthouse, bundle-size) enforce.
+
+The script's serialiser sorts keys at every depth, sorts rows by
+`(path, startLine, method)`, and appends a trailing newline so
+byte-identical re-emission is the invariant — any commit that drifts
+the file off that shape is by definition a hand-edit and must be
+reverted.
+
+### Runbook
+
+1. **You ran `pnpm run crap:check` and it failed.** Read the stderr
+   listing — it names every regressed method, the prior score, the
+   current score, and the relative-5% policy that fired. The fix-first
+   path is to refactor the method (extract helpers, collapse branches)
+   so the score returns at or below the prior value.
+2. **The rise is intentional** (e.g. a new feature that legitimately
+   added branches and you accept the higher CRAP for now). Re-run
+   `pnpm run crap:update`, inspect the diff on `baselines/crap.json`
+   to confirm only the methods you expected to change actually
+   changed, and commit the snapshot alongside the source change.
+3. **A newly-added method.** The ratchet treats a new row (one whose
+   `path:startLine:method` identifier was absent from the prior
+   baseline) as a fresh registration. The harness's `relative-pct`
+   evaluator on a `lower-is-better` axis treats `prev = 0` plus any
+   `next > 0` as a fail, so a freshly-added method with non-zero CRAP
+   *does* fire the gate. Run `pnpm run crap:update` to register the
+   new method's baseline value alongside its introducing source
+   change.
+4. **A method moved (refactor changed its `startLine`).** The row
+   identifier embeds the start line, so a moved method appears as a
+   new row (with `prev = 0`) and the old row drops out. The new row
+   triggers the new-row case above. Run `pnpm run crap:update` in the
+   same PR as the move so reviewers see both halves of the rename.
+5. **Baseline is unprimed** (empty rows + zero rollup). The ratchet
+   skips the gate and prints a hint that the operator must run
+   `pnpm run crap:update` once to establish the floor. This is the
+   state the freshly-committed
+   [`baselines/crap.json`](../baselines/crap.json) ships in; the
+   first `--update` after this Story merges primes the real
+   measurements.
+6. **Parse failure on a source file.** The kernel returns an empty
+   row list for any file `typhonjs-escomplex` cannot parse, treating
+   it as unscorable rather than zero-complexity. If `crap:update`
+   reports fewer rows than expected, run the script with
+   `--scan-root=<workspace>` against a single workspace to narrow the
+   set, then inspect the offending file manually — the underlying
+   parser supports TypeScript via the babel-parser, so a persistent
+   parse failure usually indicates a syntactic experiment that
+   should not be on the main branch.
+
+## Maintainability baseline ratchet
+
+The maintainability ratchet keeps the **whole-repo `rollup['*'].min`
+Maintainability Index (MI) at or above 70** — the mandrel framework's
+default floor for the dimension. MI is a 0–171 scale (higher is better)
+derived from Halstead volume, cyclomatic complexity, and SLOC; a file
+that dips below 70 is the canonical "this module needs to be split or
+simplified" signal. It is a CI gate: a PR cannot lower the whole-repo
+min below 70 without explicitly re-snapshotting the baseline alongside
+a source change that justifies the dip. The floor is policy fixed in
+[ADR-019](decisions.md) — the script and this runbook move together
+with that ADR.
+
+### Files and entrypoints
+
+- [`scripts/maintainability-baseline.mjs`](../scripts/maintainability-baseline.mjs)
+  — the ratchet script. Pure Node ESM, no build step. Walks every JS/TS
+  source under `apps/*` and `packages/*` (skipping tests, fixtures,
+  build output, and ambient types), scores per-file MI via
+  [`typhonjs-escomplex`](https://github.com/typhonjs-node-escomplex/typhonjs-escomplex),
+  and rolls the per-row scores into the shared baseline-envelope shape
+  (`$schema`, `kernelVersion`, `generatedAt`, `rollup`, `rows`). Rows
+  are canonically sorted by `path` so successive runs against an
+  unchanged tree produce byte-identical JSON. Per-component rollup
+  keys auto-populate for each `apps/<name>` and `packages/<name>`
+  workspace discovered in the rows; the `*` key is the whole-repo
+  rollup and is the axis the gate enforces.
+- [`baselines/maintainability.json`](../baselines/maintainability.json)
+  — the committed snapshot. The shape is fixed by
+  [`.agents/schemas/baselines/maintainability.schema.json`](../.agents/schemas/baselines/maintainability.schema.json)
+  via the shared
+  [`baseline-envelope.schema.json`](../.agents/schemas/baselines/baseline-envelope.schema.json).
+  Per-row entries carry `{ path, mi }`; the rollup carries
+  `{ min, p50, p95 }` on every component key.
+- `pnpm run maintainability:check` — runs
+  `node scripts/maintainability-baseline.mjs --check`. Exits non-zero
+  when `rollup['*'].min < 70`. The failure log names the file dragging
+  the whole-repo min down so the fix lands on the responsible source.
+  The PR-blocking
+  [`maintainability-baseline` job in `quality.yml`](../.github/workflows/quality.yml)
+  is the CI binding.
+- `pnpm run maintainability:update` — runs
+  `node scripts/maintainability-baseline.mjs --update`. Regenerates
+  `baselines/maintainability.json` from the current tree.
+
+### Refresh procedure
+
+1. **Inspect the failure.** Run `pnpm run maintainability:check` and
+   read the stderr listing — it names the current
+   `rollup['*'].min`, the configured floor (70), and the worst file
+   whose MI matches the min. That file is the one to fix first.
+2. **Fix-first path.** The expected response to a sub-floor min is to
+   raise the worst file's MI: split a long module, extract a helper,
+   collapse deeply-nested branches, or — when the file is structurally
+   sound but Halstead volume is dragging the score — reduce the number
+   of distinct operators / operands by removing redundant constants
+   and centralising shared imports.
+3. **Regenerate the baseline.** When a dip is intentional and approved
+   (e.g. a new domain module that will be polished in a follow-up
+   Story but currently sits below 70 with a documented plan), run
+   `pnpm run maintainability:update`. The script re-scans the tree,
+   recomputes per-file MI, and rewrites `baselines/maintainability.json`
+   in place. The output is byte-identical across runs against an
+   unchanged tree. Note: regenerating the baseline does **not** lower
+   the floor — the 70 floor lives in ADR-019, not in the snapshot. A
+   refreshed baseline with a min below 70 still fails `:check`. The
+   refresh is appropriate only when the source change has lifted the
+   min back to or above the floor.
+4. **Inspect the diff.** Open `baselines/maintainability.json` against
+   the prior commit. Confirm every per-row movement is justified — a
+   dip is a regression and should not be re-baselined without an
+   accompanying source change. A rise is the happy path and should be
+   committed so the next contributor cannot quietly re-introduce the
+   complexity.
+5. **Commit the snapshot alongside the source change.** Reviewers
+   should see *both* the source change and the baseline refresh in
+   the same PR. A baseline-only PR is a smell — it means the floor's
+   inputs moved without a code reason.
+
+### Hand-edit rejection rule
+
+`baselines/maintainability.json` is **not** a hand-edited file.
+Reviewers MUST reject any PR that hand-edits the snapshot — the only
+path to update it is to re-run `pnpm run maintainability:update`. This
+mirrors the hand-edit rejection rule the other dimension runbooks
+(lint, coverage, CRAP, mutation, lighthouse, bundle-size) enforce.
+
+The script's serialiser sorts keys at every depth, sorts rows by
+`path`, and appends a trailing newline so byte-identical re-emission
+is the invariant — any commit that drifts the file off that shape is
+by definition a hand-edit and must be reverted.
+
+### Runbook
+
+1. **You ran `pnpm run maintainability:check` and it failed.** Read
+   the stderr listing — it names the current `rollup['*'].min`, the
+   floor (70), and the worst file whose MI matches the min. The
+   fix-first path is to refactor that file (split modules, extract
+   helpers, collapse branches) until its MI clears the floor.
+2. **The min sits at or just above 70 on `main`.** That is not a
+   failure — it is the gate working. A PR that drops the min by even
+   one point fails `:check` until the source dip is addressed. Keep
+   the headroom: if the project's worst file scores 75 today, the
+   next refactor target should aim to lift it to 80, not park new
+   complexity at 71.
+3. **A newly-added file scores below 70.** The gate fails on the
+   first `:check` run that sees the new file. Either raise the MI
+   before merging (split / extract) or — if the file is justified at
+   its current shape — accept that the gate will block the PR until
+   the source change lifts the min. The ADR-019 floor is the policy
+   anchor; refreshing the baseline does not relax it.
+4. **Baseline is unprimed** (empty rows + zero rollup). The ratchet
+   skips the gate and prints a hint that the operator must run
+   `pnpm run maintainability:update` once to establish the rollup.
+   This is the state the freshly-committed
+   [`baselines/maintainability.json`](../baselines/maintainability.json)
+   ships in; the first `--update` after this Story merges primes
+   the real measurements.
+5. **Parse failure on a source file.** The kernel returns `null` for
+   any file `typhonjs-escomplex` cannot parse, treating it as
+   unscorable rather than zero-MI. Unscorable files are excluded
+   from the envelope entirely (a zero would be a phantom floor
+   violation no source change can fix). If `maintainability:update`
+   reports fewer rows than expected, run the script with
+   `--scan-root=<workspace>` against a single workspace to narrow
+   the set, then inspect the offending file manually — the
+   underlying parser supports TypeScript via the babel-parser, so a
+   persistent parse failure usually indicates a syntactic experiment
+   that should not be on the main branch.
+
+## Bundle-size baseline ratchet
+
+The bundle-size ratchet enforces two distinct contracts on every
+PR:
+
+1. **Per-bundle compressed budgets** declared in `.size-limit.json`
+   (one entry per shipped bundle). A `gzippedKb` measurement that
+   exceeds its budget fails the gate.
+2. **The non-negotiable Cloudflare Workers 1 MiB compressed cap.**
+   The Worker bundle is `apps/api worker` by convention. The script
+   warns at 90% of the cap and fails at 100%, regardless of the
+   per-bundle budget. Approaching the cap is a Worker-split
+   planning trigger — not a budget bump.
+
+Both contracts are policy-anchored in [ADR-014](decisions.md). The
+gate is *regression-first, bump-last*: the lowest-friction reaction
+to a failing `:check` is to revert the size delta (strip a
+dependency, lazy-load the surface, route-split onto an off-critical
+path), not to bump the budget. Bumping is the **last** lever, and
+when used it requires a paired changelog entry on the same
+`.size-limit.json` bundle row.
+
+### Files and entrypoints
+
+- [`scripts/bundle-size-baseline.mjs`](../scripts/bundle-size-baseline.mjs)
+  — the ratchet script. Pure Node ESM, no build step. Reads
+  `.size-limit.json`, measures `gzipSync` against each bundle's
+  `path` on disk, rolls the per-row sizes into the shared baseline-
+  envelope shape, and either `:check`s the current measurements
+  against budgets and the 1 MiB Worker cap, or `:update`s
+  `baselines/bundle-size.json` from the current tree.
+- [`.size-limit.json`](../.size-limit.json) — the per-bundle budget
+  + changelog file. One entry per shipped bundle:
+
+  ```json
+  {
+    "name": "apps/api worker",
+    "path": "apps/api/dist/worker.js",
+    "gzippedKb": 320,
+    "rationale": "initial baseline; matches MVP route surface",
+    "lastRevised": "2026-05-17",
+    "approvedBy": "@dsj1984"
+  }
+  ```
+
+  `name` is the row key in `baselines/bundle-size.json`. `path` is
+  the file (or glob) measured. `gzippedKb` is the budget enforced.
+  `rationale`, `lastRevised`, and `approvedBy` are the per-bundle
+  changelog fields ADR-014 requires when bumping `gzippedKb`
+  upward — the `rationale` field is the changelog itself, not
+  decoration.
+
+- [`baselines/bundle-size.json`](../baselines/bundle-size.json) —
+  the committed snapshot. Shape fixed by
+  [`.agents/schemas/baselines/bundle-size.schema.json`](../.agents/schemas/baselines/bundle-size.schema.json)
+  via the shared
+  [`baseline-envelope.schema.json`](../.agents/schemas/baselines/baseline-envelope.schema.json).
+  Per-row entries carry `{ bundle, rawKb, gzippedKb }`; the
+  whole-repo `*` rollup carries `{ totalKb, gzippedKb }`. Rows
+  sorted by `bundle` so re-emission is byte-identical.
+- `pnpm run bundle-size:check` — runs
+  `node scripts/bundle-size-baseline.mjs --check`. Exits non-zero
+  on (a) Worker compressed > 1 MiB, (b) any bundle over its budget,
+  or (c) a budget bump unaccompanied by a `rationale`/`lastRevised`
+  update. The PR-blocking
+  [`bundle-size-baseline` job in `quality.yml`](../.github/workflows/quality.yml)
+  is the CI binding; it depends on the `build` job so the wrangler
+  dist output is on disk before measurement.
+- `pnpm run bundle-size:update` — runs
+  `node scripts/bundle-size-baseline.mjs --update`. Regenerates
+  `baselines/bundle-size.json` from the current tree.
+
+### Revision procedure (regression-first, bump-last)
+
+ADR-014 defines a strict ordering for responding to a failing
+`bundle-size:check`. Reviewers MUST walk the steps in order.
+
+1. **Read the failure log.** The script names the failing bundle,
+   its declared budget, and the current measured `gzippedKb`. The
+   Worker cap failure carries the rejection string
+   `Worker 1 MiB cap exceeded` so it is easy to grep for in CI
+   logs.
+2. **Regression-first.** Default assumption: an overrun is a
+   regression. Identify what landed in the same PR that pushed the
+   bundle over — a new dependency, an inlined large constant, a
+   route surface that pulled in a previously tree-shaken module.
+   Remove or defer the size delta:
+   - Strip the dependency (use a lighter alternative, write a
+     micro-helper, drop the feature).
+   - Lazy-load the surface (dynamic `import()`, route-level code
+     split).
+   - Move the code off the critical path (Worker → background
+     job, web island → user-triggered surface).
+3. **Bump-last.** Only when the size delta is *justified* —
+   typically a deliberate dependency upgrade or a planned feature
+   that genuinely needs the bytes — is the budget itself the right
+   lever. Bumping is governed by ADR-014 § Decision:
+   1. Update `gzippedKb` on the `.size-limit.json` bundle row.
+   2. Update `rationale` on the same row to name the dependency
+      or feature that justifies the new headroom. The field is the
+      per-bundle changelog; reviewers MUST be able to read the
+      file and reconstruct *why* the budget moved over its
+      lifetime.
+   3. Update `lastRevised` to the current ISO date.
+   4. Update `approvedBy` (optional but recommended) to the
+      reviewer or operator handle who signed off on the bump.
+   5. If the bump exceeds **+25% of the previous limit**, the
+      `rationale` MUST also name the alternative considered and
+      why it was rejected (per ADR-014). This is a code-review
+      enforcement, not a script check — the script guarantees the
+      `rationale` field is present, not that its content is
+      exhaustive.
+4. **Worker cap is special.** The 1 MiB Cloudflare compressed cap
+   does **not** participate in the bump procedure. Approaching the
+   cap (warn threshold = 90%) triggers a planning Story for a
+   Worker split — break the Worker into smaller deployments, move
+   non-hot routes onto a separate Worker, or split the API surface
+   across Workers per domain. **Never** bump past the cap by
+   editing `.size-limit.json`; the script ignores per-bundle
+   budgets for the Worker row when the cap is breached.
+5. **Refresh the baseline.** After landing the source change (or
+   the bump-with-rationale), run `pnpm run bundle-size:update`.
+   The script re-measures, rewrites `baselines/bundle-size.json`,
+   and the next `:check` against an unchanged tree is byte-
+   identical. Commit the refreshed baseline alongside the source
+   change — a baseline-only PR is a smell.
+
+### Worked examples
+
+**Legitimate dependency-upgrade bump (accepted).** An Epic upgrades
+the API's auth library from `lucia@2` to a v3 release whose
+bundle ships an extra 4 KiB gzipped of compatibility shims. The
+operator:
+
+- Lands the upgrade and runs `pnpm run bundle-size:check`. It
+  fails: `apps/api worker: 322.10 KiB gzipped (budget 320.00 KiB,
+  Δ=+2.10 KiB)`.
+- Verifies the increase is genuine (tree-shaking confirmed; no
+  duplicate copies on the dep graph).
+- Edits `.size-limit.json`:
+  - `gzippedKb` raised from `320` to `325` (5 KiB headroom for
+    future minor revisions of the same dep — keeps successive
+    `lucia` patch releases off the gate).
+  - `rationale` updated: `"lucia v3 compatibility shims add ~4 KiB
+    gzipped vs v2; tree-shaking verified; alternative considered:
+    pin to v2 — rejected because v2 ships no security patches
+    after 2026-04"`.
+  - `lastRevised` updated to today's date.
+- Runs `pnpm run bundle-size:update` and commits both files in the
+  same PR. The script accepts the bump because both `rationale`
+  and `lastRevised` are present and updated on the same row.
+
+**Accidental regression bump (rejected).** A PR raises
+`gzippedKb` from `320` to `350` on `.size-limit.json` to clear a
+red CI step but does **not** update `rationale` or `lastRevised`.
+
+- `pnpm run bundle-size:check` fails with
+  `[bundle-size-baseline] ❌ bundle budget raised without paired
+  rationale update — apps/api worker: budget 320.00 → 350.00 KiB
+  (missing 'rationale' and 'lastRevised')`.
+- The script refuses the bump even though `350 KiB < 1024 KiB`
+  (well under the Worker cap). The rationale-paired check is the
+  per-bundle changelog enforcement; ADR-014 treats an unpaired
+  bump as silently raising the regression bar over time.
+- Remediation: revert the budget change, do the work to drop the
+  size delta, and either land the source fix (no `.size-limit.json`
+  change needed) or land a real bump-with-rationale per the
+  worked example above.
+
+### Hand-edit rejection rule
+
+`baselines/bundle-size.json` is **not** a hand-edited file.
+Reviewers MUST reject any PR that hand-edits the snapshot — the
+only path to update it is to re-run
+`pnpm run bundle-size:update`. The script's serialiser sorts
+keys, sorts rows by `bundle`, and emits a trailing newline so
+byte-identical re-emission is the invariant.
+
+`.size-limit.json`, by contrast, **is** a hand-edited file — it is
+the per-bundle budget + changelog source of truth. The script
+guarantees the file is valid JSON shaped as an array; reviewers
+guarantee the `rationale` content is meaningful and the bump
+ordering (ADR-014) was respected.
+
+### Runbook
+
+1. **You ran `pnpm run bundle-size:check` and it failed.** Read
+   the stderr listing — the rejection string names whether the
+   failure was the 1 MiB Worker cap, a per-bundle budget, or an
+   unpaired bump. Walk the revision procedure above starting at
+   step 2.
+2. **The Worker is at 90%+ of the cap (warning only).** Plan a
+   Worker-split Story now — do not wait for the next dep upgrade
+   to push the build over the cliff. The warning is the script
+   telling you the buffer is gone.
+3. **A new bundle was added to `.size-limit.json`.** The first
+   `:check` against a newly-declared bundle has no prior baseline
+   row to compare against; the rationale-paired check skips it.
+   Run `pnpm run bundle-size:update` to prime the row.
+4. **A bundle file does not exist on disk yet** (pre-build state,
+   as `apps/api` sits today before the wrangler build target
+   lands). The script gracefully no-ops the missing row — the
+   gate stays a pass and emits a stdout hint to run
+   `pnpm run build && pnpm run bundle-size:update` once the build
+   target lands. This is the state the freshly-committed
+   [`baselines/bundle-size.json`](../baselines/bundle-size.json)
+   ships in.
+5. **`baselines/bundle-size.json` diverges from current
+   measurements but `:check` passes.** That is fine — the
+   baseline file is informational on the read side. The gate is
+   keyed off `.size-limit.json` budgets, not off baseline drift.
+   Run `pnpm run bundle-size:update` to refresh the snapshot when
+   you want the committed file to reflect current reality.
+
 ## Local quality gate (`quality:ci-local`)
 
 `pnpm run quality:ci-local` is the **local mirror** of the
@@ -158,6 +730,101 @@ during iteration, not parity with CI.
 gates `quality.yml` runs and is intentionally slower. The two scripts
 coexist: iterate with `quality:preview`, then run `quality:ci-local`
 before push to catch anything the diff-narrowed view missed.
+
+## Supply-chain CVE remediation via `pnpm.overrides` {#pnpm-overrides-remediation-pattern}
+
+When `scripts/audit-check.mjs` blocks on a High or Critical advisory in a
+transitive dependency, the remediation hierarchy is fixed by
+[ADR-011](decisions.md#adr-011--supply-chain-cve-gate-is-a-required-check):
+**lift the floor of the vulnerable package via `pnpm.overrides`** when an
+upstream patched version exists. The allow-list (`IGNORED` map in
+`scripts/audit-check.mjs`) is the fallback for the rare advisory with no
+upstream patch and a documented unreachability argument — not the default
+lever.
+
+> **Reviewer rejection criterion.** Allow-list-first solutions when an
+> upstream patch exists are rejected. The PR must add a `pnpm.overrides`
+> entry pinning the patched floor; an `IGNORED` entry alongside an
+> available patch is a review block, not a discussion.
+
+### Four-step walkthrough
+
+The worked example below uses a placeholder advisory ID
+(`GHSA-xxxx-xxxx-xxxx`) and a hypothetical transitive dependency
+(`vulnerable-pkg`). Substitute the real values from `pnpm audit --json`
+output and the GitHub advisory page when remediating an actual finding.
+
+#### 1. `audit-check` fails
+
+`pnpm run audit:check` (CI's `supply-chain-security` job, mirrored
+locally) exits non-zero with a blocking finding:
+
+```text
+BLOCKING High/Critical advisories (1):
+  - GHSA-xxxx-xxxx-xxxx (vulnerable-pkg) severity=high
+    Prototype pollution in vulnerable-pkg <1.4.2
+    https://github.com/advisories/GHSA-xxxx-xxxx-xxxx
+
+Remediate via `pnpm.overrides` in package.json (preferred per ADR-011) or,
+when no upstream patch exists and a documented unreachability argument
+applies, add an IGNORED entry with `reason` + future `revisit` date.
+```
+
+#### 2. Identify the upstream patched version
+
+Open the advisory page (`https://github.com/advisories/GHSA-xxxx-xxxx-xxxx`)
+and read the **Patched versions** field. If a fixed release exists (for
+this example, `>=1.4.2`), continue to step 3 — overrides are the correct
+lever. If no patch exists, the allow-list path applies; document the
+unreachability argument in an `IGNORED` entry per ADR-011 and stop here.
+
+Confirm the patched version range is compatible with the project's
+declared range for that dependency (or any first-party consumers). A
+floor bump that breaks a peer-dep constraint requires a coordinated
+upgrade, not an override.
+
+#### 3. Add the `overrides` entry
+
+Edit the root `package.json` and add the override under the top-level
+`pnpm.overrides` key. The version specifier pins the **minimum** patched
+floor — pnpm resolves the highest version in the range that satisfies all
+consumers, so a `>=` specifier is preferred over a pinned exact version
+unless a known regression rules out a later release.
+
+```jsonc
+{
+  "name": "athportal",
+  "private": true,
+  "pnpm": {
+    "overrides": {
+      // GHSA-xxxx-xxxx-xxxx — prototype pollution in vulnerable-pkg <1.4.2
+      "vulnerable-pkg": ">=1.4.2"
+    }
+  }
+}
+```
+
+#### 4. Pair the override with the audit-finding ID
+
+Every `pnpm.overrides` entry MUST carry a paired comment naming the
+advisory ID that justifies the pin. Without the comment, the override
+reads as a stylistic preference and the next reviewer cannot tell whether
+removing it is safe. The comment is the hygiene artifact ADR-011 calls
+out — `git blame` on the line lands on the PR that introduced the
+finding, and the GHSA URL is one click away.
+
+Comment placement: directly above the override entry, inside the
+`pnpm.overrides` block, in the format
+`// GHSA-xxxx-xxxx-xxxx — <short advisory title>`. JSONC tolerates
+single-line comments inside `package.json` for pnpm-managed workspaces;
+if the file is strict JSON, move the same metadata into an adjacent
+`docs/decisions.md` entry that the override references by commit SHA.
+
+After saving, re-run `pnpm install` to refresh the lockfile and
+`pnpm run audit:check` to confirm the finding clears. Commit the
+`package.json` change, the lockfile update, and (if applicable) any
+documentation cross-reference in a single commit so reviewers see the
+override and the cleared advisory together.
 
 ## How to add a new step
 

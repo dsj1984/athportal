@@ -41,6 +41,9 @@ jest-results.txt
 test-full-output.log
 test-results.json
 
+# Supply-chain audit artifact (regenerated per CI run, uploaded as a 14-day workflow artifact per ADR-011)
+audit.json
+
 # Stryker (mutation testing)
 **/reports/mutation/
 **/stryker-setup-*.js
