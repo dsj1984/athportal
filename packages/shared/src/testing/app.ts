@@ -29,20 +29,19 @@
 
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import { Hono } from 'hono';
-import type { TestDb } from './db';
 
 /**
  * Structural shape of any better-sqlite3 Drizzle handle this harness
- * accepts. The legacy callers pass `TestDb` (the example test schema);
- * the test-auth seam in Story #342 / Task #357 passes a production-
- * schema handle (`{ users }` from `@repo/shared/db/schema`). Both are
- * `BetterSQLite3Database<TSchema>` for some `TSchema` — `TestDbLike`
- * unifies the two without forcing a single schema. `c.var.db` is only
- * read by downstream middleware, which narrows it structurally per the
- * `InternalUserDb` pattern in `apps/api/src/middleware/auth.ts`.
+ * accepts. The legacy callers pass `TestDb` (the example test schema
+ * from `./db`); the test-auth seam in Story #342 / Task #357 passes a
+ * production-schema handle (`{ users }` from `@repo/shared/db/schema`).
+ * Both are `BetterSQLite3Database<TSchema>` for some `TSchema` —
+ * `TestDbLike` unifies the two without forcing a single schema.
+ * `c.var.db` is only read by downstream middleware, which narrows it
+ * structurally per the `InternalUserDb` pattern in
+ * `apps/api/src/middleware/auth.ts`.
  */
-// biome-ignore lint/suspicious/noExplicitAny: schema generic intentionally widened
-export type TestDbLike = BetterSQLite3Database<any>;
+export type TestDbLike = BetterSQLite3Database<Record<string, unknown>>;
 
 /**
  * Canonical `AuthContext` shape mirrored from
