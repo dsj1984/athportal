@@ -123,6 +123,9 @@ importers:
       '@repo/config':
         specifier: workspace:*
         version: link:../../packages/config
+      '@repo/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       playwright-bdd:
         specifier: ^8.5.1
         version: 8.5.1(@playwright/test@1.60.0)

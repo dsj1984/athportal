@@ -1,4 +1,3 @@
-@pending
 Feature: Exceeding an observability vendor cost ceiling alerts the operator
 
   AC-5 requires that every observability vendor has a documented monthly

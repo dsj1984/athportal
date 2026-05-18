@@ -1,4 +1,3 @@
-@pending
 Feature: API request-completion logging reaches the operator sink
 
   Every request to the Workers API emits one structured completion event

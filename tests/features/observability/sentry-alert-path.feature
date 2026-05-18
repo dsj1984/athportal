@@ -1,4 +1,3 @@
-@pending
 Feature: Unhandled errors page the operator with a Sentry permalink
 
   An unhandled exception in any of the three runtimes raises a Sentry

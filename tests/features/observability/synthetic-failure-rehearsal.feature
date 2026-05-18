@@ -1,4 +1,3 @@
-@pending
 Feature: Operator rehearses the alert pipeline with a synthetic failure
 
   The synthetic-failure rehearsal lets the operator prove the alert path
