@@ -8,6 +8,7 @@
   "prHourlyLimit": 4,
   "lockFileMaintenance": {
     "enabled": true,
+    "automerge": true,
     "schedule": ["before 9am on monday"]
   },
   "vulnerabilityAlerts": {
