@@ -23,7 +23,5 @@ const { Then } = createBdd();
  * visible whose accessible name names the refusal.
  */
 Then('I see the last-admin refusal banner', async ({ page }) => {
-  await expect(
-    page.getByRole('alert', { name: /last (remaining )?admin/i }),
-  ).toBeVisible();
+  await expect(page.getByRole('alert', { name: /last (remaining )?admin/i })).toBeVisible();
 });

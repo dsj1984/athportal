@@ -15,12 +15,24 @@ import eslint from '@eslint/js';
 import prettier from 'eslint-config-prettier';
 import tseslint from 'typescript-eslint';
 
+// Mirror biome.json's ignore set so the two linters never disagree about
+// what is "the codebase" — Story #374 widened both at once. When `eslint .`
+// runs from a workspace dir (post-Story #374 `lint` scripts), these globs
+// keep generated output (dist, .turbo, .bdd-gen, test-results, coverage)
+// and managed external trees (.agents submodule, .worktrees) out of scope.
 const ignores = {
   ignores: [
     '**/dist/**',
     '**/.turbo/**',
+    '**/.bdd-gen/**',
+    '**/test-results/**',
     '**/node_modules/**',
+    '**/coverage/**',
     '.agents/**',
+    '.worktrees/**',
+    '.stryker-tmp/**',
+    'reports/**',
+    'temp/**',
     'scripts/__fixtures__/**',
   ],
 };
@@ -140,19 +152,23 @@ export const sharedConfig = [
 // apps/api/__testing__/ overlay above.
 export const toolingConfig = [
   {
+    // Globs use `**/` prefixes so they match the same files whether
+    // ESLint runs from the repo root (`pnpm run lint:js`) or from a
+    // workspace cwd (per-workspace `lint` scripts post-Story #374).
+    // Flat-config `files` is matched against the file path as ESLint
+    // sees it, which is cwd-relative — anchored-from-root globs miss
+    // when cwd is the workspace dir.
     files: [
-      'vitest.config.ts',
-      'vitest.workspace.ts',
-      'knip.config.ts',
-      'apps/api/vitest.config.ts',
-      'apps/web/vitest.config.ts',
-      'apps/web/playwright.config.ts',
-      'apps/web/astro.config.ts',
-      'apps/web/e2e/**/*.{ts,tsx}',
-      'apps/mobile/app.config.ts',
-      'packages/baselines/vitest.config.ts',
-      'packages/shared/vitest.config.ts',
-      'packages/shared/drizzle.config.ts',
+      '**/vitest.config.ts',
+      '**/vitest.workspace.ts',
+      '**/vitest.base.ts',
+      '**/vitest.contract.ts',
+      '**/playwright.config.ts',
+      '**/astro.config.ts',
+      '**/app.config.ts',
+      '**/drizzle.config.ts',
+      '**/knip.config.ts',
+      '**/e2e/**/*.{ts,tsx}',
     ],
     languageOptions: {
       parserOptions: {

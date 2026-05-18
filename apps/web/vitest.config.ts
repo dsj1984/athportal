@@ -1,5 +1,5 @@
-import { defineConfig, mergeConfig } from 'vitest/config';
 import { vitestBaseConfig } from '@repo/config/vitest-base';
+import { defineConfig, mergeConfig } from 'vitest/config';
 
 /**
  * apps/web Vitest config — declares both `web-unit` and `web-contract`
@@ -22,11 +22,7 @@ export default mergeConfig(
             environment: 'node',
             globals: false,
             include: ['src/**/*.test.{ts,tsx}'],
-            exclude: [
-              '**/*.contract.test.{ts,tsx}',
-              '**/dist/**',
-              '**/node_modules/**',
-            ],
+            exclude: ['**/*.contract.test.{ts,tsx}', '**/dist/**', '**/node_modules/**'],
           },
         },
         {

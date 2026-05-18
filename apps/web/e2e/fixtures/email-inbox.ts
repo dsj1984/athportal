@@ -14,11 +14,7 @@
  * state never leaks between scenarios.
  */
 
-export type EmailVendor =
-  | 'sentry'
-  | 'better-stack-uptime'
-  | 'better-stack-logs'
-  | 'sentry-billing';
+export type EmailVendor = 'sentry' | 'better-stack-uptime' | 'better-stack-logs' | 'sentry-billing';
 
 export interface EmailRecord {
   /** The vendor that synthesised the alert. */

@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "lint": "pnpm exec biome check src && pnpm exec eslint src",
+    "lint": "pnpm exec biome check . && pnpm exec eslint .",
     "typecheck": "pnpm exec tsc --noEmit -p tsconfig.json",
     "test": "pnpm exec vitest run",
     "test:e2e": "pnpm exec bddgen && pnpm exec playwright test",

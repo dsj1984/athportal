@@ -22,7 +22,7 @@
     }
   },
   "scripts": {
-    "lint": "pnpm exec biome check src && pnpm exec eslint src",
+    "lint": "pnpm exec biome check . && pnpm exec eslint .",
     "typecheck": "pnpm exec tsc --noEmit -p tsconfig.json",
     "test": "pnpm exec vitest run",
     "build": "exit 0"

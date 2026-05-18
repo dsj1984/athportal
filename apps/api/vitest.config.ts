@@ -1,5 +1,5 @@
-import { defineConfig, mergeConfig } from 'vitest/config';
 import { vitestBaseConfig } from '@repo/config/vitest-base';
+import { defineConfig, mergeConfig } from 'vitest/config';
 
 /**
  * apps/api Vitest config — declares both `api-unit` and `api-contract`
@@ -18,11 +18,7 @@ export default mergeConfig(
             environment: 'node',
             globals: false,
             include: ['src/**/*.test.{ts,tsx}'],
-            exclude: [
-              '**/*.contract.test.{ts,tsx}',
-              '**/dist/**',
-              '**/node_modules/**',
-            ],
+            exclude: ['**/*.contract.test.{ts,tsx}', '**/dist/**', '**/node_modules/**'],
           },
         },
         {

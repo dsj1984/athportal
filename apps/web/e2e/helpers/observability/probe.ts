@@ -17,7 +17,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { emailInbox, type EmailRecord } from '../../fixtures/email-inbox';
+import { type EmailRecord, emailInbox } from '../../fixtures/email-inbox';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..', '..', '..', '..', '..');

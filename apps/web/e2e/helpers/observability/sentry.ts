@@ -86,7 +86,7 @@ function readSyntheticFailureGateExpectedValue(): string {
   if (!match) {
     throw new Error(
       `Could not locate the synthetic-failure gate-comparison literal in ${routePath}. ` +
-        'The route\'s gate check shape has changed; update this helper to match.',
+        "The route's gate check shape has changed; update this helper to match.",
     );
   }
   return match[1];
@@ -144,13 +144,7 @@ export interface SourcemapGuardResult {
 export function simulateSourcemapUploadGuard(
   sentryAuthToken: string | undefined,
 ): SourcemapGuardResult {
-  const actionPath = path.join(
-    REPO_ROOT,
-    '.github',
-    'actions',
-    'sourcemap-upload',
-    'action.yml',
-  );
+  const actionPath = path.join(REPO_ROOT, '.github', 'actions', 'sourcemap-upload', 'action.yml');
   const source = fs.readFileSync(actionPath, 'utf8');
 
   const tokenCheckRegex = /\[ -z "\$SENTRY_AUTH_TOKEN" \]/;
