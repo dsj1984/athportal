@@ -14,6 +14,7 @@
     "vitest": "^4.1.6"
   },
   "dependencies": {
+    "@repo/shared": "workspace:*",
     "@sentry/cloudflare": "^10.53.1",
     "hono": "^4.6.13"
   }
