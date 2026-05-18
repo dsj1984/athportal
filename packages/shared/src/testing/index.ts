@@ -26,6 +26,7 @@ export {
   type CreateTestAppOptions,
   type TestApp,
   type TestAppBindings,
+  type TestDbLike,
 } from './app';
 export {
   resources,
