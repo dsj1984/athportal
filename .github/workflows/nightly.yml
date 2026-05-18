@@ -51,7 +51,7 @@ jobs:
         with:
           name: cucumber-full
           path: apps/web/test-results/cucumber.json
-          if-no-files-found: warn
+          if-no-files-found: error
 
   mutation-baseline:
     name: Stryker mutation + per-workspace baseline (unit tier)
@@ -99,7 +99,7 @@ jobs:
         with:
           name: mutation-report
           path: reports/mutation/mutation.html
-          if-no-files-found: warn
+          if-no-files-found: error
 
       - name: Upload mutation JSON report + check log
         if: always()
@@ -110,7 +110,7 @@ jobs:
             reports/mutation/mutation.json
             reports/mutation/mutation-check.log
           retention-days: 14
-          if-no-files-found: warn
+          if-no-files-found: error
 
       - name: Post regression summary to the nightly-report issue
         if: failure() && steps.mutation-check.outcome == 'failure' && vars.NIGHTLY_REPORT_ISSUE != ''
@@ -181,7 +181,7 @@ jobs:
           name: lighthouse-report
           path: reports/lighthouse/
           retention-days: 14
-          if-no-files-found: warn
+          if-no-files-found: error
 
       - name: Post regression summary to the nightly-report issue
         if: failure() && vars.NIGHTLY_REPORT_ISSUE != ''
