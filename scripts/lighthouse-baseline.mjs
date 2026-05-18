@@ -269,8 +269,7 @@ async function modeUpdate({ previewUrl, routes }) {
 async function modeCheck({ previewUrl, routes }) {
   const { compareWithTolerance, formatRejectionMessage, readBaseline } = await loadHarness();
   const prev = readBaseline(BASELINE_PATH, 'lighthouse');
-  const targetRoutes =
-    routes && routes.length > 0 ? routes : prev.rows.map((r) => r.route);
+  const targetRoutes = routes && routes.length > 0 ? routes : prev.rows.map((r) => r.route);
   if (targetRoutes.length === 0) {
     process.stderr.write(
       '[lighthouse-baseline] baseline is unprimed (rows[] empty). Run `pnpm run lighthouse:update` against the preview deployment before invoking --check.\n',

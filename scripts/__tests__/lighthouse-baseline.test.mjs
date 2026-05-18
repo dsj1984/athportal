@@ -132,7 +132,12 @@ describe('lighthouse-baseline MVP floor enforcement', () => {
       { route: '/', performance: 84, accessibility: 99, bestPractices: 100, seo: 100 },
     ]);
     expect(violations).toHaveLength(1);
-    expect(violations[0]).toMatchObject({ route: '/', metric: 'performance', observed: 84, floor: 85 });
+    expect(violations[0]).toMatchObject({
+      route: '/',
+      metric: 'performance',
+      observed: 84,
+      floor: 85,
+    });
   });
 
   it('flags accessibility below 95', () => {
@@ -149,7 +154,13 @@ describe('lighthouse-baseline MVP floor enforcement', () => {
 
   it('flags seo below 95', () => {
     const violations = detectFloorViolations([
-      { route: '/athletes/[slug]', performance: 90, accessibility: 100, bestPractices: 100, seo: 70 },
+      {
+        route: '/athletes/[slug]',
+        performance: 90,
+        accessibility: 100,
+        bestPractices: 100,
+        seo: 70,
+      },
     ]);
     expect(violations).toContainEqual({
       route: '/athletes/[slug]',
@@ -229,9 +240,21 @@ describe('lighthouse-baseline envelope construction', () => {
   it('sorts rows by route lexicographically for byte-stable serialisation', () => {
     const env = buildEnvelope(
       [
-        { route: '/teams/[slug]', performance: 90, accessibility: 100, bestPractices: 100, seo: 100 },
+        {
+          route: '/teams/[slug]',
+          performance: 90,
+          accessibility: 100,
+          bestPractices: 100,
+          seo: 100,
+        },
         { route: '/', performance: 92, accessibility: 100, bestPractices: 100, seo: 100 },
-        { route: '/athletes/[slug]', performance: 91, accessibility: 100, bestPractices: 100, seo: 100 },
+        {
+          route: '/athletes/[slug]',
+          performance: 91,
+          accessibility: 100,
+          bestPractices: 100,
+          seo: 100,
+        },
       ],
       new Date('2026-05-17T00:00:00.000Z'),
     );
@@ -261,7 +284,7 @@ describe('lighthouse-baseline default routes', () => {
     expect(DEFAULT_ROUTES).toEqual(['/', '/athletes/[slug]', '/teams/[slug]']);
   });
 
-  it("the committed baselines/lighthouse.json rows[] match DEFAULT_ROUTES", () => {
+  it('the committed baselines/lighthouse.json rows[] match DEFAULT_ROUTES', () => {
     const doc = loadBaselineJson();
     expect(doc.rows.map((r) => r.route).sort()).toEqual([...DEFAULT_ROUTES].sort());
   });
