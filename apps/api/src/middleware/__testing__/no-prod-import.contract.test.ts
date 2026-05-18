@@ -56,7 +56,8 @@ const PROD_ENTRY_POINTS = [
  * The pattern is intentionally generous on whitespace and quote style
  * so cosmetic reformats do not weaken the guard.
  */
-const FORBIDDEN_IMPORT = /(?:import\s*(?:[\s\S]*?from\s*)?|import\s*\(\s*|require\s*\(\s*)['"][^'"]*__testing__[^'"]*['"]/g;
+const FORBIDDEN_IMPORT =
+  /(?:import\s*(?:[\s\S]*?from\s*)?|import\s*\(\s*|require\s*\(\s*)['"][^'"]*__testing__[^'"]*['"]/g;
 
 function scanForForbiddenImports(absolutePath: string): string[] {
   const source = readFileSync(absolutePath, 'utf8');

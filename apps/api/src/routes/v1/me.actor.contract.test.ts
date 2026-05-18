@@ -32,6 +32,7 @@ import { users } from '@repo/shared/db/schema';
 import { type AuthContext, createTestApp } from '@repo/shared/testing';
 import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
+import type { Hono } from 'hono';
 import { describe, expect, it } from 'vitest';
 import { type RequireInternalUserEnv, requireInternalUser } from '../../middleware/auth';
 import { meRoute } from './me';
@@ -138,9 +139,7 @@ describe('createTestApp({ actor }) drives GET /api/v1/me for each persona', () =
       // We cast to `RequireInternalUserEnv` at the `.use` boundary so
       // the middleware mounts cleanly without leaking the cross-package
       // env type into the public shared API.
-      const app = createTestApp(db, { actor }) as unknown as import('hono').Hono<
-        RequireInternalUserEnv
-      >;
+      const app = createTestApp(db, { actor }) as unknown as Hono<RequireInternalUserEnv>;
       app.use('/api/v1/*', requireInternalUser());
       app.route('/api/v1/me', meRoute);
 
@@ -185,9 +184,7 @@ describe('createTestApp({ actor }) drives GET /api/v1/me for each persona', () =
       orgId: null,
       teamId: null,
     };
-    const app = createTestApp(db, { actor }) as unknown as import('hono').Hono<
-      RequireInternalUserEnv
-    >;
+    const app = createTestApp(db, { actor }) as unknown as Hono<RequireInternalUserEnv>;
     app.use('/api/v1/*', requireInternalUser());
     app.route('/api/v1/me', meRoute);
 
