@@ -43,7 +43,6 @@ signOutRoute.post('/', (c) => {
   // the response; we add an explicit event so the operator can grep
   // for sign-outs by Clerk subject. PII (email) is intentionally
   // omitted — the subject id is opaque and not PII.
-  // biome-ignore lint/suspicious/noConsole: audit event, scrubbed by redactor.
   console.info(
     JSON.stringify({
       event: 'auth.sign_out',

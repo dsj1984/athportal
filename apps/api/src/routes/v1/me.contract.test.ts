@@ -6,11 +6,11 @@
 // the auth chain. Anonymous callers receive 401; authenticated callers
 // receive `{ success: true, data: { userId, role, ... } }`.
 
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { users } from '@repo/shared/db/schema';
 import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { Hono } from 'hono';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 

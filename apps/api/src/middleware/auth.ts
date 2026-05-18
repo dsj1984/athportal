@@ -186,14 +186,13 @@ export type RequireInternalUserEnv = {
  *
  * The middleware does not pin a single driver — `better-sqlite3` in
  * contract tests vs `@libsql/client` in production — so the handle is
- * carried as an opaque type at the boundary and casts to the
- * driver-specific builder happen inside `lookupBySubject` /
- * `insertIfAbsent`. Production wiring (the libSQL adapter for Cloudflare
- * Workers) lands with the API-shell Story; this Task only ships the
- * middleware that consumes whatever handle the upstream provides.
+ * carried as `unknown` at the boundary and narrowed structurally in
+ * `lookupBySubject` / `insertIfAbsent`. Production wiring (the libSQL
+ * adapter for Cloudflare Workers) lands with the API-shell Story; this
+ * Task only ships the middleware that consumes whatever handle the
+ * upstream provides.
  */
-// biome-ignore lint/suspicious/noExplicitAny: see comment above.
-export type InternalUserDb = any;
+export type InternalUserDb = unknown;
 
 /**
  * Defaults used when JIT-inserting a never-before-seen Clerk subject.
@@ -277,7 +276,7 @@ export function requireInternalUser(): MiddlewareHandler<RequireInternalUserEnv>
       return c.json(unauthenticated('Authentication required.'), 401);
     }
 
-    const db = c.get('db') as unknown as InternalUserDb | undefined;
+    const db: InternalUserDb = c.get('db');
     if (!db) {
       // Misconfiguration — DB binding missing. Surface 401 (never echo
       // internal config state).
@@ -319,15 +318,17 @@ function lookupBySubject(
   db: InternalUserDb,
   clerkSubjectId: string,
 ): typeof users.$inferSelect | null {
-  // biome-ignore lint/suspicious/noExplicitAny: structural Drizzle handle —
-  // the middleware accepts any Drizzle SQLite flavour (better-sqlite3 in
-  // tests, @libsql/client in production), so its query-builder type is
-  // bridged structurally.
-  const rows = (db.select as any)()
+  // The middleware accepts any Drizzle SQLite flavour (better-sqlite3 in
+  // tests, @libsql/client in production), so the query builder is bridged
+  // structurally through `InternalUserDb` (typed as `unknown`) and
+  // narrowed inline.
+  const handle = db as { select: () => DrizzleSelectChain };
+  const rows = handle
+    .select()
     .from(users)
     .where(eq(users.clerkSubjectId, clerkSubjectId))
     .limit(1)
-    .all() as Array<typeof users.$inferSelect>;
+    .all();
   return rows[0] ?? null;
 }
 
@@ -335,9 +336,9 @@ function insertIfAbsent(
   db: InternalUserDb,
   candidate: JitCandidate,
 ): typeof users.$inferSelect | null {
-  // biome-ignore lint/suspicious/noExplicitAny: see lookupBySubject — same
-  // structural-Drizzle bridge.
-  const inserted = (db.insert as any)(users)
+  const handle = db as { insert: (table: unknown) => DrizzleInsertChain };
+  const inserted = handle
+    .insert(users)
     .values({
       id: candidate.id,
       clerkSubjectId: candidate.clerkSubjectId,
@@ -347,8 +348,30 @@ function insertIfAbsent(
     })
     .onConflictDoNothing({ target: users.clerkSubjectId })
     .returning()
-    .all() as Array<typeof users.$inferSelect>;
+    .all();
   return inserted[0] ?? null;
+}
+
+/**
+ * Structural pieces of the Drizzle query builder this middleware
+ * consumes. Each step in the chain returns the next step's surface —
+ * we do not depend on the full Drizzle type surface (it diverges
+ * between SQLite flavours) but we do pin the shape we use.
+ */
+interface DrizzleSelectChain {
+  from: (table: unknown) => {
+    where: (predicate: unknown) => {
+      limit: (n: number) => { all: () => Array<typeof users.$inferSelect> };
+    };
+  };
+}
+
+interface DrizzleInsertChain {
+  values: (row: unknown) => {
+    onConflictDoNothing: (opts: { target: unknown }) => {
+      returning: () => { all: () => Array<typeof users.$inferSelect> };
+    };
+  };
 }
 
 // Re-export for callers that want to assert wire-shape invariants in

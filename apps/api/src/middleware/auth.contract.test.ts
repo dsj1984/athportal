@@ -25,12 +25,12 @@ vi.mock('@clerk/backend', () => ({
   verifyToken: vi.fn(),
 }));
 
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { verifyToken } from '@clerk/backend';
 import { users } from '@repo/shared/db/schema';
 import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import {
   type AuthContext,
   type ClerkAuthEnv,
@@ -105,7 +105,7 @@ describe('clerkAuth middleware', () => {
     );
 
     expect(res.status).toBe(401);
-    const body = await res.json();
+    const body = (await res.json()) as unknown;
     expect(body).toEqual({
       success: false,
       error: { code: 'UNAUTHENTICATED', message: 'Authentication required.' },
@@ -252,7 +252,7 @@ describe('requireInternalUser middleware', () => {
 
     const N = 8;
     const settled = await Promise.all(
-      Array.from({ length: N }, () => app.request('/echo', { method: 'GET' })),
+      Array.from({ length: N }, async () => app.request('/echo', { method: 'GET' })),
     );
 
     // All responses succeeded.
@@ -295,10 +295,8 @@ describe('requireInternalUser middleware', () => {
 
 // Tiny helper — keeps the parallel-first-touch test free of the
 // drizzle-orm import shuffle inline.
+import { eq } from 'drizzle-orm';
 function eqSubjectFilter(subject: string) {
-  // Imported locally to avoid hoisting Drizzle into the top-level
-  // import block where the mocked `verifyToken` lives.
-  const { eq } = require('drizzle-orm') as typeof import('drizzle-orm');
   return eq(users.clerkSubjectId, subject);
 }
 

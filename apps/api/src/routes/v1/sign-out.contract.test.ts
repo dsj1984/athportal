@@ -13,11 +13,11 @@
 // route is fine — Task #344's acceptance explicitly checks the cookie
 // clear behaviour.
 
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { users } from '@repo/shared/db/schema';
 import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { Hono } from 'hono';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
