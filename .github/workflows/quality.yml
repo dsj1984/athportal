@@ -8,6 +8,15 @@ on:
 permissions:
   contents: read
 
+# Cancel in-flight quality runs when a newer commit lands on the same PR (or
+# the same ref for non-PR triggers). The group key folds in
+# `github.event.pull_request.number` when the trigger is a pull request and
+# falls back to `github.ref` otherwise, so `main`-push runs are scoped per
+# ref and never self-cancel across unrelated commits.
+concurrency:
+  group: quality-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lint:
     name: Lint
