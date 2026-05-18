@@ -144,7 +144,7 @@ function round2(n) {
 }
 
 function normalisePath(p) {
-  return p.split(path.sep).join('/');
+  return p.split(/[\\/]/).join('/');
 }
 
 // ---------------------------------------------------------------------------
