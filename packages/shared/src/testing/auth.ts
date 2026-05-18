@@ -218,19 +218,23 @@ export interface StorageState {
  * pass the label through `resolvePersona(label).persona` first, or
  * call `signInAs` with the resolved key directly.
  */
-export async function signInAs(persona: Persona): Promise<StorageState> {
+export function signInAs(persona: Persona): Promise<StorageState> {
   if (persona === 'anonymous') {
-    return { cookies: [], origins: [] };
+    return Promise.resolve({ cookies: [], origins: [] });
   }
   if (!PERSONA_FIXTURES[persona]) {
-    throw new TypeError(
-      `signInAs: unknown persona ${JSON.stringify(persona)}. ` +
-        "Accepted personas: 'anonymous', 'athlete', 'coach', 'org-admin', 'dev-admin'.",
+    return Promise.reject(
+      new TypeError(
+        `signInAs: unknown persona ${JSON.stringify(persona)}. ` +
+          "Accepted personas: 'anonymous', 'athlete', 'coach', 'org-admin', 'dev-admin'.",
+      ),
     );
   }
-  throw new Error(
-    `signInAs(${JSON.stringify(persona)}): the acceptance-tier test-auth seam is currently deferred ` +
-      'pending the refactor to @clerk/testing/playwright (see GitHub Issue #371). ' +
-      "Only signInAs('anonymous') is implemented today.",
+  return Promise.reject(
+    new Error(
+      `signInAs(${JSON.stringify(persona)}): the acceptance-tier test-auth seam is currently deferred ` +
+        'pending the refactor to @clerk/testing/playwright (see GitHub Issue #371). ' +
+        "Only signInAs('anonymous') is implemented today.",
+    ),
   );
 }
