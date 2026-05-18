@@ -528,3 +528,13 @@ The mandrel framework default for this dimension targets the rollup `min` axis w
 - The 70 floor is a **policy floor**, not a calibration floor. Future kernel changes (e.g. a different MI variant, a different parser) bump `kernelVersion` on the envelope and may shift typical scores; the ADR floor stays at 70 unless a new ADR supersedes this one with a documented re-calibration argument.
 - Per-file scoring is the same kernel CRAP uses (`typhonjs-escomplex` with the `typescript: true` parse flag). Parse failures return `null` and the row is dropped from the envelope — a zero MI would be a phantom floor violation no source change can fix.
 - Cross-references: [`docs/patterns.md` § "Maintainability baseline ratchet"](./patterns.md#maintainability-baseline-ratchet) is the operator-facing refresh runbook; the [`.agents/schemas/baselines/maintainability.schema.json`](../.agents/schemas/baselines/maintainability.schema.json) schema description names the floor target (rollup `min`) explicitly and is the ported contract from mandrel; the [Epic #6 Tech Spec](https://github.com/dsj1984/athportal/issues/196) carries the dimension's harness rationale.
+
+---
+
+## Numbered ADR series under `docs/decisions/`
+
+New ADRs adopt a one-file-per-record layout under [`docs/decisions/`](./decisions/) with a leading four-digit sequence number. They sit alongside (not inside) the seed-set headings above; the seed set is preserved verbatim for historical continuity, while the numbered series is the writing surface for new decisions from Epic #5 onward.
+
+- [`0001-sentry-org-and-region.md`](./decisions/0001-sentry-org-and-region.md) — Sentry organization (`athportal`), EU (Frankfurt) data-residency region, and the three-project layout (workers / web / mobile) that Story #255's per-runtime init wrappers depend on. Builds on ADR-012 (observability vendor stack).
+- [`0002-log-sink-vendor.md`](./decisions/0002-log-sink-vendor.md) — Better Stack Logs as the managed log-sink vendor for the Cloudflare Logpush job declared in `apps/api/wrangler.toml` (Story #272). Three vendors evaluated (Better Stack Logs, Datadog Logs, Axiom) with per-GB pricing as of 2026-05-17; $30/month ceiling for the log sink alone; EU (Frankfurt) data-residency mirrors ADR-0001. Builds on ADR-012 (observability vendor stack).
+- [`0003-uptime-vendor.md`](./decisions/0003-uptime-vendor.md) — Better Stack as the external uptime-probe vendor (Story #254). Probes hosted on infrastructure independent of Cloudflare (AWS / Hetzner / GCP probe network); three monitors at 60-second cadence with two-consecutive-failure threshold; IaC at `infra/uptime/betterstack.yml`. Builds on ADR-012 (observability vendor stack).

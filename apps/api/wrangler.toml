@@ -1,0 +1,108 @@
+# Cloudflare Workers configuration for @repo/api.
+#
+# This file is intentionally minimal at MVP — the API workspace currently
+# exports only the scaffolded `apps/api/src/index.ts` and is not deployed
+# from here yet. Subsequent Stories add the Hono entrypoint, Analytics
+# Engine binding, and Logpush block called out in Tech Spec #246.
+#
+# Secrets policy (per .agents/rules/security-baseline.md § Secrets Management
+# and Skill: cloudflare-workers § 2.4):
+#   - Real secret values are NEVER committed to this file. They are set
+#     out-of-band with `wrangler secret put <NAME> --env <staging|production>`
+#     and stored encrypted in Cloudflare.
+#   - The `# required-secrets:` block below is the source of truth for
+#     which secrets MUST be set per-environment before deploy. Adding a
+#     secret to runtime code requires adding its name here in the same
+#     PR so operators have a single list to provision against.
+
+name = "athportal-api"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+
+# required-secrets (set via `wrangler secret put` per environment;
+# never committed with a value):
+#   - OBSERVABILITY_ALERT_EMAIL
+#       Single operator-email distribution list of record (ADR-012 §
+#       "Alerting channel"). Consumed by future Workers-side alert
+#       routing — every observability vendor in this Epic (Sentry,
+#       Better Stack uptime, the managed log sink) renders alert
+#       destinations from this single channel so the on-call rotation
+#       never requires application or IaC changes. The Better Stack IaC
+#       at infra/uptime/betterstack.yml already references the same
+#       env var name; the Workers-side reference is declared here so
+#       both apply paths name the same secret.
+#       Provision: `wrangler secret put OBSERVABILITY_ALERT_EMAIL --env staging`
+#                  `wrangler secret put OBSERVABILITY_ALERT_EMAIL --env production`
+#
+# optional-secrets (rehearsal-time only; default UNSET in every
+# environment, set transiently during the staging-only rehearsal
+# procedure and unset immediately after):
+#   - OBSERVABILITY_SYNTHETIC_FAILURE_ENABLED
+#       Gates the POST /api/v1/_debug/synthetic-failure endpoint
+#       (Story #275, Tech Spec #246 § "Synthetic-failure endpoint
+#       exposure surface"). The route returns 404 unless the value is
+#       the literal string `true`. The runbook procedure at
+#       docs/ops/observability-runbook.md § "Synthetic-failure
+#       rehearsal" is the only sanctioned path that flips this on, and
+#       it ALWAYS flips it off in the same operator session. The flag
+#       is set in **staging only** — production MUST leave it unset.
+#       Provision (staging-only, transient):
+#         `wrangler secret put OBSERVABILITY_SYNTHETIC_FAILURE_ENABLED --env staging`
+#       Disarm (mandatory final step of every rehearsal):
+#         `wrangler secret delete OBSERVABILITY_SYNTHETIC_FAILURE_ENABLED --env staging`
+
+# Analytics Engine binding consumed by the request-completion middleware
+# at apps/api/src/middleware/request-logger.ts (Story #257). Every
+# request handled by the Worker writes exactly one row into this dataset
+# via env.ANALYTICS.writeDataPoint — the structured-log + dashboard
+# surface named in ADR-012 § "Observability vendor stack".
+#
+# The dataset name is the same in staging and production so the Logpush
+# job below can target a single dataset regardless of which environment
+# emits the row; the per-environment routing is handled by the deploy
+# step that sets the Logpush destination URL.
+[[analytics_engine_datasets]]
+binding = "ANALYTICS"
+dataset = "athportal_request_log"
+
+# Logpush job that ships the athportal_request_log Analytics Engine
+# dataset to the managed log-sink vendor chosen in
+# docs/decisions/0002-log-sink-vendor.md. The destination URL is a
+# templated env var so no vendor endpoint is hardcoded in this file —
+# the deploy step at .github/workflows/deploy-{staging,production}.yml
+# renders the URL with the per-environment LOGPUSH_SINK_TOKEN secret
+# before invoking `wrangler deploy`. Format is NDJSON so the sink can
+# stream-parse one LogEvent per line without re-framing.
+#
+# The block intentionally references `${LOGPUSH_DESTINATION_URL}` rather
+# than a literal URL: vendor swaps (per ADR-0002's "vendor-substitution
+# is one Story" clause) only need to change the env-var rendering in
+# CI, never this file.
+[[logpush]]
+dataset = "athportal_request_log"
+destination = "${LOGPUSH_DESTINATION_URL}"
+format = "ndjson"
+
+[env.staging]
+name = "athportal-api-staging"
+
+[[env.staging.analytics_engine_datasets]]
+binding = "ANALYTICS"
+dataset = "athportal_request_log"
+
+[[env.staging.logpush]]
+dataset = "athportal_request_log"
+destination = "${LOGPUSH_DESTINATION_URL}"
+format = "ndjson"
+
+[env.production]
+name = "athportal-api-production"
+
+[[env.production.analytics_engine_datasets]]
+binding = "ANALYTICS"
+dataset = "athportal_request_log"
+
+[[env.production.logpush]]
+dataset = "athportal_request_log"
+destination = "${LOGPUSH_DESTINATION_URL}"
+format = "ndjson"
