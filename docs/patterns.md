@@ -229,6 +229,131 @@ hand-edit and must be reverted.
    a stale coverage report — delete each workspace's
    `coverage/` directory and rerun.
 
+## CRAP baseline ratchet
+
+The CRAP ratchet keeps every method's CRAP score **within 5% of its
+committed baseline value**. CRAP is `c² · (1 − cov)³ + c` where `c` is
+cyclomatic complexity and `cov` is the method's coverage ratio — a
+method that gets more branches without compensating coverage rises
+quickly, so the per-method ratchet catches "complexity grew, tests
+didn't" without a flat cap that would penalize disciplined complex
+code. It is a CI gate: a PR cannot raise any method's CRAP score by
+more than 5% without explicitly re-snapshotting the baseline. The 5%
+relative tolerance is the policy fixed in
+[ADR-018](decisions.md) — the script and this runbook move together
+with that ADR.
+
+### Files and entrypoints
+
+- [`scripts/crap-baseline.mjs`](../scripts/crap-baseline.mjs) — the
+  ratchet script. Pure Node ESM, no build step. Walks every JS/TS
+  source under `apps/*` and `packages/*` (skipping tests, fixtures,
+  build output, and ambient types), scores per-method CRAP via
+  [`typhonjs-escomplex`](https://github.com/typhonjs-node-escomplex/typhonjs-escomplex),
+  and rolls the per-row scores into the shared baseline-envelope shape
+  (`$schema`, `kernelVersion`, `generatedAt`, `rollup`, `rows`). Rows
+  are canonically sorted by `(path, startLine, method)` so successive
+  runs against an unchanged tree produce byte-identical JSON.
+- [`baselines/crap.json`](../baselines/crap.json) — the committed
+  snapshot. The single source of truth for "what CRAP score each
+  method is allowed to carry". Diffs against this file are the gate.
+  The shape is fixed by
+  [`.agents/schemas/baselines/crap.schema.json`](../.agents/schemas/baselines/crap.schema.json)
+  via the shared
+  [`baseline-envelope.schema.json`](../.agents/schemas/baselines/baseline-envelope.schema.json).
+- `pnpm run crap:check` — runs
+  `node scripts/crap-baseline.mjs --check`. Exits non-zero if any
+  method's CRAP score rose more than 5% above the prior baseline
+  value. The PR-blocking
+  [`crap-baseline` job in `quality.yml`](../.github/workflows/quality.yml)
+  is the CI binding.
+- `pnpm run crap:update` — runs
+  `node scripts/crap-baseline.mjs --update`. Regenerates
+  `baselines/crap.json` from the current tree.
+
+### Refresh procedure
+
+1. **Inspect the failure.** Run `pnpm run crap:check` and read the
+   stderr listing — it names every regressed method by
+   `path:startLine:method`, prints the prior and current CRAP scores,
+   and names the relative-5% tolerance the violation tripped.
+2. **Fix-first path.** The expected response to a regression is to
+   reduce the method's complexity (extract helpers, collapse branches)
+   or, when the coverage cross-link Epic lands, raise its statement
+   coverage. The script does not auto-suggest a remediation — the
+   reviewer is responsible for confirming the source change matches
+   the score movement.
+3. **Regenerate the baseline.** When the rise is intentional and
+   approved, run `pnpm run crap:update`. The script re-scans the tree,
+   recomputes per-method scores, and rewrites `baselines/crap.json` in
+   place. The output is byte-identical across runs against an
+   unchanged tree.
+4. **Inspect the diff.** Open `baselines/crap.json` against the prior
+   commit. Confirm every per-row movement is justified — a rise is a
+   regression and should not be re-baselined without an accompanying
+   source change. A drop is the happy path and should be committed so
+   the next contributor cannot quietly re-introduce the complexity.
+5. **Commit the snapshot alongside the source change.** Reviewers
+   should see *both* the source change and the baseline bump in the
+   same PR. A baseline-only PR is a smell — it means the floor moved
+   without a code reason.
+
+### Hand-edit rejection rule
+
+`baselines/crap.json` is **not** a hand-edited file. Reviewers MUST
+reject any PR that hand-edits the snapshot — the only path to update
+it is to re-run `pnpm run crap:update`. This mirrors the hand-edit
+rejection rule the other dimension runbooks (lint, coverage,
+maintainability, mutation, lighthouse, bundle-size) enforce.
+
+The script's serialiser sorts keys at every depth, sorts rows by
+`(path, startLine, method)`, and appends a trailing newline so
+byte-identical re-emission is the invariant — any commit that drifts
+the file off that shape is by definition a hand-edit and must be
+reverted.
+
+### Runbook
+
+1. **You ran `pnpm run crap:check` and it failed.** Read the stderr
+   listing — it names every regressed method, the prior score, the
+   current score, and the relative-5% policy that fired. The fix-first
+   path is to refactor the method (extract helpers, collapse branches)
+   so the score returns at or below the prior value.
+2. **The rise is intentional** (e.g. a new feature that legitimately
+   added branches and you accept the higher CRAP for now). Re-run
+   `pnpm run crap:update`, inspect the diff on `baselines/crap.json`
+   to confirm only the methods you expected to change actually
+   changed, and commit the snapshot alongside the source change.
+3. **A newly-added method.** The ratchet treats a new row (one whose
+   `path:startLine:method` identifier was absent from the prior
+   baseline) as a fresh registration. The harness's `relative-pct`
+   evaluator on a `lower-is-better` axis treats `prev = 0` plus any
+   `next > 0` as a fail, so a freshly-added method with non-zero CRAP
+   *does* fire the gate. Run `pnpm run crap:update` to register the
+   new method's baseline value alongside its introducing source
+   change.
+4. **A method moved (refactor changed its `startLine`).** The row
+   identifier embeds the start line, so a moved method appears as a
+   new row (with `prev = 0`) and the old row drops out. The new row
+   triggers the new-row case above. Run `pnpm run crap:update` in the
+   same PR as the move so reviewers see both halves of the rename.
+5. **Baseline is unprimed** (empty rows + zero rollup). The ratchet
+   skips the gate and prints a hint that the operator must run
+   `pnpm run crap:update` once to establish the floor. This is the
+   state the freshly-committed
+   [`baselines/crap.json`](../baselines/crap.json) ships in; the
+   first `--update` after this Story merges primes the real
+   measurements.
+6. **Parse failure on a source file.** The kernel returns an empty
+   row list for any file `typhonjs-escomplex` cannot parse, treating
+   it as unscorable rather than zero-complexity. If `crap:update`
+   reports fewer rows than expected, run the script with
+   `--scan-root=<workspace>` against a single workspace to narrow the
+   set, then inspect the offending file manually — the underlying
+   parser supports TypeScript via the babel-parser, so a persistent
+   parse failure usually indicates a syntactic experiment that
+   should not be on the main branch.
+
 ## Local quality gate (`quality:ci-local`)
 
 `pnpm run quality:ci-local` is the **local mirror** of the
