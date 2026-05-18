@@ -1083,7 +1083,7 @@ Scenario authoring constraints (cross-cutting with
   Reuse the canonical phrase verbatim; widen the persona table via a
   follow-up Story if a new role is genuinely needed.
 - The testing-token signing key follows the rotation runbook in
-  [§ _Authenticated test sessions (Clerk test instance)_](#authenticated-test-sessions-clerk-test-instance)
+  [§ *Authenticated test sessions (Clerk test instance)*](#authenticated-test-sessions-clerk-test-instance)
   above.
 
 ## How to add a new step

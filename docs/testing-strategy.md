@@ -334,7 +334,7 @@ reused verbatim — do not author a near-match.
   dev-only auth bypass; the seam targets a real Clerk **test instance**.
   An unknown label throws a `TypeError` listing the accepted spellings —
   scenario typos fail loudly. See
-  [`docs/patterns.md` § _Authenticated test sessions_](patterns.md#authenticated-test-sessions-clerk-test-instance)
+  [`docs/patterns.md` § *Authenticated test sessions*](patterns.md#authenticated-test-sessions-clerk-test-instance)
   for the persona ↔ role table and the testing-token rotation runbook.
 - **`Given I am not signed in`** — same file. Clears any session cookie
   planted by a prior step (or by a cached persona `storageState`) so the
