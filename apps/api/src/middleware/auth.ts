@@ -26,6 +26,7 @@ import { users } from '@repo/shared/db/schema';
 import { eq } from 'drizzle-orm';
 import type { MiddlewareHandler } from 'hono';
 import type { Env } from '../env';
+import type { DrizzleInsertChain, DrizzleSelectChain } from '../types/drizzle-structural';
 
 /**
  * Hono variable surface contributed by `clerkAuth`. The middleware only
@@ -322,7 +323,7 @@ function lookupBySubject(
   // tests, @libsql/client in production), so the query builder is bridged
   // structurally through `InternalUserDb` (typed as `unknown`) and
   // narrowed inline.
-  const handle = db as { select: () => DrizzleSelectChain };
+  const handle = db as { select: () => DrizzleSelectChain<typeof users.$inferSelect> };
   const rows = handle
     .select()
     .from(users)
@@ -336,7 +337,7 @@ function insertIfAbsent(
   db: InternalUserDb,
   candidate: JitCandidate,
 ): typeof users.$inferSelect | null {
-  const handle = db as { insert: (table: unknown) => DrizzleInsertChain };
+  const handle = db as { insert: (table: unknown) => DrizzleInsertChain<typeof users.$inferSelect> };
   const inserted = handle
     .insert(users)
     .values({
@@ -352,24 +353,3 @@ function insertIfAbsent(
   return inserted[0] ?? null;
 }
 
-/**
- * Structural pieces of the Drizzle query builder this middleware
- * consumes. Each step in the chain returns the next step's surface —
- * we do not depend on the full Drizzle type surface (it diverges
- * between SQLite flavours) but we do pin the shape we use.
- */
-interface DrizzleSelectChain {
-  from: (table: unknown) => {
-    where: (predicate: unknown) => {
-      limit: (n: number) => { all: () => Array<typeof users.$inferSelect> };
-    };
-  };
-}
-
-interface DrizzleInsertChain {
-  values: (row: unknown) => {
-    onConflictDoNothing: (opts: { target: unknown }) => {
-      returning: () => { all: () => Array<typeof users.$inferSelect> };
-    };
-  };
-}
