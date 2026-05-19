@@ -214,16 +214,45 @@ export type RequireInternalUserEnv = {
 type InternalUserDb = unknown;
 
 /**
- * Defaults used when JIT-inserting a never-before-seen Clerk subject.
- * Every user starts as a `member` (the no-privilege baseline role) and
- * un-onboarded (`onboarded_at` null) so the Astro middleware's
- * onboarding-redirect path engages on the next page load.
+ * Single source of truth for the JIT user-provisioning policy.
  *
- * Per `.agents/rules/security-baseline.md` — no fallback secrets, no
- * implicit role escalation. A newly provisioned user has nothing more
- * than the minimum required to render the onboarding flow.
+ * Consolidates the three previously-scattered defaults — baseline role,
+ * synthetic placeholder email format, and onboarding-timestamp seed —
+ * into one named constant so a future maintainer can read the JIT
+ * contract in one place rather than reconstructing it from a module-
+ * scope `JIT_DEFAULT_ROLE`, an inline template literal inside
+ * `buildJitCandidate`, and an implicit "null because the column is
+ * nullable" defaulting on `onboardedAt`.
+ *
+ * Fields:
+ *
+ *   - `role`            Baseline role for every newly provisioned user.
+ *                       `member` is the no-privilege baseline; per
+ *                       `.agents/rules/security-baseline.md` (Authorization,
+ *                       Forbidden Practices) there is no fallback secret,
+ *                       no implicit role escalation, and no client-asserted
+ *                       role on first-touch.
+ *   - `syntheticEmail`  Placeholder email written on first JIT insert.
+ *                       On first touch the middleware only has the opaque
+ *                       Clerk subject id; the real address is populated by
+ *                       the onboarding flow, which `UPDATE`s the row before
+ *                       it is ever exposed to a client. The value is
+ *                       internal and never logged (the redactor scrubs
+ *                       `email`).
+ *   - `onboardedAt`     `null` on insert so the Astro middleware's
+ *                       onboarding-redirect path engages on the next
+ *                       page load and the onboarding flow can stamp the
+ *                       timestamp itself.
+ *
+ * Frozen via `as const` so the literal types flow into `JitCandidate`
+ * and downstream tests, and so no caller can mutate the policy at
+ * runtime.
  */
-const JIT_DEFAULT_ROLE = 'member';
+const JIT_DEFAULTS = {
+  role: 'member',
+  syntheticEmail: (clerkSubjectId: string) => `${clerkSubjectId}@clerk-jit.invalid`,
+  onboardedAt: null,
+} as const;
 
 interface JitCandidate {
   readonly id: string;
@@ -241,12 +270,8 @@ function buildJitCandidate(clerkSubjectId: string): JitCandidate {
   return {
     id: `u_${crypto.randomUUID()}`,
     clerkSubjectId,
-    // Email is populated from Clerk by the onboarding flow; on first
-    // JIT we only have the opaque subject id, so we stamp a placeholder
-    // synthetic email that the onboarding update will overwrite. The
-    // value is internal — never logged (the redactor scrubs `email`).
-    email: `${clerkSubjectId}@clerk-jit.invalid`,
-    role: JIT_DEFAULT_ROLE,
+    email: JIT_DEFAULTS.syntheticEmail(clerkSubjectId),
+    role: JIT_DEFAULTS.role,
   };
 }
 
@@ -365,6 +390,7 @@ function insertIfAbsent(
       clerkSubjectId: candidate.clerkSubjectId,
       email: candidate.email,
       role: candidate.role,
+      onboardedAt: JIT_DEFAULTS.onboardedAt,
       // created_at / updated_at use schema defaults (unixepoch()).
     })
     .onConflictDoNothing({ target: users.clerkSubjectId })
