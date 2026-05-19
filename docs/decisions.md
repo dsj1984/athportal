@@ -581,3 +581,30 @@ New ADRs adopt a one-file-per-record layout under [`docs/decisions/`](./decision
 - [`0004-acceptance-email-capture.md`](./decisions/0004-acceptance-email-capture.md) — In-memory `EmailInbox` fixture (not a Mailpit container) as the email-capture mechanism for the Epic #5 observability acceptance scenarios (Story #307). Vendor emails originate from SaaS — fidelity is identical between the two designs, so the cheaper hermetic option wins. Builds on ADR-009 (BDD acceptance layer) and ADR-012 (observability vendor stack).
 - [`0005-dependency-update-posture.md`](./decisions/0005-dependency-update-posture.md) — Renovate (not Dependabot) as the scheduled dependency-update bot (Story #311). Weekly Monday window in `America/New_York`, vendor-family grouping, patch / minor auto-merge, major-version approval via the Dependency Dashboard, `vulnerabilityAlerts` running out-of-band. Builds on ADR-011 (supply-chain CVE gate) — Renovate proposes updates; the CVE gate decides whether they ship.
 - [`0006-local-hook-stack.md`](./decisions/0006-local-hook-stack.md) — Local hook stack v1: `knip` (strict, no baseline; `--include files,dependencies` at pre-push and full strict pass in CI), `markdownlint-cli2` (relaxed line-length and table-style; full repo at pre-push, staged at pre-commit), `secretlint` (pre-commit only — the four-channel secret-scanning boundary: gitleaks-pr on PR diff, gitleaks-history on post-merge full-history, trufflehog on nightly full-history, secretlint on pre-commit local), and the first `.husky/pre-push` (sequential `typecheck → lint → knip:fast → lint:baseline:check → lint:steps`, < 15 s wall-clock target). Story #310.
+
+---
+
+## Error-handling pattern: tagged-union now, framework-promote on trigger
+
+**Status**: Accepted (2026-05-19, Epic #386, Story #410)
+
+**Context**: `apps/api/src/routes/v1/users/role.ts` was carrying three single-use error classes (`LastAdminError`, `ForbiddenError`, `NotFoundError`) whose only consumer was the route's own catch block. The classes added ceremony without buying inheritance, polymorphism, or cross-route reuse — the catch site degenerated into an `instanceof` chain over a closed set of three options. Promoting these to a framework-wide `ApiError` base class plus a Hono `app.onError` middleware would be premature: there is exactly one route emitting them, and the canonical `{ success: false, error: { code, message } }` envelope from ADR-002 is already centralized in `@repo/shared/schemas`. Lifting machinery for a single call site would invert the cost curve — more abstraction surface than benefit.
+
+**Decision**:
+
+- **Today (this route only)**: collapse the three classes into a discriminated union `type RouteError = { code: 'LAST_ADMIN' } | { code: 'FORBIDDEN' } | { code: 'NOT_FOUND' }`. Throw sites emit `RouteError` values (wrapped via a small helper that attaches the tagged payload as `cause` on a plain `Error`); the catch site is an exhaustive `switch (err.code)` mapping each discriminant to the existing HTTP response. HTTP status codes and response bodies stay byte-identical — the refactor is internal-only and the existing contract tests pass unchanged.
+- **The three current codes** are `LAST_ADMIN`, `FORBIDDEN`, and `NOT_FOUND`. They map to `409`, `403`, and `404` respectively, preserving the prior class-based contract.
+- **Framework-promote trigger**: when the **next** route needing one of these conditions either (a) introduces a status code or error-envelope shape that does not fit the existing three codes, or (b) duplicates this catch-shape across a second route, **open a follow-up Epic** to lift `RouteError` to a shared `ApiError` base class in `packages/shared` (alongside the existing `@repo/shared/schemas` error envelope) and a Hono `app.onError` middleware in `apps/api/src/middleware/`. The middleware would centralize the `(code → HTTP status + body)` mapping so route handlers can throw a single typed error and let the platform render it.
+- **Until that trigger fires**, additional routes that need only the existing three codes MAY reuse the same tagged-union pattern locally (a duplicated `type RouteError` declaration in the new route's file is acceptable). The second occurrence is the signal to promote, not the first.
+
+**Consequences**:
+
+- The role-mutation route gains exhaustiveness from the TypeScript compiler — adding a fourth code without updating the switch is a type error, not a runtime fallthrough.
+- The route loses three class declarations and one `instanceof` chain in exchange for one type alias, one helper, and one switch. Net SLOC is lower and the catch site reads as a flat mapping.
+- No change to the public HTTP API surface. Contract tests in `apps/api/src/routes/v1/users/` continue to pin the wire shape, and the refactor is structurally invisible to clients.
+- The promotion landing zone (`packages/shared` for the `ApiError` base class, `apps/api/src/middleware/` for the `app.onError` middleware) is named here so the follow-up Epic has unambiguous targets when the trigger fires. The trigger condition is intentionally concrete (a new code or a second catch site, not a vague "when it feels like time") so the promotion decision is mechanical rather than judgemental.
+- This ADR complements ADR-002 (`withErrorHandler` middleware): ADR-002 governs the response envelope shape that the eventual `app.onError` middleware will produce; this ADR governs the in-route error-discrimination pattern that feeds it.
+
+**Rejected — lift `ApiError` to `packages/shared` now (no waiting trigger)**: Premature abstraction. With one route emitting three codes, the framework surface would carry zero callers beyond the prototype. The trigger condition above ensures the promotion happens when there is real cross-route demand, not on speculation.
+
+**Rejected — keep the three error classes**: The catch site was an `instanceof` chain over a closed set, which is the canonical signature for a discriminated union. The classes carried no behaviour beyond their constructor — they were tagged values masquerading as types.
