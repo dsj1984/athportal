@@ -205,6 +205,18 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Cache Playwright browsers
+        # Keyed on `pnpm-lock.yaml` so any Playwright version bump (which
+        # rewrites its lockfile entry) invalidates the cache and forces a
+        # fresh `playwright install`. Path matches Playwright's default
+        # browser cache on Linux runners.
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
       - name: Install Playwright browsers
         run: pnpm --filter @repo/web exec playwright install --with-deps chromium
 
