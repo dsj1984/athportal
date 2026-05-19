@@ -34,6 +34,7 @@ import type { Role } from '@repo/shared/rbac';
 import { and, eq, inArray, sql } from 'drizzle-orm';
 import { Hono } from 'hono';
 import type { RequireInternalUserEnv } from '../../../middleware/auth';
+import type { DrizzleSelectChain, DrizzleUpdateChain } from '../../../types/drizzle-structural';
 
 export const userRoleRoute = new Hono<RequireInternalUserEnv>();
 
@@ -77,29 +78,13 @@ function parseBody(payload: unknown): PatchRoleBody | null {
  * subset we use here.
  */
 interface TxHandle {
-  update: (table: unknown) => DrizzleUpdateChain;
-  select: (cols?: unknown) => DrizzleSelectChain;
-}
-
-interface DrizzleUpdateChain {
-  set: (values: Record<string, unknown>) => {
-    where: (predicate: unknown) => {
-      returning: () => { all: () => Array<typeof users.$inferSelect> };
-    };
-  };
-}
-
-interface DrizzleSelectChain {
-  from: (table: unknown) => {
-    where: (predicate: unknown) => {
-      all: () => Array<{ count: number }>;
-    };
-  };
+  update: (table: unknown) => DrizzleUpdateChain<typeof users.$inferSelect>;
+  select: (cols?: unknown) => DrizzleSelectChain<{ count: number }>;
 }
 
 interface TxDb {
   transaction: <T>(fn: (tx: TxHandle) => T) => T;
-  select: (cols?: unknown) => DrizzleSelectChain;
+  select: (cols?: unknown) => DrizzleSelectChain<{ count: number }>;
 }
 
 /**
