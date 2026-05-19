@@ -8,6 +8,15 @@ on:
 permissions:
   contents: read
 
+# Turborepo remote cache wiring. TURBO_TOKEN is a repo-level Secret
+# (rotatable); TURBO_TEAM is a repo-level Action variable (non-secret
+# slug). Both are read at the workflow level so every job's `turbo run …`
+# invocation can resolve cache hits without per-job env duplication. The
+# rationale tracks Tech Spec #388 § Caching strategy.
+env:
+  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+  TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+
 # Cancel in-flight quality runs when a newer commit lands on the same PR (or
 # the same ref for non-PR triggers). The group key folds in
 # `github.event.pull_request.number` when the trigger is a pull request and
