@@ -1,13 +1,308 @@
 {
   "$schema": ".agents/schemas/baselines/coverage.schema.json",
-  "generatedAt": "2026-05-17T00:00:00.000Z",
+  "generatedAt": "2026-05-18T21:14:19.166Z",
   "kernelVersion": "1.0.0",
   "rollup": {
     "*": {
+      "branches": 84.44,
+      "functions": 74.17,
+      "lines": 72.87
+    },
+    "apps/api": {
+      "branches": 64.38,
+      "functions": 33.33,
+      "lines": 49.43
+    },
+    "apps/mobile": {
       "branches": 0,
       "functions": 0,
       "lines": 0
+    },
+    "apps/web": {
+      "branches": 80,
+      "functions": 80,
+      "lines": 40
+    },
+    "packages/baselines": {
+      "branches": 84.6,
+      "functions": 100,
+      "lines": 95.81
+    },
+    "packages/config": {
+      "branches": 0,
+      "functions": 0,
+      "lines": 0
+    },
+    "packages/shared": {
+      "branches": 99.03,
+      "functions": 87.14,
+      "lines": 87.67
     }
   },
-  "rows": []
+  "rows": [
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/api/src/env.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 50,
+      "lines": 91.67,
+      "path": "apps/api/src/index.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 0,
+      "lines": 0,
+      "path": "apps/api/src/middleware/__testing__/auth-test.ts"
+    },
+    {
+      "branches": 0,
+      "functions": 16.67,
+      "lines": 4.55,
+      "path": "apps/api/src/middleware/auth.ts"
+    },
+    {
+      "branches": 50,
+      "functions": 66.67,
+      "lines": 64.52,
+      "path": "apps/api/src/middleware/request-logger.ts"
+    },
+    {
+      "branches": 0,
+      "functions": 0,
+      "lines": 30.77,
+      "path": "apps/api/src/routes/debug/synthetic-failure.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 0,
+      "lines": 50,
+      "path": "apps/api/src/routes/v1/me.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 0,
+      "lines": 50,
+      "path": "apps/api/src/routes/v1/sign-out.ts"
+    },
+    {
+      "branches": 0,
+      "functions": 0,
+      "lines": 7.55,
+      "path": "apps/api/src/routes/v1/users/role.ts"
+    },
+    {
+      "branches": 93.75,
+      "functions": 100,
+      "lines": 95.24,
+      "path": "apps/api/src/sentry.ts"
+    },
+    {
+      "branches": 0,
+      "functions": 0,
+      "lines": 0,
+      "path": "apps/mobile/src/sentry.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/web/src/env.d.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/web/src/index.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 0,
+      "path": "apps/web/src/middleware.ts"
+    },
+    {
+      "branches": 0,
+      "functions": 0,
+      "lines": 0,
+      "path": "apps/web/src/pages/sign-out.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 0,
+      "path": "apps/web/src/sentry.ts"
+    },
+    {
+      "branches": 69.09,
+      "functions": 100,
+      "lines": 91.84,
+      "path": "packages/baselines/src/compare.ts"
+    },
+    {
+      "branches": 86.67,
+      "functions": 100,
+      "lines": 96,
+      "path": "packages/baselines/src/format.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "packages/baselines/src/index.ts"
+    },
+    {
+      "branches": 80,
+      "functions": 100,
+      "lines": 94.74,
+      "path": "packages/baselines/src/io.ts"
+    },
+    {
+      "branches": 76.47,
+      "functions": 100,
+      "lines": 93.62,
+      "path": "packages/baselines/src/schema.ts"
+    },
+    {
+      "branches": 80,
+      "functions": 100,
+      "lines": 94.44,
+      "path": "packages/baselines/src/serialise.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "packages/baselines/src/types.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "packages/shared/src/db/schema/index.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "packages/shared/src/db/schema/organizations.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 0,
+      "lines": 50,
+      "path": "packages/shared/src/db/schema/teams.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 0,
+      "lines": 25,
+      "path": "packages/shared/src/db/schema/users.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "packages/shared/src/index.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "packages/shared/src/observability/log-event.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "packages/shared/src/observability/redaction.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "packages/shared/src/rbac/index.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "packages/shared/src/rbac/policy.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "packages/shared/src/rbac/rules.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "packages/shared/src/rbac/types.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 0,
+      "path": "packages/shared/src/testing/__tests__/fixtures/echo-schema.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "packages/shared/src/testing/app.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "packages/shared/src/testing/auth.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 80,
+      "lines": 96.15,
+      "path": "packages/shared/src/testing/db.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "packages/shared/src/testing/examples/Greeting.tsx"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "packages/shared/src/testing/examples/sum.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "packages/shared/src/testing/index.ts"
+    },
+    {
+      "branches": 91.3,
+      "functions": 100,
+      "lines": 100,
+      "path": "packages/shared/src/testing/safety.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 50,
+      "lines": 80,
+      "path": "packages/shared/src/testing/schema.ts"
+    },
+    {
+      "branches": 88.24,
+      "functions": 100,
+      "lines": 90,
+      "path": "packages/shared/src/testing/seeds.ts"
+    }
+  ]
 }
