@@ -103,8 +103,12 @@ jobs:
       - name: Test
         run: pnpm run test
 
-  coverage-baseline:
-    name: Coverage baseline (-2pp per workspace, ADR-015)
+  quality-baselines:
+    # Combined baseline gate (ADR-015 coverage, ADR-018 CRAP, ADR-019
+    # maintainability). One setup + one `pnpm run test:coverage` feeds all
+    # three checks, eliminating two duplicate pnpm installs and two
+    # redundant coverage-parsing passes versus the prior split jobs.
+    name: Quality baselines (coverage ADR-015, CRAP ADR-018, maintainability ADR-019)
     needs: [lint, typecheck]
     runs-on: ubuntu-latest
     permissions:
@@ -136,35 +140,11 @@ jobs:
       - name: Coverage baseline check
         run: pnpm run coverage:check
 
-  crap-baseline:
-    name: CRAP baseline (relative-5% per method, ADR-018)
-    needs: [lint, typecheck]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          persist-credentials: false
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9.15.9
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
       - name: CRAP baseline check
         run: pnpm run crap:check
+
+      - name: Maintainability baseline check
+        run: pnpm run maintainability:check
 
   secretlint:
     # ADR-0006 — local hook stack v1. secretlint runs pre-commit only
@@ -199,36 +179,6 @@ jobs:
 
       - name: secretlint (full repo)
         run: pnpm run lint:secrets
-
-  maintainability-baseline:
-    name: Maintainability baseline (rollup `*` min >= 70, ADR-019)
-    needs: [lint, typecheck]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          persist-credentials: false
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9.15.9
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Maintainability baseline check
-        run: pnpm run maintainability:check
 
   acceptance-smoke:
     name: Acceptance smoke (@smoke)
