@@ -17,6 +17,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          submodules: recursive
+          persist-credentials: false
       - name: Set up toolchain (checkout + pnpm + node + install)
         uses: ./.github/actions/setup-toolchain
 
@@ -60,6 +65,11 @@ jobs:
       contents: read
       issues: write
     steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          submodules: recursive
+          persist-credentials: false
       - name: Set up toolchain (checkout + pnpm + node + install)
         uses: ./.github/actions/setup-toolchain
 
@@ -122,6 +132,11 @@ jobs:
     permissions:
       contents: read
     steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          submodules: recursive
+          persist-credentials: false
       - name: Set up toolchain (checkout + pnpm + node + install)
         uses: ./.github/actions/setup-toolchain
 
@@ -169,6 +184,11 @@ jobs:
     permissions:
       contents: read
     steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          submodules: recursive
+          persist-credentials: false
       - name: Set up toolchain (checkout + pnpm + node + install)
         uses: ./.github/actions/setup-toolchain
 
@@ -197,6 +217,11 @@ jobs:
       SENTRY_ORG: ${{ vars.SENTRY_ORG }}
       SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT_WEB }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          submodules: recursive
+          persist-credentials: false
       - name: Set up toolchain (checkout + pnpm + node + install)
         uses: ./.github/actions/setup-toolchain
 
@@ -221,6 +246,11 @@ jobs:
       SENTRY_ORG: ${{ vars.SENTRY_ORG }}
       SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT_MOBILE }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          submodules: recursive
+          persist-credentials: false
       - name: Set up toolchain (checkout + pnpm + node + install)
         uses: ./.github/actions/setup-toolchain
 
@@ -245,6 +275,11 @@ jobs:
       SENTRY_ORG: ${{ vars.SENTRY_ORG }}
       SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT_WORKERS }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          submodules: recursive
+          persist-credentials: false
       - name: Set up toolchain (checkout + pnpm + node + install)
         uses: ./.github/actions/setup-toolchain
 
@@ -272,6 +307,11 @@ jobs:
       contents: read
       issues: write
     steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          submodules: recursive
+          persist-credentials: false
       - name: Set up toolchain (checkout + pnpm + node + install)
         uses: ./.github/actions/setup-toolchain
 

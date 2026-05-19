@@ -1,30 +1,19 @@
 name: Setup toolchain
 description: >-
-  Canonical 4-step setup chain for athportal CI/CD jobs — checkout (submodules
-  configurable, default 'recursive'; no persisted creds), pnpm (version read
-  from package.json#packageManager), Node.js (version from .nvmrc, cache:
+  Canonical 3-step toolchain setup for athportal CI/CD jobs — pnpm (version
+  read from package.json#packageManager), Node.js (version from .nvmrc, cache:
   pnpm), and `pnpm install --frozen-lockfile`. All `uses:` references are
   SHA-pinned per the project's pin convention.
 
-inputs:
-  submodules:
-    description: >-
-      Forwarded to actions/checkout's `submodules` input. Defaults to
-      'recursive' so jobs that read the `.agents/` submodule keep working
-      unchanged. Jobs that don't need `.agents/` should pass `'false'` to
-      skip the submodule fetch and trim checkout cost.
-    required: false
-    default: 'recursive'
+  IMPORTANT: every job MUST run actions/checkout BEFORE this composite. A
+  composite action's file (action.yml) is read off the runner filesystem, so
+  the workspace must already exist when `uses: ./.github/actions/setup-toolchain`
+  resolves. Jobs that read the `.agents/` submodule should pass
+  `submodules: recursive` to actions/checkout; jobs that don't can omit it.
 
 runs:
   using: composite
   steps:
-    - name: Checkout
-      uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-      with:
-        submodules: ${{ inputs.submodules }}
-        persist-credentials: false
-
     - name: Resolve pnpm version from package.json#packageManager
       id: pnpm-version
       shell: bash

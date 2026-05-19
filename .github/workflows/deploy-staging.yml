@@ -64,6 +64,11 @@ jobs:
       # Single composite step replaces the prior checkout / pnpm-setup /
       # setup-node / install chain. pnpm version is pinned exclusively
       # in package.json#packageManager.
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          submodules: recursive
+          persist-credentials: false
       - name: Set up toolchain (checkout + pnpm + node + install)
         uses: ./.github/actions/setup-toolchain
 
