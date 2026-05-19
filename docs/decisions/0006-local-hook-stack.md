@@ -42,6 +42,29 @@ and is too slow for a push hook); markdownlint runs everywhere it's
 fast enough to (pre-commit on staged `.md` files, pre-push full repo,
 and CI as a required check).
 
+### Secret-scanning four-channel boundary
+
+Secret scanning runs across four distinct channels, each owning a
+distinct scope so no two scanners gate the same diff:
+
+| Channel | Scanner | Scope | Trigger |
+| --- | --- | --- | --- |
+| Pre-commit (local) | `secretlint` | Staged diff | `lint-staged` fan-out in `.husky/pre-commit` |
+| PR (CI) | `gitleaks-pr` | PR diff | `pull_request` in [`quality.yml`](../../.github/workflows/quality.yml) |
+| Post-merge full-history (CI) | `gitleaks-history` | Full git history | `push` to `main` in [`secret-scan-push.yml`](../../.github/workflows/secret-scan-push.yml) |
+| Nightly full-history (CI) | `trufflehog` | Full git history, provider-verified | `schedule` in [`nightly.yml`](../../.github/workflows/nightly.yml) |
+
+The boundary is owner-disjoint: `secretlint` owns the pre-commit
+local window, `gitleaks-pr` owns the PR diff, `gitleaks-history`
+owns the post-merge full-history scan, and `trufflehog` owns the
+nightly full-history verified-only scan. Earlier revisions of this
+ADR ran `trufflehog` and a redundant `secretlint` job on every PR
+alongside `gitleaks-pr`; those two PR-tier jobs were dropped (Story
+#401) because they re-scanned the same PR diff `gitleaks-pr`
+already covered, and demoting `trufflehog` to nightly preserves its
+distinct value (provider-verified findings across the entire commit
+graph) without redundantly gating merge velocity on the PR tier.
+
 ### Per-surface posture
 
 #### `knip` — strict, no baseline
@@ -104,10 +127,16 @@ and CI as a required check).
 - **Why pre-commit only**: by the time the commit reaches `pre-push`,
   the secret is already past the local trust boundary. The
   post-commit / pre-push window is too late to amend without
-  rewriting history. Push-time scanning is a CI concern — TruffleHog
-  (with `--only-verified`) and gitleaks already run on every PR via
-  [`quality.yml`](../../.github/workflows/quality.yml) and cover the
-  post-push window.
+  rewriting history. Push-time scanning is a CI concern — `gitleaks`
+  covers the PR diff on every PR via
+  [`quality.yml`](../../.github/workflows/quality.yml) and the
+  full git history on every push to `main` via
+  [`secret-scan-push.yml`](../../.github/workflows/secret-scan-push.yml),
+  and `trufflehog` (with `--only-verified`) re-scans the full
+  history nightly via
+  [`nightly.yml`](../../.github/workflows/nightly.yml). See the
+  *Secret-scanning four-channel boundary* table above for the
+  channel-by-channel split.
 - **`.env.example` exemption**: the template file's placeholder
   values (`sk_test_xxxxxxxx…`) intentionally match the real-key
   regex shape so readers see the right prefix. The file is listed in
@@ -188,11 +217,12 @@ the project grows to a size where the strict posture stops scaling,
 the baseline lever is in the tool and a follow-on ADR can adopt it.
 
 **Rejected — `secretlint` on `pre-push`**: redundant with the CI
-TruffleHog + gitleaks pair on the same scope (full history), and
-slower than the pre-commit window where the developer can still
-amend. Adding it to pre-push would also fight the staged-only
-posture lint-staged is built for — `pre-push` runs against committed
-history, which secretlint would have to re-scan from scratch.
+`gitleaks-history` post-merge scan and the nightly `trufflehog`
+scan on the same scope (full history), and slower than the
+pre-commit window where the developer can still amend. Adding it
+to pre-push would also fight the staged-only posture lint-staged
+is built for — `pre-push` runs against committed history, which
+secretlint would have to re-scan from scratch.
 
 **Rejected — single umbrella `lint` task without internal
 parallelism** (`lint:js && lint:md` sequential): wall-clock cost of

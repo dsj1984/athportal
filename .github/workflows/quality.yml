@@ -146,40 +146,6 @@ jobs:
       - name: Maintainability baseline check
         run: pnpm run maintainability:check
 
-  secretlint:
-    # ADR-0006 — local hook stack v1. secretlint runs pre-commit only
-    # in the local hook chain (the post-commit window is too late to
-    # amend); CI runs it again on the full repo as a defense-in-depth
-    # check alongside the existing TruffleHog + gitleaks pair.
-    name: secretlint (ADR-0006)
-    needs: [lint, typecheck]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          persist-credentials: false
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9.15.9
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: secretlint (full repo)
-        run: pnpm run lint:secrets
-
   acceptance-smoke:
     name: Acceptance smoke (@smoke)
     needs: [lint, typecheck]
@@ -325,30 +291,6 @@ jobs:
           path: audit.json
           retention-days: 14
           if-no-files-found: error
-
-  trufflehog:
-    # Secret-scanner gate (PR-blocking). Runs TruffleHog with
-    # `--only-verified` so we fail the build only on findings the scanner
-    # could confirm against the provider, keeping the signal noise-free.
-    # False positives are suppressed via `.trufflehog-exclude.yml` at the
-    # repo root (created on first false positive, not preemptively).
-    name: TruffleHog (secret scan)
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: TruffleHog scan
-        # Pinned to v3.95.3 — TruffleHog does not publish a moving `v3`
-        # major tag; bump deliberately when upstream cuts a new release.
-        uses: trufflesecurity/trufflehog@v3.95.3
-        with:
-          extra_args: --only-verified
 
   gitleaks-pr:
     # Secret-scanner gate (PR-blocking) — companion to the TruffleHog job.
