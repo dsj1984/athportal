@@ -498,7 +498,7 @@ jobs:
 
   build:
     name: Build
-    needs: [lint, typecheck, supply-chain-security]
+    needs: [lint, typecheck]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
