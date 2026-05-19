@@ -317,10 +317,15 @@ jobs:
     permissions:
       contents: read
     steps:
+      # NOTE: submodules: recursive is required even though this job doesn't
+      # read .agents/ directly — `pnpm install` runs the root prepare script
+      # `node .agents/scripts/sync-claude-commands.js`, which is in the
+      # .agents/ submodule. Story #438's submodules: false optimization was
+      # incompatible with that contract and is reverted here.
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
-          submodules: false
+          submodules: recursive
           persist-credentials: false
       - name: Set up toolchain (pnpm + node + install)
         uses: ./.github/actions/setup-toolchain
