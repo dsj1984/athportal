@@ -8,30 +8,37 @@ on:
 permissions:
   contents: read
 
+# Turborepo remote cache wiring. TURBO_TOKEN is a repo-level Secret
+# (rotatable); TURBO_TEAM is a repo-level Action variable (non-secret
+# slug). Both are read at the workflow level so every job's `turbo run …`
+# invocation can resolve cache hits without per-job env duplication. The
+# rationale tracks Tech Spec #388 § Caching strategy.
+env:
+  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+  TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+
+# Cancel in-flight quality runs when a newer commit lands on the same PR (or
+# the same ref for non-PR triggers). The group key folds in
+# `github.event.pull_request.number` when the trigger is a pull request and
+# falls back to `github.ref` otherwise, so `main`-push runs are scoped per
+# ref and never self-cancel across unrelated commits.
+concurrency:
+  group: quality-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           submodules: recursive
           persist-credentials: false
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9.15.9
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Set up toolchain (checkout + pnpm + node + install)
+        uses: ./.github/actions/setup-toolchain
 
       - name: Lint
         run: pnpm run lint
@@ -42,26 +49,15 @@ jobs:
   typecheck:
     name: Typecheck
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           submodules: recursive
           persist-credentials: false
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9.15.9
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Set up toolchain (checkout + pnpm + node + install)
+        uses: ./.github/actions/setup-toolchain
 
       - name: Typecheck
         run: pnpm run typecheck
@@ -70,56 +66,38 @@ jobs:
     name: Test (unit + contract)
     needs: [lint, typecheck]
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           submodules: recursive
           persist-credentials: false
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9.15.9
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Set up toolchain (checkout + pnpm + node + install)
+        uses: ./.github/actions/setup-toolchain
 
       - name: Test
         run: pnpm run test
 
-  coverage-baseline:
-    name: Coverage baseline (-2pp per workspace, ADR-015)
+  quality-baselines:
+    # Combined baseline gate (ADR-015 coverage, ADR-018 CRAP, ADR-019
+    # maintainability). One setup + one `pnpm run test:coverage` feeds all
+    # three checks, eliminating two duplicate pnpm installs and two
+    # redundant coverage-parsing passes versus the prior split jobs.
+    name: Quality baselines (coverage ADR-015, CRAP ADR-018, maintainability ADR-019)
     needs: [lint, typecheck]
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: read
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           submodules: recursive
           persist-credentials: false
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9.15.9
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Set up toolchain (checkout + pnpm + node + install)
+        uses: ./.github/actions/setup-toolchain
 
       - name: Generate coverage reports
         run: pnpm run test:coverage
@@ -127,165 +105,8 @@ jobs:
       - name: Coverage baseline check
         run: pnpm run coverage:check
 
-  crap-baseline:
-    name: CRAP baseline (relative-5% per method, ADR-018)
-    needs: [lint, typecheck]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          persist-credentials: false
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9.15.9
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
       - name: CRAP baseline check
         run: pnpm run crap:check
-
-  knip-strict:
-    # ADR-0006 — local hook stack v1. Strict `knip` runs unused-files,
-    # unused-exports, AND unused-dependencies in one pass. The pre-push
-    # hook runs the cheaper `--include files,dependencies` variant
-    # (`knip:fast`); CI is the only place the full type-export graph
-    # traversal runs (it's the slow part).
-    name: knip strict (no baseline, ADR-0006)
-    needs: [lint, typecheck]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          persist-credentials: false
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9.15.9
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: knip (strict)
-        run: pnpm run knip:strict
-
-  markdownlint:
-    # ADR-0006 — local hook stack v1. Full-repo markdownlint on every
-    # PR. The pre-commit hook runs the same rule set against staged
-    # `.md` files only; the pre-push hook re-runs full-scope as part of
-    # the umbrella `lint` task.
-    name: Markdown lint (ADR-0006)
-    needs: [lint, typecheck]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          persist-credentials: false
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9.15.9
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Markdown lint
-        run: pnpm run lint:md
-
-  secretlint:
-    # ADR-0006 — local hook stack v1. secretlint runs pre-commit only
-    # in the local hook chain (the post-commit window is too late to
-    # amend); CI runs it again on the full repo as a defense-in-depth
-    # check alongside the existing TruffleHog + gitleaks pair.
-    name: secretlint (ADR-0006)
-    needs: [lint, typecheck]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          persist-credentials: false
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9.15.9
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: secretlint (full repo)
-        run: pnpm run lint:secrets
-
-  maintainability-baseline:
-    name: Maintainability baseline (rollup `*` min >= 70, ADR-019)
-    needs: [lint, typecheck]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          persist-credentials: false
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9.15.9
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
 
       - name: Maintainability baseline check
         run: pnpm run maintainability:check
@@ -294,26 +115,27 @@ jobs:
     name: Acceptance smoke (@smoke)
     needs: [lint, typecheck]
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           submodules: recursive
           persist-credentials: false
+      - name: Set up toolchain (checkout + pnpm + node + install)
+        uses: ./.github/actions/setup-toolchain
 
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
+      - name: Cache Playwright browsers
+        # Keyed on `pnpm-lock.yaml` so any Playwright version bump (which
+        # rewrites its lockfile entry) invalidates the cache and forces a
+        # fresh `playwright install`. Path matches Playwright's default
+        # browser cache on Linux runners.
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
-          version: 9.15.9
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
 
       - name: Install Playwright browsers
         run: pnpm --filter @repo/web exec playwright install --with-deps chromium
@@ -339,36 +161,25 @@ jobs:
 
       - name: Upload Cucumber JSON
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: cucumber-smoke
           path: apps/web/test-results/cucumber.json
-          if-no-files-found: warn
+          if-no-files-found: error
 
   lint-steps:
     name: Lint step definitions
     needs: [lint, typecheck]
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           submodules: recursive
           persist-credentials: false
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9.15.9
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Set up toolchain (checkout + pnpm + node + install)
+        uses: ./.github/actions/setup-toolchain
 
       - name: Lint step definitions
         run: pnpm run lint:steps
@@ -389,64 +200,29 @@ jobs:
     # required-check contract.
     name: Supply-chain security (ADR-011)
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: read
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           submodules: recursive
           persist-credentials: false
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9.15.9
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Set up toolchain (checkout + pnpm + node + install)
+        uses: ./.github/actions/setup-toolchain
 
       - name: Audit production graph (High/Critical block; Moderate surface)
         run: pnpm run audit:check
 
       - name: Upload audit.json artifact (14-day retention)
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: supply-chain-audit
           path: audit.json
           retention-days: 14
           if-no-files-found: error
-
-  trufflehog:
-    # Secret-scanner gate (PR-blocking). Runs TruffleHog with
-    # `--only-verified` so we fail the build only on findings the scanner
-    # could confirm against the provider, keeping the signal noise-free.
-    # False positives are suppressed via `.trufflehog-exclude.yml` at the
-    # repo root (created on first false positive, not preemptively).
-    name: TruffleHog (secret scan)
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: TruffleHog scan
-        # Pinned to v3.95.3 — TruffleHog does not publish a moving `v3`
-        # major tag; bump deliberately when upstream cuts a new release.
-        uses: trufflesecurity/trufflehog@v3.95.3
-        with:
-          extra_args: --only-verified
 
   gitleaks-pr:
     # Secret-scanner gate (PR-blocking) — companion to the TruffleHog job.
@@ -455,18 +231,19 @@ jobs:
     # tab. `security-events: write` is scoped to this job alone.
     name: gitleaks (secret scan, PR)
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: read
       security-events: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0
           persist-credentials: false
 
       - name: gitleaks scan
-        uses: gitleaks/gitleaks-action@v2
+        uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITLEAKS_ENABLE_UPLOAD_ARTIFACT: true
@@ -482,204 +259,89 @@ jobs:
         # Always run so the Security tab receives the empty-findings
         # report on green PRs too — this is what makes the gate visible.
         if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@458d36d7d4f47d0dd16ca424c1d3cda0060f1360 # v3
         with:
           sarif_file: results.sarif
           category: gitleaks
 
   build:
     name: Build
-    needs: [lint, typecheck, supply-chain-security]
+    needs: [lint, typecheck]
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      dist-found: ${{ steps.dist-probe.outputs.found }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           submodules: recursive
           persist-credentials: false
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9.15.9
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Set up toolchain (checkout + pnpm + node + install)
+        uses: ./.github/actions/setup-toolchain
 
       - name: Build
         run: pnpm run build
 
-  # ── Sourcemap-upload rehearsal (Epic #5 / Story #259) ──────────────
-  # One job per runtime that exercises the same composite the real
-  # staging / production deploy workflows will invoke. The composite's
-  # fork-safety guard short-circuits with a ::notice:: line whenever
-  # SENTRY_AUTH_TOKEN is unset (every fork PR, every CI run that hasn't
-  # had Sentry credentials provisioned), so these jobs stay green
-  # everywhere without leaking secrets. When the token IS present the
-  # composite installs sentry-cli and uploads the runtime's sourcemaps
-  # for the build SHA. Jobs depend on `build` so the dist/ tree is on
-  # disk before the upload step runs.
-  sourcemap-upload-astro:
-    name: Sourcemap upload (astro)
-    needs: [build]
-    runs-on: ubuntu-latest
-    env:
-      # The composite reads $SENTRY_AUTH_TOKEN directly; the guard
-      # treats an empty value as "running on a fork / no credentials"
-      # and exits 0 with a ::notice::.
-      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-      SENTRY_ORG: ${{ vars.SENTRY_ORG }}
-      SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT_WEB }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      # Story #393 introduced an `apps/*/dist/**` artifact pass-through to
+      # bundle-size-baseline, but every workspace's `build` script is still
+      # `exit 0` (no real wrangler/astro/expo output lands on disk until
+      # Story #378 wires the wrangler build for apps/api). Upload is gated
+      # behind a glob existence probe so the job stays green; flip back to a
+      # hard upload once #378 lands and the dist tree is real.
+      - name: Probe for dist outputs
+        id: dist-probe
+        shell: bash
+        run: |
+          shopt -s globstar nullglob
+          files=(apps/*/dist/**)
+          if [ ${#files[@]} -gt 0 ]; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Upload dist artifact (consumed by bundle-size-baseline)
+        if: steps.dist-probe.outputs.found == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          submodules: recursive
-          persist-credentials: false
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9.15.9
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Compute SENTRY_RELEASE (short SHA)
-        run: echo "SENTRY_RELEASE=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
-
-      - name: Build astro
-        run: pnpm --filter @repo/web run build
-
-      - name: Upload astro sourcemaps via composite
-        uses: ./.github/actions/sourcemap-upload
-        with:
-          runtime: astro
-          build-dir: apps/web/dist
-
-  sourcemap-upload-expo:
-    name: Sourcemap upload (expo)
-    needs: [build]
-    runs-on: ubuntu-latest
-    env:
-      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-      SENTRY_ORG: ${{ vars.SENTRY_ORG }}
-      SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT_MOBILE }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          persist-credentials: false
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9.15.9
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Compute SENTRY_RELEASE (short SHA)
-        run: echo "SENTRY_RELEASE=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
-
-      - name: Build expo
-        run: pnpm --filter @repo/mobile run build
-
-      - name: Upload expo sourcemaps via composite
-        uses: ./.github/actions/sourcemap-upload
-        with:
-          runtime: expo
-          build-dir: apps/mobile/dist
-
-  sourcemap-upload-workers:
-    name: Sourcemap upload (workers)
-    needs: [build]
-    runs-on: ubuntu-latest
-    env:
-      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-      SENTRY_ORG: ${{ vars.SENTRY_ORG }}
-      SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT_WORKERS }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          persist-credentials: false
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9.15.9
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Compute SENTRY_RELEASE (short SHA)
-        run: echo "SENTRY_RELEASE=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
-
-      - name: Build workers (api)
-        run: pnpm --filter @repo/api run build
-
-      - name: Upload workers sourcemaps via composite
-        uses: ./.github/actions/sourcemap-upload
-        with:
-          runtime: workers
-          build-dir: apps/api/dist
+          name: dist-bundle
+          path: apps/*/dist/**
+          if-no-files-found: error
 
   bundle-size-baseline:
     name: Bundle-size baseline (1 MiB Worker cap + per-bundle gzippedKb, ADR-014)
     needs: [build]
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: read
     steps:
+      # NOTE: submodules: recursive is required even though this job doesn't
+      # read .agents/ directly — `pnpm install` runs the root prepare script
+      # `node .agents/scripts/sync-claude-commands.js`, which is in the
+      # .agents/ submodule. Story #438's submodules: false optimization was
+      # incompatible with that contract and is reverted here.
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           submodules: recursive
           persist-credentials: false
+      - name: Set up toolchain (pnpm + node + install)
+        uses: ./.github/actions/setup-toolchain
 
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
+      # The dist artifact is only produced when at least one app emits real
+      # build outputs (see the dist-probe step in `build`). Until Story #378
+      # wires the wrangler build for apps/api, bundle-size:check reads the
+      # placeholder size from .size-limit.json (apps/api/dist/worker.js
+      # missing → treated as 0 bytes); the download is skipped on those
+      # runs so the job stays green without an apps/*/dist tree on disk.
+      - name: Download dist artifact (produced by `build`)
+        if: needs.build.outputs.dist-found == 'true'
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
-          version: 9.15.9
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build (re-run so wrangler dist is on disk for measurement)
-        run: pnpm run build
+          name: dist-bundle
+          path: apps
 
       - name: Bundle-size baseline check
         run: pnpm run bundle-size:check

@@ -15,26 +15,27 @@ jobs:
   full-acceptance:
     name: Full acceptance corpus
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           submodules: recursive
           persist-credentials: false
+      - name: Set up toolchain (checkout + pnpm + node + install)
+        uses: ./.github/actions/setup-toolchain
 
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
+      - name: Cache Playwright browsers
+        # Keyed on `pnpm-lock.yaml` so any Playwright version bump (which
+        # rewrites its lockfile entry) invalidates the cache and forces a
+        # fresh `playwright install`. Path matches Playwright's default
+        # browser cache on Linux runners.
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
-          version: 9.15.9
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
 
       - name: Install Playwright browsers
         run: pnpm --filter @repo/web exec playwright install --with-deps chromium
@@ -47,15 +48,16 @@ jobs:
 
       - name: Upload Cucumber JSON
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: cucumber-full
           path: apps/web/test-results/cucumber.json
-          if-no-files-found: warn
+          if-no-files-found: error
 
   mutation-baseline:
     name: Stryker mutation + per-workspace baseline (unit tier)
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     # Nightly-only — NOT wired into quality.yml (PR CI). Mutation runs
     # are too slow to gate merge velocity (PRD #195 § Non-goals) and the
     # per-workspace ratchet is informational on every other surface.
@@ -64,24 +66,12 @@ jobs:
       issues: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           submodules: recursive
           persist-credentials: false
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9.15.9
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Set up toolchain (checkout + pnpm + node + install)
+        uses: ./.github/actions/setup-toolchain
 
       - name: Run Stryker
         run: pnpm run mutation
@@ -95,22 +85,22 @@ jobs:
 
       - name: Upload mutation HTML report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: mutation-report
           path: reports/mutation/mutation.html
-          if-no-files-found: warn
+          if-no-files-found: error
 
       - name: Upload mutation JSON report + check log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: mutation-baseline
           path: |
             reports/mutation/mutation.json
             reports/mutation/mutation-check.log
           retention-days: 14
-          if-no-files-found: warn
+          if-no-files-found: error
 
       - name: Post regression summary to the nightly-report issue
         if: failure() && steps.mutation-check.outcome == 'failure' && vars.NIGHTLY_REPORT_ISSUE != ''
@@ -129,9 +119,186 @@ jobs:
           } > /tmp/mutation-summary.md
           gh issue comment "$NIGHTLY_REPORT_ISSUE" --body-file /tmp/mutation-summary.md
 
+  knip-strict:
+    # ADR-0006 — local hook stack v1. Strict `knip` runs unused-files,
+    # unused-exports, AND unused-dependencies in one pass. The pre-push
+    # hook runs the cheaper `--include files,dependencies` variant
+    # (`knip:fast`); CI is the only place the full type-export graph
+    # traversal runs (it's the slow part). Deferred to nightly because
+    # the pre-push hook already catches regressions in <24h.
+    name: knip strict (no baseline, ADR-0006)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - name: Set up toolchain (checkout + pnpm + node + install)
+        uses: ./.github/actions/setup-toolchain
+
+      - name: knip (strict)
+        run: pnpm run knip:strict
+
+  trufflehog:
+    # Nightly full-history secret scan (ADR-0006 four-channel boundary).
+    # Demoted from the PR tier because gitleaks-pr already scans the PR
+    # diff and gitleaks-history scans full history on every push to
+    # `main`. TruffleHog's distinct value is provider-verified findings
+    # across the entire commit graph — re-running it nightly keeps a
+    # second pair of eyes on the history without redundantly gating
+    # every PR.
+    name: TruffleHog (nightly full-history secret scan)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          # Full history so TruffleHog can verify findings across every
+          # commit the repo has ever held.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: TruffleHog scan (full history, verified)
+        # Pinned to v3.95.3 — TruffleHog does not publish a moving `v3`
+        # major tag; bump deliberately when upstream cuts a new release.
+        uses: trufflesecurity/trufflehog@37b77001d0174ebec2fcca2bd83ff83a6d45a3ab # v3.95.3
+        with:
+          extra_args: --only-verified
+
+  markdownlint:
+    # ADR-0006 — local hook stack v1. Full-repo markdownlint on every
+    # PR. The pre-commit hook runs the same rule set against staged
+    # `.md` files only; the pre-push hook re-runs full-scope as part of
+    # the umbrella `lint` task. Deferred to nightly because the
+    # pre-commit/pre-push hooks already catch regressions in <24h.
+    name: Markdown lint (ADR-0006)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - name: Set up toolchain (checkout + pnpm + node + install)
+        uses: ./.github/actions/setup-toolchain
+
+      - name: Markdown lint
+        run: pnpm run lint:md
+
+  # ── Sourcemap-upload rehearsal (relocated from quality.yml) ──────
+  # One job per runtime that exercises the same composite the real
+  # staging / production deploy workflows will invoke. The composite's
+  # fork-safety guard short-circuits with a ::notice:: line whenever
+  # SENTRY_AUTH_TOKEN is unset (every fork PR, every CI run that hasn't
+  # had Sentry credentials provisioned), so these jobs stay green
+  # everywhere without leaking secrets. When the token IS present the
+  # composite installs sentry-cli and uploads the runtime's sourcemaps
+  # for the build SHA. Each job builds its runtime locally so the dist/
+  # tree is on disk before the upload step runs.
+  sourcemap-upload-astro:
+    name: Sourcemap upload (astro)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      # The composite reads $SENTRY_AUTH_TOKEN directly; the guard
+      # treats an empty value as "running on a fork / no credentials"
+      # and exits 0 with a ::notice::.
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+      SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT_WEB }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - name: Set up toolchain (checkout + pnpm + node + install)
+        uses: ./.github/actions/setup-toolchain
+
+      - name: Compute SENTRY_RELEASE (short SHA)
+        run: echo "SENTRY_RELEASE=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
+
+      - name: Build astro
+        run: pnpm --filter @repo/web run build
+
+      - name: Upload astro sourcemaps via composite
+        uses: ./.github/actions/sourcemap-upload
+        with:
+          runtime: astro
+          build-dir: apps/web/dist
+
+  sourcemap-upload-expo:
+    name: Sourcemap upload (expo)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+      SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT_MOBILE }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - name: Set up toolchain (checkout + pnpm + node + install)
+        uses: ./.github/actions/setup-toolchain
+
+      - name: Compute SENTRY_RELEASE (short SHA)
+        run: echo "SENTRY_RELEASE=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
+
+      - name: Build expo
+        run: pnpm --filter @repo/mobile run build
+
+      - name: Upload expo sourcemaps via composite
+        uses: ./.github/actions/sourcemap-upload
+        with:
+          runtime: expo
+          build-dir: apps/mobile/dist
+
+  sourcemap-upload-workers:
+    name: Sourcemap upload (workers)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+      SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT_WORKERS }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - name: Set up toolchain (checkout + pnpm + node + install)
+        uses: ./.github/actions/setup-toolchain
+
+      - name: Compute SENTRY_RELEASE (short SHA)
+        run: echo "SENTRY_RELEASE=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
+
+      - name: Build workers (api)
+        run: pnpm --filter @repo/api run build
+
+      - name: Upload workers sourcemaps via composite
+        uses: ./.github/actions/sourcemap-upload
+        with:
+          runtime: workers
+          build-dir: apps/api/dist
+
   lighthouse-baseline:
     name: Lighthouse baseline (per-route +/-3)
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     # Pulls LIGHTHOUSE_PREVIEW_URL from the `staging` environment so the
     # baseline gates against the same surface deploy-staging.yml has
     # promoted. See PRD #195 AC #9 and Tech Spec #196 § F (Nightly).
@@ -141,27 +308,15 @@ jobs:
       issues: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           submodules: recursive
           persist-credentials: false
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9.15.9
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Set up toolchain (checkout + pnpm + node + install)
+        uses: ./.github/actions/setup-toolchain
 
       - name: Install Chrome for Lighthouse
-        uses: browser-actions/setup-chrome@v1
+        uses: browser-actions/setup-chrome@c785b87e244131f27c9f19c1a33e2ead956ab7ce # v1
         with:
           chrome-version: stable
 
@@ -176,12 +331,12 @@ jobs:
 
       - name: Upload Lighthouse trace JSON + check log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: lighthouse-report
           path: reports/lighthouse/
           retention-days: 14
-          if-no-files-found: warn
+          if-no-files-found: error
 
       - name: Post regression summary to the nightly-report issue
         if: failure() && vars.NIGHTLY_REPORT_ISSUE != ''

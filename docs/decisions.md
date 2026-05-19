@@ -580,4 +580,70 @@ New ADRs adopt a one-file-per-record layout under [`docs/decisions/`](./decision
 - [`0003-uptime-vendor.md`](./decisions/0003-uptime-vendor.md) — Better Stack as the external uptime-probe vendor (Story #254). Probes hosted on infrastructure independent of Cloudflare (AWS / Hetzner / GCP probe network); three monitors at 60-second cadence with two-consecutive-failure threshold; IaC at `infra/uptime/betterstack.yml`. Builds on ADR-012 (observability vendor stack).
 - [`0004-acceptance-email-capture.md`](./decisions/0004-acceptance-email-capture.md) — In-memory `EmailInbox` fixture (not a Mailpit container) as the email-capture mechanism for the Epic #5 observability acceptance scenarios (Story #307). Vendor emails originate from SaaS — fidelity is identical between the two designs, so the cheaper hermetic option wins. Builds on ADR-009 (BDD acceptance layer) and ADR-012 (observability vendor stack).
 - [`0005-dependency-update-posture.md`](./decisions/0005-dependency-update-posture.md) — Renovate (not Dependabot) as the scheduled dependency-update bot (Story #311). Weekly Monday window in `America/New_York`, vendor-family grouping, patch / minor auto-merge, major-version approval via the Dependency Dashboard, `vulnerabilityAlerts` running out-of-band. Builds on ADR-011 (supply-chain CVE gate) — Renovate proposes updates; the CVE gate decides whether they ship.
-- [`0006-local-hook-stack.md`](./decisions/0006-local-hook-stack.md) — Local hook stack v1: `knip` (strict, no baseline; `--include files,dependencies` at pre-push and full strict pass in CI), `markdownlint-cli2` (relaxed line-length and table-style; full repo at pre-push, staged at pre-commit), `secretlint` (pre-commit only — TruffleHog + gitleaks cover the post-push window), and the first `.husky/pre-push` (sequential `typecheck → lint → knip:fast → lint:baseline:check → lint:steps`, < 15 s wall-clock target). Story #310.
+- [`0006-local-hook-stack.md`](./decisions/0006-local-hook-stack.md) — Local hook stack v1: `knip` (strict, no baseline; `--include files,dependencies` at pre-push and full strict pass in CI), `markdownlint-cli2` (relaxed line-length and table-style; full repo at pre-push, staged at pre-commit), `secretlint` (pre-commit only — the four-channel secret-scanning boundary: gitleaks-pr on PR diff, gitleaks-history on post-merge full-history, trufflehog on nightly full-history, secretlint on pre-commit local), and the first `.husky/pre-push` (sequential `typecheck → lint → knip:fast → lint:baseline:check → lint:steps`, < 15 s wall-clock target). Story #310.
+
+---
+
+## Error-handling pattern: tagged-union now, framework-promote on trigger
+
+**Status**: Accepted (2026-05-19, Epic #386, Story #410)
+
+**Context**: `apps/api/src/routes/v1/users/role.ts` was carrying three single-use error classes (`LastAdminError`, `ForbiddenError`, `NotFoundError`) whose only consumer was the route's own catch block. The classes added ceremony without buying inheritance, polymorphism, or cross-route reuse — the catch site degenerated into an `instanceof` chain over a closed set of three options. Promoting these to a framework-wide `ApiError` base class plus a Hono `app.onError` middleware would be premature: there is exactly one route emitting them, and the canonical `{ success: false, error: { code, message } }` envelope from ADR-002 is already centralized in `@repo/shared/schemas`. Lifting machinery for a single call site would invert the cost curve — more abstraction surface than benefit.
+
+**Decision**:
+
+- **Today (this route only)**: collapse the three classes into a discriminated union `type RouteError = { code: 'LAST_ADMIN' } | { code: 'FORBIDDEN' } | { code: 'NOT_FOUND' }`. Throw sites emit `RouteError` values (wrapped via a small helper that attaches the tagged payload as `cause` on a plain `Error`); the catch site is an exhaustive `switch (err.code)` mapping each discriminant to the existing HTTP response. HTTP status codes and response bodies stay byte-identical — the refactor is internal-only and the existing contract tests pass unchanged.
+- **The three current codes** are `LAST_ADMIN`, `FORBIDDEN`, and `NOT_FOUND`. They map to `409`, `403`, and `404` respectively, preserving the prior class-based contract.
+- **Framework-promote trigger**: when the **next** route needing one of these conditions either (a) introduces a status code or error-envelope shape that does not fit the existing three codes, or (b) duplicates this catch-shape across a second route, **open a follow-up Epic** to lift `RouteError` to a shared `ApiError` base class in `packages/shared` (alongside the existing `@repo/shared/schemas` error envelope) and a Hono `app.onError` middleware in `apps/api/src/middleware/`. The middleware would centralize the `(code → HTTP status + body)` mapping so route handlers can throw a single typed error and let the platform render it.
+- **Until that trigger fires**, additional routes that need only the existing three codes MAY reuse the same tagged-union pattern locally (a duplicated `type RouteError` declaration in the new route's file is acceptable). The second occurrence is the signal to promote, not the first.
+
+**Consequences**:
+
+- The role-mutation route gains exhaustiveness from the TypeScript compiler — adding a fourth code without updating the switch is a type error, not a runtime fallthrough.
+- The route loses three class declarations and one `instanceof` chain in exchange for one type alias, one helper, and one switch. Net SLOC is lower and the catch site reads as a flat mapping.
+- No change to the public HTTP API surface. Contract tests in `apps/api/src/routes/v1/users/` continue to pin the wire shape, and the refactor is structurally invisible to clients.
+- The promotion landing zone (`packages/shared` for the `ApiError` base class, `apps/api/src/middleware/` for the `app.onError` middleware) is named here so the follow-up Epic has unambiguous targets when the trigger fires. The trigger condition is intentionally concrete (a new code or a second catch site, not a vague "when it feels like time") so the promotion decision is mechanical rather than judgemental.
+- This ADR complements ADR-002 (`withErrorHandler` middleware): ADR-002 governs the response envelope shape that the eventual `app.onError` middleware will produce; this ADR governs the in-route error-discrimination pattern that feeds it.
+
+**Rejected — lift `ApiError` to `packages/shared` now (no waiting trigger)**: Premature abstraction. With one route emitting three codes, the framework surface would carry zero callers beyond the prototype. The trigger condition above ensures the promotion happens when there is real cross-route demand, not on speculation.
+
+**Rejected — keep the three error classes**: The catch site was an `instanceof` chain over a closed set, which is the canonical signature for a discriminated union. The classes carried no behaviour beyond their constructor — they were tagged values masquerading as types.
+
+---
+
+## ADR-020 — Required-check set on `main`'s branch-protection ruleset (post-Phase-2)
+
+**Status**: Accepted (2026-05-19, Epic #386, Story #411)
+
+**Context**: Epic #386's Phase 2 cuts landed a defensible, minimal required-check set on `main`'s branch-protection ruleset — replacing the previous over-broad list that mixed informational signal with merge-gating checks. Without a written record of which checks are required, the next operator to re-derive the ruleset (after a fork, a repo-permissions reset, or a tooling migration) has no canonical reference and has to reverse-engineer the intent from CI history. This ADR pins the post-Phase-2 list so the ruleset is reproducible from documentation alone, and so future Epics adding new workflows have an unambiguous bar for whether the new check belongs in the required set.
+
+A separate concern is CodeQL. Story #413 added [`.github/workflows/codeql.yml`](../.github/workflows/codeql.yml) for static-analysis signal, but CodeQL is **informational-only**: a CodeQL alert does not block merge. The workflow runs on a schedule and on `pull_request`, but its check is intentionally **not** required at Epic close. Naming this explicitly here prevents a future operator from "tidying up" by promoting CodeQL to required when the project's posture is the opposite.
+
+**Decision**:
+
+- **The canonical required-check set on `main`'s branch-protection ruleset is the following 11 status checks** (names match the GitHub Actions job IDs as they appear in the branch-protection UI's "Require status checks to pass before merging" picker):
+  1. `lint`
+  2. `typecheck`
+  3. `test`
+  4. `quality-baselines`
+  5. `acceptance-smoke`
+  6. `lint-steps`
+  7. `supply-chain-security`
+  8. `gitleaks-pr`
+  9. `build`
+  10. `bundle-size-baseline`
+  11. `migration-label-guard.guard`
+- **CodeQL (`.github/workflows/codeql.yml`) is informational-only.** It runs on every PR and on schedule, but its check is **NOT** required at Epic close and **MUST NOT** be added to the required-check set on `main`. A CodeQL alert is a signal for the author and reviewer to triage; it is not a merge gate.
+- **The operator promotes the required-check set via the GitHub branch-protection UI** at `Settings → Rules → main → Require status checks to pass`. This ADR documents the target; it does not perform the promotion. The promotion is a manual operator step because GitHub's API surface for branch protection requires elevated permissions that the agent does not hold.
+- **New required checks land in this ADR before they land in the ruleset.** A future Epic adding (for example) a `mutation-baseline` required check must first land an ADR superseding this one with the updated list; the branch-protection UI change follows the ADR, never precedes it. This sequencing prevents the ruleset and the documentation from drifting.
+
+**Rejected — include CodeQL in the required set**: CodeQL alerts are noisy at the project's current scale (security baseline is already enforced by `supply-chain-security` + `gitleaks-pr`; CodeQL adds defense-in-depth, not a new gating dimension). Promoting CodeQL to required would block legitimate merges on advisories that have no upstream patch and no in-repo remediation, with no escape hatch short of disabling the check entirely.
+
+**Rejected — list every workflow that runs on PR**: The required-check set is **what gates the merge**, not **what runs on PR**. Nightly schedules, informational scans, and advisory dashboards run on PR for visibility but do not block merge. Conflating "runs on PR" with "required" inflates the required set, makes the ruleset brittle to refactors (any rename breaks the gate), and dilutes the signal of what failure actually blocks a merge.
+
+**Consequences**:
+
+- The 11-check list is the reproducible target for the branch-protection ruleset. Re-applying the ruleset after a fork or permissions reset is mechanical: copy the list, paste it into the GitHub UI picker, save.
+- Removing or renaming any of the 11 jobs in their owning workflow is a breaking change to this ADR and to the ruleset. The Epic that touches the job MUST update both this ADR and the branch-protection ruleset in the same change.
+- CodeQL stays a first-class signal that the author and reviewer read, but it stays out of the merge-blocking path. If the project's security posture later demands CodeQL as a gate, a new ADR supersedes this one and the operator promotes the check via the UI.
+- Cross-references: [`docs/runbooks/branch-protection-setup.md`](./runbooks/branch-protection-setup.md) is the operator-facing setup runbook; that document points back here for the canonical list. The ADR-016 entry above (`quality` workflow as the canonical PR quality gate, 2026-05-17) is the precedent for treating a named CI surface as a load-bearing ruleset target — this ADR extends that pattern from a single workflow to the 11-check post-Phase-2 set.

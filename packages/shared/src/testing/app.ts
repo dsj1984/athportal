@@ -91,13 +91,10 @@ export interface CreateTestAppOptions {
  * Use Hono's `app.request(path, init)` to drive HTTP calls in tests
  * without spinning up a real server.
  *
- * Overloads exist purely for callsite readability — both forms resolve
- * to the same implementation. The legacy single-arg form
- * (`createTestApp(db)`) remains the supported shape for callers that
- * do not need an authenticated actor.
+ * The legacy single-arg form (`createTestApp(db)`) remains the
+ * supported shape for callers that do not need an authenticated actor;
+ * pass `{ actor }` to drive the test-auth seam.
  */
-export function createTestApp(db: TestDbLike): TestApp;
-export function createTestApp(db: TestDbLike, options: CreateTestAppOptions): TestApp;
 export function createTestApp(db: TestDbLike, options: CreateTestAppOptions = {}): TestApp {
   const app = new Hono<TestAppBindings>();
   app.use('*', async (c, next) => {

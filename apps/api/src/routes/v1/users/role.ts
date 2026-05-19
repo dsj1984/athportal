@@ -34,6 +34,7 @@ import type { Role } from '@repo/shared/rbac';
 import { and, eq, inArray, sql } from 'drizzle-orm';
 import { Hono } from 'hono';
 import type { RequireInternalUserEnv } from '../../../middleware/auth';
+import type { DrizzleSelectChain, DrizzleUpdateChain } from '../../../types/drizzle-structural';
 
 export const userRoleRoute = new Hono<RequireInternalUserEnv>();
 
@@ -77,55 +78,48 @@ function parseBody(payload: unknown): PatchRoleBody | null {
  * subset we use here.
  */
 interface TxHandle {
-  update: (table: unknown) => DrizzleUpdateChain;
-  select: (cols?: unknown) => DrizzleSelectChain;
-}
-
-interface DrizzleUpdateChain {
-  set: (values: Record<string, unknown>) => {
-    where: (predicate: unknown) => {
-      returning: () => { all: () => Array<typeof users.$inferSelect> };
-    };
-  };
-}
-
-interface DrizzleSelectChain {
-  from: (table: unknown) => {
-    where: (predicate: unknown) => {
-      all: () => Array<{ count: number }>;
-    };
-  };
+  update: (table: unknown) => DrizzleUpdateChain<typeof users.$inferSelect>;
+  select: (cols?: unknown) => DrizzleSelectChain<{ count: number }>;
 }
 
 interface TxDb {
   transaction: <T>(fn: (tx: TxHandle) => T) => T;
-  select: (cols?: unknown) => DrizzleSelectChain;
+  select: (cols?: unknown) => DrizzleSelectChain<{ count: number }>;
 }
 
 /**
- * Sentinel thrown inside the transaction callback when the policy
- * denies the mutation. Catching it outside the transaction is what
- * lets the SQLite driver roll back the in-flight UPDATE.
+ * Tagged-union route-error payload. Carried as `cause` on a plain
+ * `Error` so the throw inside the transaction callback still unwinds
+ * the SQLite driver and rolls back the in-flight UPDATE, while the
+ * catch site discriminates on a single `code` field rather than a
+ * chain of `instanceof` checks.
+ *
+ * Promotion trigger: see `docs/decisions.md` § "Error-handling
+ * pattern: tagged-union now, framework-promote on trigger" (Story
+ * #410). When the next route needs a code outside this closed set,
+ * lift this union to a shared `ApiError` in `packages/shared` plus a
+ * Hono `app.onError` middleware in `apps/api/src/middleware/`.
  */
-class LastAdminError extends Error {
-  constructor() {
-    super('LAST_ADMIN');
-    this.name = 'LastAdminError';
-  }
+type RouteError = { code: 'LAST_ADMIN' } | { code: 'FORBIDDEN' } | { code: 'NOT_FOUND' };
+
+function routeError(payload: RouteError): Error {
+  // The message mirrors the discriminant so unrelated catchers
+  // (logging, the harness) still see a recognisable string; the
+  // structured `cause` is what the route's own catch reads.
+  const err = new Error(payload.code);
+  (err as { cause?: unknown }).cause = payload;
+  return err;
 }
 
-class ForbiddenError extends Error {
-  constructor() {
-    super('FORBIDDEN');
-    this.name = 'ForbiddenError';
+function asRouteError(err: unknown): RouteError | null {
+  if (err === null || typeof err !== 'object') return null;
+  const cause = (err as { cause?: unknown }).cause;
+  if (cause === null || typeof cause !== 'object') return null;
+  const code = (cause as { code?: unknown }).code;
+  if (code === 'LAST_ADMIN' || code === 'FORBIDDEN' || code === 'NOT_FOUND') {
+    return { code };
   }
-}
-
-class NotFoundError extends Error {
-  constructor() {
-    super('NOT_FOUND');
-    this.name = 'NotFoundError';
-  }
+  return null;
 }
 
 userRoleRoute.patch('/:id/role', async (c) => {
@@ -166,9 +160,10 @@ userRoleRoute.patch('/:id/role', async (c) => {
   try {
     // The whole read-modify-decide sequence runs inside one
     // transaction so the post-update admin count is consistent
-    // with the row we just wrote. On a deny (LastAdminError /
-    // ForbiddenError) the throw unwinds and SQLite rolls back the
-    // UPDATE — `remainingAdminsAfter === 0` rows never persist.
+    // with the row we just wrote. On a deny (RouteError code
+    // 'LAST_ADMIN' / 'FORBIDDEN') the throw unwinds and SQLite
+    // rolls back the UPDATE — `remainingAdminsAfter === 0` rows
+    // never persist.
     const updated = db.transaction((tx) => {
       // 1. Apply the update first so the admin-count read below
       //    reflects the post-mutation state. We constrain the
@@ -183,7 +178,7 @@ userRoleRoute.patch('/:id/role', async (c) => {
 
       const targetRow = rows[0];
       if (!targetRow) {
-        throw new NotFoundError();
+        throw routeError({ code: 'NOT_FOUND' });
       }
 
       // 2. Determine the org we are reasoning about. For an
@@ -225,8 +220,9 @@ userRoleRoute.patch('/:id/role', async (c) => {
 
       // 4. Ask the policy. The pure decision is the source of
       //    truth — if it denies because remainingAdminsAfter is 0,
-      //    we throw LastAdminError; for any other denial we throw
-      //    ForbiddenError. Either throw rolls the UPDATE back.
+      //    we throw a `LAST_ADMIN` RouteError; for any other denial
+      //    we throw a `FORBIDDEN` RouteError. Either throw rolls
+      //    the UPDATE back.
       const allowed = canPerform(auth.role as Role, 'user', 'update', {
         actorId: auth.userId,
         actorOrgId: auth.orgId ?? undefined,
@@ -238,9 +234,9 @@ userRoleRoute.patch('/:id/role', async (c) => {
 
       if (!allowed) {
         if (remainingAdminsAfter === 0) {
-          throw new LastAdminError();
+          throw routeError({ code: 'LAST_ADMIN' });
         }
-        throw new ForbiddenError();
+        throw routeError({ code: 'FORBIDDEN' });
       }
 
       return targetRow;
@@ -259,41 +255,50 @@ userRoleRoute.patch('/:id/role', async (c) => {
       200,
     );
   } catch (err) {
-    if (err instanceof LastAdminError) {
-      return c.json(
-        {
-          success: false as const,
-          error: {
-            code: 'LAST_ADMIN',
-            message: 'Refusing role change: at least one admin must remain in the organization.',
-          },
-        },
-        409,
-      );
-    }
-    if (err instanceof ForbiddenError) {
-      return c.json(
-        {
-          success: false as const,
-          error: {
-            code: 'FORBIDDEN',
-            message: 'You are not authorized to change this user’s role.',
-          },
-        },
-        403,
-      );
-    }
-    if (err instanceof NotFoundError) {
-      return c.json(
-        {
-          success: false as const,
-          error: {
-            code: 'NOT_FOUND',
-            message: 'User not found.',
-          },
-        },
-        404,
-      );
+    const tagged = asRouteError(err);
+    if (tagged) {
+      switch (tagged.code) {
+        case 'LAST_ADMIN':
+          return c.json(
+            {
+              success: false as const,
+              error: {
+                code: 'LAST_ADMIN',
+                message:
+                  'Refusing role change: at least one admin must remain in the organization.',
+              },
+            },
+            409,
+          );
+        case 'FORBIDDEN':
+          return c.json(
+            {
+              success: false as const,
+              error: {
+                code: 'FORBIDDEN',
+                message: 'You are not authorized to change this user’s role.',
+              },
+            },
+            403,
+          );
+        case 'NOT_FOUND':
+          return c.json(
+            {
+              success: false as const,
+              error: {
+                code: 'NOT_FOUND',
+                message: 'User not found.',
+              },
+            },
+            404,
+          );
+        default: {
+          // Exhaustiveness check — adding a new RouteError code
+          // without extending this switch is a type error.
+          const _exhaustive: never = tagged;
+          void _exhaustive;
+        }
+      }
     }
     // Unknown failure path. Per the security baseline (Output &
     // Rendering, Data Leakage & Logging) we MUST NOT echo the

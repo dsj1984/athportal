@@ -23,11 +23,13 @@ if [ -n "$staged_agents" ]; then
 	exit 1
 fi
 
-# --- 2. Biome + lint-staged on staged files ------------------------------
-# Biome's --staged mode keeps biome's organize-imports and formatter
-# scoped to the staged set; lint-staged.config.js then runs markdownlint
-# (md only) and secretlint (any extension) against the same set.
-pnpm exec biome check --staged --no-errors-on-unmatched
+# --- 2. lint-staged on staged files --------------------------------------
+# lint-staged.config.js is the single source of truth for staged-file
+# linters: biome (ts/tsx/js/jsx/mjs/cjs/json/jsonc/css), markdownlint
+# (md/markdown only), and secretlint (any extension). Keeping biome
+# wired through lint-staged — instead of a bare `biome check --staged`
+# line here — prevents accidental double-runs when a future contributor
+# adds another biome entry.
 pnpm exec lint-staged
 
 # --- 3. Step-definition linter on staged step/feature files --------------

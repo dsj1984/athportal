@@ -37,6 +37,7 @@ jobs:
   deploy:
     name: Staging deploy
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     environment: staging
     env:
       # Turborepo remote cache wiring. TURBO_TOKEN is an Environment
@@ -59,24 +60,17 @@ jobs:
       SENTRY_ORG: ${{ vars.SENTRY_ORG }}
       SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
     steps:
+      # ── Step 1: setup toolchain (checkout + pnpm + node + install) ─
+      # Single composite step replaces the prior checkout / pnpm-setup /
+      # setup-node / install chain. pnpm version is pinned exclusively
+      # in package.json#packageManager.
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           submodules: recursive
           persist-credentials: false
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9.15.9
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          # The pnpm store is cached here, keyed on pnpm-lock.yaml's
-          # hash, so subsequent runs report a cache hit in the log.
-          cache: pnpm
+      - name: Set up toolchain (checkout + pnpm + node + install)
+        uses: ./.github/actions/setup-toolchain
 
       - name: Compute SENTRY_RELEASE (short SHA)
         id: release
@@ -84,10 +78,6 @@ jobs:
           short_sha=$(git rev-parse --short HEAD)
           echo "release=${short_sha}" >> "$GITHUB_OUTPUT"
           echo "SENTRY_RELEASE=${short_sha}" >> "$GITHUB_ENV"
-
-      # ── Step 1: install ────────────────────────────────────────────
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
 
       # ── Step 2: validate environment contract ──────────────────────
       - name: Validate environment (check-env)
@@ -167,10 +157,39 @@ jobs:
       # Runs only if at least one deploy step actually executed. The
       # release tag is the short Git SHA, matching .env.example's
       # SENTRY_RELEASE convention.
-      - name: Install sentry-cli
+      # Cache the global npm prefix that holds @sentry/cli. The key is
+      # pinned to the major version (2.x) so a bump to v3 invalidates
+      # the cache. On a cache hit, the `Install sentry-cli` step below
+      # is skipped — see `if: steps.cache-sentry-cli.outputs.cache-hit
+      # != 'true'`. Keeping `@sentry/cli@2` pinned preserves the
+      # acceptance criterion: every run still resolves a 2.x release.
+      - name: Cache sentry-cli (pinned 2.x)
+        id: cache-sentry-cli
         if: >-
           (steps.deploy-api.outcome == 'success') ||
           (steps.deploy-web.outcome == 'success')
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ~/.npm-global
+          key: sentry-cli-2-${{ runner.os }}
+
+      - name: Configure npm global prefix
+        if: >-
+          (steps.deploy-api.outcome == 'success') ||
+          (steps.deploy-web.outcome == 'success')
+        run: |
+          mkdir -p "$HOME/.npm-global/bin"
+          npm config set prefix "$HOME/.npm-global"
+          echo "$HOME/.npm-global/bin" >> "$GITHUB_PATH"
+
+      # Gated by actions/cache (id: cache-sentry-cli) above — runs only
+      # on cache miss. @sentry/cli stays pinned to 2.x so the cache key
+      # sentry-cli-2-<os> matches the installed major.
+      - name: Install sentry-cli (actions/cache miss only)
+        if: >-
+          ((steps.deploy-api.outcome == 'success') ||
+          (steps.deploy-web.outcome == 'success')) &&
+          steps.cache-sentry-cli.outputs.cache-hit != 'true'
         run: npm install --global @sentry/cli@2
 
       - name: Create Sentry release

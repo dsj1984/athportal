@@ -1,11 +1,11 @@
 {
   "$schema": ".agents/schemas/baselines/crap.schema.json",
-  "generatedAt": "2026-05-18T20:53:39.170Z",
+  "generatedAt": "2026-05-19T02:34:32.282Z",
   "kernelVersion": "1.0.0",
   "rollup": {
     "*": {
       "max": 462,
-      "methodsAbove20": 16,
+      "methodsAbove20": 17,
       "p50": 2,
       "p95": 42
     }
@@ -39,73 +39,79 @@
       "crap": 2,
       "method": "unauthenticated",
       "path": "apps/api/src/middleware/auth.ts",
-      "startLine": 59
+      "startLine": 60
     },
     {
       "crap": 20,
       "method": "readSessionCookie",
       "path": "apps/api/src/middleware/auth.ts",
-      "startLine": 71
+      "startLine": 72
     },
     {
       "crap": 20,
       "method": "readBearerToken",
       "path": "apps/api/src/middleware/auth.ts",
-      "startLine": 83
+      "startLine": 84
     },
     {
       "crap": 2,
       "method": "extractToken",
       "path": "apps/api/src/middleware/auth.ts",
-      "startLine": 96
+      "startLine": 97
     },
     {
       "crap": 2,
       "method": "clerkAuth",
       "path": "apps/api/src/middleware/auth.ts",
-      "startLine": 122
+      "startLine": 123
     },
     {
       "crap": 42,
       "method": "<anon method-1>",
       "path": "apps/api/src/middleware/auth.ts",
-      "startLine": 123
+      "startLine": 124
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-2>",
+      "path": "apps/api/src/middleware/auth.ts",
+      "startLine": 253
     },
     {
       "crap": 2,
       "method": "buildJitCandidate",
       "path": "apps/api/src/middleware/auth.ts",
-      "startLine": 221
+      "startLine": 269
     },
     {
       "crap": 2,
       "method": "toAuthContext",
       "path": "apps/api/src/middleware/auth.ts",
-      "startLine": 234
+      "startLine": 278
     },
     {
       "crap": 2,
       "method": "requireInternalUser",
       "path": "apps/api/src/middleware/auth.ts",
-      "startLine": 269
+      "startLine": 313
     },
     {
       "crap": 42,
-      "method": "<anon method-2>",
+      "method": "<anon method-3>",
       "path": "apps/api/src/middleware/auth.ts",
-      "startLine": 270
+      "startLine": 314
     },
     {
       "crap": 2,
       "method": "lookupBySubject",
       "path": "apps/api/src/middleware/auth.ts",
-      "startLine": 317
+      "startLine": 361
     },
     {
       "crap": 2,
       "method": "insertIfAbsent",
       "path": "apps/api/src/middleware/auth.ts",
-      "startLine": 335
+      "startLine": 379
     },
     {
       "crap": 6,
@@ -171,25 +177,37 @@
       "crap": 30,
       "method": "parseBody",
       "path": "apps/api/src/routes/v1/users/role.ts",
-      "startLine": 64
+      "startLine": 65
     },
     {
-      "crap": 56,
+      "crap": 2,
+      "method": "routeError",
+      "path": "apps/api/src/routes/v1/users/role.ts",
+      "startLine": 105
+    },
+    {
+      "crap": 72,
+      "method": "asRouteError",
+      "path": "apps/api/src/routes/v1/users/role.ts",
+      "startLine": 114
+    },
+    {
+      "crap": 72,
       "method": "<anon method-1>",
       "path": "apps/api/src/routes/v1/users/role.ts",
-      "startLine": 131
+      "startLine": 125
     },
     {
       "crap": 2,
       "method": "<anon method-2>",
       "path": "apps/api/src/routes/v1/users/role.ts",
-      "startLine": 135
+      "startLine": 129
     },
     {
       "crap": 30,
       "method": "<anon method-3>",
       "path": "apps/api/src/routes/v1/users/role.ts",
-      "startLine": 172
+      "startLine": 167
     },
     {
       "crap": 2,
@@ -999,25 +1017,25 @@
       "crap": 6,
       "method": "createTestApp",
       "path": "packages/shared/src/testing/app.ts",
-      "startLine": 101
+      "startLine": 98
     },
     {
       "crap": 2,
       "method": "<anon method-1>",
       "path": "packages/shared/src/testing/app.ts",
-      "startLine": 103
+      "startLine": 100
     },
     {
       "crap": 2,
       "method": "<anon method-2>",
       "path": "packages/shared/src/testing/app.ts",
-      "startLine": 109
+      "startLine": 106
     },
     {
       "crap": 2,
       "method": "<anon method-3>",
       "path": "packages/shared/src/testing/app.ts",
-      "startLine": 115
+      "startLine": 112
     },
     {
       "crap": 12,

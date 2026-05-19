@@ -47,7 +47,7 @@ export default defineConfig({
           name: 'scripts',
           environment: 'node',
           globals: false,
-          include: ['scripts/__tests__/**/*.test.mjs'],
+          include: ['scripts/__tests__/**/*.test.mjs', 'scripts/migration-label-guard.test.mjs'],
           exclude: ['**/dist/**', '**/node_modules/**'],
         },
       },

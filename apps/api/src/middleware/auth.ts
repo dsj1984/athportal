@@ -26,6 +26,7 @@ import { users } from '@repo/shared/db/schema';
 import { eq } from 'drizzle-orm';
 import type { MiddlewareHandler } from 'hono';
 import type { Env } from '../env';
+import type { DrizzleInsertChain, DrizzleSelectChain } from '../types/drizzle-structural';
 
 /**
  * Hono variable surface contributed by `clerkAuth`. The middleware only
@@ -184,27 +185,74 @@ export type RequireInternalUserEnv = {
 /**
  * Marker type for the Drizzle handle this middleware consumes.
  *
- * The middleware does not pin a single driver — `better-sqlite3` in
- * contract tests vs `@libsql/client` in production — so the handle is
- * carried as `unknown` at the boundary and narrowed structurally in
- * `lookupBySubject` / `insertIfAbsent`. Production wiring (the libSQL
- * adapter for Cloudflare Workers) lands with the API-shell Story; this
- * Task only ships the middleware that consumes whatever handle the
- * upstream provides.
+ * `unknown` is **deliberate**, not a placeholder waiting to be tightened.
+ * The middleware is intentionally driver-agnostic: in contract tests the
+ * handle is a `better-sqlite3` Drizzle proxy (the in-memory ephemeral
+ * DB returned by `freshDb()`), while in production it is an
+ * `@libsql/client` Drizzle proxy bound to a Turso/libSQL endpoint from
+ * the Cloudflare Worker. The two driver flavours expose the same
+ * fluent `select() / insert() / .onConflictDoNothing() / .returning()`
+ * surface this file uses, but their full TypeScript types differ
+ * across driver/builder versions in ways that cannot be expressed as a
+ * single union without dragging both packages' types into every
+ * consumer.
+ *
+ * Carrying the handle as `unknown` keeps the boundary honest — the
+ * call sites in `lookupBySubject` / `insertIfAbsent` narrow the handle
+ * structurally to the precise methods they invoke (`select`, `insert`,
+ * `.values()`, `.onConflictDoNothing()`, `.returning()`, `.all()`),
+ * which **self-documents** the contract this middleware actually
+ * depends on. A `BetterSqliteDb | LibsqlDb` union would be both
+ * unmanageable (it changes when either driver bumps minor) and less
+ * informative than the inline structural narrowing.
+ *
+ * Production wiring (the `@libsql/client`-for-Workers adapter, paired
+ * with the `better-sqlite3` Drizzle proxy in contract tests) lands with
+ * the API-shell Story; this Task only ships the middleware that
+ * consumes whatever handle the upstream provides.
  */
 type InternalUserDb = unknown;
 
 /**
- * Defaults used when JIT-inserting a never-before-seen Clerk subject.
- * Every user starts as a `member` (the no-privilege baseline role) and
- * un-onboarded (`onboarded_at` null) so the Astro middleware's
- * onboarding-redirect path engages on the next page load.
+ * Single source of truth for the JIT user-provisioning policy.
  *
- * Per `.agents/rules/security-baseline.md` — no fallback secrets, no
- * implicit role escalation. A newly provisioned user has nothing more
- * than the minimum required to render the onboarding flow.
+ * Consolidates the three previously-scattered defaults — baseline role,
+ * synthetic placeholder email format, and onboarding-timestamp seed —
+ * into one named constant so a future maintainer can read the JIT
+ * contract in one place rather than reconstructing it from a module-
+ * scope `JIT_DEFAULT_ROLE`, an inline template literal inside
+ * `buildJitCandidate`, and an implicit "null because the column is
+ * nullable" defaulting on `onboardedAt`.
+ *
+ * Fields:
+ *
+ *   - `role`            Baseline role for every newly provisioned user.
+ *                       `member` is the no-privilege baseline; per
+ *                       `.agents/rules/security-baseline.md` (Authorization,
+ *                       Forbidden Practices) there is no fallback secret,
+ *                       no implicit role escalation, and no client-asserted
+ *                       role on first-touch.
+ *   - `syntheticEmail`  Placeholder email written on first JIT insert.
+ *                       On first touch the middleware only has the opaque
+ *                       Clerk subject id; the real address is populated by
+ *                       the onboarding flow, which `UPDATE`s the row before
+ *                       it is ever exposed to a client. The value is
+ *                       internal and never logged (the redactor scrubs
+ *                       `email`).
+ *   - `onboardedAt`     `null` on insert so the Astro middleware's
+ *                       onboarding-redirect path engages on the next
+ *                       page load and the onboarding flow can stamp the
+ *                       timestamp itself.
+ *
+ * Frozen via `as const` so the literal types flow into `JitCandidate`
+ * and downstream tests, and so no caller can mutate the policy at
+ * runtime.
  */
-const JIT_DEFAULT_ROLE = 'member';
+const JIT_DEFAULTS = {
+  role: 'member',
+  syntheticEmail: (clerkSubjectId: string) => `${clerkSubjectId}@clerk-jit.invalid`,
+  onboardedAt: null,
+} as const;
 
 interface JitCandidate {
   readonly id: string;
@@ -222,12 +270,8 @@ function buildJitCandidate(clerkSubjectId: string): JitCandidate {
   return {
     id: `u_${crypto.randomUUID()}`,
     clerkSubjectId,
-    // Email is populated from Clerk by the onboarding flow; on first
-    // JIT we only have the opaque subject id, so we stamp a placeholder
-    // synthetic email that the onboarding update will overwrite. The
-    // value is internal — never logged (the redactor scrubs `email`).
-    email: `${clerkSubjectId}@clerk-jit.invalid`,
-    role: JIT_DEFAULT_ROLE,
+    email: JIT_DEFAULTS.syntheticEmail(clerkSubjectId),
+    role: JIT_DEFAULTS.role,
   };
 }
 
@@ -322,7 +366,7 @@ function lookupBySubject(
   // tests, @libsql/client in production), so the query builder is bridged
   // structurally through `InternalUserDb` (typed as `unknown`) and
   // narrowed inline.
-  const handle = db as { select: () => DrizzleSelectChain };
+  const handle = db as { select: () => DrizzleSelectChain<typeof users.$inferSelect> };
   const rows = handle
     .select()
     .from(users)
@@ -336,7 +380,9 @@ function insertIfAbsent(
   db: InternalUserDb,
   candidate: JitCandidate,
 ): typeof users.$inferSelect | null {
-  const handle = db as { insert: (table: unknown) => DrizzleInsertChain };
+  const handle = db as {
+    insert: (table: unknown) => DrizzleInsertChain<typeof users.$inferSelect>;
+  };
   const inserted = handle
     .insert(users)
     .values({
@@ -344,32 +390,11 @@ function insertIfAbsent(
       clerkSubjectId: candidate.clerkSubjectId,
       email: candidate.email,
       role: candidate.role,
+      onboardedAt: JIT_DEFAULTS.onboardedAt,
       // created_at / updated_at use schema defaults (unixepoch()).
     })
     .onConflictDoNothing({ target: users.clerkSubjectId })
     .returning()
     .all();
   return inserted[0] ?? null;
-}
-
-/**
- * Structural pieces of the Drizzle query builder this middleware
- * consumes. Each step in the chain returns the next step's surface —
- * we do not depend on the full Drizzle type surface (it diverges
- * between SQLite flavours) but we do pin the shape we use.
- */
-interface DrizzleSelectChain {
-  from: (table: unknown) => {
-    where: (predicate: unknown) => {
-      limit: (n: number) => { all: () => Array<typeof users.$inferSelect> };
-    };
-  };
-}
-
-interface DrizzleInsertChain {
-  values: (row: unknown) => {
-    onConflictDoNothing: (opts: { target: unknown }) => {
-      returning: () => { all: () => Array<typeof users.$inferSelect> };
-    };
-  };
 }

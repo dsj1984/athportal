@@ -1,0 +1,51 @@
+# CodeQL SAST analysis for the application surface.
+#
+# Surfaces taint-flow and other static-analysis findings on the GitHub
+# Code Scanning tab. Runs on every PR that touches application source
+# (`apps/**/src/**`, `packages/**/src/**`) and weekly against the default
+# branch so dormant alerts don't decay silently.
+#
+# This workflow is **informational only** at MVP — it is NOT added to the
+# branch-protection ruleset on `main`. Operators triage findings out-of-
+# band; gating decisions are deferred to a follow-up Story.
+name: codeql
+
+on:
+  pull_request:
+    paths:
+      - 'apps/**/src/**'
+      - 'packages/**/src/**'
+  schedule:
+    # Weekly on Sunday 06:00 UTC. Chosen to land outside peak CI hours.
+    - cron: '0 6 * * 0'
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  analyze:
+    name: CodeQL analyze (javascript-typescript)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@458d36d7d4f47d0dd16ca424c1d3cda0060f1360 # v3
+        with:
+          languages: javascript-typescript
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@458d36d7d4f47d0dd16ca424c1d3cda0060f1360 # v3
+
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@458d36d7d4f47d0dd16ca424c1d3cda0060f1360 # v3
+        with:
+          category: '/language:javascript-typescript'
