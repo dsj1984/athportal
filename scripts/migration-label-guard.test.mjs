@@ -6,10 +6,7 @@
 // branches against regression.
 
 import { describe, expect, it, vi } from 'vitest';
-import guard, {
-  destructivePatterns,
-  isMigrationFile,
-} from './migration-label-guard.mjs';
+import guard, { destructivePatterns, isMigrationFile } from './migration-label-guard.mjs';
 
 describe('isMigrationFile', () => {
   it('matches a .sql migration under apps/api/**/migrations/**', () => {
@@ -143,9 +140,7 @@ function makeGithub(files) {
 
 describe('guard (default export) — label branches', () => {
   it('passes trivially when no migration files are touched', async () => {
-    const github = makeGithub([
-      { filename: 'apps/web/src/index.ts', patch: '+const a = 1;\n' },
-    ]);
+    const github = makeGithub([{ filename: 'apps/web/src/index.ts', patch: '+const a = 1;\n' }]);
     const core = makeCore();
     await guard(github, makeContext(), core);
 
@@ -196,11 +191,7 @@ describe('guard (default export) — label branches', () => {
       },
     ]);
     const core = makeCore();
-    await guard(
-      github,
-      makeContext({ labels: [{ name: 'migration::destructive' }] }),
-      core,
-    );
+    await guard(github, makeContext({ labels: [{ name: 'migration::destructive' }] }), core);
 
     expect(core.setFailed).not.toHaveBeenCalled();
     expect(core.info).toHaveBeenCalledWith(
@@ -226,7 +217,8 @@ describe('guard (default export) — label branches', () => {
       {
         filename: 'apps/api/migrations/0004_safe.sql',
         // The DROP appears on a removed line; the guard must not flag it.
-        patch: '-ALTER TABLE users DROP COLUMN legacy_id;\n CONTEXT LINE WITH DROP TABLE\n+SELECT 1;\n',
+        patch:
+          '-ALTER TABLE users DROP COLUMN legacy_id;\n CONTEXT LINE WITH DROP TABLE\n+SELECT 1;\n',
       },
     ]);
     const core = makeCore();
