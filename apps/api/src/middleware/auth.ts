@@ -337,7 +337,9 @@ function insertIfAbsent(
   db: InternalUserDb,
   candidate: JitCandidate,
 ): typeof users.$inferSelect | null {
-  const handle = db as { insert: (table: unknown) => DrizzleInsertChain<typeof users.$inferSelect> };
+  const handle = db as {
+    insert: (table: unknown) => DrizzleInsertChain<typeof users.$inferSelect>;
+  };
   const inserted = handle
     .insert(users)
     .values({
@@ -352,4 +354,3 @@ function insertIfAbsent(
     .all();
   return inserted[0] ?? null;
 }
-
