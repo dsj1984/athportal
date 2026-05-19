@@ -59,8 +59,8 @@ local window, `gitleaks-pr` owns the PR diff, `gitleaks-history`
 owns the post-merge full-history scan, and `trufflehog` owns the
 nightly full-history verified-only scan. Earlier revisions of this
 ADR ran `trufflehog` and a redundant `secretlint` job on every PR
-alongside `gitleaks-pr`; those two PR-tier jobs were dropped (Story
-#401) because they re-scanned the same PR diff `gitleaks-pr`
+alongside `gitleaks-pr`; those two PR-tier jobs were dropped
+(Story #401) because they re-scanned the same PR diff `gitleaks-pr`
 already covered, and demoting `trufflehog` to nightly preserves its
 distinct value (provider-verified findings across the entire commit
 graph) without redundantly gating merge velocity on the PR tier.
