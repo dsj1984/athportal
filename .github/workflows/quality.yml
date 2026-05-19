@@ -258,6 +258,10 @@ jobs:
     steps:
       - name: Set up toolchain (checkout + pnpm + node + install)
         uses: ./.github/actions/setup-toolchain
+        with:
+          # `.agents/` is not read by `pnpm run bundle-size:check`; skipping
+          # the submodule fetch trims checkout cost on this job.
+          submodules: 'false'
 
       - name: Download dist artifact (produced by `build`)
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4

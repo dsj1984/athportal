@@ -1,10 +1,20 @@
 name: Setup toolchain
 description: >-
   Canonical 4-step setup chain for athportal CI/CD jobs — checkout (submodules
-  recursive, no persisted creds), pnpm (version read from
-  package.json#packageManager), Node.js (version from .nvmrc, cache: pnpm),
-  and `pnpm install --frozen-lockfile`. All `uses:` references are SHA-pinned
-  per the project's pin convention.
+  configurable, default 'recursive'; no persisted creds), pnpm (version read
+  from package.json#packageManager), Node.js (version from .nvmrc, cache:
+  pnpm), and `pnpm install --frozen-lockfile`. All `uses:` references are
+  SHA-pinned per the project's pin convention.
+
+inputs:
+  submodules:
+    description: >-
+      Forwarded to actions/checkout's `submodules` input. Defaults to
+      'recursive' so jobs that read the `.agents/` submodule keep working
+      unchanged. Jobs that don't need `.agents/` should pass `'false'` to
+      skip the submodule fetch and trim checkout cost.
+    required: false
+    default: 'recursive'
 
 runs:
   using: composite
@@ -12,7 +22,7 @@ runs:
     - name: Checkout
       uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       with:
-        submodules: recursive
+        submodules: ${{ inputs.submodules }}
         persist-credentials: false
 
     - name: Resolve pnpm version from package.json#packageManager
