@@ -21,6 +21,7 @@ jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -51,6 +52,7 @@ jobs:
   typecheck:
     name: Typecheck
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -79,6 +81,7 @@ jobs:
     name: Test (unit + contract)
     needs: [lint, typecheck]
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -111,6 +114,7 @@ jobs:
     name: Quality baselines (coverage ADR-015, CRAP ADR-018, maintainability ADR-019)
     needs: [lint, typecheck]
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: read
     steps:
@@ -150,6 +154,7 @@ jobs:
     name: Acceptance smoke (@smoke)
     needs: [lint, typecheck]
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -217,6 +222,7 @@ jobs:
     name: Lint step definitions
     needs: [lint, typecheck]
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -257,6 +263,7 @@ jobs:
     # required-check contract.
     name: Supply-chain security (ADR-011)
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: read
     steps:
@@ -299,6 +306,7 @@ jobs:
     # tab. `security-events: write` is scoped to this job alone.
     name: gitleaks (secret scan, PR)
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: read
       security-events: write
@@ -335,6 +343,7 @@ jobs:
     name: Build
     needs: [lint, typecheck]
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -370,6 +379,7 @@ jobs:
     name: Bundle-size baseline (1 MiB Worker cap + per-bundle gzippedKb, ADR-014)
     needs: [build]
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: read
     steps:

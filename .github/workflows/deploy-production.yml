@@ -53,6 +53,7 @@ jobs:
   isolation-audit:
     name: Secret isolation audit
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     # Intentionally no `environment:` declaration here. This is the
     # whole point of the audit — without the declaration, production
     # Environment Secrets MUST be unreadable.
@@ -79,6 +80,7 @@ jobs:
     name: Production deploy
     needs: isolation-audit
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     environment: production
     env:
       # Turborepo remote cache wiring. TURBO_TOKEN is an Environment

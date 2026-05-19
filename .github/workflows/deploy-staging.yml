@@ -37,6 +37,7 @@ jobs:
   deploy:
     name: Staging deploy
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     environment: staging
     env:
       # Turborepo remote cache wiring. TURBO_TOKEN is an Environment
