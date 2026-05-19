@@ -60,24 +60,12 @@ jobs:
       SENTRY_ORG: ${{ vars.SENTRY_ORG }}
       SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-        with:
-          submodules: recursive
-          persist-credentials: false
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
-        with:
-          version: 9.15.9
-
-      - name: Set up Node.js
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
-        with:
-          node-version-file: .nvmrc
-          # The pnpm store is cached here, keyed on pnpm-lock.yaml's
-          # hash, so subsequent runs report a cache hit in the log.
-          cache: pnpm
+      # ── Step 1: setup toolchain (checkout + pnpm + node + install) ─
+      # Single composite step replaces the prior checkout / pnpm-setup /
+      # setup-node / install chain. pnpm version is pinned exclusively
+      # in package.json#packageManager.
+      - name: Set up toolchain (checkout + pnpm + node + install)
+        uses: ./.github/actions/setup-toolchain
 
       - name: Compute SENTRY_RELEASE (short SHA)
         id: release
@@ -85,10 +73,6 @@ jobs:
           short_sha=$(git rev-parse --short HEAD)
           echo "release=${short_sha}" >> "$GITHUB_OUTPUT"
           echo "SENTRY_RELEASE=${short_sha}" >> "$GITHUB_ENV"
-
-      # ── Step 1: install ────────────────────────────────────────────
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
 
       # ── Step 2: validate environment contract ──────────────────────
       - name: Validate environment (check-env)
