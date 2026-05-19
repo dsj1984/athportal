@@ -269,6 +269,8 @@ jobs:
     needs: [lint, typecheck]
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    outputs:
+      dist-found: ${{ steps.dist-probe.outputs.found }}
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -281,7 +283,26 @@ jobs:
       - name: Build
         run: pnpm run build
 
+      # Story #393 introduced an `apps/*/dist/**` artifact pass-through to
+      # bundle-size-baseline, but every workspace's `build` script is still
+      # `exit 0` (no real wrangler/astro/expo output lands on disk until
+      # Story #378 wires the wrangler build for apps/api). Upload is gated
+      # behind a glob existence probe so the job stays green; flip back to a
+      # hard upload once #378 lands and the dist tree is real.
+      - name: Probe for dist outputs
+        id: dist-probe
+        shell: bash
+        run: |
+          shopt -s globstar nullglob
+          files=(apps/*/dist/**)
+          if [ ${#files[@]} -gt 0 ]; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Upload dist artifact (consumed by bundle-size-baseline)
+        if: steps.dist-probe.outputs.found == 'true'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: dist-bundle
@@ -304,7 +325,14 @@ jobs:
       - name: Set up toolchain (pnpm + node + install)
         uses: ./.github/actions/setup-toolchain
 
+      # The dist artifact is only produced when at least one app emits real
+      # build outputs (see the dist-probe step in `build`). Until Story #378
+      # wires the wrangler build for apps/api, bundle-size:check reads the
+      # placeholder size from .size-limit.json (apps/api/dist/worker.js
+      # missing → treated as 0 bytes); the download is skipped on those
+      # runs so the job stays green without an apps/*/dist tree on disk.
       - name: Download dist artifact (produced by `build`)
+        if: needs.build.outputs.dist-found == 'true'
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: dist-bundle
