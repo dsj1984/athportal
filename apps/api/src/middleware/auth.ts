@@ -185,13 +185,31 @@ export type RequireInternalUserEnv = {
 /**
  * Marker type for the Drizzle handle this middleware consumes.
  *
- * The middleware does not pin a single driver — `better-sqlite3` in
- * contract tests vs `@libsql/client` in production — so the handle is
- * carried as `unknown` at the boundary and narrowed structurally in
- * `lookupBySubject` / `insertIfAbsent`. Production wiring (the libSQL
- * adapter for Cloudflare Workers) lands with the API-shell Story; this
- * Task only ships the middleware that consumes whatever handle the
- * upstream provides.
+ * `unknown` is **deliberate**, not a placeholder waiting to be tightened.
+ * The middleware is intentionally driver-agnostic: in contract tests the
+ * handle is a `better-sqlite3` Drizzle proxy (the in-memory ephemeral
+ * DB returned by `freshDb()`), while in production it is an
+ * `@libsql/client` Drizzle proxy bound to a Turso/libSQL endpoint from
+ * the Cloudflare Worker. The two driver flavours expose the same
+ * fluent `select() / insert() / .onConflictDoNothing() / .returning()`
+ * surface this file uses, but their full TypeScript types differ
+ * across driver/builder versions in ways that cannot be expressed as a
+ * single union without dragging both packages' types into every
+ * consumer.
+ *
+ * Carrying the handle as `unknown` keeps the boundary honest — the
+ * call sites in `lookupBySubject` / `insertIfAbsent` narrow the handle
+ * structurally to the precise methods they invoke (`select`, `insert`,
+ * `.values()`, `.onConflictDoNothing()`, `.returning()`, `.all()`),
+ * which **self-documents** the contract this middleware actually
+ * depends on. A `BetterSqliteDb | LibsqlDb` union would be both
+ * unmanageable (it changes when either driver bumps minor) and less
+ * informative than the inline structural narrowing.
+ *
+ * Production wiring (the `@libsql/client`-for-Workers adapter, paired
+ * with the `better-sqlite3` Drizzle proxy in contract tests) lands with
+ * the API-shell Story; this Task only ships the middleware that
+ * consumes whatever handle the upstream provides.
  */
 type InternalUserDb = unknown;
 
