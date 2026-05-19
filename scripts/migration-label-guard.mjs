@@ -1,0 +1,119 @@
+// scripts/migration-label-guard.mjs
+//
+// Destructive-migration guard logic, extracted from the inline
+// actions/github-script body in .github/workflows/migration-label-guard.yml
+// so the behaviour can be unit-tested and version-controlled.
+//
+// Enforces the policy recorded in docs/decisions.md and README.md §
+// "Destructive migrations":
+//   - Scans the PR diff for added DROP / RENAME / NOT NULL clauses
+//     inside Drizzle migration files under apps/api/**/migrations/**.
+//   - Fails the check when matches are found without the
+//     migration::destructive label on the PR.
+//   - Passes trivially when no migration files are touched.
+
+// Path predicate: only Drizzle migration files under
+// apps/api/**/migrations/** participate in the guard.
+export const isMigrationFile = (filename) => {
+  if (!filename.startsWith('apps/api/')) return false;
+  if (!filename.includes('/migrations/')) return false;
+  return filename.endsWith('.sql') || filename.endsWith('.ts');
+};
+
+// Destructive clause patterns. The workflow only inspects ADDED lines
+// (lines that start with '+' in the unified diff and are not the '+++'
+// file header) so reverts and removals of pre-existing destructive
+// clauses do not re-trigger the guard.
+export const destructivePatterns = [
+  { name: 'DROP', re: /\bDROP\s+(TABLE|COLUMN|INDEX|CONSTRAINT|VIEW)\b/i },
+  { name: 'RENAME', re: /\bRENAME\s+(TABLE|COLUMN|TO)\b/i },
+  { name: 'NOT NULL', re: /\bADD\s+(COLUMN\s+)?[^;]*\bNOT\s+NULL\b/i },
+];
+
+export default async function (github, context, core) {
+  const owner = context.repo.owner;
+  const repo = context.repo.repo;
+  const prNumber = context.payload.pull_request.number;
+
+  // Paginate the changed-files list. GitHub returns up to 100 files per
+  // page; large PRs may need multiple pages.
+  const files = await github.paginate(github.rest.pulls.listFiles, {
+    owner,
+    repo,
+    pull_number: prNumber,
+    per_page: 100,
+  });
+
+  const migrationFiles = files.filter((f) => isMigrationFile(f.filename));
+
+  if (migrationFiles.length === 0) {
+    core.info('No migration files touched in this PR — guard passes trivially.');
+    return;
+  }
+
+  core.info(`Found ${migrationFiles.length} migration file(s) in the PR diff.`);
+
+  // Walk each migration file's patch and look for added destructive
+  // clauses. The `patch` field is the unified diff for that file; absent
+  // for binary / very large files, in which case we conservatively treat
+  // the file as destructive and require the label.
+  const findings = [];
+  for (const file of migrationFiles) {
+    if (!file.patch) {
+      findings.push({
+        file: file.filename,
+        clause: 'UNKNOWN (no patch returned by API)',
+        line: '(binary or oversized diff)',
+      });
+      continue;
+    }
+    const lines = file.patch.split('\n');
+    for (const line of lines) {
+      // Skip diff headers ('+++ b/path', '--- a/path') and context /
+      // removed lines. Only added lines start with a single '+'.
+      if (!line.startsWith('+') || line.startsWith('+++')) continue;
+      const added = line.slice(1);
+      for (const pattern of destructivePatterns) {
+        if (pattern.re.test(added)) {
+          findings.push({
+            file: file.filename,
+            clause: pattern.name,
+            line: added.trim(),
+          });
+        }
+      }
+    }
+  }
+
+  if (findings.length === 0) {
+    core.info('Migration files touched but no destructive clauses added — guard passes.');
+    return;
+  }
+
+  // Destructive clauses were added. The PR must carry the
+  // migration::destructive label, applied by the author and visible to
+  // reviewers per README.md § "Destructive migrations".
+  const labels = context.payload.pull_request.labels || [];
+  const hasLabel = labels.some((l) => l.name === 'migration::destructive');
+
+  core.startGroup('Destructive migration findings');
+  for (const finding of findings) {
+    core.info(`- ${finding.file}: ${finding.clause} | ${finding.line}`);
+  }
+  core.endGroup();
+
+  if (hasLabel) {
+    core.info('migration::destructive label is present — guard passes.');
+    return;
+  }
+
+  core.setFailed(
+    [
+      'This PR adds destructive migration clauses (DROP / RENAME / NOT NULL)',
+      'but is missing the migration::destructive label.',
+      '',
+      'Apply the label and ensure a second reviewer is escalated before merge.',
+      'See README.md § "Destructive migrations" and ADR in docs/decisions.md.',
+    ].join('\n'),
+  );
+}
