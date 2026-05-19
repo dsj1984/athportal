@@ -202,10 +202,39 @@ jobs:
       # Runs only if at least one deploy step actually executed. The
       # release tag is the short Git SHA, matching .env.example's
       # SENTRY_RELEASE convention.
-      - name: Install sentry-cli
+      # Cache the global npm prefix that holds @sentry/cli. The key is
+      # pinned to the major version (2.x) so a bump to v3 invalidates
+      # the cache. On a cache hit, the `Install sentry-cli` step below
+      # is skipped — see `if: steps.cache-sentry-cli.outputs.cache-hit
+      # != 'true'`. Keeping `@sentry/cli@2` pinned preserves the
+      # acceptance criterion: every run still resolves a 2.x release.
+      - name: Cache sentry-cli (pinned 2.x)
+        id: cache-sentry-cli
         if: >-
           (steps.deploy-api.outcome == 'success') ||
           (steps.deploy-web.outcome == 'success')
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm-global
+          key: sentry-cli-2-${{ runner.os }}
+
+      - name: Configure npm global prefix
+        if: >-
+          (steps.deploy-api.outcome == 'success') ||
+          (steps.deploy-web.outcome == 'success')
+        run: |
+          mkdir -p "$HOME/.npm-global/bin"
+          npm config set prefix "$HOME/.npm-global"
+          echo "$HOME/.npm-global/bin" >> "$GITHUB_PATH"
+
+      # Gated by actions/cache (id: cache-sentry-cli) above — runs only
+      # on cache miss. @sentry/cli stays pinned to 2.x so the cache key
+      # sentry-cli-2-<os> matches the installed major.
+      - name: Install sentry-cli (actions/cache miss only)
+        if: >-
+          ((steps.deploy-api.outcome == 'success') ||
+          (steps.deploy-web.outcome == 'success')) &&
+          steps.cache-sentry-cli.outputs.cache-hit != 'true'
         run: npm install --global @sentry/cli@2
 
       - name: Create Sentry release
