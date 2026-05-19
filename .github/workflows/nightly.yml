@@ -129,6 +129,75 @@ jobs:
           } > /tmp/mutation-summary.md
           gh issue comment "$NIGHTLY_REPORT_ISSUE" --body-file /tmp/mutation-summary.md
 
+  knip-strict:
+    # ADR-0006 — local hook stack v1. Strict `knip` runs unused-files,
+    # unused-exports, AND unused-dependencies in one pass. The pre-push
+    # hook runs the cheaper `--include files,dependencies` variant
+    # (`knip:fast`); CI is the only place the full type-export graph
+    # traversal runs (it's the slow part). Deferred to nightly because
+    # the pre-push hook already catches regressions in <24h.
+    name: knip strict (no baseline, ADR-0006)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: knip (strict)
+        run: pnpm run knip:strict
+
+  markdownlint:
+    # ADR-0006 — local hook stack v1. Full-repo markdownlint on every
+    # PR. The pre-commit hook runs the same rule set against staged
+    # `.md` files only; the pre-push hook re-runs full-scope as part of
+    # the umbrella `lint` task. Deferred to nightly because the
+    # pre-commit/pre-push hooks already catch regressions in <24h.
+    name: Markdown lint (ADR-0006)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Markdown lint
+        run: pnpm run lint:md
+
   lighthouse-baseline:
     name: Lighthouse baseline (per-route +/-3)
     runs-on: ubuntu-latest
