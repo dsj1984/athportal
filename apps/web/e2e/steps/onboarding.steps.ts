@@ -37,6 +37,7 @@ function resolveOnboardingSurfacePath(surfaceName: string): string {
       return '/dashboard';
     case 'onboarding':
     case 'onboarding screen':
+    case 'onboarding surface':
       return '/onboarding';
     default:
       throw new Error(
