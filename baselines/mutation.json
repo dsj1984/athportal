@@ -1,14 +1,177 @@
 {
   "$schema": ".agents/schemas/baselines/mutation.schema.json",
-  "generatedAt": "2026-05-17T00:00:00.000Z",
+  "generatedAt": "2026-05-21T20:40:46.332Z",
   "kernelVersion": "1.0.0",
   "rollup": {
     "*": {
+      "killed": 498,
+      "noCoverage": 126,
+      "score": 61.41,
+      "survived": 187
+    },
+    "apps/api": {
       "killed": 0,
       "noCoverage": 0,
-      "score": 0,
+      "score": 100,
       "survived": 0
+    },
+    "apps/mobile": {
+      "killed": 0,
+      "noCoverage": 0,
+      "score": 100,
+      "survived": 0
+    },
+    "apps/web": {
+      "killed": 0,
+      "noCoverage": 0,
+      "score": 100,
+      "survived": 0
+    },
+    "packages/baselines": {
+      "killed": 233,
+      "noCoverage": 42,
+      "score": 68.53,
+      "survived": 65
+    },
+    "packages/config": {
+      "killed": 0,
+      "noCoverage": 0,
+      "score": 100,
+      "survived": 0
+    },
+    "packages/shared": {
+      "killed": 265,
+      "noCoverage": 84,
+      "score": 56.26,
+      "survived": 122
     }
   },
-  "rows": []
+  "rows": [
+    {
+      "killed": 92,
+      "path": "packages/baselines/src/compare.ts",
+      "score": 69.7,
+      "survived": 18
+    },
+    {
+      "killed": 38,
+      "path": "packages/baselines/src/format.ts",
+      "score": 71.7,
+      "survived": 14
+    },
+    {
+      "killed": 15,
+      "path": "packages/baselines/src/io.ts",
+      "score": 62.5,
+      "survived": 5
+    },
+    {
+      "killed": 35,
+      "path": "packages/baselines/src/schema.ts",
+      "score": 50,
+      "survived": 23
+    },
+    {
+      "killed": 53,
+      "path": "packages/baselines/src/serialise.ts",
+      "score": 86.89,
+      "survived": 5
+    },
+    {
+      "killed": 0,
+      "path": "packages/shared/src/db/schema/index.ts",
+      "score": 0,
+      "survived": 0
+    },
+    {
+      "killed": 0,
+      "path": "packages/shared/src/db/schema/organizations.ts",
+      "score": 0,
+      "survived": 0
+    },
+    {
+      "killed": 0,
+      "path": "packages/shared/src/db/schema/teams.ts",
+      "score": 0,
+      "survived": 0
+    },
+    {
+      "killed": 0,
+      "path": "packages/shared/src/db/schema/users.ts",
+      "score": 0,
+      "survived": 0
+    },
+    {
+      "killed": 0,
+      "path": "packages/shared/src/observability/log-event.ts",
+      "score": 0,
+      "survived": 24
+    },
+    {
+      "killed": 44,
+      "path": "packages/shared/src/observability/redaction.ts",
+      "score": 88,
+      "survived": 6
+    },
+    {
+      "killed": 7,
+      "path": "packages/shared/src/rbac/policy.ts",
+      "score": 100,
+      "survived": 0
+    },
+    {
+      "killed": 49,
+      "path": "packages/shared/src/rbac/rules.ts",
+      "score": 89.09,
+      "survived": 6
+    },
+    {
+      "killed": 0,
+      "path": "packages/shared/src/testing/__tests__/fixtures/echo-schema.ts",
+      "score": 0,
+      "survived": 0
+    },
+    {
+      "killed": 16,
+      "path": "packages/shared/src/testing/app.ts",
+      "score": 100,
+      "survived": 0
+    },
+    {
+      "killed": 50,
+      "path": "packages/shared/src/testing/auth.ts",
+      "score": 52.63,
+      "survived": 31
+    },
+    {
+      "killed": 8,
+      "path": "packages/shared/src/testing/db.ts",
+      "score": 34.78,
+      "survived": 15
+    },
+    {
+      "killed": 2,
+      "path": "packages/shared/src/testing/examples/sum.ts",
+      "score": 100,
+      "survived": 0
+    },
+    {
+      "killed": 60,
+      "path": "packages/shared/src/testing/safety.ts",
+      "score": 75,
+      "survived": 17
+    },
+    {
+      "killed": 11,
+      "path": "packages/shared/src/testing/schema.ts",
+      "score": 37.93,
+      "survived": 18
+    },
+    {
+      "killed": 18,
+      "path": "packages/shared/src/testing/seeds.ts",
+      "score": 66.67,
+      "survived": 5
+    }
+  ]
 }
