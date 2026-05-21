@@ -67,6 +67,15 @@ function readActiveLegalDocumentsPlaceholder(): ActiveLegalDocuments {
 
 const activeLegalDocuments = readActiveLegalDocumentsPlaceholder();
 const view = buildOnboardingPageView(activeLegalDocuments);
+
+// Invite token is carried on the URL as `/onboarding?invite=<token>`
+// (see the parent/coach invite-acceptance flow). Read it server-side
+// and hand it to the form as a prop so the inline submit script can
+// include it in the OnboardInput payload; an empty / missing param
+// becomes `null` and the payload omits the field entirely.
+const rawInviteToken = Astro.url.searchParams.get('invite');
+const inviteToken =
+  typeof rawInviteToken === 'string' && rawInviteToken.length > 0 ? rawInviteToken : null;
 ---
 
 <html lang="en">
@@ -83,6 +92,7 @@ const view = buildOnboardingPageView(activeLegalDocuments);
       <OnboardingForm
         termsOfServiceVersion={view.legalAcceptances.termsOfServiceVersion}
         privacyPolicyVersion={view.legalAcceptances.privacyPolicyVersion}
+        inviteToken={inviteToken}
       />
     </main>
   </body>
