@@ -31,7 +31,7 @@ Do **not** use manual testing for:
 
 Every Story whose acceptance criteria include a user-visible surface gets a **10-minute exploratory charter** before the Story closes. The charter is appended to the Story's GitHub issue as a structured comment.
 
-**Charter template**
+#### Charter template
 
 ```markdown
 ### Manual exploratory charter — Story #<id>
