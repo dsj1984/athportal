@@ -1,0 +1,143 @@
+---
+// apps/web/src/components/onboarding/ProfilePhotoUploader.astro
+//
+// Renders the optional profile-photo upload surface. The browser-side
+// script handles file selection, validates the MIME + size gate via
+// the pure-TS `validateProfilePhotoFile` helper, POSTs the file to
+// `/api/v1/uploads`, then mirrors the returned `profilePhotoUploadId`
+// onto the island root's `data-upload-id` so the OnboardingForm
+// controller can read it without DOM-querying the file input.
+//
+// Story #574 / Task #585. Tech Spec #490.
+
+import { buildProfilePhotoView } from './ProfilePhotoUploader.ts';
+
+const view = buildProfilePhotoView();
+---
+
+<fieldset
+  class="onboarding-photo"
+  data-testid={view.testIds.root}
+  data-island="profile-photo"
+  data-upload-id=""
+>
+  <legend class="onboarding-photo__legend">{view.heading}</legend>
+  <p class="onboarding-photo__helper">{view.helperText}</p>
+
+  <input
+    type="file"
+    accept="image/jpeg,image/png,image/webp"
+    name="profilePhotoUpload"
+    data-testid={view.testIds.upload}
+  />
+  <img
+    class="onboarding-photo__preview"
+    data-testid={view.testIds.preview}
+    alt="Profile photo preview"
+    hidden
+  />
+  <button
+    type="button"
+    class="onboarding-photo__remove"
+    data-testid={view.testIds.remove}
+    hidden
+  >
+    {view.removeLabel}
+  </button>
+</fieldset>
+
+<script>
+  import {
+    PROFILE_PHOTO_TEST_IDS as TEST_IDS,
+    validateProfilePhotoFile,
+  } from './ProfilePhotoUploader.ts';
+
+  const root = document.querySelector<HTMLElement>(`[data-testid="${TEST_IDS.root}"]`);
+  if (root) {
+    const input = root.querySelector<HTMLInputElement>(`[data-testid="${TEST_IDS.upload}"]`);
+    const preview = root.querySelector<HTMLImageElement>(`[data-testid="${TEST_IDS.preview}"]`);
+    const removeBtn = root.querySelector<HTMLButtonElement>(`[data-testid="${TEST_IDS.remove}"]`);
+
+    const setUploadId = (id: string) => {
+      root.dataset.uploadId = id;
+      document.dispatchEvent(
+        new CustomEvent('profile-photo:changed', { detail: { uploadId: id || null } }),
+      );
+    };
+
+    const clear = () => {
+      if (input) input.value = '';
+      if (preview) {
+        preview.removeAttribute('src');
+        preview.hidden = true;
+      }
+      if (removeBtn) removeBtn.hidden = true;
+      setUploadId('');
+    };
+
+    if (input) {
+      input.addEventListener('change', async () => {
+        const file = input.files?.[0];
+        if (!file) {
+          clear();
+          return;
+        }
+        const error = validateProfilePhotoFile({
+          mimeType: file.type,
+          sizeBytes: file.size,
+        });
+        if (error !== null) {
+          document.dispatchEvent(
+            new CustomEvent('profile-photo:invalid', { detail: { message: error } }),
+          );
+          clear();
+          return;
+        }
+
+        // Render a local preview before the upload completes so the
+        // user gets immediate visual feedback. Falls back gracefully
+        // when URL.createObjectURL is unavailable (older test envs).
+        try {
+          if (preview && typeof URL !== 'undefined' && URL.createObjectURL) {
+            preview.src = URL.createObjectURL(file);
+            preview.hidden = false;
+          }
+        } catch {
+          // No preview available; the upload still proceeds.
+        }
+        if (removeBtn) removeBtn.hidden = false;
+
+        try {
+          const body = new FormData();
+          body.append('file', file);
+          const response = await fetch('/api/v1/uploads', { method: 'POST', body });
+          if (!response.ok) {
+            throw new Error(`Upload failed with status ${response.status}`);
+          }
+          const payload = (await response.json()) as {
+            success?: boolean;
+            data?: { profilePhotoUploadId?: string };
+          };
+          const uploadId = payload.data?.profilePhotoUploadId;
+          if (payload.success === true && typeof uploadId === 'string' && uploadId.length > 0) {
+            setUploadId(uploadId);
+          } else {
+            throw new Error('Upload response was malformed.');
+          }
+        } catch {
+          document.dispatchEvent(
+            new CustomEvent('profile-photo:upload-failed'),
+          );
+          clear();
+        }
+      });
+    }
+
+    if (removeBtn) {
+      removeBtn.addEventListener('click', (event) => {
+        event.preventDefault();
+        clear();
+      });
+    }
+  }
+</script>
