@@ -1,13 +1,13 @@
 {
   "$schema": ".agents/schemas/baselines/crap.schema.json",
-  "generatedAt": "2026-05-21T20:55:39.693Z",
-  "kernelVersion": "1.0.0",
+  "kernelVersion": "0.1.0",
+  "generatedAt": "2026-05-21T20:56:21.988Z",
   "rollup": {
     "*": {
-      "max": 462,
-      "methodsAbove20": 21,
       "p50": 2,
-      "p95": 42
+      "p95": 42,
+      "max": 462,
+      "methodsAbove20": 18
     }
   },
   "rows": [
@@ -178,60 +178,6 @@
       "method": "<anon method-2>",
       "path": "apps/api/src/routes/debug/synthetic-failure.ts",
       "startLine": 120
-    },
-    {
-      "crap": 2,
-      "method": "errorBody",
-      "path": "apps/api/src/routes/v1/auth/onboard.ts",
-      "startLine": 106
-    },
-    {
-      "crap": 2,
-      "method": "routeError",
-      "path": "apps/api/src/routes/v1/auth/onboard.ts",
-      "startLine": 119
-    },
-    {
-      "crap": 56,
-      "method": "asRouteError",
-      "path": "apps/api/src/routes/v1/auth/onboard.ts",
-      "startLine": 125
-    },
-    {
-      "crap": 12,
-      "method": "fetchPrimaryEmailVerified",
-      "path": "apps/api/src/routes/v1/auth/onboard.ts",
-      "startLine": 154
-    },
-    {
-      "crap": 2,
-      "method": "<anon method-1>",
-      "path": "apps/api/src/routes/v1/auth/onboard.ts",
-      "startLine": 164
-    },
-    {
-      "crap": 2,
-      "method": "toPublicUser",
-      "path": "apps/api/src/routes/v1/auth/onboard.ts",
-      "startLine": 200
-    },
-    {
-      "crap": 156,
-      "method": "<anon method-2>",
-      "path": "apps/api/src/routes/v1/auth/onboard.ts",
-      "startLine": 213
-    },
-    {
-      "crap": 2,
-      "method": "<anon method-3>",
-      "path": "apps/api/src/routes/v1/auth/onboard.ts",
-      "startLine": 217
-    },
-    {
-      "crap": 56,
-      "method": "<anon method-4>",
-      "path": "apps/api/src/routes/v1/auth/onboard.ts",
-      "startLine": 306
     },
     {
       "crap": 2,
