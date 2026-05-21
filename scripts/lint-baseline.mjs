@@ -326,6 +326,128 @@ function aggregate(now = new Date()) {
 }
 
 // ---------------------------------------------------------------------------
+// Sentinel-pattern scan (Story #555 / Task #570)
+//
+// The onboarding gate is load-bearing for the entire application: every
+// `/api/v1/*` route and every gated Astro page composes
+// `getOnboardingState(db, userId)` from
+// `packages/shared/src/db/queries/users.ts`. To keep that accessor the
+// SINGLE sanctioned reader of `users.onboarded_at`, this scan walks the
+// workspace and rejects any `.onboardedAt` reference outside:
+//
+//   • the sanctioned accessor file itself
+//     (`packages/shared/src/db/queries/users.ts`)
+//   • the production Drizzle schema where the column is declared
+//     (`packages/shared/src/db/schema/users.ts`)
+//   • Vitest test files (`*.test.*`) — fixtures and unit harnesses
+//   • the test-only schema clone
+//     (`packages/shared/src/testing/schema.ts`)
+//
+// The rule is a binary check, NOT a count ratchet: a single match outside
+// the allowlist fails the gate. There is no snapshot to ratchet against
+// because the goal is zero matches, not a downward count over time.
+//
+// The scan is invoked from both `modeCheck` (CI gate) and `modeUpdate`
+// (the operator-facing ratchet refresh) so a stale violation cannot be
+// absorbed via `--update`.
+// ---------------------------------------------------------------------------
+
+const SENTINEL_PATTERN = /\.onboardedAt\b/;
+
+// The sanctioned accessor and its allowed read-sites. Paths are POSIX-
+// relative to `REPO_ROOT`.
+const SENTINEL_ALLOWLIST = new Set([
+  'packages/shared/src/db/queries/users.ts',
+  'packages/shared/src/db/schema/users.ts',
+  'packages/shared/src/testing/schema.ts',
+  'scripts/lint-baseline.mjs',
+]);
+
+const SENTINEL_SCAN_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.mjs', '.cjs', '.astro']);
+
+const SENTINEL_SKIP_DIRS = new Set([
+  'node_modules',
+  'dist',
+  'build',
+  '.next',
+  '.astro',
+  '.bdd-gen',
+  '.turbo',
+  '.git',
+  '.worktrees',
+  'coverage',
+  'temp',
+  '.agents',
+  '.claude',
+]);
+
+function isTestFile(relPath) {
+  // Vitest unit and contract suites — `.test.ts`, `.test.tsx`,
+  // `.contract.test.ts`, `.test.mjs`, etc.
+  return /\.(test|spec)\.[cm]?[jt]sx?$/.test(relPath);
+}
+
+function* walkFiles(dir, root = dir) {
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (entry.name.startsWith('.') && SENTINEL_SKIP_DIRS.has(entry.name)) continue;
+    const abs = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      if (SENTINEL_SKIP_DIRS.has(entry.name)) continue;
+      yield* walkFiles(abs, root);
+      continue;
+    }
+    if (!entry.isFile()) continue;
+    const ext = path.extname(entry.name);
+    if (!SENTINEL_SCAN_EXTENSIONS.has(ext)) continue;
+    yield abs;
+  }
+}
+
+export function collectSentinelViolations(root = REPO_ROOT) {
+  const violations = [];
+  for (const abs of walkFiles(root)) {
+    const rel = toPosixRel(abs, root);
+    if (SENTINEL_ALLOWLIST.has(rel)) continue;
+    if (isTestFile(rel)) continue;
+    let contents;
+    try {
+      contents = fs.readFileSync(abs, 'utf8');
+    } catch {
+      continue;
+    }
+    const lines = contents.split(/\r?\n/);
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (SENTINEL_PATTERN.test(line)) {
+        // Skip pure comment lines so docstrings/explanatory references in
+        // production code (e.g. a JSDoc that names the column) do not
+        // trip the gate.
+        const trimmed = line.trim();
+        if (trimmed.startsWith('//') || trimmed.startsWith('*')) continue;
+        violations.push({ file: rel, line: i + 1, text: line.trim() });
+      }
+    }
+  }
+  return violations;
+}
+
+function runSentinelScan() {
+  const violations = collectSentinelViolations(REPO_ROOT);
+  if (violations.length === 0) return { ok: true };
+  const lines = [
+    '[lint-baseline] ❌ sentinel-pattern violations: `.onboardedAt` read outside sanctioned accessor',
+    '  The only sanctioned reader of `users.onboarded_at` is',
+    '  `packages/shared/src/db/queries/users.ts → getOnboardingState`.',
+    '  Route the read through that accessor (or add an exported function alongside it).',
+    '',
+  ];
+  for (const v of violations) {
+    lines.push(`  ${v.file}:${v.line}  ${v.text}`);
+  }
+  return { ok: false, message: lines.join('\n') };
+}
+
+// ---------------------------------------------------------------------------
 // Serialise (byte-stable, sorted keys, trailing newline). Mirrors the
 // `@repo/baselines` `serialiseBaseline` contract so the fallback path
 // produces byte-identical output to the harness.
@@ -437,6 +559,11 @@ export function formatRejectionMessage({
 // ---------------------------------------------------------------------------
 
 function modeUpdate(now = new Date()) {
+  const sentinel = runSentinelScan();
+  if (!sentinel.ok) {
+    process.stderr.write(`${sentinel.message}\n`);
+    return 1;
+  }
   const envelope = aggregate(now);
   const errors = envelope.rollup['*'].errorCount;
   if (errors > 0) {
@@ -464,6 +591,11 @@ function modeUpdate(now = new Date()) {
 }
 
 function modeCheck(now = new Date()) {
+  const sentinel = runSentinelScan();
+  if (!sentinel.ok) {
+    process.stderr.write(`${sentinel.message}\n`);
+    return 1;
+  }
   const current = aggregate(now);
   const baseline = readBaseline(BASELINE_PATH);
   if (!baseline) {

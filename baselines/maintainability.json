@@ -1,11 +1,11 @@
 {
   "$schema": ".agents/schemas/baselines/maintainability.schema.json",
   "kernelVersion": "0.1.0",
-  "generatedAt": "2026-05-21T19:33:53.873Z",
+  "generatedAt": "2026-05-21T20:08:48.086Z",
   "rollup": {
     "*": {
-      "min": 81.713,
-      "p50": 111.681,
+      "min": 80.074,
+      "p50": 111.005,
       "p95": 171
     }
   },
@@ -21,10 +21,6 @@
     {
       "mi": 138.232,
       "path": "apps/api/src/middleware/__testing__/auth-test.ts"
-    },
-    {
-      "mi": 98.813,
-      "path": "apps/api/src/middleware/auth.ts"
     },
     {
       "mi": 103.092,
@@ -43,12 +39,16 @@
       "path": "apps/api/src/routes/v1/sign-out.ts"
     },
     {
-      "mi": 89.95,
+      "mi": 84.547,
       "path": "apps/api/src/routes/v1/users/role.ts"
     },
     {
       "mi": 111.681,
       "path": "apps/api/src/sentry.ts"
+    },
+    {
+      "mi": 171,
+      "path": "apps/api/src/types/drizzle-structural.ts"
     },
     {
       "mi": 94.92,
@@ -71,6 +71,18 @@
       "path": "apps/web/e2e/fixtures/email-inbox.ts"
     },
     {
+      "mi": 91.32,
+      "path": "apps/web/e2e/fixtures/persona-global-setup.ts"
+    },
+    {
+      "mi": 99.406,
+      "path": "apps/web/e2e/fixtures/persona-projects.ts"
+    },
+    {
+      "mi": 118.899,
+      "path": "apps/web/e2e/fixtures/persona-storage.ts"
+    },
+    {
       "mi": 105.55,
       "path": "apps/web/e2e/fixtures/static-server.mjs"
     },
@@ -87,7 +99,7 @@
       "path": "apps/web/e2e/helpers/observability/sentry.ts"
     },
     {
-      "mi": 131.431,
+      "mi": 122.057,
       "path": "apps/web/e2e/steps/auth.steps.ts"
     },
     {
@@ -111,8 +123,12 @@
       "path": "apps/web/e2e/steps/visibility.steps.ts"
     },
     {
-      "mi": 81.713,
+      "mi": 80.074,
       "path": "apps/web/playwright.config.ts"
+    },
+    {
+      "mi": 99.6,
+      "path": "apps/web/src/components/ui/EmptyState.ts"
     },
     {
       "mi": 171,
@@ -121,6 +137,10 @@
     {
       "mi": 149.999,
       "path": "apps/web/src/middleware.ts"
+    },
+    {
+      "mi": 98.571,
+      "path": "apps/web/src/pages/dashboard.ts"
     },
     {
       "mi": 113.043,
@@ -179,19 +199,31 @@
       "path": "packages/shared/drizzle.config.ts"
     },
     {
-      "mi": 133.836,
+      "mi": 122.384,
       "path": "packages/shared/src/db/schema/index.ts"
+    },
+    {
+      "mi": 95.901,
+      "path": "packages/shared/src/db/schema/legalDocuments.ts"
     },
     {
       "mi": 97.145,
       "path": "packages/shared/src/db/schema/organizations.ts"
     },
     {
+      "mi": 108.651,
+      "path": "packages/shared/src/db/schema/parentAthleteLinks.ts"
+    },
+    {
       "mi": 105.085,
       "path": "packages/shared/src/db/schema/teams.ts"
     },
     {
-      "mi": 107.538,
+      "mi": 109.655,
+      "path": "packages/shared/src/db/schema/userLegalAgreements.ts"
+    },
+    {
+      "mi": 106.15,
       "path": "packages/shared/src/db/schema/users.ts"
     },
     {
@@ -223,11 +255,11 @@
       "path": "packages/shared/src/rbac/types.ts"
     },
     {
-      "mi": 122.027,
+      "mi": 122.795,
       "path": "packages/shared/src/testing/app.ts"
     },
     {
-      "mi": 93.347,
+      "mi": 95.14,
       "path": "packages/shared/src/testing/auth.ts"
     },
     {

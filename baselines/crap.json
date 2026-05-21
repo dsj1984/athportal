@@ -1,13 +1,13 @@
 {
   "$schema": ".agents/schemas/baselines/crap.schema.json",
   "kernelVersion": "0.1.0",
-  "generatedAt": "2026-05-21T19:33:25.615Z",
+  "generatedAt": "2026-05-21T20:08:48.267Z",
   "rollup": {
     "*": {
       "p50": 2,
-      "p95": 42,
+      "p95": 30,
       "max": 462,
-      "methodsAbove20": 17
+      "methodsAbove20": 15
     }
   },
   "rows": [
@@ -34,84 +34,6 @@
       "method": "<anon method-1>",
       "path": "apps/api/src/middleware/__testing__/auth-test.ts",
       "startLine": 59
-    },
-    {
-      "crap": 2,
-      "method": "unauthenticated",
-      "path": "apps/api/src/middleware/auth.ts",
-      "startLine": 60
-    },
-    {
-      "crap": 20,
-      "method": "readSessionCookie",
-      "path": "apps/api/src/middleware/auth.ts",
-      "startLine": 72
-    },
-    {
-      "crap": 20,
-      "method": "readBearerToken",
-      "path": "apps/api/src/middleware/auth.ts",
-      "startLine": 84
-    },
-    {
-      "crap": 2,
-      "method": "extractToken",
-      "path": "apps/api/src/middleware/auth.ts",
-      "startLine": 97
-    },
-    {
-      "crap": 2,
-      "method": "clerkAuth",
-      "path": "apps/api/src/middleware/auth.ts",
-      "startLine": 123
-    },
-    {
-      "crap": 42,
-      "method": "<anon method-1>",
-      "path": "apps/api/src/middleware/auth.ts",
-      "startLine": 124
-    },
-    {
-      "crap": 2,
-      "method": "<anon method-2>",
-      "path": "apps/api/src/middleware/auth.ts",
-      "startLine": 253
-    },
-    {
-      "crap": 2,
-      "method": "buildJitCandidate",
-      "path": "apps/api/src/middleware/auth.ts",
-      "startLine": 269
-    },
-    {
-      "crap": 2,
-      "method": "toAuthContext",
-      "path": "apps/api/src/middleware/auth.ts",
-      "startLine": 278
-    },
-    {
-      "crap": 2,
-      "method": "requireInternalUser",
-      "path": "apps/api/src/middleware/auth.ts",
-      "startLine": 313
-    },
-    {
-      "crap": 42,
-      "method": "<anon method-3>",
-      "path": "apps/api/src/middleware/auth.ts",
-      "startLine": 314
-    },
-    {
-      "crap": 2,
-      "method": "lookupBySubject",
-      "path": "apps/api/src/middleware/auth.ts",
-      "startLine": 361
-    },
-    {
-      "crap": 2,
-      "method": "insertIfAbsent",
-      "path": "apps/api/src/middleware/auth.ts",
-      "startLine": 379
     },
     {
       "crap": 6,
@@ -732,6 +654,30 @@
       "startLine": 64
     },
     {
+      "crap": 20,
+      "method": "buildEmptyState",
+      "path": "apps/web/src/components/ui/EmptyState.ts",
+      "startLine": 68
+    },
+    {
+      "crap": 20,
+      "method": "normalizeAction",
+      "path": "apps/web/src/components/ui/EmptyState.ts",
+      "startLine": 93
+    },
+    {
+      "crap": 2,
+      "method": "buildDashboard",
+      "path": "apps/web/src/pages/dashboard.ts",
+      "startLine": 89
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "apps/web/src/pages/dashboard.ts",
+      "startLine": 96
+    },
+    {
       "crap": 6,
       "method": "<anon method-1>",
       "path": "apps/web/src/pages/sign-out.ts",
@@ -902,8 +848,68 @@
     {
       "crap": 2,
       "method": "<anon method-1>",
+      "path": "packages/shared/src/db/schema/legalDocuments.ts",
+      "startLine": 32
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "packages/shared/src/db/schema/parentAthleteLinks.ts",
+      "startLine": 25
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-2>",
+      "path": "packages/shared/src/db/schema/parentAthleteLinks.ts",
+      "startLine": 28
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-3>",
+      "path": "packages/shared/src/db/schema/parentAthleteLinks.ts",
+      "startLine": 34
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
       "path": "packages/shared/src/db/schema/teams.ts",
       "startLine": 18
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "packages/shared/src/db/schema/userLegalAgreements.ts",
+      "startLine": 31
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-2>",
+      "path": "packages/shared/src/db/schema/userLegalAgreements.ts",
+      "startLine": 34
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-3>",
+      "path": "packages/shared/src/db/schema/userLegalAgreements.ts",
+      "startLine": 39
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "packages/shared/src/db/schema/users.ts",
+      "startLine": 36
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-2>",
+      "path": "packages/shared/src/db/schema/users.ts",
+      "startLine": 37
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-3>",
+      "path": "packages/shared/src/db/schema/users.ts",
+      "startLine": 43
     },
     {
       "crap": 2,

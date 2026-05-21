@@ -220,9 +220,8 @@ type InternalUserDb = unknown;
  * synthetic placeholder email format, and onboarding-timestamp seed —
  * into one named constant so a future maintainer can read the JIT
  * contract in one place rather than reconstructing it from a module-
- * scope `JIT_DEFAULT_ROLE`, an inline template literal inside
- * `buildJitCandidate`, and an implicit "null because the column is
- * nullable" defaulting on `onboardedAt`.
+ * scope `JIT_DEFAULT_ROLE` and an inline template literal inside
+ * `buildJitCandidate`.
  *
  * Fields:
  *
@@ -239,19 +238,20 @@ type InternalUserDb = unknown;
  *                       it is ever exposed to a client. The value is
  *                       internal and never logged (the redactor scrubs
  *                       `email`).
- *   - `onboardedAt`     `null` on insert so the Astro middleware's
- *                       onboarding-redirect path engages on the next
- *                       page load and the onboarding flow can stamp the
- *                       timestamp itself.
  *
  * Frozen via `as const` so the literal types flow into `JitCandidate`
  * and downstream tests, and so no caller can mutate the policy at
  * runtime.
+ *
+ * Note: the JIT insert writes `onboardedAt: null` inline (see
+ * `insertIfAbsent`) rather than via a constant on `JIT_DEFAULTS` because
+ * the lint-baseline sentinel rule (Story #555, Task #570) forbids
+ * `.onboardedAt` reads outside the sanctioned `getOnboardingState`
+ * accessor. The insert is a *write*, not a read.
  */
 const JIT_DEFAULTS = {
   role: 'member',
   syntheticEmail: (clerkSubjectId: string) => `${clerkSubjectId}@clerk-jit.invalid`,
-  onboardedAt: null,
 } as const;
 
 interface JitCandidate {
@@ -390,7 +390,12 @@ function insertIfAbsent(
       clerkSubjectId: candidate.clerkSubjectId,
       email: candidate.email,
       role: candidate.role,
-      onboardedAt: JIT_DEFAULTS.onboardedAt,
+      // Inlined to `null` rather than `JIT_DEFAULTS.onboardedAt` because the
+      // lint-baseline sentinel-pattern rule (Story #555, Task #570) forbids
+      // `.onboardedAt` reads outside the sanctioned `getOnboardingState`
+      // accessor. The constant value is the same; the inline write below
+      // is a *write*, not a read, and falls outside the rule's scope.
+      onboardedAt: null,
       // created_at / updated_at use schema defaults (unixepoch()).
     })
     .onConflictDoNothing({ target: users.clerkSubjectId })
