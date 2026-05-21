@@ -20,6 +20,18 @@
       "types": "./dist/db/queries/users.d.ts",
       "import": "./src/db/queries/users.ts"
     },
+    "./db/queries/legalDocuments": {
+      "types": "./dist/db/queries/legalDocuments.d.ts",
+      "import": "./src/db/queries/legalDocuments.ts"
+    },
+    "./db/queries/parentAthleteLinks": {
+      "types": "./dist/db/queries/parentAthleteLinks.d.ts",
+      "import": "./src/db/queries/parentAthleteLinks.ts"
+    },
+    "./schemas/auth": {
+      "types": "./dist/schemas/auth.d.ts",
+      "import": "./src/schemas/auth.ts"
+    },
     "./rbac": {
       "types": "./dist/rbac/index.d.ts",
       "import": "./src/rbac/index.ts"
