@@ -1,6 +1,6 @@
 {
   "$schema": ".agents/schemas/baselines/crap.schema.json",
-  "generatedAt": "2026-05-21T21:53:59.216Z",
+  "generatedAt": "2026-05-21T22:46:45.897Z",
   "kernelVersion": "1.0.0",
   "rollup": {
     "*": {
@@ -183,55 +183,55 @@
       "crap": 2,
       "method": "errorBody",
       "path": "apps/api/src/routes/v1/auth/onboard.ts",
-      "startLine": 106
+      "startLine": 119
     },
     {
       "crap": 2,
       "method": "routeError",
       "path": "apps/api/src/routes/v1/auth/onboard.ts",
-      "startLine": 119
+      "startLine": 132
     },
     {
       "crap": 56,
       "method": "asRouteError",
       "path": "apps/api/src/routes/v1/auth/onboard.ts",
-      "startLine": 125
+      "startLine": 138
     },
     {
       "crap": 12,
       "method": "fetchPrimaryEmailVerified",
       "path": "apps/api/src/routes/v1/auth/onboard.ts",
-      "startLine": 154
+      "startLine": 167
     },
     {
       "crap": 2,
       "method": "<anon method-1>",
       "path": "apps/api/src/routes/v1/auth/onboard.ts",
-      "startLine": 164
+      "startLine": 177
     },
     {
       "crap": 2,
       "method": "toPublicUser",
       "path": "apps/api/src/routes/v1/auth/onboard.ts",
-      "startLine": 200
+      "startLine": 213
     },
     {
       "crap": 156,
       "method": "<anon method-2>",
       "path": "apps/api/src/routes/v1/auth/onboard.ts",
-      "startLine": 213
+      "startLine": 226
     },
     {
       "crap": 2,
       "method": "<anon method-3>",
       "path": "apps/api/src/routes/v1/auth/onboard.ts",
-      "startLine": 217
+      "startLine": 230
     },
     {
       "crap": 56,
       "method": "<anon method-4>",
       "path": "apps/api/src/routes/v1/auth/onboard.ts",
-      "startLine": 306
+      "startLine": 319
     },
     {
       "crap": 2,
@@ -462,7 +462,7 @@
       "startLine": 52
     },
     {
-      "crap": 12,
+      "crap": 20,
       "method": "resolvePagePath",
       "path": "apps/web/e2e/steps/navigation.steps.ts",
       "startLine": 21
@@ -471,7 +471,7 @@
       "crap": 2,
       "method": "<anon method-1>",
       "path": "apps/web/e2e/steps/navigation.steps.ts",
-      "startLine": 33
+      "startLine": 35
     },
     {
       "crap": 2,
@@ -1131,25 +1131,25 @@
       "crap": 2,
       "method": "createOnboardingGate",
       "path": "apps/web/src/middleware.ts",
-      "startLine": 127
+      "startLine": 131
     },
     {
-      "crap": 30,
+      "crap": 42,
       "method": "onboardingGate",
       "path": "apps/web/src/middleware.ts",
-      "startLine": 130
+      "startLine": 134
     },
     {
       "crap": 2,
       "method": "<anon method-1>",
       "path": "apps/web/src/middleware.ts",
-      "startLine": 170
+      "startLine": 178
     },
     {
       "crap": 2,
       "method": "<anon method-2>",
       "path": "apps/web/src/middleware.ts",
-      "startLine": 183
+      "startLine": 191
     },
     {
       "crap": 2,

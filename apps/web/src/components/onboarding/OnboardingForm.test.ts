@@ -169,6 +169,28 @@ describe('buildOnboardingPayload + tryBuildOnboardingPayload', () => {
     };
     expect('inviteToken' in payload).toBe(false);
   });
+
+  it('includes inviteToken in the payload when the form state carries a non-null token', () => {
+    // Pins the prop-threading contract: when the parent page reads
+    // `?invite=<token>` and threads it into OnboardingForm, the working
+    // state's `inviteToken` MUST round-trip into the payload that
+    // POSTs to /api/v1/auth/onboard. Without this assertion a future
+    // edit that silently drops the prop would still pass every other
+    // test in this file. (Epic #8 code-review HR-2.)
+    const payload = buildOnboardingPayload(
+      completeState({ inviteToken: 'invite_tok_test_123' }),
+    ) as { inviteToken?: unknown };
+    expect(payload.inviteToken).toBe('invite_tok_test_123');
+  });
+
+  it('preserves the inviteToken seed when createInitialOnboardingFormState receives it', () => {
+    const state = createInitialOnboardingFormState({
+      termsOfServiceVersion: '1.0.0',
+      privacyPolicyVersion: '1.0.0',
+      inviteToken: 'invite_tok_test_456',
+    });
+    expect(state.inviteToken).toBe('invite_tok_test_456');
+  });
 });
 
 describe('foldServerErrorsIntoFieldMap', () => {

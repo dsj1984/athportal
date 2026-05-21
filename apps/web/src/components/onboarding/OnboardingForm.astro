@@ -24,8 +24,15 @@ import { ONBOARDING_FORM_TEST_IDS } from './OnboardingForm.ts';
 interface Props {
   readonly termsOfServiceVersion: string;
   readonly privacyPolicyVersion: string;
+  /**
+   * Optional invite token, read from `/onboarding?invite=<token>` by
+   * the parent page. When present the inline submit script folds it
+   * into the OnboardInput payload; when absent the payload omits the
+   * field entirely (see `buildOnboardingPayload`).
+   */
+  readonly inviteToken?: string | null;
 }
-const { termsOfServiceVersion, privacyPolicyVersion } = Astro.props;
+const { termsOfServiceVersion, privacyPolicyVersion, inviteToken = null } = Astro.props;
 
 import ClerkVerifyEmailIsland from './ClerkVerifyEmailIsland.astro';
 import LegalAcceptanceCheckboxes from './LegalAcceptanceCheckboxes.astro';
@@ -38,6 +45,7 @@ import ProfilePhotoUploader from './ProfilePhotoUploader.astro';
   data-testid={ONBOARDING_FORM_TEST_IDS.form}
   data-tos-version={termsOfServiceVersion}
   data-privacy-version={privacyPolicyVersion}
+  data-invite-token={inviteToken ?? ''}
   novalidate
 >
   <p
@@ -169,7 +177,10 @@ import ProfilePhotoUploader from './ProfilePhotoUploader.astro';
           photoIsland?.dataset.uploadId && photoIsland.dataset.uploadId.length > 0
             ? photoIsland.dataset.uploadId
             : null,
-        inviteToken: null,
+        inviteToken:
+          form.dataset.inviteToken && form.dataset.inviteToken.length > 0
+            ? form.dataset.inviteToken
+            : null,
         termsOfServiceVersion: tosVersion,
         privacyPolicyVersion: privacyVersion,
       };

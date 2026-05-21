@@ -17,8 +17,12 @@
 // runtime does not yet carry a DB handle — the production binding
 // lands alongside the matching cutover in a later Wave (Tech Spec
 // #490 §Architecture & Design). Until the binding exists the
-// placeholder returns the spec-pinned MVP defaults so the page
-// renders end-to-end against the real OnboardInputSchema contract.
+// placeholder mirrors the canonical seed exports from
+// `@repo/shared/db/seed` so the page renders end-to-end against the
+// real OnboardInputSchema contract AND every onboarding submission
+// matches the rows the API edge re-validates against. A future
+// binding-cutover replaces this accessor with a real DB read; the
+// seed exports stay the single source of truth for the MVP defaults.
 // Tests inject a stubbed accessor; the production composition stays
 // untouched.
 //
@@ -26,28 +30,36 @@
 
 import { buildOnboardingPageView } from './onboarding.ts';
 import type { ActiveLegalDocuments } from '@repo/shared/db/queries/legalDocuments';
+import {
+  SEED_BOOTSTRAP_EFFECTIVE_AT,
+  SEED_PRIVACY_ID,
+  SEED_PRIVACY_VERSION,
+  SEED_TOS_ID,
+  SEED_TOS_VERSION,
+} from '@repo/shared/db/seed';
 import OnboardingForm from '../components/onboarding/OnboardingForm.astro';
 
 /**
  * Injectable accessor. Production wires the real DB-backed reader
  * once the web runtime carries a DB handle; today the placeholder
- * returns the spec-pinned MVP defaults from Tech Spec #490.
+ * mirrors the canonical seed exports (`SEED_*` from
+ * `@repo/shared/db/seed`) verbatim so the version strings the form
+ * submits match the rows the API edge re-validates against.
  */
 function readActiveLegalDocumentsPlaceholder(): ActiveLegalDocuments {
-  const now = new Date();
   return {
     termsOfService: {
-      id: 'tos-mvp',
+      id: SEED_TOS_ID,
       kind: 'terms_of_service',
-      version: '1.0.0',
-      effectiveAt: now,
+      version: SEED_TOS_VERSION,
+      effectiveAt: SEED_BOOTSTRAP_EFFECTIVE_AT,
       bodyUrl: '/legal/tos',
     },
     privacyPolicy: {
-      id: 'privacy-mvp',
+      id: SEED_PRIVACY_ID,
       kind: 'privacy_policy',
-      version: '1.0.0',
-      effectiveAt: now,
+      version: SEED_PRIVACY_VERSION,
+      effectiveAt: SEED_BOOTSTRAP_EFFECTIVE_AT,
       bodyUrl: '/legal/privacy',
     },
   };
@@ -55,6 +67,15 @@ function readActiveLegalDocumentsPlaceholder(): ActiveLegalDocuments {
 
 const activeLegalDocuments = readActiveLegalDocumentsPlaceholder();
 const view = buildOnboardingPageView(activeLegalDocuments);
+
+// Invite token is carried on the URL as `/onboarding?invite=<token>`
+// (see the parent/coach invite-acceptance flow). Read it server-side
+// and hand it to the form as a prop so the inline submit script can
+// include it in the OnboardInput payload; an empty / missing param
+// becomes `null` and the payload omits the field entirely.
+const rawInviteToken = Astro.url.searchParams.get('invite');
+const inviteToken =
+  typeof rawInviteToken === 'string' && rawInviteToken.length > 0 ? rawInviteToken : null;
 ---
 
 <html lang="en">
@@ -71,6 +92,7 @@ const view = buildOnboardingPageView(activeLegalDocuments);
       <OnboardingForm
         termsOfServiceVersion={view.legalAcceptances.termsOfServiceVersion}
         privacyPolicyVersion={view.legalAcceptances.privacyPolicyVersion}
+        inviteToken={inviteToken}
       />
     </main>
   </body>

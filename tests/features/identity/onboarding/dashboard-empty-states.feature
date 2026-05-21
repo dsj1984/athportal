@@ -1,3 +1,7 @@
+# Pending: the freshly-onboarded user fixture seam (a per-scenario
+# reset of `users.onboarded_at` plus a guaranteed-empty dashboard
+# state) is not yet wired. Un-pend when the fresh-user seam lands and
+# the dashboard widget empty-state markup is locked.
 @pending @domain-onboarding
 Feature: Freshly-onboarded dashboard shows meaningful empty states
 

@@ -1,3 +1,7 @@
+# Pending: the under-13 "not available" alert surface has not been
+# wired into /onboarding yet. Un-pend when the under-13 banner renders
+# against real markup and the step `I see an under-13 not-available
+# message` resolves end-to-end.
 @pending @domain-onboarding
 Feature: Under-13 attestation blocks onboarding
 

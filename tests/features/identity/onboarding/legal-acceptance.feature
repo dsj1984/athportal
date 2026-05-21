@@ -1,3 +1,7 @@
+# Pending: depends on the fresh-user fixture seam (the seeded persona
+# carries a stamped onboarding row, so the un-onboarded variant of the
+# scenarios cannot run yet) AND on the verified-email step landing —
+# see email-verification-gate.feature. Un-pend when both seams exist.
 @pending @domain-onboarding
 Feature: Onboarding submit requires active legal acceptance
 

@@ -117,12 +117,16 @@ export type GateNext = () => Promise<Response>;
  * The gate is a no-op when:
  *   • the request is anonymous (Clerk handles its own redirect chain);
  *   • the requested path is in the allowlist;
- *   • the user is already onboarded (`onboardedAt` is non-null);
- *   • the lookup returns `null` (no internal row yet — the API-side JIT
- *     path will provision on the next backend hit; the web side must not
- *     trap the user on `/onboarding` before that row exists).
+ *   • the user is already onboarded (`onboardedAt` is non-null).
  *
- * Otherwise the gate short-circuits with a 302 to `/onboarding`.
+ * Otherwise (including when the lookup returns `null` / `undefined` /
+ * a row whose `onboardedAt` is `null`) the gate short-circuits with a
+ * 302 to `/onboarding`. Treating an absent row as "un-onboarded → 302"
+ * is the safe default for an authenticated subject: a signed-in user
+ * with no internal row is, by definition, not onboarded yet, and
+ * letting them past the gate would defeat PRD G1 / AC-15. The
+ * placeholder production lookup relies on this safe default until the
+ * DB-backed reader lands (see `productionLookup` below).
  */
 export function createOnboardingGate(
   lookup: OnboardingLookup,
@@ -140,10 +144,13 @@ export function createOnboardingGate(
     if (isAllowlisted(context.url.pathname)) return next();
 
     const state = lookup(subjectId);
-    // No internal row yet — let the request through so the API-side JIT
-    // path can provision on the next backend hit. The gate re-evaluates
-    // on the next request once the row exists.
-    if (state === null) return next();
+    // Safe default: a signed-in subject with no internal row (or a row
+    // whose `onboardedAt` is null/undefined) is treated as un-onboarded
+    // and 302'd to /onboarding. PRD G1 / AC-15: a signed-in user without
+    // a completed onboarding MUST NOT be allowed past the gate.
+    if (state === null || state === undefined) {
+      return context.redirect('/onboarding', 302);
+    }
     // Destructure rather than re-read `.onboardedAt` on the state object
     // so the lint-baseline sentinel scan (which is a text-level grep for
     // `.onboardedAt` outside the sanctioned accessor file) is satisfied —
@@ -160,12 +167,13 @@ export function createOnboardingGate(
  * Production lookup. The web runtime does not yet carry a DB handle —
  * Tech Spec #490 lands the production binding alongside the `/onboarding`
  * page in a later Wave. Until that binding exists this placeholder
- * returns `null` for every subject, which the gate treats as "no
- * internal row yet → pass through" (see `createOnboardingGate` above).
- * The placeholder is safe because every protected `/api/v1/*` surface is
- * independently gated by the API-side `requireOnboarded` middleware per
- * Tech Spec #490 §API Changes — the web-side gate is a UX shortcut, not
- * the load-bearing enforcement.
+ * returns `null` for every subject, which the gate treats as the safe
+ * default "un-onboarded → 302 to /onboarding" (see
+ * `createOnboardingGate` above). This preserves PRD G1 / AC-15 during
+ * the binding gap: every signed-in user is bounced to the onboarding
+ * page; once they complete the flow the API-side `requireOnboarded`
+ * stamps `users.onboarded_at`, and the gate becomes a true read once
+ * the DB binding lands.
  */
 const productionLookup: OnboardingLookup = () => null;
 

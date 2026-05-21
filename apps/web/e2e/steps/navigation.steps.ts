@@ -23,6 +23,8 @@ function resolvePagePath(pageName: string): string {
     case 'welcome page':
     case 'public welcome page':
       return '/';
+    case 'dashboard page':
+      return '/dashboard';
     default:
       throw new Error(
         `Unknown page name: "${pageName}". Add it to resolvePagePath in apps/web/e2e/steps/navigation.steps.ts.`,
