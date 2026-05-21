@@ -1,11 +1,41 @@
 {
   "$schema": ".agents/schemas/baselines/maintainability.schema.json",
-  "kernelVersion": "0.1.0",
-  "generatedAt": "2026-05-21T20:44:13.033Z",
+  "generatedAt": "2026-05-21T20:55:40.474Z",
+  "kernelVersion": "1.0.0",
   "rollup": {
     "*": {
       "min": 70.515,
-      "p50": 109.238,
+      "p50": 109.435,
+      "p95": 171
+    },
+    "apps/api": {
+      "min": 84.547,
+      "p50": 112.621,
+      "p95": 171
+    },
+    "apps/mobile": {
+      "min": 96.11,
+      "p50": 96.11,
+      "p95": 121.195
+    },
+    "apps/web": {
+      "min": 80.074,
+      "p50": 111.698,
+      "p95": 171
+    },
+    "packages/baselines": {
+      "min": 94.702,
+      "p50": 101.565,
+      "p95": 171
+    },
+    "packages/config": {
+      "min": 104.952,
+      "p50": 104.952,
+      "p95": 115.627
+    },
+    "packages/shared": {
+      "min": 70.515,
+      "p50": 106.619,
       "p95": 171
     }
   },
@@ -13,6 +43,10 @@
     {
       "mi": 171,
       "path": "apps/api/src/env.ts"
+    },
+    {
+      "mi": 112.621,
+      "path": "apps/api/src/index.ts"
     },
     {
       "mi": 138.232,
@@ -27,8 +61,20 @@
       "path": "apps/api/src/middleware/request-logger.ts"
     },
     {
+      "mi": 120.16,
+      "path": "apps/api/src/middleware/requireOnboarded.ts"
+    },
+    {
       "mi": 116.953,
       "path": "apps/api/src/routes/debug/synthetic-failure.ts"
+    },
+    {
+      "mi": 143.367,
+      "path": "apps/api/src/routes/v1/auth/index.ts"
+    },
+    {
+      "mi": 86.935,
+      "path": "apps/api/src/routes/v1/auth/onboard.ts"
     },
     {
       "mi": 115.469,
@@ -205,6 +251,10 @@
     {
       "mi": 97.292,
       "path": "packages/shared/src/db/queries/parentAthleteLinks.ts"
+    },
+    {
+      "mi": 112.464,
+      "path": "packages/shared/src/db/queries/users.ts"
     },
     {
       "mi": 122.384,
