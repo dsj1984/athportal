@@ -508,7 +508,7 @@ describe('shipped baselines/mutation.json', () => {
     expect(doc.kernelVersion).toBe(KERNEL_VERSION);
   });
 
-  it('carries the envelope shape (rollup."*" with four required axes, empty rows)', () => {
+  it('carries the envelope shape (rollup."*" with four required axes, plus per-workspace rollups and rows)', () => {
     const doc = JSON.parse(fs.readFileSync(BASELINE_PATH, 'utf8'));
     expect(doc.rollup).toBeDefined();
     expect(doc.rollup['*']).toBeDefined();
@@ -517,15 +517,24 @@ describe('shipped baselines/mutation.json', () => {
       expect(typeof doc.rollup['*'][axis]).toBe('number');
     }
     expect(Array.isArray(doc.rows)).toBe(true);
-    expect(doc.rows).toHaveLength(0);
+    // Story #379 primed the baseline against the nightly Stryker report.
+    // The gate now bites — expect a non-empty row set and at least one
+    // per-workspace rollup carrying a non-zero score.
+    expect(doc.rows.length).toBeGreaterThan(0);
+    const workspaceRollups = Object.entries(doc.rollup).filter(([k]) => k !== '*');
+    expect(workspaceRollups.length).toBeGreaterThan(0);
+    const someWorkspaceScored = workspaceRollups.some(([, v]) => Number(v?.score ?? 0) > 0);
+    expect(someWorkspaceScored).toBe(true);
   });
 
-  it('ships unprimed (rollup."*" all zero)', () => {
+  it('is primed (rollup."*" carries non-zero killed/survived counts)', () => {
     const doc = JSON.parse(fs.readFileSync(BASELINE_PATH, 'utf8'));
-    expect(doc.rollup['*'].score).toBe(0);
-    expect(doc.rollup['*'].killed).toBe(0);
-    expect(doc.rollup['*'].survived).toBe(0);
-    expect(doc.rollup['*'].noCoverage).toBe(0);
+    expect(doc.rollup['*'].killed).toBeGreaterThan(0);
+    expect(doc.rollup['*'].score).toBeGreaterThan(0);
+    // `survived` and `noCoverage` MAY be zero on a hypothetically
+    // perfect suite, but `killed` cannot be zero on a primed envelope
+    // — that is the load-bearing signal `modeCheck` uses to decide
+    // whether to engage the relative-pct gate.
   });
 });
 

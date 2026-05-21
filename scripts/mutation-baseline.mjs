@@ -33,13 +33,96 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-// The shared harness is imported lazily inside `modeCheck` / `modeUpdate`
-// so the pure helpers below (parseArgs, buildEnvelope, aggregateReport,
-// rollupRowsByWorkspace, …) remain unit-testable without the
-// `@repo/baselines` package being resolvable on disk. The lighthouse
-// dimension uses the same pattern.
-async function loadHarness() {
-  return import('@repo/baselines');
+// Harness consumption — when the @repo/baselines package resolves (its
+// `exports.import` points at `./src/index.ts`, which is loadable from a
+// TS-aware loader such as Vitest but NOT from a plain Node `.mjs`
+// entrypoint), the script delegates write + tolerance-evaluate
+// primitives to it. The byte-compatible inline implementations below
+// are the production path that runs from `pnpm run mutation:update` /
+// `pnpm run mutation:check`. Mirrors the fallback wiring in
+// `scripts/lint-baseline.mjs` lines 64-95.
+let harness;
+try {
+  harness = await import('@repo/baselines');
+} catch {
+  harness = null;
+}
+
+// Byte-stable JSON: sorted keys at every depth, two-space indent,
+// trailing LF. Mirrors `@repo/baselines/src/serialise.ts` so re-emission
+// from this fallback path is identical to the harness path.
+function serialiseStable(value) {
+  return `${stringifyStable(value, 0)}\n`;
+}
+
+function stringifyStable(value, depth) {
+  if (value === null) return 'null';
+  if (typeof value === 'boolean') return value ? 'true' : 'false';
+  if (typeof value === 'number') {
+    if (!Number.isFinite(value)) {
+      throw new Error(`[mutation-baseline] cannot serialise non-finite number: ${String(value)}`);
+    }
+    return JSON.stringify(value);
+  }
+  if (typeof value === 'string') return JSON.stringify(value);
+  if (Array.isArray(value)) {
+    if (value.length === 0) return '[]';
+    const inner = '  '.repeat(depth + 1);
+    const close = '  '.repeat(depth);
+    const parts = value.map((entry) => `${inner}${stringifyStable(entry, depth + 1)}`);
+    return `[\n${parts.join(',\n')}\n${close}]`;
+  }
+  if (typeof value === 'object') {
+    const keys = Object.keys(value).sort();
+    if (keys.length === 0) return '{}';
+    const inner = '  '.repeat(depth + 1);
+    const close = '  '.repeat(depth);
+    const parts = keys.map(
+      (k) => `${inner}${JSON.stringify(k)}: ${stringifyStable(value[k], depth + 1)}`,
+    );
+    return `{\n${parts.join(',\n')}\n${close}}`;
+  }
+  throw new Error(`[mutation-baseline] cannot serialise value of type ${typeof value}`);
+}
+
+function writeBaseline(filePath, envelope) {
+  if (harness?.writeBaseline) {
+    return harness.writeBaseline(filePath, envelope, 'mutation');
+  }
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, serialiseStable(envelope), 'utf8');
+}
+
+// Inline `evaluate` for `relative-pct` + `higher-is-better` (the only
+// shape this dimension uses). Mirrors `@repo/baselines/src/compare.ts`
+// § evaluate so the fallback's verdict matches the harness's.
+function evaluateRelativePct(tolerance, prev, next, polarity) {
+  if (tolerance.kind !== 'relative-pct') {
+    throw new Error(
+      `[mutation-baseline] inline evaluate only supports relative-pct (got ${tolerance.kind})`,
+    );
+  }
+  const pol = polarity ?? 'higher-is-better';
+  if (prev === 0) {
+    if (pol === 'higher-is-better') return null;
+    return next > 0 ? 'fail' : null;
+  }
+  const allowed = (tolerance.pct / 100) * Math.abs(prev);
+  if (pol === 'higher-is-better') {
+    return next < prev - allowed ? 'fail' : null;
+  }
+  return next > prev + allowed ? 'fail' : null;
+}
+
+// The comparator surface this script needs from the harness reduces to
+// a single `evaluate(tolerance, prev, next, polarity)` call. Return an
+// object with that method so both code paths (harness present / harness
+// absent) share the same call shape.
+function comparatorSurface() {
+  if (harness?.evaluate) {
+    return { evaluate: harness.evaluate };
+  }
+  return { evaluate: evaluateRelativePct };
 }
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -333,10 +416,9 @@ function measure({ reportPath, repoRoot = REPO_ROOT } = {}) {
 }
 
 async function modeUpdate({ reportPath }) {
-  const { writeBaseline } = await loadHarness();
   const measurements = measure({ reportPath });
   const envelope = buildEnvelope(measurements);
-  writeBaseline(BASELINE_PATH, envelope, 'mutation');
+  writeBaseline(BASELINE_PATH, envelope);
   process.stdout.write(
     `[mutation-baseline] wrote baselines/mutation.json - workspaces=${
       Object.keys(envelope.rollup).length - 1
@@ -346,9 +428,11 @@ async function modeUpdate({ reportPath }) {
 }
 
 async function modeCheck({ reportPath }) {
-  // Detect the unprimed envelope without loading the harness so the
-  // skip-path stays operational while `@repo/baselines` still ships
-  // TypeScript-only exports (Story #210 ships the built harness).
+  // Detect the unprimed envelope before invoking the comparator so the
+  // skip-path stays operational regardless of whether `@repo/baselines`
+  // resolved at module load (its `exports.import` points at the .ts
+  // surface; falls back to inline primitives when the loader can't
+  // consume that).
   if (!fs.existsSync(BASELINE_PATH)) {
     process.stderr.write(
       `[mutation-baseline] baseline file missing at ${path.relative(REPO_ROOT, BASELINE_PATH)}\n`,
@@ -370,10 +454,9 @@ async function modeCheck({ reportPath }) {
     return 0;
   }
 
-  const harness = await loadHarness();
   const measurements = measure({ reportPath });
   const current = buildEnvelope(measurements);
-  const violations = compareWorkspaceRollups(baseline, current, harness);
+  const violations = compareWorkspaceRollups(baseline, current, comparatorSurface());
   if (violations.length === 0) {
     const wsCount = Object.keys(current.rollup).filter((k) => k !== '*').length;
     process.stdout.write(
