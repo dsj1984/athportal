@@ -1,11 +1,11 @@
 {
   "$schema": ".agents/schemas/baselines/maintainability.schema.json",
   "kernelVersion": "0.1.0",
-  "generatedAt": "2026-05-21T20:44:13.033Z",
+  "generatedAt": "2026-05-21T20:56:21.769Z",
   "rollup": {
     "*": {
       "min": 70.515,
-      "p50": 109.238,
+      "p50": 109.435,
       "p95": 171
     }
   },
@@ -13,6 +13,10 @@
     {
       "mi": 171,
       "path": "apps/api/src/env.ts"
+    },
+    {
+      "mi": 112.621,
+      "path": "apps/api/src/index.ts"
     },
     {
       "mi": 138.232,
@@ -25,6 +29,10 @@
     {
       "mi": 103.092,
       "path": "apps/api/src/middleware/request-logger.ts"
+    },
+    {
+      "mi": 120.16,
+      "path": "apps/api/src/middleware/requireOnboarded.ts"
     },
     {
       "mi": 116.953,
@@ -135,10 +143,6 @@
       "path": "apps/web/src/index.ts"
     },
     {
-      "mi": 149.999,
-      "path": "apps/web/src/middleware.ts"
-    },
-    {
       "mi": 98.571,
       "path": "apps/web/src/pages/dashboard.ts"
     },
@@ -149,10 +153,6 @@
     {
       "mi": 147.989,
       "path": "apps/web/src/sentry.ts"
-    },
-    {
-      "mi": 94.92,
-      "path": "apps/web/vitest.config.ts"
     },
     {
       "mi": 94.702,
@@ -205,6 +205,10 @@
     {
       "mi": 97.292,
       "path": "packages/shared/src/db/queries/parentAthleteLinks.ts"
+    },
+    {
+      "mi": 112.464,
+      "path": "packages/shared/src/db/queries/users.ts"
     },
     {
       "mi": 122.384,
