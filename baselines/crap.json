@@ -1,28 +1,16 @@
 {
   "$schema": ".agents/schemas/baselines/crap.schema.json",
-  "generatedAt": "2026-05-21T20:41:53.689Z",
-  "kernelVersion": "1.0.0",
+  "kernelVersion": "0.1.0",
+  "generatedAt": "2026-05-21T20:44:13.535Z",
   "rollup": {
     "*": {
-      "max": 462,
-      "methodsAbove20": 18,
       "p50": 2,
-      "p95": 42
+      "p95": 42,
+      "max": 462,
+      "methodsAbove20": 18
     }
   },
   "rows": [
-    {
-      "crap": 2,
-      "method": "<anon method-1>",
-      "path": "apps/api/src/index.ts",
-      "startLine": 53
-    },
-    {
-      "crap": 2,
-      "method": "<anon method-2>",
-      "path": "apps/api/src/index.ts",
-      "startLine": 54
-    },
     {
       "crap": 2,
       "method": "authTest",
@@ -148,24 +136,6 @@
       "method": "safeStringify",
       "path": "apps/api/src/middleware/request-logger.ts",
       "startLine": 169
-    },
-    {
-      "crap": 2,
-      "method": "onboardingRequired",
-      "path": "apps/api/src/middleware/requireOnboarded.ts",
-      "startLine": 64
-    },
-    {
-      "crap": 2,
-      "method": "requireOnboarded",
-      "path": "apps/api/src/middleware/requireOnboarded.ts",
-      "startLine": 81
-    },
-    {
-      "crap": 6,
-      "method": "<anon method-1>",
-      "path": "apps/api/src/middleware/requireOnboarded.ts",
-      "startLine": 82
     },
     {
       "crap": 6,
@@ -982,18 +952,6 @@
       "method": "establishLinkFromInvite",
       "path": "packages/shared/src/db/queries/parentAthleteLinks.ts",
       "startLine": 128
-    },
-    {
-      "crap": 6,
-      "method": "getOnboardingState",
-      "path": "packages/shared/src/db/queries/users.ts",
-      "startLine": 66
-    },
-    {
-      "crap": 6,
-      "method": "isOnboarded",
-      "path": "packages/shared/src/db/queries/users.ts",
-      "startLine": 95
     },
     {
       "crap": 2,
