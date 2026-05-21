@@ -1,3 +1,8 @@
+# Pending: the invite-fixture seam (issuing a parent-athlete invite
+# row, then accepting it during onboarding) is not yet wired. The
+# `I accept the invite during onboarding` and `I have a pending invite
+# addressed to …` steps are placeholders. Un-pend when the invite seam
+# lands.
 @pending @domain-onboarding
 Feature: Parent-athlete link is established at onboarding close
 

@@ -1,3 +1,7 @@
+# Pending: the photo-upload pipeline (signed upload URL → photo island
+# dataset → form payload) is stubbed — the `I upload a profile photo`
+# step is a placeholder. Un-pend when the upload-fixture seam lands and
+# the dashboard renders the uploaded image against real markup.
 @pending @domain-onboarding
 Feature: Profile photo is optional at onboarding
 

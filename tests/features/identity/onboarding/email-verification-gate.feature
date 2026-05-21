@@ -1,3 +1,8 @@
+# Pending: the Clerk verify-email widget requires a real Clerk session
+# driven by `@clerk/testing/playwright` to flip the verified flag — the
+# `my primary email becomes verified` step is currently a placeholder.
+# Un-pend when staging Clerk is wired and the testing helper can drive
+# verification end-to-end.
 @pending @domain-onboarding
 Feature: Onboarding submit is gated by Clerk email verification
 
