@@ -1,41 +1,11 @@
 {
   "$schema": ".agents/schemas/baselines/maintainability.schema.json",
-  "generatedAt": "2026-05-21T20:08:06.775Z",
-  "kernelVersion": "1.0.0",
+  "kernelVersion": "0.1.0",
+  "generatedAt": "2026-05-21T20:08:48.086Z",
   "rollup": {
     "*": {
-      "min": 70.515,
-      "p50": 109.238,
-      "p95": 171
-    },
-    "apps/api": {
-      "min": 84.547,
-      "p50": 111.681,
-      "p95": 171
-    },
-    "apps/mobile": {
-      "min": 96.11,
-      "p50": 96.11,
-      "p95": 121.195
-    },
-    "apps/web": {
       "min": 80.074,
-      "p50": 111.698,
-      "p95": 171
-    },
-    "packages/baselines": {
-      "min": 94.702,
-      "p50": 101.565,
-      "p95": 171
-    },
-    "packages/config": {
-      "min": 104.952,
-      "p50": 104.952,
-      "p95": 115.627
-    },
-    "packages/shared": {
-      "min": 70.515,
-      "p50": 106.619,
+      "p50": 111.005,
       "p95": 171
     }
   },
@@ -51,10 +21,6 @@
     {
       "mi": 138.232,
       "path": "apps/api/src/middleware/__testing__/auth-test.ts"
-    },
-    {
-      "mi": 99.719,
-      "path": "apps/api/src/middleware/auth.ts"
     },
     {
       "mi": 103.092,
@@ -233,18 +199,6 @@
       "path": "packages/shared/drizzle.config.ts"
     },
     {
-      "mi": 94.082,
-      "path": "packages/shared/src/db/queries/legalDocuments.ts"
-    },
-    {
-      "mi": 97.292,
-      "path": "packages/shared/src/db/queries/parentAthleteLinks.ts"
-    },
-    {
-      "mi": 107.532,
-      "path": "packages/shared/src/db/queries/users.ts"
-    },
-    {
       "mi": 122.384,
       "path": "packages/shared/src/db/schema/index.ts"
     },
@@ -273,10 +227,6 @@
       "path": "packages/shared/src/db/schema/users.ts"
     },
     {
-      "mi": 106.619,
-      "path": "packages/shared/src/db/seed.ts"
-    },
-    {
       "mi": 171,
       "path": "packages/shared/src/index.ts"
     },
@@ -303,10 +253,6 @@
     {
       "mi": 171,
       "path": "packages/shared/src/rbac/types.ts"
-    },
-    {
-      "mi": 70.515,
-      "path": "packages/shared/src/schemas/auth.ts"
     },
     {
       "mi": 122.795,
