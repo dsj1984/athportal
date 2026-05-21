@@ -324,6 +324,58 @@ Each `*:check` script tells you which side it's on:
 
 Fail-loud is acceptable — it surfaces the gap on every CI run. Skip-with-warn is the dangerous one: green PR, no protection.
 
+### Mutation — artifact-driven priming
+
+Mutation is the one dimension where running the producer locally is
+prohibitively slow (Stryker on the full unit corpus is hours, not
+minutes). The nightly `mutation-baseline` job in
+[`.github/workflows/nightly.yml`](../.github/workflows/nightly.yml)
+already runs Stryker against `main` and uploads
+`reports/mutation/mutation.json` + `mutation-check.log` as the
+`mutation-baseline` artifact (14-day retention). Prime from that
+artifact rather than re-running Stryker locally:
+
+1. Pick the most recent **green** nightly run from
+   `gh run list --workflow=nightly.yml --repo dsj1984/athportal` (look
+   for `✓ Stryker mutation + per-workspace baseline (unit tier)`).
+2. Download the artifact into the report path the consumer reads:
+   `gh run download <runId> --repo dsj1984/athportal --name mutation-baseline --dir reports/mutation`.
+   This drops `mutation.json` at exactly the path
+   `scripts/mutation-baseline.mjs` defaults to
+   (`reports/mutation/mutation.json`).
+3. Run `pnpm run mutation:update`. The script reads the Stryker JSON,
+   rolls up per-workspace killed/survived/noCoverage counts, and
+   rewrites `baselines/mutation.json` in place. Byte-stable
+   re-emission: re-running against an unchanged report produces an
+   identical file.
+4. Commit `baselines/mutation.json` + the test-assertion update that
+   pins the primed shape (see
+   [`scripts/__tests__/mutation-baseline.test.mjs`](../scripts/__tests__/mutation-baseline.test.mjs)
+   § *shipped baselines/mutation.json*). The shipped-baseline test
+   guards against accidental re-priming to a zero envelope by asserting
+   `rollup['*'].killed > 0` and at least one non-zero per-workspace
+   score.
+5. Confirm `pnpm run mutation:check` reports
+   `[mutation-baseline] ok - N workspace(s) within the 5% relative band`
+   against the same report — the gate is now live with a 5%
+   relative-pct floor on per-workspace `score`
+   (`higher-is-better`).
+
+### Mutation — harness fallback (`@repo/baselines`)
+
+`scripts/mutation-baseline.mjs` consumes `@repo/baselines` for byte-stable
+JSON serialisation and tolerance evaluation. The harness package's
+`exports.import` points at `./src/index.ts`, which a TS-aware loader
+(Vitest, the workspace consumer's transpile chain) resolves cleanly but
+a plain Node `.mjs` entrypoint cannot. The script wraps the import in a
+top-level try/catch (mirroring `scripts/lint-baseline.mjs` lines 64-95)
+and ships byte-identical inline implementations of `writeBaseline`
+(sorted-key + trailing-LF) and `evaluate` (for the
+`relative-pct`/`higher-is-better` shape this dimension uses) so the
+production code path is the inline one. When/if a built `.js` surface
+lands at `dist/index.js` the harness branch will engage automatically;
+no other code in the script needs to change.
+
 ## Coverage baseline ratchet
 
 The coverage ratchet keeps per-workspace line / branch / function
