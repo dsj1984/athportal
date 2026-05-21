@@ -1,41 +1,11 @@
 {
   "$schema": ".agents/schemas/baselines/maintainability.schema.json",
-  "generatedAt": "2026-05-21T21:25:44.867Z",
-  "kernelVersion": "1.0.0",
+  "kernelVersion": "0.1.0",
+  "generatedAt": "2026-05-21T21:27:56.317Z",
   "rollup": {
     "*": {
       "min": 70.515,
-      "p50": 109.238,
-      "p95": 171
-    },
-    "apps/api": {
-      "min": 84.547,
-      "p50": 112.621,
-      "p95": 171
-    },
-    "apps/mobile": {
-      "min": 96.11,
-      "p50": 96.11,
-      "p95": 121.195
-    },
-    "apps/web": {
-      "min": 80.074,
-      "p50": 108.228,
-      "p95": 171
-    },
-    "packages/baselines": {
-      "min": 94.702,
-      "p50": 101.565,
-      "p95": 171
-    },
-    "packages/config": {
-      "min": 104.952,
-      "p50": 104.952,
-      "p95": 115.627
-    },
-    "packages/shared": {
-      "min": 70.515,
-      "p50": 106.619,
+      "p50": 109.435,
       "p95": 171
     }
   },
@@ -173,34 +143,6 @@
       "path": "apps/web/playwright.config.ts"
     },
     {
-      "mi": 133.747,
-      "path": "apps/web/src/components/onboarding/AgeAttestation.ts"
-    },
-    {
-      "mi": 113.308,
-      "path": "apps/web/src/components/onboarding/ClerkVerifyEmailIsland.ts"
-    },
-    {
-      "mi": 103.923,
-      "path": "apps/web/src/components/onboarding/LegalAcceptanceCheckboxes.ts"
-    },
-    {
-      "mi": 87.928,
-      "path": "apps/web/src/components/onboarding/OnboardingForm.ts"
-    },
-    {
-      "mi": 106.74,
-      "path": "apps/web/src/components/onboarding/ProfilePhotoUploader.ts"
-    },
-    {
-      "mi": 171,
-      "path": "apps/web/src/components/onboarding/index.ts"
-    },
-    {
-      "mi": 107.592,
-      "path": "apps/web/src/components/ui/Avatar.ts"
-    },
-    {
       "mi": 99.6,
       "path": "apps/web/src/components/ui/EmptyState.ts"
     },
@@ -215,10 +157,6 @@
     {
       "mi": 98.571,
       "path": "apps/web/src/pages/dashboard.ts"
-    },
-    {
-      "mi": 94.355,
-      "path": "apps/web/src/pages/onboarding.ts"
     },
     {
       "mi": 113.043,
