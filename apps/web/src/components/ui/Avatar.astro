@@ -1,0 +1,33 @@
+---
+// apps/web/src/components/ui/Avatar.astro
+//
+// Shared Avatar primitive. Renders the user's uploaded photo when
+// `src` is provided, otherwise renders the uppercase-initials
+// fallback the dashboard uses for freshly-onboarded users who skipped
+// the optional photo upload (PRD #489 §Avatar initials).
+//
+// Story #574 / Task #585. Tech Spec #490.
+
+import { type AvatarProps, buildAvatarView } from './Avatar.ts';
+
+type Props = AvatarProps;
+const view = buildAvatarView(Astro.props);
+---
+
+{view.src !== null ? (
+  <img
+    class="avatar avatar--image"
+    src={view.src}
+    alt={view.name}
+    data-testid={view.testId}
+  />
+) : (
+  <span
+    class="avatar avatar--initials"
+    role="img"
+    aria-label={view.name}
+    data-testid={view.testId}
+  >
+    {view.initials}
+  </span>
+)}

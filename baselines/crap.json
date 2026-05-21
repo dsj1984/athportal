@@ -1,11 +1,11 @@
 {
   "$schema": ".agents/schemas/baselines/crap.schema.json",
-  "generatedAt": "2026-05-19T02:34:32.282Z",
+  "generatedAt": "2026-05-21T22:46:45.897Z",
   "kernelVersion": "1.0.0",
   "rollup": {
     "*": {
       "max": 462,
-      "methodsAbove20": 17,
+      "methodsAbove20": 28,
       "p50": 2,
       "p95": 42
     }
@@ -15,13 +15,13 @@
       "crap": 2,
       "method": "<anon method-1>",
       "path": "apps/api/src/index.ts",
-      "startLine": 42
+      "startLine": 53
     },
     {
       "crap": 2,
       "method": "<anon method-2>",
       "path": "apps/api/src/index.ts",
-      "startLine": 43
+      "startLine": 54
     },
     {
       "crap": 2,
@@ -75,7 +75,7 @@
       "crap": 2,
       "method": "<anon method-2>",
       "path": "apps/api/src/middleware/auth.ts",
-      "startLine": 253
+      "startLine": 254
     },
     {
       "crap": 2,
@@ -150,6 +150,24 @@
       "startLine": 169
     },
     {
+      "crap": 2,
+      "method": "onboardingRequired",
+      "path": "apps/api/src/middleware/requireOnboarded.ts",
+      "startLine": 64
+    },
+    {
+      "crap": 2,
+      "method": "requireOnboarded",
+      "path": "apps/api/src/middleware/requireOnboarded.ts",
+      "startLine": 81
+    },
+    {
+      "crap": 6,
+      "method": "<anon method-1>",
+      "path": "apps/api/src/middleware/requireOnboarded.ts",
+      "startLine": 82
+    },
+    {
       "crap": 6,
       "method": "<anon method-1>",
       "path": "apps/api/src/routes/debug/synthetic-failure.ts",
@@ -160,6 +178,60 @@
       "method": "<anon method-2>",
       "path": "apps/api/src/routes/debug/synthetic-failure.ts",
       "startLine": 120
+    },
+    {
+      "crap": 2,
+      "method": "errorBody",
+      "path": "apps/api/src/routes/v1/auth/onboard.ts",
+      "startLine": 119
+    },
+    {
+      "crap": 2,
+      "method": "routeError",
+      "path": "apps/api/src/routes/v1/auth/onboard.ts",
+      "startLine": 132
+    },
+    {
+      "crap": 56,
+      "method": "asRouteError",
+      "path": "apps/api/src/routes/v1/auth/onboard.ts",
+      "startLine": 138
+    },
+    {
+      "crap": 12,
+      "method": "fetchPrimaryEmailVerified",
+      "path": "apps/api/src/routes/v1/auth/onboard.ts",
+      "startLine": 167
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "apps/api/src/routes/v1/auth/onboard.ts",
+      "startLine": 177
+    },
+    {
+      "crap": 2,
+      "method": "toPublicUser",
+      "path": "apps/api/src/routes/v1/auth/onboard.ts",
+      "startLine": 213
+    },
+    {
+      "crap": 156,
+      "method": "<anon method-2>",
+      "path": "apps/api/src/routes/v1/auth/onboard.ts",
+      "startLine": 226
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-3>",
+      "path": "apps/api/src/routes/v1/auth/onboard.ts",
+      "startLine": 230
+    },
+    {
+      "crap": 56,
+      "method": "<anon method-4>",
+      "path": "apps/api/src/routes/v1/auth/onboard.ts",
+      "startLine": 319
     },
     {
       "crap": 2,
@@ -390,7 +462,7 @@
       "startLine": 52
     },
     {
-      "crap": 12,
+      "crap": 20,
       "method": "resolvePagePath",
       "path": "apps/web/e2e/steps/navigation.steps.ts",
       "startLine": 21
@@ -399,7 +471,7 @@
       "crap": 2,
       "method": "<anon method-1>",
       "path": "apps/web/e2e/steps/navigation.steps.ts",
-      "startLine": 33
+      "startLine": 35
     },
     {
       "crap": 2,
@@ -702,6 +774,216 @@
       "startLine": 325
     },
     {
+      "crap": 56,
+      "method": "resolveOnboardingSurfacePath",
+      "path": "apps/web/e2e/steps/onboarding.steps.ts",
+      "startLine": 32
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "apps/web/e2e/steps/onboarding.steps.ts",
+      "startLine": 64
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-2>",
+      "path": "apps/web/e2e/steps/onboarding.steps.ts",
+      "startLine": 70
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-3>",
+      "path": "apps/web/e2e/steps/onboarding.steps.ts",
+      "startLine": 82
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-4>",
+      "path": "apps/web/e2e/steps/onboarding.steps.ts",
+      "startLine": 86
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-5>",
+      "path": "apps/web/e2e/steps/onboarding.steps.ts",
+      "startLine": 90
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-6>",
+      "path": "apps/web/e2e/steps/onboarding.steps.ts",
+      "startLine": 98
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-7>",
+      "path": "apps/web/e2e/steps/onboarding.steps.ts",
+      "startLine": 104
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-8>",
+      "path": "apps/web/e2e/steps/onboarding.steps.ts",
+      "startLine": 108
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-9>",
+      "path": "apps/web/e2e/steps/onboarding.steps.ts",
+      "startLine": 115
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-10>",
+      "path": "apps/web/e2e/steps/onboarding.steps.ts",
+      "startLine": 119
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-11>",
+      "path": "apps/web/e2e/steps/onboarding.steps.ts",
+      "startLine": 123
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-12>",
+      "path": "apps/web/e2e/steps/onboarding.steps.ts",
+      "startLine": 129
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-13>",
+      "path": "apps/web/e2e/steps/onboarding.steps.ts",
+      "startLine": 133
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-14>",
+      "path": "apps/web/e2e/steps/onboarding.steps.ts",
+      "startLine": 138
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-15>",
+      "path": "apps/web/e2e/steps/onboarding.steps.ts",
+      "startLine": 144
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-16>",
+      "path": "apps/web/e2e/steps/onboarding.steps.ts",
+      "startLine": 149
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-17>",
+      "path": "apps/web/e2e/steps/onboarding.steps.ts",
+      "startLine": 154
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-18>",
+      "path": "apps/web/e2e/steps/onboarding.steps.ts",
+      "startLine": 162
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-19>",
+      "path": "apps/web/e2e/steps/onboarding.steps.ts",
+      "startLine": 166
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-20>",
+      "path": "apps/web/e2e/steps/onboarding.steps.ts",
+      "startLine": 170
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-21>",
+      "path": "apps/web/e2e/steps/onboarding.steps.ts",
+      "startLine": 178
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-22>",
+      "path": "apps/web/e2e/steps/onboarding.steps.ts",
+      "startLine": 182
+    },
+    {
+      "crap": 6,
+      "method": "<anon method-23>",
+      "path": "apps/web/e2e/steps/onboarding.steps.ts",
+      "startLine": 186
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-24>",
+      "path": "apps/web/e2e/steps/onboarding.steps.ts",
+      "startLine": 207
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-25>",
+      "path": "apps/web/e2e/steps/onboarding.steps.ts",
+      "startLine": 215
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-26>",
+      "path": "apps/web/e2e/steps/onboarding.steps.ts",
+      "startLine": 219
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-27>",
+      "path": "apps/web/e2e/steps/onboarding.steps.ts",
+      "startLine": 223
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-28>",
+      "path": "apps/web/e2e/steps/onboarding.steps.ts",
+      "startLine": 229
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-29>",
+      "path": "apps/web/e2e/steps/onboarding.steps.ts",
+      "startLine": 233
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-30>",
+      "path": "apps/web/e2e/steps/onboarding.steps.ts",
+      "startLine": 237
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-31>",
+      "path": "apps/web/e2e/steps/onboarding.steps.ts",
+      "startLine": 241
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-32>",
+      "path": "apps/web/e2e/steps/onboarding.steps.ts",
+      "startLine": 246
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-33>",
+      "path": "apps/web/e2e/steps/onboarding.steps.ts",
+      "startLine": 251
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-34>",
+      "path": "apps/web/e2e/steps/onboarding.steps.ts",
+      "startLine": 255
+    },
+    {
       "crap": 2,
       "method": "<anon method-1>",
       "path": "apps/web/e2e/steps/rbac.steps.ts",
@@ -732,6 +1014,162 @@
       "startLine": 64
     },
     {
+      "crap": 2,
+      "method": "buildAgeAttestationView",
+      "path": "apps/web/src/components/onboarding/AgeAttestation.ts",
+      "startLine": 27
+    },
+    {
+      "crap": 2,
+      "method": "ageAttestationComplete",
+      "path": "apps/web/src/components/onboarding/AgeAttestation.ts",
+      "startLine": 35
+    },
+    {
+      "crap": 6,
+      "method": "buildClerkVerifyEmailView",
+      "path": "apps/web/src/components/onboarding/ClerkVerifyEmailIsland.ts",
+      "startLine": 50
+    },
+    {
+      "crap": 30,
+      "method": "buildLegalAcceptanceView",
+      "path": "apps/web/src/components/onboarding/LegalAcceptanceCheckboxes.ts",
+      "startLine": 58
+    },
+    {
+      "crap": 6,
+      "method": "legalAcceptanceComplete",
+      "path": "apps/web/src/components/onboarding/LegalAcceptanceCheckboxes.ts",
+      "startLine": 90
+    },
+    {
+      "crap": 2,
+      "method": "createInitialOnboardingFormState",
+      "path": "apps/web/src/components/onboarding/OnboardingForm.ts",
+      "startLine": 71
+    },
+    {
+      "crap": 132,
+      "method": "evaluateOnboardingFormState",
+      "path": "apps/web/src/components/onboarding/OnboardingForm.ts",
+      "startLine": 113
+    },
+    {
+      "crap": 20,
+      "method": "buildOnboardingPayload",
+      "path": "apps/web/src/components/onboarding/OnboardingForm.ts",
+      "startLine": 186
+    },
+    {
+      "crap": 12,
+      "method": "tryBuildOnboardingPayload",
+      "path": "apps/web/src/components/onboarding/OnboardingForm.ts",
+      "startLine": 221
+    },
+    {
+      "crap": 42,
+      "method": "foldServerErrorsIntoFieldMap",
+      "path": "apps/web/src/components/onboarding/OnboardingForm.ts",
+      "startLine": 258
+    },
+    {
+      "crap": 2,
+      "method": "buildProfilePhotoView",
+      "path": "apps/web/src/components/onboarding/ProfilePhotoUploader.ts",
+      "startLine": 40
+    },
+    {
+      "crap": 20,
+      "method": "validateProfilePhotoFile",
+      "path": "apps/web/src/components/onboarding/ProfilePhotoUploader.ts",
+      "startLine": 57
+    },
+    {
+      "crap": 30,
+      "method": "buildAvatarView",
+      "path": "apps/web/src/components/ui/Avatar.ts",
+      "startLine": 43
+    },
+    {
+      "crap": 12,
+      "method": "computeInitials",
+      "path": "apps/web/src/components/ui/Avatar.ts",
+      "startLine": 67
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "apps/web/src/components/ui/Avatar.ts",
+      "startLine": 71
+    },
+    {
+      "crap": 2,
+      "method": "firstChar",
+      "path": "apps/web/src/components/ui/Avatar.ts",
+      "startLine": 79
+    },
+    {
+      "crap": 20,
+      "method": "buildEmptyState",
+      "path": "apps/web/src/components/ui/EmptyState.ts",
+      "startLine": 68
+    },
+    {
+      "crap": 20,
+      "method": "normalizeAction",
+      "path": "apps/web/src/components/ui/EmptyState.ts",
+      "startLine": 93
+    },
+    {
+      "crap": 20,
+      "method": "isAllowlisted",
+      "path": "apps/web/src/middleware.ts",
+      "startLine": 88
+    },
+    {
+      "crap": 2,
+      "method": "createOnboardingGate",
+      "path": "apps/web/src/middleware.ts",
+      "startLine": 131
+    },
+    {
+      "crap": 42,
+      "method": "onboardingGate",
+      "path": "apps/web/src/middleware.ts",
+      "startLine": 134
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "apps/web/src/middleware.ts",
+      "startLine": 178
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-2>",
+      "path": "apps/web/src/middleware.ts",
+      "startLine": 191
+    },
+    {
+      "crap": 2,
+      "method": "buildDashboard",
+      "path": "apps/web/src/pages/dashboard.ts",
+      "startLine": 89
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "apps/web/src/pages/dashboard.ts",
+      "startLine": 96
+    },
+    {
+      "crap": 30,
+      "method": "buildOnboardingPageView",
+      "path": "apps/web/src/pages/onboarding.ts",
+      "startLine": 59
+    },
+    {
       "crap": 6,
       "method": "<anon method-1>",
       "path": "apps/web/src/pages/sign-out.ts",
@@ -742,6 +1180,36 @@
       "method": "<anon method-2>",
       "path": "apps/web/src/pages/sign-out.ts",
       "startLine": 63
+    },
+    {
+      "crap": 2,
+      "method": "defineMiddleware",
+      "path": "apps/web/src/testing/astro-middleware-shim.ts",
+      "startLine": 32
+    },
+    {
+      "crap": 2,
+      "method": "sequence",
+      "path": "apps/web/src/testing/astro-middleware-shim.ts",
+      "startLine": 36
+    },
+    {
+      "crap": 2,
+      "method": "chained",
+      "path": "apps/web/src/testing/astro-middleware-shim.ts",
+      "startLine": 39
+    },
+    {
+      "crap": 20,
+      "method": "dispatch",
+      "path": "apps/web/src/testing/astro-middleware-shim.ts",
+      "startLine": 41
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "apps/web/src/testing/astro-middleware-shim.ts",
+      "startLine": 46
     },
     {
       "crap": 20,
@@ -901,9 +1369,105 @@
     },
     {
       "crap": 2,
+      "method": "findActiveByKind",
+      "path": "packages/shared/src/db/queries/legalDocuments.ts",
+      "startLine": 92
+    },
+    {
+      "crap": 12,
+      "method": "getActiveLegalDocuments",
+      "path": "packages/shared/src/db/queries/legalDocuments.ts",
+      "startLine": 123
+    },
+    {
+      "crap": 2,
+      "method": "recordOnboardingAcceptances",
+      "path": "packages/shared/src/db/queries/legalDocuments.ts",
+      "startLine": 174
+    },
+    {
+      "crap": 90,
+      "method": "decodeInviteToken",
+      "path": "packages/shared/src/db/queries/parentAthleteLinks.ts",
+      "startLine": 93
+    },
+    {
+      "crap": 2,
+      "method": "caseInsensitiveEmailEquals",
+      "path": "packages/shared/src/db/queries/parentAthleteLinks.ts",
+      "startLine": 108
+    },
+    {
+      "crap": 2,
+      "method": "sha256Hex",
+      "path": "packages/shared/src/db/queries/parentAthleteLinks.ts",
+      "startLine": 114
+    },
+    {
+      "crap": 20,
+      "method": "establishLinkFromInvite",
+      "path": "packages/shared/src/db/queries/parentAthleteLinks.ts",
+      "startLine": 128
+    },
+    {
+      "crap": 6,
+      "method": "getOnboardingState",
+      "path": "packages/shared/src/db/queries/users.ts",
+      "startLine": 66
+    },
+    {
+      "crap": 6,
+      "method": "isOnboarded",
+      "path": "packages/shared/src/db/queries/users.ts",
+      "startLine": 95
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "packages/shared/src/db/schema/legalDocuments.ts",
+      "startLine": 32
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "packages/shared/src/db/schema/parentAthleteLinks.ts",
+      "startLine": 25
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-2>",
+      "path": "packages/shared/src/db/schema/parentAthleteLinks.ts",
+      "startLine": 28
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-3>",
+      "path": "packages/shared/src/db/schema/parentAthleteLinks.ts",
+      "startLine": 34
+    },
+    {
+      "crap": 2,
       "method": "<anon method-1>",
       "path": "packages/shared/src/db/schema/teams.ts",
       "startLine": 18
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "packages/shared/src/db/schema/userLegalAgreements.ts",
+      "startLine": 31
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-2>",
+      "path": "packages/shared/src/db/schema/userLegalAgreements.ts",
+      "startLine": 34
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-3>",
+      "path": "packages/shared/src/db/schema/userLegalAgreements.ts",
+      "startLine": 39
     },
     {
       "crap": 2,
@@ -921,7 +1485,13 @@
       "crap": 2,
       "method": "<anon method-3>",
       "path": "packages/shared/src/db/schema/users.ts",
-      "startLine": 42
+      "startLine": 43
+    },
+    {
+      "crap": 2,
+      "method": "seedLegalDocuments",
+      "path": "packages/shared/src/db/seed.ts",
+      "startLine": 55
     },
     {
       "crap": 2,

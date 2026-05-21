@@ -39,6 +39,12 @@ module.exports = {
           '^apps/web/src/middleware\\.ts$',
           '^apps/web/src/pages/',
           '^apps/web/src/sentry\\.ts$',
+          // Vitest-only shim resolved via an alias in apps/web/vitest.config.ts
+          // (the production astro:middleware module is provided by the Astro
+          // build at runtime; the shim only exists so the unit test runner
+          // can compile middleware.ts). Dependency-cruiser does not see the
+          // Vitest alias and would flag this as an orphan otherwise.
+          '^apps/web/src/testing/astro-middleware-shim\\.ts$',
           '^apps/mobile/src/sentry\\.ts$',
           '^apps/api/src/env\\.ts$',
           '^apps/api/src/sentry\\.ts$',

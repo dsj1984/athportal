@@ -1,0 +1,61 @@
+---
+// apps/web/src/components/onboarding/LegalAcceptanceCheckboxes.astro
+//
+// Renders the two legal-acceptance checkboxes (ToS, Privacy) bound to
+// the active version strings the page SSR-fetched via
+// `getActiveLegalDocuments(db)`. The version strings flow verbatim
+// through `OnboardingForm.astro`'s working state into the API payload
+// so the edge can re-validate against the `legalDocuments` table.
+//
+// Story #574 / Task #583. Tech Spec #490.
+
+import {
+  type LegalAcceptanceProps,
+  buildLegalAcceptanceView,
+} from './LegalAcceptanceCheckboxes.ts';
+
+type Props = LegalAcceptanceProps;
+const view = buildLegalAcceptanceView(Astro.props);
+---
+
+<fieldset
+  class="onboarding-legal"
+  data-testid={view.testIds.root}
+  data-island="legal-acceptance"
+  data-tos-version={view.tos.version}
+  data-privacy-version={view.privacy.version}
+>
+  <legend class="onboarding-legal__legend">Legal</legend>
+
+  <label class="onboarding-legal__row">
+    <input
+      type="checkbox"
+      name="acceptsTermsOfService"
+      data-testid={view.testIds.tosCheckbox}
+      required
+    />
+    <span class="onboarding-legal__label">
+      I have read and accept the
+      <a href={view.tos.bodyUrl} target="_blank" rel="noopener noreferrer">
+        Terms of Service
+      </a>
+      (version {view.tos.version}).
+    </span>
+  </label>
+
+  <label class="onboarding-legal__row">
+    <input
+      type="checkbox"
+      name="acceptsPrivacyPolicy"
+      data-testid={view.testIds.privacyCheckbox}
+      required
+    />
+    <span class="onboarding-legal__label">
+      I have read and accept the
+      <a href={view.privacy.bodyUrl} target="_blank" rel="noopener noreferrer">
+        Privacy Policy
+      </a>
+      (version {view.privacy.version}).
+    </span>
+  </label>
+</fieldset>

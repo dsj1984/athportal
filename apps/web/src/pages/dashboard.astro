@@ -1,0 +1,46 @@
+---
+// apps/web/src/pages/dashboard.astro
+//
+// Post-onboarding landing surface. Composes the initial widget set
+// (RecentActivity, Roster, Upcoming) and renders an EmptyState on the
+// no-data branch for every widget — no widget falls back to a
+// perpetual skeleton (PRD #489 §Dashboard empty states).
+//
+// At MVP the dashboard reads no real data; the page hands
+// `EMPTY_DASHBOARD_DATA` to `buildDashboard` so the freshly-onboarded
+// view is exercised end-to-end. When real readers wire in, swap the
+// constant for the live query and the empty-state branches stay
+// identical.
+import EmptyState from '../components/ui/EmptyState.astro';
+import { EMPTY_DASHBOARD_DATA, buildDashboard } from './dashboard.ts';
+
+const view = buildDashboard(EMPTY_DASHBOARD_DATA);
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Dashboard</title>
+  </head>
+  <body>
+    <main class="dashboard">
+      <h1 class="dashboard__title">Dashboard</h1>
+      {
+        view.widgets.map((widget) => (
+          <section class="dashboard__widget" data-testid={widget.id}>
+            <h2 class="dashboard__widget-heading">{widget.heading}</h2>
+            {widget.isEmpty ? (
+              <EmptyState {...widget.emptyState} />
+            ) : (
+              <ul class="dashboard__widget-rows">
+                {widget.rows.map((_row, idx) => (
+                  <li class="dashboard__widget-row" data-row-index={idx} />
+                ))}
+              </ul>
+            )}
+          </section>
+        ))
+      }
+    </main>
+  </body>
+</html>
