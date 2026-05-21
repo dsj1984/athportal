@@ -105,7 +105,7 @@ When('I attest that I am at least 13 years old', async ({ page }) => {
   await page.getByRole('checkbox', { name: /at least 13/i }).check();
 });
 
-When('I attest that I am under 13', async ({ page }) => {
+When('I attest that I am under 13', async () => {
   // Mirror of the above — leaving the age-attestation checkbox
   // unticked is what AC-8 actually asserts at the user-visible
   // layer. The step is bound so the scenario reads as a complete
