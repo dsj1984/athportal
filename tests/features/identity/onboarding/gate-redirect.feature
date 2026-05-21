@@ -1,4 +1,4 @@
-@domain-onboarding
+@pending @domain-onboarding
 Feature: The onboarding gate redirects un-onboarded users
 
   Server-enforced onboarding (Epic #8) requires that any signed-in user

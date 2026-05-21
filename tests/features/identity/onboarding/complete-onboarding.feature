@@ -1,4 +1,4 @@
-@domain-onboarding
+@pending @domain-onboarding
 Feature: A user can complete onboarding and reach the dashboard
 
   AC-5 names the load-bearing happy path of Epic #8: a user who fills
