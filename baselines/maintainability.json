@@ -1,7 +1,7 @@
 {
   "$schema": ".agents/schemas/baselines/maintainability.schema.json",
   "kernelVersion": "0.1.0",
-  "generatedAt": "2026-05-21T19:33:25.020Z",
+  "generatedAt": "2026-05-21T19:33:53.873Z",
   "rollup": {
     "*": {
       "min": 81.713,
@@ -179,12 +179,20 @@
       "path": "packages/shared/drizzle.config.ts"
     },
     {
+      "mi": 133.836,
+      "path": "packages/shared/src/db/schema/index.ts"
+    },
+    {
       "mi": 97.145,
       "path": "packages/shared/src/db/schema/organizations.ts"
     },
     {
       "mi": 105.085,
       "path": "packages/shared/src/db/schema/teams.ts"
+    },
+    {
+      "mi": 107.538,
+      "path": "packages/shared/src/db/schema/users.ts"
     },
     {
       "mi": 171,
