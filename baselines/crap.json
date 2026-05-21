@@ -1,13 +1,13 @@
 {
   "$schema": ".agents/schemas/baselines/crap.schema.json",
-  "generatedAt": "2026-05-21T20:08:05.470Z",
-  "kernelVersion": "1.0.0",
+  "kernelVersion": "0.1.0",
+  "generatedAt": "2026-05-21T20:08:48.267Z",
   "rollup": {
     "*": {
-      "max": 462,
-      "methodsAbove20": 18,
       "p50": 2,
-      "p95": 42
+      "p95": 30,
+      "max": 462,
+      "methodsAbove20": 15
     }
   },
   "rows": [
@@ -34,84 +34,6 @@
       "method": "<anon method-1>",
       "path": "apps/api/src/middleware/__testing__/auth-test.ts",
       "startLine": 59
-    },
-    {
-      "crap": 2,
-      "method": "unauthenticated",
-      "path": "apps/api/src/middleware/auth.ts",
-      "startLine": 60
-    },
-    {
-      "crap": 20,
-      "method": "readSessionCookie",
-      "path": "apps/api/src/middleware/auth.ts",
-      "startLine": 72
-    },
-    {
-      "crap": 20,
-      "method": "readBearerToken",
-      "path": "apps/api/src/middleware/auth.ts",
-      "startLine": 84
-    },
-    {
-      "crap": 2,
-      "method": "extractToken",
-      "path": "apps/api/src/middleware/auth.ts",
-      "startLine": 97
-    },
-    {
-      "crap": 2,
-      "method": "clerkAuth",
-      "path": "apps/api/src/middleware/auth.ts",
-      "startLine": 123
-    },
-    {
-      "crap": 42,
-      "method": "<anon method-1>",
-      "path": "apps/api/src/middleware/auth.ts",
-      "startLine": 124
-    },
-    {
-      "crap": 2,
-      "method": "<anon method-2>",
-      "path": "apps/api/src/middleware/auth.ts",
-      "startLine": 254
-    },
-    {
-      "crap": 2,
-      "method": "buildJitCandidate",
-      "path": "apps/api/src/middleware/auth.ts",
-      "startLine": 269
-    },
-    {
-      "crap": 2,
-      "method": "toAuthContext",
-      "path": "apps/api/src/middleware/auth.ts",
-      "startLine": 278
-    },
-    {
-      "crap": 2,
-      "method": "requireInternalUser",
-      "path": "apps/api/src/middleware/auth.ts",
-      "startLine": 313
-    },
-    {
-      "crap": 42,
-      "method": "<anon method-3>",
-      "path": "apps/api/src/middleware/auth.ts",
-      "startLine": 314
-    },
-    {
-      "crap": 2,
-      "method": "lookupBySubject",
-      "path": "apps/api/src/middleware/auth.ts",
-      "startLine": 361
-    },
-    {
-      "crap": 2,
-      "method": "insertIfAbsent",
-      "path": "apps/api/src/middleware/auth.ts",
-      "startLine": 379
     },
     {
       "crap": 6,
@@ -925,54 +847,6 @@
     },
     {
       "crap": 2,
-      "method": "findActiveByKind",
-      "path": "packages/shared/src/db/queries/legalDocuments.ts",
-      "startLine": 92
-    },
-    {
-      "crap": 12,
-      "method": "getActiveLegalDocuments",
-      "path": "packages/shared/src/db/queries/legalDocuments.ts",
-      "startLine": 123
-    },
-    {
-      "crap": 2,
-      "method": "recordOnboardingAcceptances",
-      "path": "packages/shared/src/db/queries/legalDocuments.ts",
-      "startLine": 174
-    },
-    {
-      "crap": 90,
-      "method": "decodeInviteToken",
-      "path": "packages/shared/src/db/queries/parentAthleteLinks.ts",
-      "startLine": 93
-    },
-    {
-      "crap": 2,
-      "method": "caseInsensitiveEmailEquals",
-      "path": "packages/shared/src/db/queries/parentAthleteLinks.ts",
-      "startLine": 108
-    },
-    {
-      "crap": 2,
-      "method": "sha256Hex",
-      "path": "packages/shared/src/db/queries/parentAthleteLinks.ts",
-      "startLine": 114
-    },
-    {
-      "crap": 20,
-      "method": "establishLinkFromInvite",
-      "path": "packages/shared/src/db/queries/parentAthleteLinks.ts",
-      "startLine": 128
-    },
-    {
-      "crap": 6,
-      "method": "getOnboardingState",
-      "path": "packages/shared/src/db/queries/users.ts",
-      "startLine": 66
-    },
-    {
-      "crap": 2,
       "method": "<anon method-1>",
       "path": "packages/shared/src/db/schema/legalDocuments.ts",
       "startLine": 32
@@ -1036,12 +910,6 @@
       "method": "<anon method-3>",
       "path": "packages/shared/src/db/schema/users.ts",
       "startLine": 43
-    },
-    {
-      "crap": 2,
-      "method": "seedLegalDocuments",
-      "path": "packages/shared/src/db/seed.ts",
-      "startLine": 55
     },
     {
       "crap": 2,
