@@ -26,9 +26,15 @@
 import { Hono } from 'hono';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('@repo/shared/db/queries/users', () => ({
-  getOnboardingState: vi.fn(),
-}));
+vi.mock('@repo/shared/db/queries/users', async () => {
+  const actual = await vi.importActual<typeof import('@repo/shared/db/queries/users')>(
+    '@repo/shared/db/queries/users',
+  );
+  return {
+    ...actual,
+    getOnboardingState: vi.fn(),
+  };
+});
 
 import { getOnboardingState } from '@repo/shared/db/queries/users';
 import type { AuthContext, RequireInternalUserEnv } from './auth';
@@ -57,7 +63,7 @@ function buildApp(auth: AuthContext) {
     // implement the structural Drizzle handle shape — the middleware
     // hands the value to `getOnboardingState`, which is mocked, so the
     // shape is never inspected at runtime.
-    c.set('db', STUB_DB as unknown as Parameters<typeof getOnboardingState>[0]);
+    c.set('db', STUB_DB);
     c.set('clerkSubjectId', auth.clerkSubjectId);
     c.set('auth', auth);
     await next();

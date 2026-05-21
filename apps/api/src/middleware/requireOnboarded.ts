@@ -42,7 +42,7 @@
 // internal error details are surfaced in the response body. The error
 // message is a fixed, user-facing string.
 
-import { getOnboardingState } from '@repo/shared/db/queries/users';
+import { getOnboardingState, isOnboarded } from '@repo/shared/db/queries/users';
 import type { MiddlewareHandler } from 'hono';
 import type { RequireInternalUserEnv } from './auth';
 
@@ -83,9 +83,7 @@ export function requireOnboarded(): MiddlewareHandler<RequireInternalUserEnv> {
     const auth = c.get('auth');
     const db = c.get('db');
 
-    const state = getOnboardingState(db, auth.userId);
-
-    if (state === null || state.onboardedAt === null) {
+    if (!isOnboarded(getOnboardingState(db, auth.userId))) {
       return c.json(onboardingRequired(), 403);
     }
 

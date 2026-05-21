@@ -81,3 +81,17 @@ export function getOnboardingState(db: unknown, userId: string): OnboardingState
     ageAttestedAt: row.ageAttestedAt ?? null,
   };
 }
+
+/**
+ * Sanctioned predicate: does `state` represent a fully-onboarded user?
+ *
+ * Returns `false` for both `null` (no user row) and a state whose
+ * `onboardedAt` is null (present but not yet onboarded). Callers gating
+ * a protected resource should use this helper rather than reading
+ * `state.onboardedAt` directly — the lint-baseline ratchet forbids any
+ * `.onboardedAt` read outside this module, and this predicate is the
+ * read-side counterpart to `getOnboardingState`.
+ */
+export function isOnboarded(state: OnboardingState | null): boolean {
+  return state !== null && state.onboardedAt !== null;
+}

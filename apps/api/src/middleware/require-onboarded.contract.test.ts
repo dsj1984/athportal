@@ -29,18 +29,12 @@ import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import type { Hono } from 'hono';
 import { describe, expect, it } from 'vitest';
-import {
-  type RequireInternalUserEnv,
-  requireInternalUser,
-} from '../middleware/auth';
+import { type RequireInternalUserEnv, requireInternalUser } from '../middleware/auth';
 import { requireOnboarded } from '../middleware/requireOnboarded';
 import { meRoute } from '../routes/v1/me';
 import { signOutRoute } from '../routes/v1/sign-out';
 
-const MIGRATIONS_DIR = join(
-  __dirname,
-  '../../../../packages/shared/src/db/migrations',
-);
+const MIGRATIONS_DIR = join(__dirname, '../../../../packages/shared/src/db/migrations');
 
 /**
  * Build a fresh in-memory SQLite handle with BOTH migrations applied —
@@ -78,11 +72,7 @@ interface SeedOpts {
   readonly onboardedAt: Date | null;
 }
 
-function seedActor(
-  db: ReturnType<typeof freshOnboardingProdDb>,
-  a: AuthContext,
-  opts: SeedOpts,
-) {
+function seedActor(db: ReturnType<typeof freshOnboardingProdDb>, a: AuthContext, opts: SeedOpts) {
   db.insert(users)
     .values({
       id: a.userId,
@@ -211,9 +201,7 @@ describe('requireOnboarded — contract', () => {
     seedActor(db, a, { onboardedAt: null });
 
     const app = buildApp(db, a, (app) => {
-      app.get('/api/v1/_debug/synthetic-failure', (c) =>
-        c.json({ ok: true }),
-      );
+      app.get('/api/v1/_debug/synthetic-failure', (c) => c.json({ ok: true }));
       app.use('/api/v1/*', requireOnboarded());
     });
 
