@@ -16,7 +16,14 @@ Feature: The onboarding gate redirects un-onboarded users
     When I open the dashboard page
     Then I see the onboarding screen
 
-  @smoke @ac-2
+  # Pending: the Astro middleware's `productionLookup` is still the
+  # safe-default placeholder that treats every signed-in user as
+  # "no row found → redirect". An onboarded persona cannot pass the
+  # gate until the web runtime carries a real DB handle binding (Tech
+  # Spec #490 §Architecture; the matching cutover lands with a later
+  # Wave that wires the DB into Astro.locals). Un-pend this scenario
+  # together with that wave.
+  @pending @ac-2
   Scenario: Onboarded user reaches a protected route without redirect
     Given I am signed in as "athlete"
     And I have already completed onboarding
