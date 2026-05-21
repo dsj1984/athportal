@@ -1,11 +1,11 @@
 {
   "$schema": ".agents/schemas/baselines/maintainability.schema.json",
   "kernelVersion": "0.1.0",
-  "generatedAt": "2026-05-21T20:08:48.086Z",
+  "generatedAt": "2026-05-21T20:44:13.033Z",
   "rollup": {
     "*": {
-      "min": 80.074,
-      "p50": 111.005,
+      "min": 70.515,
+      "p50": 109.238,
       "p95": 171
     }
   },
@@ -15,12 +15,12 @@
       "path": "apps/api/src/env.ts"
     },
     {
-      "mi": 115.473,
-      "path": "apps/api/src/index.ts"
-    },
-    {
       "mi": 138.232,
       "path": "apps/api/src/middleware/__testing__/auth-test.ts"
+    },
+    {
+      "mi": 99.719,
+      "path": "apps/api/src/middleware/auth.ts"
     },
     {
       "mi": 103.092,
@@ -199,6 +199,14 @@
       "path": "packages/shared/drizzle.config.ts"
     },
     {
+      "mi": 94.082,
+      "path": "packages/shared/src/db/queries/legalDocuments.ts"
+    },
+    {
+      "mi": 97.292,
+      "path": "packages/shared/src/db/queries/parentAthleteLinks.ts"
+    },
+    {
       "mi": 122.384,
       "path": "packages/shared/src/db/schema/index.ts"
     },
@@ -227,6 +235,10 @@
       "path": "packages/shared/src/db/schema/users.ts"
     },
     {
+      "mi": 106.619,
+      "path": "packages/shared/src/db/seed.ts"
+    },
+    {
       "mi": 171,
       "path": "packages/shared/src/index.ts"
     },
@@ -253,6 +265,10 @@
     {
       "mi": 171,
       "path": "packages/shared/src/rbac/types.ts"
+    },
+    {
+      "mi": 70.515,
+      "path": "packages/shared/src/schemas/auth.ts"
     },
     {
       "mi": 122.795,
