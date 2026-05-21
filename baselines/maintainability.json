@@ -1,41 +1,11 @@
 {
   "$schema": ".agents/schemas/baselines/maintainability.schema.json",
-  "generatedAt": "2026-05-18T20:23:55.531Z",
-  "kernelVersion": "1.0.0",
+  "kernelVersion": "0.1.0",
+  "generatedAt": "2026-05-21T19:33:25.020Z",
   "rollup": {
     "*": {
       "min": 81.713,
       "p50": 111.681,
-      "p95": 171
-    },
-    "apps/api": {
-      "min": 89.95,
-      "p50": 111.681,
-      "p95": 171
-    },
-    "apps/mobile": {
-      "min": 96.11,
-      "p50": 96.11,
-      "p95": 121.195
-    },
-    "apps/web": {
-      "min": 81.713,
-      "p50": 113.043,
-      "p95": 171
-    },
-    "packages/baselines": {
-      "min": 94.702,
-      "p50": 101.565,
-      "p95": 171
-    },
-    "packages/config": {
-      "min": 104.952,
-      "p50": 104.952,
-      "p95": 115.627
-    },
-    "packages/shared": {
-      "min": 83.455,
-      "p50": 108.708,
       "p95": 171
     }
   },
@@ -209,20 +179,12 @@
       "path": "packages/shared/drizzle.config.ts"
     },
     {
-      "mi": 133.836,
-      "path": "packages/shared/src/db/schema/index.ts"
-    },
-    {
       "mi": 97.145,
       "path": "packages/shared/src/db/schema/organizations.ts"
     },
     {
       "mi": 105.085,
       "path": "packages/shared/src/db/schema/teams.ts"
-    },
-    {
-      "mi": 107.538,
-      "path": "packages/shared/src/db/schema/users.ts"
     },
     {
       "mi": 171,

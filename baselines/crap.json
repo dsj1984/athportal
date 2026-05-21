@@ -1,13 +1,13 @@
 {
   "$schema": ".agents/schemas/baselines/crap.schema.json",
-  "generatedAt": "2026-05-19T02:34:32.282Z",
-  "kernelVersion": "1.0.0",
+  "kernelVersion": "0.1.0",
+  "generatedAt": "2026-05-21T19:33:25.615Z",
   "rollup": {
     "*": {
-      "max": 462,
-      "methodsAbove20": 17,
       "p50": 2,
-      "p95": 42
+      "p95": 42,
+      "max": 462,
+      "methodsAbove20": 17
     }
   },
   "rows": [
@@ -904,24 +904,6 @@
       "method": "<anon method-1>",
       "path": "packages/shared/src/db/schema/teams.ts",
       "startLine": 18
-    },
-    {
-      "crap": 2,
-      "method": "<anon method-1>",
-      "path": "packages/shared/src/db/schema/users.ts",
-      "startLine": 36
-    },
-    {
-      "crap": 2,
-      "method": "<anon method-2>",
-      "path": "packages/shared/src/db/schema/users.ts",
-      "startLine": 37
-    },
-    {
-      "crap": 2,
-      "method": "<anon method-3>",
-      "path": "packages/shared/src/db/schema/users.ts",
-      "startLine": 42
     },
     {
       "crap": 2,

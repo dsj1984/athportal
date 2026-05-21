@@ -8,6 +8,13 @@
       "when": 1779112425915,
       "tag": "0000_auth_and_rbac",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1779391062434,
+      "tag": "0001_onboarding_schema",
+      "breakpoints": true
     }
   ]
 }

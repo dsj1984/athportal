@@ -36,6 +36,7 @@ export const users = sqliteTable(
     orgId: text('org_id').references(() => organizations.id),
     teamId: text('team_id').references(() => teams.id),
     onboardedAt: integer('onboarded_at', { mode: 'timestamp' }),
+    ageAttestedAt: integer('age_attested_at', { mode: 'timestamp' }),
     createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
     updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
   },
