@@ -1,0 +1,33 @@
+---
+// apps/web/src/components/onboarding/AgeAttestation.astro
+//
+// Renders the single ≥13 age attestation checkbox. The API edge
+// re-validates via `z.literal(true)`, so submitting `false` returns a
+// 400 — the form's submit-enabled gate (OnboardingForm.ts) refuses to
+// even attempt the post until this checkbox is ticked.
+//
+// Story #574 / Task #583. Tech Spec #490.
+
+import {
+  buildAgeAttestationView,
+} from './AgeAttestation.ts';
+
+const view = buildAgeAttestationView();
+---
+
+<fieldset
+  class="onboarding-age"
+  data-testid={view.testIds.root}
+  data-island="age-attestation"
+>
+  <legend class="onboarding-age__legend">Age</legend>
+  <label class="onboarding-age__row">
+    <input
+      type="checkbox"
+      name="isAtLeast13"
+      data-testid={view.testIds.checkbox}
+      required
+    />
+    <span class="onboarding-age__label">{view.label}</span>
+  </label>
+</fieldset>
