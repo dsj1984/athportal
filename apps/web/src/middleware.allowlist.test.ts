@@ -152,14 +152,21 @@ describe('middleware allowlist matrix', () => {
       expect(ctx.redirect).not.toHaveBeenCalled();
     });
 
-    it('passes through when no internal-user row exists yet (lookup returns null)', async () => {
+    it('redirects to /onboarding when the lookup returns null (safe default — un-onboarded)', async () => {
+      // PRD G1 / AC-15: an authenticated subject with no internal row
+      // is, by definition, not onboarded yet. The middleware's safe
+      // default for the placeholder lookup is "treat null as
+      // un-onboarded and 302". This test pins that contract so a future
+      // refactor that silently flips the semantics back to "pass
+      // through" cannot land without flipping this assertion.
       const missingLookup = () => null;
       const gate = createOnboardingGate(missingLookup);
       const ctx = buildContext('/dashboard', SIGNED_IN_USER_ID);
       const next = buildNext();
       await gate(ctx, next);
-      expect(next).toHaveBeenCalledTimes(1);
-      expect(ctx.redirect).not.toHaveBeenCalled();
+      expect(next).not.toHaveBeenCalled();
+      expect(ctx.redirect).toHaveBeenCalledTimes(1);
+      expect(ctx.redirect).toHaveBeenCalledWith('/onboarding', 302);
     });
   });
 });
