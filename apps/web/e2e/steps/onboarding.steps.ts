@@ -88,9 +88,7 @@ When('I open the onboarding screen', async ({ page }) => {
 });
 
 When('I submit the onboarding form', async ({ page }) => {
-  await page
-    .getByRole('button', { name: /finish setting up your account/i })
-    .click();
+  await page.getByRole('button', { name: /finish setting up your account/i }).click();
 });
 
 // ---------------------------------------------------------------------------
@@ -161,19 +159,13 @@ When('I request a verification email', async ({ page }) => {
 // Invite-acceptance preconditions (parent-athlete linking)
 // ---------------------------------------------------------------------------
 
-Given(
-  'I have a pending invite addressed to my account email',
-  async () => {
-    // Placeholder until the invite-fixture seam lands.
-  },
-);
+Given('I have a pending invite addressed to my account email', async () => {
+  // Placeholder until the invite-fixture seam lands.
+});
 
-Given(
-  'I have a pending invite addressed to a different email than my account',
-  async () => {
-    // Placeholder until the invite-fixture seam lands.
-  },
-);
+Given('I have a pending invite addressed to a different email than my account', async () => {
+  // Placeholder until the invite-fixture seam lands.
+});
 
 When('I accept the invite during onboarding', async () => {
   // Placeholder until the invite-fixture seam lands.
@@ -184,15 +176,11 @@ When('I accept the invite during onboarding', async () => {
 // ---------------------------------------------------------------------------
 
 Then('I see the onboarding screen', async ({ page }) => {
-  await expect(
-    page.getByRole('heading', { name: /set up your account/i }),
-  ).toBeVisible();
+  await expect(page.getByRole('heading', { name: /set up your account/i })).toBeVisible();
 });
 
 Then('I see the dashboard surface', async ({ page }) => {
-  await expect(
-    page.getByRole('heading', { name: /^dashboard$/i }),
-  ).toBeVisible();
+  await expect(page.getByRole('heading', { name: /^dashboard$/i })).toBeVisible();
 });
 
 Then('I see the {word} widget empty state', async ({ page }, widgetName: string) => {
@@ -233,7 +221,9 @@ Then('I see the linked athlete on my dashboard', async ({ page }) => {
 });
 
 Then('I see an invite-mismatch error', async ({ page }) => {
-  await expect(page.getByRole('alert', { name: /invite.*email.*do(es)? not match/i })).toBeVisible();
+  await expect(
+    page.getByRole('alert', { name: /invite.*email.*do(es)? not match/i }),
+  ).toBeVisible();
 });
 
 Then('I see an under-13 not-available message', async ({ page }) => {
@@ -259,9 +249,7 @@ Then('the submit control becomes enabled', async ({ page }) => {
 });
 
 Then('I remain on the onboarding screen', async ({ page }) => {
-  await expect(
-    page.getByRole('heading', { name: /set up your account/i }),
-  ).toBeVisible();
+  await expect(page.getByRole('heading', { name: /set up your account/i })).toBeVisible();
 });
 
 Then('my previously-recorded onboarding completion is unchanged', async () => {
