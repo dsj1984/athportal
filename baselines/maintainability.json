@@ -1,41 +1,11 @@
 {
   "$schema": ".agents/schemas/baselines/maintainability.schema.json",
-  "generatedAt": "2026-05-21T20:55:40.474Z",
-  "kernelVersion": "1.0.0",
+  "kernelVersion": "0.1.0",
+  "generatedAt": "2026-05-21T20:56:21.769Z",
   "rollup": {
     "*": {
       "min": 70.515,
       "p50": 109.435,
-      "p95": 171
-    },
-    "apps/api": {
-      "min": 84.547,
-      "p50": 112.621,
-      "p95": 171
-    },
-    "apps/mobile": {
-      "min": 96.11,
-      "p50": 96.11,
-      "p95": 121.195
-    },
-    "apps/web": {
-      "min": 80.074,
-      "p50": 111.698,
-      "p95": 171
-    },
-    "packages/baselines": {
-      "min": 94.702,
-      "p50": 101.565,
-      "p95": 171
-    },
-    "packages/config": {
-      "min": 104.952,
-      "p50": 104.952,
-      "p95": 115.627
-    },
-    "packages/shared": {
-      "min": 70.515,
-      "p50": 106.619,
       "p95": 171
     }
   },
@@ -67,14 +37,6 @@
     {
       "mi": 116.953,
       "path": "apps/api/src/routes/debug/synthetic-failure.ts"
-    },
-    {
-      "mi": 143.367,
-      "path": "apps/api/src/routes/v1/auth/index.ts"
-    },
-    {
-      "mi": 86.935,
-      "path": "apps/api/src/routes/v1/auth/onboard.ts"
     },
     {
       "mi": 115.469,
@@ -181,10 +143,6 @@
       "path": "apps/web/src/index.ts"
     },
     {
-      "mi": 149.999,
-      "path": "apps/web/src/middleware.ts"
-    },
-    {
       "mi": 98.571,
       "path": "apps/web/src/pages/dashboard.ts"
     },
@@ -195,10 +153,6 @@
     {
       "mi": 147.989,
       "path": "apps/web/src/sentry.ts"
-    },
-    {
-      "mi": 94.92,
-      "path": "apps/web/vitest.config.ts"
     },
     {
       "mi": 94.702,
