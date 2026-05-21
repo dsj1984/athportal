@@ -24,6 +24,10 @@
       "types": "./dist/db/queries/legalDocuments.d.ts",
       "import": "./src/db/queries/legalDocuments.ts"
     },
+    "./db/seed": {
+      "types": "./dist/db/seed.d.ts",
+      "import": "./src/db/seed.ts"
+    },
     "./db/queries/parentAthleteLinks": {
       "types": "./dist/db/queries/parentAthleteLinks.d.ts",
       "import": "./src/db/queries/parentAthleteLinks.ts"
