@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 
 // Root-level Vitest config used by `pnpm run test:coverage`. It picks up every
@@ -12,6 +13,19 @@ import { defineConfig } from 'vitest/config';
 // Two projects are declared so `.tsx` component tests run under jsdom while
 // pure-logic `.ts` tests stay on the faster node env. This mirrors the
 // per-workspace `vitest.config.ts` choice made by `@repo/shared`.
+//
+// `astro:middleware` virtual-module alias: `apps/web/src/middleware.ts`
+// imports the Astro runtime virtual module which Vitest's loader cannot
+// resolve. The per-workspace `apps/web/vitest.config.ts` aliases this
+// to a backing shim (Story #562 / Task #573), but the root coverage run
+// uses THIS config and would otherwise fail with
+// `Cannot find package 'astro:middleware'`. Mirror the alias here so the
+// merged coverage run executes the middleware unit tests under the same
+// shim the workspace test does.
+const astroMiddlewareShim = fileURLToPath(
+  new URL('./apps/web/src/testing/astro-middleware-shim.ts', import.meta.url),
+);
+
 export default defineConfig({
   test: {
     coverage: {
@@ -24,6 +38,11 @@ export default defineConfig({
     projects: [
       {
         extends: false,
+        resolve: {
+          alias: {
+            'astro:middleware': astroMiddlewareShim,
+          },
+        },
         test: {
           name: 'unit',
           environment: 'node',
@@ -34,6 +53,11 @@ export default defineConfig({
       },
       {
         extends: false,
+        resolve: {
+          alias: {
+            'astro:middleware': astroMiddlewareShim,
+          },
+        },
         test: {
           name: 'unit-jsdom',
           environment: 'jsdom',
