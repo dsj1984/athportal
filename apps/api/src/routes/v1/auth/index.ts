@@ -1,27 +1,27 @@
 // apps/api/src/routes/v1/auth/index.ts
 //
-// PLACEHOLDER — Story #564 / Task #572 owns the real implementation.
+// Router barrel for the `/api/v1/auth` namespace introduced by Epic #8 /
+// Story #564 / Task #572. Tech Spec #490 §Core Components.
 //
-// This Story (#563) needs to mount the `/api/v1/auth/*` subtree BEFORE
-// `requireOnboarded` so that the (future) onboarding handler itself is
-// reachable to an un-onboarded caller. Story #564 lands in parallel and
-// will overwrite this file with the real `authRoute` that mounts the
-// onboarding handler under `/onboard`.
+// Composes the per-resource Hono routers under one `/api/v1/auth` mount
+// so `apps/api/src/index.ts` can wire the whole namespace with a single
+// `app.route('/api/v1/auth', authRoute)` call — matching the pattern
+// already used for `meRoute`, `signOutRoute`, and `userRoleRoute`.
 //
-// Until that merge lands, this placeholder exposes an `authRoute` with
-// no handlers so:
+// Mount-order contract (Tech Spec #490 §API Changes):
 //
-//   1. `index.ts` can import and mount it without a compile error.
-//   2. Any request to `/api/v1/auth/*` falls through to 404 (Hono's
-//      default), which is the correct behaviour while the onboarding
-//      endpoint does not yet exist.
-//   3. The mount line in `index.ts` ends up on the correct side of the
-//      `requireOnboarded` gate so the wiring is permanent.
-//
-// When Story #564 rebases onto `epic/8`, the conflict here is
-// resolved by accepting Story #564's version of this file.
+//   `authRoute` MUST be mounted BEFORE the global `requireOnboarded`
+//   chain. The onboarding endpoint itself is what stamps
+//   `users.onboarded_at`; gating it behind the onboarded check would
+//   make every caller's first onboarding submission return 403
+//   `ONBOARDING_REQUIRED`. `clerkAuth` and `requireInternalUser` still
+//   run earlier in the chain — `authRoute` is authenticated, just not
+//   onboarded-gated.
 
 import { Hono } from 'hono';
 import type { RequireInternalUserEnv } from '../../../middleware/auth';
+import { onboardRoute } from './onboard';
 
 export const authRoute = new Hono<RequireInternalUserEnv>();
+
+authRoute.route('/onboard', onboardRoute);
