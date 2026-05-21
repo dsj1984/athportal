@@ -37,23 +37,23 @@ import { describe, expect, it } from 'vitest';
 import { type RequireInternalUserEnv, requireInternalUser } from '../../middleware/auth';
 import { meRoute } from './me';
 
-const MIGRATION_PATH = join(
-  __dirname,
-  '../../../../../packages/shared/src/db/migrations/0000_auth_and_rbac.sql',
-);
+const MIGRATIONS_DIR = join(__dirname, '../../../../../packages/shared/src/db/migrations');
+const MIGRATION_FILES = ['0000_auth_and_rbac.sql', '0001_onboarding_schema.sql'];
 
 /**
  * Build a fresh in-memory SQLite handle backed by the production
- * migration script. Mirrors the helper in `me.contract.test.ts` so
+ * migration scripts. Mirrors the helper in `me.contract.test.ts` so
  * the two suites read identically — there is no need to share state
  * across them.
  */
 function freshProductionDb() {
   const sqlite = new Database(':memory:');
   sqlite.pragma('foreign_keys = ON');
-  const migration = readFileSync(MIGRATION_PATH, 'utf8');
-  for (const stmt of migration.split('--> statement-breakpoint').map((s) => s.trim())) {
-    if (stmt.length > 0) sqlite.exec(stmt);
+  for (const file of MIGRATION_FILES) {
+    const migration = readFileSync(join(MIGRATIONS_DIR, file), 'utf8');
+    for (const stmt of migration.split('--> statement-breakpoint').map((s) => s.trim())) {
+      if (stmt.length > 0) sqlite.exec(stmt);
+    }
   }
   return drizzle(sqlite, { schema: { users } });
 }
