@@ -249,6 +249,49 @@ describe('POST /api/v1/auth/onboard — happy path', () => {
   });
 });
 
+describe('POST /api/v1/auth/onboard — users.email side-effect', () => {
+  // Pins the JIT-placeholder → Clerk-verified-email side-effect described
+  // in `onboard.ts` (the row carries `<sub>@clerk-jit.invalid` after JIT;
+  // onboarding overwrites it with the server-verified primary email).
+  // Tech Spec #490 §Architecture mentions stamping `onboarded_at` and
+  // `age_attested_at`; the `users.email` write is the implementation
+  // consequence of the JIT-placeholder design and MUST be auditable
+  // independent of the happy-path body assertions. Epic #8 code-review
+  // HR-4.
+  it('overwrites the JIT-placeholder users.email with the Clerk-verified primary email', async () => {
+    // Arrange — seed the actor with the synthetic placeholder so the
+    // assertion proves an overwrite rather than a no-op equality.
+    const db = freshOnboardingProductionDb();
+    seedActor(db, { email: `${ACTOR.clerkSubjectId}@clerk-jit.invalid` });
+    seedActiveLegalDocs(db);
+    const verifiedEmail = 'ada.lovelace@verified.example.invalid';
+    stubClerkUser({ verified: true, email: verifiedEmail });
+    const app = buildApp(db);
+
+    // Act
+    const res = await app.request(
+      '/api/v1/auth/onboard',
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(VALID_BODY),
+      },
+      ENV,
+    );
+
+    // Assert — wire shape
+    expect(res.status).toBe(200);
+
+    // Assert — DB side-effect: email is overwritten with the verified
+    // primary, the JIT placeholder no longer appears in the row.
+    const reloaded = await db.query.users.findFirst({
+      where: eq(users.id, ACTOR.userId),
+    });
+    expect(reloaded?.email).toBe(verifiedEmail);
+    expect(reloaded?.email).not.toContain('@clerk-jit.invalid');
+  });
+});
+
 describe('POST /api/v1/auth/onboard — idempotency', () => {
   it('returns 200 with the existing onboardedAt and writes nothing on replay', async () => {
     // Arrange — actor already onboarded.

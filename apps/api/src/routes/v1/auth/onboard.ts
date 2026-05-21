@@ -33,7 +33,20 @@
 //        `'mismatch'` throw INVITE_EMAIL_MISMATCH — the transaction
 //        rolls back and no acceptance rows survive.
 //     5. Stamp `users.onboarded_at` and `users.age_attested_at` with
-//        the transaction clock.
+//        the transaction clock, AND overwrite `users.email` with the
+//        Clerk-verified primary email. This `users.email` write is a
+//        first-class side-effect of onboarding: the upstream
+//        `requireInternalUser` JIT path seeds a synthetic placeholder
+//        (`<clerk_subject_id>@clerk-jit.invalid`) because the JIT
+//        moment runs before any email has been server-verified.
+//        Onboarding is the FIRST lifecycle point at which the real
+//        Clerk-verified primary email is known, so we promote it into
+//        the row inside the same transaction that stamps onboarding.
+//        Tech Spec #490 §Architecture mentions `onboarded_at` +
+//        `age_attested_at` explicitly; the `users.email` update is
+//        the implementation consequence of the JIT placeholder design
+//        and is pinned by a contract test in
+//        `onboard.contract.test.ts`.
 //
 //   Email verification (EMAIL_UNVERIFIED) and the Zod boundary
 //   validation (INVALID_BODY) run BEFORE the transaction opens — they
@@ -357,10 +370,20 @@ onboardRoute.post('/', async (c) => {
           onboardedAt: acceptedAt,
           ageAttestedAt: acceptedAt,
           updatedAt: acceptedAt,
-          // Persist the verified primary email — JIT inserted the
-          // synthetic `<sub>@clerk-jit.invalid` placeholder; this is
-          // the first point in the lifecycle where the real address
-          // is server-verified.
+          // Persist the verified primary email. The JIT path in
+          // `requireInternalUser` seeded a synthetic
+          // `<clerk_subject_id>@clerk-jit.invalid` placeholder because
+          // the JIT row was created before any email had been server-
+          // verified. Onboarding is the first lifecycle moment at
+          // which the real Clerk-verified primary email is known —
+          // promote it into the row inside the same transaction that
+          // stamps `onboarded_at`, so a successful onboarding always
+          // leaves the row with a real, verified email and the
+          // placeholder never escapes onboarding. This side-effect is
+          // pinned by a contract test in
+          // `onboard.contract.test.ts` (see the
+          // "stamps users.email with the Clerk-verified primary
+          // email" case).
           email: verifiedEmail,
         })
         .where(eq(users.id, auth.userId))
