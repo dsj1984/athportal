@@ -98,7 +98,9 @@ function writeBaseline(filePath, envelope) {
 // § evaluate so the fallback's verdict matches the harness's.
 function evaluateRelativePct(tolerance, prev, next, polarity) {
   if (tolerance.kind !== 'relative-pct') {
-    throw new Error(`[mutation-baseline] inline evaluate only supports relative-pct (got ${tolerance.kind})`);
+    throw new Error(
+      `[mutation-baseline] inline evaluate only supports relative-pct (got ${tolerance.kind})`,
+    );
   }
   const pol = polarity ?? 'higher-is-better';
   if (prev === 0) {
