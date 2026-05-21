@@ -15,11 +15,7 @@ import { users } from '../schema/users';
 import { freshOnboardingDb } from './__tests__/onboardingDb';
 import { establishLinkFromInvite } from './parentAthleteLinks';
 
-function seedUser(
-  db: ReturnType<typeof freshOnboardingDb>,
-  id: string,
-  email: string,
-): void {
+function seedUser(db: ReturnType<typeof freshOnboardingDb>, id: string, email: string): void {
   db.insert(users)
     .values({
       id,

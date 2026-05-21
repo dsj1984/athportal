@@ -131,12 +131,11 @@ describe('OnboardOutputSchema', () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       const flaggedFields = result.error.issues
-        .filter((issue) => issue.code === 'unrecognized_keys')
-        .flatMap((issue) =>
-          // biome-ignore lint/suspicious/noExplicitAny: Zod's issue union widens `keys` at runtime;
-          // narrowing here is purely for the assertion projection and never reaches production code.
-          (issue as any).keys ?? [],
-        );
+        .filter(
+          (issue): issue is typeof issue & { readonly keys: ReadonlyArray<string> } =>
+            issue.code === 'unrecognized_keys' && Array.isArray((issue as { keys?: unknown }).keys),
+        )
+        .flatMap((issue) => issue.keys);
       expect(flaggedFields).toEqual(
         expect.arrayContaining(['createdAt', 'updatedAt', 'clerkSubjectId']),
       );
