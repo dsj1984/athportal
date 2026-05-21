@@ -184,6 +184,32 @@ jobs:
       - name: Lint step definitions
         run: pnpm run lint:steps
 
+  lint-deps:
+    # Story #590 — architecture-boundary gate.
+    # Runs dependency-cruiser against apps/** and packages/** using the
+    # rules in `.dependency-cruiser.cjs`, which encode the workspace
+    # boundary invariants documented in docs/architecture.md §§ 1–2, 3.4,
+    # and 5. No baseline / ratchet: a rule either holds or is explicitly
+    # relaxed in the same PR (see docs/patterns.md § "Dependency
+    # boundaries"). The mirroring `scripts/__tests__/architecture-
+    # boundaries.test.mjs` exercises the same config under
+    # `pnpm run test` so the signal shows up in two places.
+    name: Lint dependencies (architecture boundaries)
+    needs: [lint, typecheck]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - name: Set up toolchain (checkout + pnpm + node + install)
+        uses: ./.github/actions/setup-toolchain
+
+      - name: Lint dependencies
+        run: pnpm run lint:deps
+
   supply-chain-security:
     # ADR-011 — supply-chain CVE gate. Runs `pnpm run audit:check` which
     # invokes `pnpm audit --json --prod` and fails on any unsuppressed

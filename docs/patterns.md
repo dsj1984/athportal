@@ -81,6 +81,87 @@ glue script), add its glob to **both** `biome.json` `files.include`
 linters stay aligned. Story #373's `tsconfig.tooling.json` already
 covers the typed-lint side.
 
+## Dependency boundaries (dependency-cruiser) {#dependency-boundaries}
+
+Story #590 added [`dependency-cruiser`](https://github.com/sverweij/dependency-cruiser)
+as the canonical architecture-boundary enforcer. The rules in
+[`.dependency-cruiser.cjs`](../.dependency-cruiser.cjs) encode the
+workspace invariants described in [`architecture.md`](architecture.md)
+§§ 1–2, 3.4, and 5 plus the safety constraints in `AGENTS.md`.
+
+### What each rule means
+
+| Rule name | Plain-English meaning |
+|---|---|
+| `no-circular` | Zero import cycles anywhere under `apps/**` or `packages/**`. |
+| `no-orphans` | Every source module is either imported by something else or explicitly listed as an entry point (Astro middleware/pages, Sentry init, env shape, RBAC types re-exported via `@repo/shared`). |
+| `not-to-unresolvable` | An import that the resolver can't follow is a build-time error in disguise — fail at lint time. |
+| `no-deprecated-core` | No imports of deprecated Node core modules. |
+| `not-to-dev-dep` | Production source can't import devDependencies. Tests, fixtures, and the published `packages/shared/src/testing/**` surface are exempt. |
+| `shared-must-not-depend-on-apps` | `@repo/shared` is the substrate; it can't reach into `apps/**`. |
+| `apps-must-not-cross-import` / `api-must-not-import-web` | `apps/web` and `apps/api` are independent runtimes. The only sanctioned coupling is `@repo/api`'s exported `AppType` consumed via Hono RPC, which goes through `@repo/shared`, never a relative path. |
+| `mobile-must-not-cross-import` | `apps/mobile` can't reach into `apps/web` or `apps/api`; shared types go through `@repo/shared`. |
+| `no-relative-apps-to-packages` | Cross-workspace imports must use the `@repo/*` aliases, not relative `../../packages/...` paths. The other quadrants are covered by the directional rules above. |
+| `test-helpers-only-in-tests` | `packages/shared/src/testing/**` holds the Clerk test-instance seam. Only test files, the testing surface itself, `apps/web/e2e/**`, and `tests/**` may import it — production code must never reach it, or the seam ships in production builds. |
+| `drizzle-schema-owns-tables` | Only `packages/shared/src/db/schema/**` may import drizzle table builders. Redeclaring tables fractures the schema SSOT. |
+| `auth-middleware-no-incoming-routes` | Route handlers read `c.var.auth` set upstream by `requireInternalUser`; they must not import `apps/api/src/middleware/auth.ts` directly. Contract tests are exempt — they wire the middleware into the harness deliberately. |
+
+The "edge logger goes through redaction" invariant from
+[`architecture.md` § 3.4](architecture.md#34-observability) is **not**
+encoded as a `dependency-cruiser` `required` rule. Redaction is
+re-exported through `@repo/shared`, and depcruise's `required` rule
+checks direct edges only — once the import hops through the package
+index, the chain is invisible. The file header in
+[`apps/api/src/middleware/request-logger.ts`](../apps/api/src/middleware/request-logger.ts)
+calls out the contract; manual review owns this one.
+
+### Running the gate
+
+- **Locally**: `pnpm run lint:deps` runs the validator and prints any
+  violations to stdout. The mirroring unit-tier test
+  [`scripts/__tests__/architecture-boundaries.test.mjs`](../scripts/__tests__/architecture-boundaries.test.mjs)
+  runs under `pnpm run test` and surfaces the same signal inside the
+  test corpus so violations show up in two places.
+- **CI**: the `lint-deps` job in
+  [`.github/workflows/quality.yml`](../.github/workflows/quality.yml)
+  runs the same command on every PR and push to `main`, parallel to
+  `lint-steps`.
+- **Dependency graph (developer-only)**: `pnpm run lint:deps:graph`
+  emits a DOT graph to `temp/dep-graph.dot` for ad-hoc inspection.
+  Not wired into CI.
+
+### Adding or relaxing a rule
+
+1. Update [`.dependency-cruiser.cjs`](../.dependency-cruiser.cjs) in the
+   same PR that produces the new shape — never on a follow-up.
+2. Every rule carries a one-line `comment:` that links back to the
+   architecture-doc section motivating it. If you can't write that
+   sentence, the rule probably doesn't belong.
+3. Allowlisting an exception (e.g. a single legitimate cross-workspace
+   import) is done by tightening the rule's `from.pathNot` or `to.pathNot`
+   with the specific path **and** a comment naming the ADR or PR that
+   authorized the exception. Generic `pathNot` widening without
+   justification is a review block.
+4. If a new invariant requires the `required` rule shape, prefer a
+   manual reviewer surface (file header + patterns.md note) when the
+   target is re-exported through a package index — depcruise's `required`
+   rule checks direct edges only and produces false positives when the
+   chain goes through a re-export.
+
+### No-ratchet policy
+
+There is **no** baseline file and **no** ratchet mechanism for this
+gate. A rule either holds across the whole workspace or it is explicitly
+relaxed in the same PR. Violations cannot be deferred to a follow-up
+story. The reasoning mirrors the
+[hard-cutover convention](../.agents/rules/git-conventions.md#contract-cutovers--no-shim-layer)
+that governs framework contract changes: shape is shape, and a partial
+hold is just a slow break.
+
+If encoding a new invariant exposes existing violations, fix the imports
+in the same PR. If the diff would be too large, split the contract — not
+the rollout.
+
 ## Lint baseline ratchet
 
 The baseline ratchet runs **two channels** against every PR (Story #373):
