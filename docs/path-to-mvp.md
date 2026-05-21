@@ -48,13 +48,14 @@ Establishes the multi-tenant data model and the gate every authenticated user mu
 
 ### Cross-cutting work (no Epic owns it)
 
-- Document the `(role, resource, action)` matrix in `docs/data-dictionary.md` as RBAC surface area lands.
+- Document the `(role, resource, action)` matrix in `docs/data-dictionary.md`. The policy module already exists in [`packages/shared/src/rbac/`](../packages/shared/src/rbac/) (landed with Epic #7); the open work is publishing the rules table into the data dictionary and keeping it current as #9–#11 expand the surface.
 - First exercise of the cross-tenant isolation property tests against a real Clerk test instance.
 
 ### Exit gates
 
 - A coach can sign up, accept ToS, create an org, create a team, invite an athlete, and have that athlete appear on the roster.
 - Manual QA gate: tenancy-isolation charter (see [`manual-testing.md` § Phase gates](manual-testing.md#phase-gates)).
+- Known deferral: acceptance-tier coverage for the onboarding gate is parked at `@pending` until the Clerk persona-CI seam lands in [#383](https://github.com/dsj1984/athportal/issues/383). Server-side correctness is pinned by contract tests in the meantime.
 
 ---
 
