@@ -41,17 +41,17 @@ import {
 
 const mockedVerifyToken = vi.mocked(verifyToken);
 
-const MIGRATION_PATH = join(
-  __dirname,
-  '../../../../packages/shared/src/db/migrations/0000_auth_and_rbac.sql',
-);
+const MIGRATIONS_DIR = join(__dirname, '../../../../packages/shared/src/db/migrations');
+const MIGRATION_FILES = ['0000_auth_and_rbac.sql', '0001_onboarding_schema.sql'];
 
 function freshProductionDb() {
   const sqlite = new Database(':memory:');
   sqlite.pragma('foreign_keys = ON');
-  const migration = readFileSync(MIGRATION_PATH, 'utf8');
-  for (const stmt of migration.split('--> statement-breakpoint').map((s) => s.trim())) {
-    if (stmt.length > 0) sqlite.exec(stmt);
+  for (const file of MIGRATION_FILES) {
+    const migration = readFileSync(join(MIGRATIONS_DIR, file), 'utf8');
+    for (const stmt of migration.split('--> statement-breakpoint').map((s) => s.trim())) {
+      if (stmt.length > 0) sqlite.exec(stmt);
+    }
   }
   return drizzle(sqlite, { schema: { users } });
 }
