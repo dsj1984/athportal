@@ -1,0 +1,146 @@
+---
+// apps/web/src/components/onboarding/ClerkVerifyEmailIsland.astro
+//
+// Surfaces Clerk's email-verification state inside the `/onboarding`
+// gate. The island queries `window.Clerk.user.primaryEmailAddress`
+// after the Clerk SDK hydrates, shows the verification badge, and
+// exposes a "Resend verification email" control that calls
+// `prepareVerification({ strategy: 'email_code' })` on the primary
+// email-address resource.
+//
+// Browser-side behavior is bound by a sibling inline <script>; the
+// pure-TS evaluator in `ClerkVerifyEmailIsland.ts` is the single
+// source of truth for the verified/unverified branch labels and the
+// data-testid invariants Task #582 locks down.
+//
+// Story #574 / Task #582. Tech Spec #490. PRD #489.
+
+import {
+  CLERK_VERIFY_EMAIL_TEST_IDS,
+  buildClerkVerifyEmailView,
+} from './ClerkVerifyEmailIsland.ts';
+
+// SSR renders the initial unverified branch — the browser-side script
+// reconciles to the real Clerk state on hydration and re-renders the
+// verified branch when Clerk reports the primary email as verified.
+const view = buildClerkVerifyEmailView({ isVerified: false });
+---
+
+<section
+  class="onboarding-verify-email"
+  data-testid={CLERK_VERIFY_EMAIL_TEST_IDS.root}
+  data-island="clerk-verify-email"
+  data-verified={String(view.isVerified)}
+>
+  <p
+    class="onboarding-verify-email__status"
+    data-testid={CLERK_VERIFY_EMAIL_TEST_IDS.status}
+    data-verified={String(view.isVerified)}
+  >
+    {view.statusLabel}
+  </p>
+  <button
+    type="button"
+    class="onboarding-verify-email__resend"
+    data-testid={CLERK_VERIFY_EMAIL_TEST_IDS.resend}
+    hidden={view.isVerified}
+  >
+    {view.resendLabel}
+  </button>
+</section>
+
+<script>
+  // Hydrate the island against the real Clerk SDK state. The script
+  // waits for `window.Clerk` to become ready, reads the primary
+  // email's verification status, mirrors it onto the surface, and
+  // wires the resend button to Clerk's `prepareVerification` API.
+  //
+  // We dispatch a `clerk-verify-email:verified` CustomEvent on the
+  // document the first time the primary email transitions to
+  // verified. `OnboardingForm.astro`'s controller listens for that
+  // event and flips its working-state `emailVerified` flag so the
+  // submit-enabled invariant updates without polling.
+  import {
+    CLERK_VERIFY_EMAIL_TEST_IDS as TEST_IDS,
+    buildClerkVerifyEmailView,
+  } from './ClerkVerifyEmailIsland.ts';
+
+  type PrimaryEmail = {
+    verification?: { status?: string };
+    prepareVerification?: (input: { strategy: 'email_code' }) => Promise<unknown>;
+  } | null;
+
+  type ClerkUser = { primaryEmailAddress?: PrimaryEmail } | null | undefined;
+  type ClerkSdk = {
+    loaded?: boolean;
+    user?: ClerkUser;
+    addListener?: (cb: () => void) => () => void;
+  };
+
+  const root = document.querySelector<HTMLElement>(`[data-testid="${TEST_IDS.root}"]`);
+  if (root) {
+    const statusEl = root.querySelector<HTMLElement>(`[data-testid="${TEST_IDS.status}"]`);
+    const resendEl = root.querySelector<HTMLButtonElement>(`[data-testid="${TEST_IDS.resend}"]`);
+
+    const render = (isVerified: boolean) => {
+      const view = buildClerkVerifyEmailView({ isVerified });
+      if (statusEl) {
+        statusEl.textContent = view.statusLabel;
+        statusEl.dataset.verified = String(view.isVerified);
+      }
+      if (resendEl) {
+        resendEl.textContent = view.resendLabel;
+        resendEl.hidden = view.isVerified;
+      }
+      root.dataset.verified = String(view.isVerified);
+      if (isVerified) {
+        document.dispatchEvent(new CustomEvent('clerk-verify-email:verified'));
+      }
+    };
+
+    const readVerified = (clerk: ClerkSdk | undefined): boolean => {
+      const status = clerk?.user?.primaryEmailAddress?.verification?.status;
+      return status === 'verified';
+    };
+
+    const win = window as unknown as { Clerk?: ClerkSdk };
+    const tick = () => {
+      const clerk = win.Clerk;
+      if (!clerk || clerk.loaded !== true) {
+        // Clerk not ready yet; check again on the next frame. This is
+        // safe because the Clerk loader emits a global `clerk:loaded`
+        // event that we also listen for below, so the worst case is a
+        // single redundant tick.
+        return;
+      }
+      render(readVerified(clerk));
+      if (typeof clerk.addListener === 'function') {
+        clerk.addListener(() => render(readVerified(clerk)));
+      }
+    };
+
+    document.addEventListener('clerk:loaded', tick, { once: true });
+    // Some Astro/Clerk integrations emit nothing on a warm load, so
+    // poll once after the script runs.
+    queueMicrotask(tick);
+
+    if (resendEl) {
+      resendEl.addEventListener('click', async (event) => {
+        event.preventDefault();
+        const clerk = win.Clerk;
+        const primaryEmail = clerk?.user?.primaryEmailAddress;
+        if (primaryEmail && typeof primaryEmail.prepareVerification === 'function') {
+          try {
+            await primaryEmail.prepareVerification({ strategy: 'email_code' });
+          } catch {
+            // Surface failures via the form-level error banner —
+            // re-throwing here would swallow the user's click.
+            document.dispatchEvent(
+              new CustomEvent('clerk-verify-email:resend-failed'),
+            );
+          }
+        }
+      });
+    }
+  }
+</script>

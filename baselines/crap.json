@@ -1,13 +1,13 @@
 {
   "$schema": ".agents/schemas/baselines/crap.schema.json",
   "kernelVersion": "0.1.0",
-  "generatedAt": "2026-05-21T20:56:21.988Z",
+  "generatedAt": "2026-05-21T21:27:56.517Z",
   "rollup": {
     "*": {
       "p50": 2,
       "p95": 42,
       "max": 462,
-      "methodsAbove20": 18
+      "methodsAbove20": 22
     }
   },
   "rows": [
@@ -178,6 +178,60 @@
       "method": "<anon method-2>",
       "path": "apps/api/src/routes/debug/synthetic-failure.ts",
       "startLine": 120
+    },
+    {
+      "crap": 2,
+      "method": "errorBody",
+      "path": "apps/api/src/routes/v1/auth/onboard.ts",
+      "startLine": 106
+    },
+    {
+      "crap": 2,
+      "method": "routeError",
+      "path": "apps/api/src/routes/v1/auth/onboard.ts",
+      "startLine": 119
+    },
+    {
+      "crap": 56,
+      "method": "asRouteError",
+      "path": "apps/api/src/routes/v1/auth/onboard.ts",
+      "startLine": 125
+    },
+    {
+      "crap": 12,
+      "method": "fetchPrimaryEmailVerified",
+      "path": "apps/api/src/routes/v1/auth/onboard.ts",
+      "startLine": 154
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "apps/api/src/routes/v1/auth/onboard.ts",
+      "startLine": 164
+    },
+    {
+      "crap": 2,
+      "method": "toPublicUser",
+      "path": "apps/api/src/routes/v1/auth/onboard.ts",
+      "startLine": 200
+    },
+    {
+      "crap": 156,
+      "method": "<anon method-2>",
+      "path": "apps/api/src/routes/v1/auth/onboard.ts",
+      "startLine": 213
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-3>",
+      "path": "apps/api/src/routes/v1/auth/onboard.ts",
+      "startLine": 217
+    },
+    {
+      "crap": 56,
+      "method": "<anon method-4>",
+      "path": "apps/api/src/routes/v1/auth/onboard.ts",
+      "startLine": 306
     },
     {
       "crap": 2,
@@ -762,6 +816,36 @@
       "startLine": 93
     },
     {
+      "crap": 20,
+      "method": "isAllowlisted",
+      "path": "apps/web/src/middleware.ts",
+      "startLine": 88
+    },
+    {
+      "crap": 2,
+      "method": "createOnboardingGate",
+      "path": "apps/web/src/middleware.ts",
+      "startLine": 127
+    },
+    {
+      "crap": 30,
+      "method": "onboardingGate",
+      "path": "apps/web/src/middleware.ts",
+      "startLine": 130
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "apps/web/src/middleware.ts",
+      "startLine": 170
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-2>",
+      "path": "apps/web/src/middleware.ts",
+      "startLine": 183
+    },
+    {
       "crap": 2,
       "method": "buildDashboard",
       "path": "apps/web/src/pages/dashboard.ts",
@@ -784,6 +868,36 @@
       "method": "<anon method-2>",
       "path": "apps/web/src/pages/sign-out.ts",
       "startLine": 63
+    },
+    {
+      "crap": 2,
+      "method": "defineMiddleware",
+      "path": "apps/web/src/testing/astro-middleware-shim.ts",
+      "startLine": 32
+    },
+    {
+      "crap": 2,
+      "method": "sequence",
+      "path": "apps/web/src/testing/astro-middleware-shim.ts",
+      "startLine": 36
+    },
+    {
+      "crap": 2,
+      "method": "chained",
+      "path": "apps/web/src/testing/astro-middleware-shim.ts",
+      "startLine": 39
+    },
+    {
+      "crap": 20,
+      "method": "dispatch",
+      "path": "apps/web/src/testing/astro-middleware-shim.ts",
+      "startLine": 41
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "apps/web/src/testing/astro-middleware-shim.ts",
+      "startLine": 46
     },
     {
       "crap": 20,

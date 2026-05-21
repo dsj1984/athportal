@@ -1,0 +1,258 @@
+---
+// apps/web/src/components/onboarding/OnboardingForm.astro
+//
+// Renders the onboarding form's controlled surface: the three name
+// fields (first, last, display), the slots for the child islands
+// (verify-email, legal, age, photo), and the submit control.
+//
+// Browser-side behavior:
+//   • The inline <script> reads working state from the form's inputs
+//     and the child islands' dataset attributes, runs
+//     `evaluateOnboardingFormState` after every change, and toggles
+//     the submit button's `disabled` attribute against the result.
+//   • On submit, `tryBuildOnboardingPayload` converts the working
+//     state into the strict OnboardInput payload; on schema-validation
+//     success the script POSTs JSON to `/api/v1/auth/onboard`. A 200
+//     redirects the browser to `/dashboard`. A 400 envelope's
+//     `details[]` are folded back into the per-field error map via
+//     `foldServerErrorsIntoFieldMap` so the user sees inline errors.
+//
+// Story #574 / Task #584. Tech Spec #490. PRD #489.
+
+import { ONBOARDING_FORM_TEST_IDS } from './OnboardingForm.ts';
+
+interface Props {
+  readonly termsOfServiceVersion: string;
+  readonly privacyPolicyVersion: string;
+}
+const { termsOfServiceVersion, privacyPolicyVersion } = Astro.props;
+
+import ClerkVerifyEmailIsland from './ClerkVerifyEmailIsland.astro';
+import LegalAcceptanceCheckboxes from './LegalAcceptanceCheckboxes.astro';
+import AgeAttestation from './AgeAttestation.astro';
+import ProfilePhotoUploader from './ProfilePhotoUploader.astro';
+---
+
+<form
+  class="onboarding-form"
+  data-testid={ONBOARDING_FORM_TEST_IDS.form}
+  data-tos-version={termsOfServiceVersion}
+  data-privacy-version={privacyPolicyVersion}
+  novalidate
+>
+  <p
+    class="onboarding-form__form-error"
+    data-testid={ONBOARDING_FORM_TEST_IDS.formError}
+    hidden
+  ></p>
+
+  <div class="onboarding-form__field">
+    <label for="onboarding-first-name">First name</label>
+    <input
+      id="onboarding-first-name"
+      name="firstName"
+      type="text"
+      data-testid={ONBOARDING_FORM_TEST_IDS.firstName}
+      autocomplete="given-name"
+      required
+      maxlength="80"
+    />
+    <p class="onboarding-form__field-error" data-field-error="profile.firstName" hidden></p>
+  </div>
+
+  <div class="onboarding-form__field">
+    <label for="onboarding-last-name">Last name</label>
+    <input
+      id="onboarding-last-name"
+      name="lastName"
+      type="text"
+      data-testid={ONBOARDING_FORM_TEST_IDS.lastName}
+      autocomplete="family-name"
+      required
+      maxlength="80"
+    />
+    <p class="onboarding-form__field-error" data-field-error="profile.lastName" hidden></p>
+  </div>
+
+  <div class="onboarding-form__field">
+    <label for="onboarding-display-name">Display name</label>
+    <input
+      id="onboarding-display-name"
+      name="displayName"
+      type="text"
+      data-testid={ONBOARDING_FORM_TEST_IDS.displayName}
+      autocomplete="nickname"
+      required
+      maxlength="120"
+    />
+    <p class="onboarding-form__field-error" data-field-error="profile.displayName" hidden></p>
+  </div>
+
+  <ClerkVerifyEmailIsland />
+
+  <LegalAcceptanceCheckboxes
+    termsOfServiceVersion={termsOfServiceVersion}
+    termsOfServiceBodyUrl="/legal/tos"
+    privacyPolicyVersion={privacyPolicyVersion}
+    privacyPolicyBodyUrl="/legal/privacy"
+  />
+
+  <AgeAttestation />
+
+  <ProfilePhotoUploader />
+
+  <button
+    type="submit"
+    class="onboarding-form__submit"
+    data-testid={ONBOARDING_FORM_TEST_IDS.submit}
+    disabled
+  >
+    Finish setting up your account
+  </button>
+</form>
+
+<script>
+  import {
+    ONBOARDING_FORM_TEST_IDS as TEST_IDS,
+    createInitialOnboardingFormState,
+    evaluateOnboardingFormState,
+    tryBuildOnboardingPayload,
+    foldServerErrorsIntoFieldMap,
+    type OnboardingFormState,
+  } from './OnboardingForm.ts';
+  import { CLERK_VERIFY_EMAIL_TEST_IDS } from './ClerkVerifyEmailIsland.ts';
+  import { LEGAL_ACCEPTANCE_TEST_IDS } from './LegalAcceptanceCheckboxes.ts';
+  import { AGE_ATTESTATION_TEST_IDS } from './AgeAttestation.ts';
+  import { PROFILE_PHOTO_TEST_IDS } from './ProfilePhotoUploader.ts';
+
+  const form = document.querySelector<HTMLFormElement>(`[data-testid="${TEST_IDS.form}"]`);
+  const submit = document.querySelector<HTMLButtonElement>(
+    `[data-testid="${TEST_IDS.submit}"]`,
+  );
+  const formError = document.querySelector<HTMLElement>(
+    `[data-testid="${TEST_IDS.formError}"]`,
+  );
+  if (form && submit) {
+    let state: OnboardingFormState = createInitialOnboardingFormState({
+      termsOfServiceVersion: form.dataset.tosVersion ?? '',
+      privacyPolicyVersion: form.dataset.privacyVersion ?? '',
+    });
+
+    const readState = (): OnboardingFormState => {
+      const data = new FormData(form);
+      const tosVersion = form.dataset.tosVersion ?? state.termsOfServiceVersion;
+      const privacyVersion = form.dataset.privacyVersion ?? state.privacyPolicyVersion;
+      const emailIsland = document.querySelector<HTMLElement>(
+        `[data-testid="${CLERK_VERIFY_EMAIL_TEST_IDS.root}"]`,
+      );
+      const photoIsland = document.querySelector<HTMLElement>(
+        `[data-testid="${PROFILE_PHOTO_TEST_IDS.root}"]`,
+      );
+      const tosBox = document.querySelector<HTMLInputElement>(
+        `[data-testid="${LEGAL_ACCEPTANCE_TEST_IDS.tosCheckbox}"]`,
+      );
+      const privacyBox = document.querySelector<HTMLInputElement>(
+        `[data-testid="${LEGAL_ACCEPTANCE_TEST_IDS.privacyCheckbox}"]`,
+      );
+      const ageBox = document.querySelector<HTMLInputElement>(
+        `[data-testid="${AGE_ATTESTATION_TEST_IDS.checkbox}"]`,
+      );
+      return {
+        firstName: String(data.get('firstName') ?? ''),
+        lastName: String(data.get('lastName') ?? ''),
+        displayName: String(data.get('displayName') ?? ''),
+        acceptsTermsOfService: tosBox?.checked === true,
+        acceptsPrivacyPolicy: privacyBox?.checked === true,
+        isAtLeast13: ageBox?.checked === true,
+        emailVerified: emailIsland?.dataset.verified === 'true',
+        profilePhotoUploadId:
+          photoIsland?.dataset.uploadId && photoIsland.dataset.uploadId.length > 0
+            ? photoIsland.dataset.uploadId
+            : null,
+        inviteToken: null,
+        termsOfServiceVersion: tosVersion,
+        privacyPolicyVersion: privacyVersion,
+      };
+    };
+
+    const renderFieldErrors = (errors: Readonly<Record<string, string>>) => {
+      const containers = form.querySelectorAll<HTMLElement>('[data-field-error]');
+      containers.forEach((el) => {
+        const key = el.dataset.fieldError ?? '';
+        const msg = errors[key];
+        if (typeof msg === 'string' && msg.length > 0) {
+          el.textContent = msg;
+          el.hidden = false;
+        } else {
+          el.textContent = '';
+          el.hidden = true;
+        }
+      });
+      if (formError) {
+        const top = errors.form ?? '';
+        if (top.length > 0) {
+          formError.textContent = top;
+          formError.hidden = false;
+        } else {
+          formError.textContent = '';
+          formError.hidden = true;
+        }
+      }
+    };
+
+    const update = () => {
+      state = readState();
+      const evaluation = evaluateOnboardingFormState(state);
+      submit.disabled = evaluation.canSubmit !== true;
+      renderFieldErrors(evaluation.fieldErrors);
+    };
+
+    form.addEventListener('input', update);
+    form.addEventListener('change', update);
+    document.addEventListener('clerk-verify-email:verified', update);
+    document.addEventListener('profile-photo:changed', update);
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      state = readState();
+      const result = tryBuildOnboardingPayload(state);
+      if (!result.ok) {
+        renderFieldErrors(result.fieldErrors);
+        return;
+      }
+      submit.disabled = true;
+      try {
+        const response = await fetch('/api/v1/auth/onboard', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(result.value),
+        });
+        if (response.ok) {
+          window.location.assign('/dashboard');
+          return;
+        }
+        const envelope = (await response.json().catch(() => null)) as {
+          success?: boolean;
+          error?: {
+            code?: string;
+            message?: string;
+            details?: ReadonlyArray<{ path: ReadonlyArray<string>; message: string }>;
+          };
+        } | null;
+        const errors = envelope?.error
+          ? foldServerErrorsIntoFieldMap(envelope.error)
+          : { form: 'We could not finish setting up your account. Try again in a moment.' };
+        renderFieldErrors(errors);
+      } catch {
+        renderFieldErrors({
+          form: 'We could not reach the server. Check your connection and try again.',
+        });
+      } finally {
+        const evaluation = evaluateOnboardingFormState(state);
+        submit.disabled = evaluation.canSubmit !== true;
+      }
+    });
+
+    update();
+  }
+</script>

@@ -1,0 +1,77 @@
+---
+// apps/web/src/pages/onboarding.astro
+//
+// The `/onboarding` route. Composes the five islands that drive a
+// freshly-authenticated user through email verification, name
+// collection, legal acceptance, age attestation, and the optional
+// profile-photo upload before the API-side `requireOnboarded` gate
+// lets them through to any `/api/v1/*` surface.
+//
+// The route SSR-fetches the active legal documents so the
+// LegalAcceptanceCheckboxes island binds to the same version strings
+// the API edge re-validates against — there is no client-side fetch
+// of the legal versions, which keeps the form's payload deterministic
+// for the round-trip.
+//
+// Why an injectable accessor (`__readActiveLegalDocuments`)? The web
+// runtime does not yet carry a DB handle — the production binding
+// lands alongside the matching cutover in a later Wave (Tech Spec
+// #490 §Architecture & Design). Until the binding exists the
+// placeholder returns the spec-pinned MVP defaults so the page
+// renders end-to-end against the real OnboardInputSchema contract.
+// Tests inject a stubbed accessor; the production composition stays
+// untouched.
+//
+// Story #574 / Task #580. Tech Spec #490. PRD #489.
+
+import { buildOnboardingPageView } from './onboarding.ts';
+import type { ActiveLegalDocuments } from '@repo/shared/db/queries/legalDocuments';
+import OnboardingForm from '../components/onboarding/OnboardingForm.astro';
+
+/**
+ * Injectable accessor. Production wires the real DB-backed reader
+ * once the web runtime carries a DB handle; today the placeholder
+ * returns the spec-pinned MVP defaults from Tech Spec #490.
+ */
+function readActiveLegalDocumentsPlaceholder(): ActiveLegalDocuments {
+  const now = new Date();
+  return {
+    termsOfService: {
+      id: 'tos-mvp',
+      kind: 'terms_of_service',
+      version: '1.0.0',
+      effectiveAt: now,
+      bodyUrl: '/legal/tos',
+    },
+    privacyPolicy: {
+      id: 'privacy-mvp',
+      kind: 'privacy_policy',
+      version: '1.0.0',
+      effectiveAt: now,
+      bodyUrl: '/legal/privacy',
+    },
+  };
+}
+
+const activeLegalDocuments = readActiveLegalDocumentsPlaceholder();
+const view = buildOnboardingPageView(activeLegalDocuments);
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{view.title}</title>
+  </head>
+  <body>
+    <main class="onboarding">
+      <h1 class="onboarding__heading">{view.heading}</h1>
+      <p class="onboarding__intro">{view.intro}</p>
+
+      <OnboardingForm
+        termsOfServiceVersion={view.legalAcceptances.termsOfServiceVersion}
+        privacyPolicyVersion={view.legalAcceptances.privacyPolicyVersion}
+      />
+    </main>
+  </body>
+</html>

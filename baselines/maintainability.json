@@ -1,7 +1,7 @@
 {
   "$schema": ".agents/schemas/baselines/maintainability.schema.json",
   "kernelVersion": "0.1.0",
-  "generatedAt": "2026-05-21T20:56:21.769Z",
+  "generatedAt": "2026-05-21T21:27:56.317Z",
   "rollup": {
     "*": {
       "min": 70.515,
@@ -37,6 +37,14 @@
     {
       "mi": 116.953,
       "path": "apps/api/src/routes/debug/synthetic-failure.ts"
+    },
+    {
+      "mi": 143.367,
+      "path": "apps/api/src/routes/v1/auth/index.ts"
+    },
+    {
+      "mi": 86.935,
+      "path": "apps/api/src/routes/v1/auth/onboard.ts"
     },
     {
       "mi": 115.469,
@@ -143,6 +151,10 @@
       "path": "apps/web/src/index.ts"
     },
     {
+      "mi": 108.228,
+      "path": "apps/web/src/middleware.ts"
+    },
+    {
       "mi": 98.571,
       "path": "apps/web/src/pages/dashboard.ts"
     },
@@ -153,6 +165,14 @@
     {
       "mi": 147.989,
       "path": "apps/web/src/sentry.ts"
+    },
+    {
+      "mi": 121.79,
+      "path": "apps/web/src/testing/astro-middleware-shim.ts"
+    },
+    {
+      "mi": 86.689,
+      "path": "apps/web/vitest.config.ts"
     },
     {
       "mi": 94.702,
