@@ -16,12 +16,24 @@ export {
   type NewLegalDocument,
 } from './legalDocuments';
 export { organizations, type Organization, type NewOrganization } from './organizations';
+export {
+  parentAthleteLinks,
+  type ParentAthleteLink,
+  type NewParentAthleteLink,
+} from './parentAthleteLinks';
 export { teams, type Team, type NewTeam } from './teams';
 export { users, type User, type NewUser } from './users';
 
 import { legalDocuments } from './legalDocuments';
 import { organizations } from './organizations';
+import { parentAthleteLinks } from './parentAthleteLinks';
 import { teams } from './teams';
 import { users } from './users';
 
-export const schema = { legalDocuments, organizations, teams, users };
+export const schema = {
+  legalDocuments,
+  organizations,
+  parentAthleteLinks,
+  teams,
+  users,
+};
