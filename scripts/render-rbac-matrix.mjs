@@ -347,11 +347,13 @@ function parseRules(arrayBody) {
 // ---------------------------------------------------------------------------
 
 /**
- * Escape pipe and angle-bracket characters so a table cell never breaks
- * the surrounding Markdown table.
+ * Escape backslash and pipe characters so a table cell never breaks the
+ * surrounding Markdown table. Backslashes are escaped first so a literal
+ * `\|` in the input survives the second pass intact rather than collapsing
+ * into an ambiguous `\\|` sequence (CodeQL: js/incomplete-sanitization).
  */
 function escapeCell(value) {
-  return value.replace(/\|/g, '\\|');
+  return value.replace(/\\/g, '\\\\').replace(/\|/g, '\\|');
 }
 
 function renderSection(rows) {
