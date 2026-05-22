@@ -22,6 +22,13 @@
       "when": 1779448157618,
       "tag": "0002_org_team_graph",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1779560000000,
+      "tag": "0003_team_metadata",
+      "breakpoints": true
     }
   ]
 }

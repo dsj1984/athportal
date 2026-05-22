@@ -57,9 +57,12 @@ function buildApp(a: AuthContext) {
  * corresponding `app.route(...)` line in `./index.ts` — the contract
  * test fails loudly if either side drifts.
  */
+// `/api/v1/admin/teams` was promoted out of the placeholder set by
+// Story #657 / Task #678 — its real handlers live in `./teams.ts` and
+// its dedicated contract test is `./teams.contract.test.ts`. The five
+// remaining mount points are still placeholders.
 const SUB_ROUTES = [
   { path: '/api/v1/admin/org', feature: 'organization' },
-  { path: '/api/v1/admin/teams', feature: 'teams' },
   { path: '/api/v1/admin/invitations', feature: 'invitations' },
   { path: '/api/v1/admin/csv-import', feature: 'CSV import' },
   { path: '/api/v1/admin/rollover', feature: 'rollover' },
