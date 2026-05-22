@@ -267,8 +267,8 @@ function parseRules(arrayBody) {
   // Match `rule(` opening, then walk the argument list with the same
   // bracket-aware state machine used for the array body.
   const ruleRegex = /\brule\s*\(/g;
-  let m;
-  while ((m = ruleRegex.exec(arrayBody)) !== null) {
+  let m = ruleRegex.exec(arrayBody);
+  while (m !== null) {
     const start = m.index + m[0].length;
     let i = start;
     let depth = 1;
@@ -334,6 +334,7 @@ function parseRules(arrayBody) {
       predicate: PREDICATE_LABELS[predicateIdent],
       note,
     });
+    m = ruleRegex.exec(arrayBody);
   }
   if (rows.length === 0) {
     throw new Error('render-rbac-matrix: no rule(...) rows parsed');
