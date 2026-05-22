@@ -1,57 +1,15 @@
 {
   "$schema": ".agents/schemas/baselines/maintainability.schema.json",
-  "generatedAt": "2026-05-22T20:22:58.967Z",
-  "kernelVersion": "1.0.0",
+  "kernelVersion": "0.1.0",
+  "generatedAt": "2026-05-22T20:24:46.369Z",
   "rollup": {
     "*": {
       "min": 70.515,
       "p50": 110.893,
       "p95": 171
-    },
-    "apps/api": {
-      "min": 81.181,
-      "p50": 116.475,
-      "p95": 171
-    },
-    "apps/mobile": {
-      "min": 96.11,
-      "p50": 96.11,
-      "p95": 121.195
-    },
-    "apps/web": {
-      "min": 80.074,
-      "p50": 111.698,
-      "p95": 171
-    },
-    "packages/baselines": {
-      "min": 98.311,
-      "p50": 104.945,
-      "p95": 171
-    },
-    "packages/config": {
-      "min": 104.952,
-      "p50": 104.952,
-      "p95": 115.627
-    },
-    "packages/shared": {
-      "min": 70.515,
-      "p50": 106.619,
-      "p95": 171
     }
   },
   "rows": [
-    {
-      "mi": 171,
-      "path": "apps/api/src/env.ts"
-    },
-    {
-      "mi": 110.835,
-      "path": "apps/api/src/index.ts"
-    },
-    {
-      "mi": 120.696,
-      "path": "apps/api/src/lib/clerk-invitations.ts"
-    },
     {
       "mi": 138.232,
       "path": "apps/api/src/middleware/__testing__/auth-test.ts"
@@ -89,14 +47,6 @@
       "path": "apps/api/src/routes/v1/admin/index.ts"
     },
     {
-      "mi": 171,
-      "path": "apps/api/src/routes/v1/admin/invitations/index.ts"
-    },
-    {
-      "mi": 83.743,
-      "path": "apps/api/src/routes/v1/admin/invitations/router.ts"
-    },
-    {
       "mi": 149.008,
       "path": "apps/api/src/routes/v1/admin/org.ts"
     },
@@ -131,14 +81,6 @@
     {
       "mi": 81.181,
       "path": "apps/api/src/routes/v1/users/role.ts"
-    },
-    {
-      "mi": 94.276,
-      "path": "apps/api/src/routes/webhooks/clerk-invitation-accepted.ts"
-    },
-    {
-      "mi": 116.475,
-      "path": "apps/api/src/routes/webhooks/clerk-invitation-shared.ts"
     },
     {
       "mi": 111.681,
@@ -209,10 +151,6 @@
       "path": "apps/web/e2e/steps/graph.steps.ts"
     },
     {
-      "mi": 141.132,
-      "path": "apps/web/e2e/steps/invitations.steps.ts"
-    },
-    {
       "mi": 118.974,
       "path": "apps/web/e2e/steps/navigation.steps.ts"
     },
@@ -245,6 +183,10 @@
       "path": "apps/web/src/components/onboarding/ClerkVerifyEmailIsland.ts"
     },
     {
+      "mi": 171,
+      "path": "apps/web/src/components/onboarding/index.ts"
+    },
+    {
       "mi": 103.923,
       "path": "apps/web/src/components/onboarding/LegalAcceptanceCheckboxes.ts"
     },
@@ -255,10 +197,6 @@
     {
       "mi": 106.74,
       "path": "apps/web/src/components/onboarding/ProfilePhotoUploader.ts"
-    },
-    {
-      "mi": 171,
-      "path": "apps/web/src/components/onboarding/index.ts"
     },
     {
       "mi": 107.592,
@@ -367,14 +305,6 @@
     {
       "mi": 110.893,
       "path": "packages/shared/src/db/schema/coachAssignments.ts"
-    },
-    {
-      "mi": 115.07,
-      "path": "packages/shared/src/db/schema/index.ts"
-    },
-    {
-      "mi": 99.947,
-      "path": "packages/shared/src/db/schema/invitations.ts"
     },
     {
       "mi": 95.901,
