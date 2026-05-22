@@ -6,9 +6,13 @@ import { defineConfig } from 'vitest/config';
 // `coverage/coverage-final.json` so the story-close validation chain can read
 // a unified artifact regardless of how many workspaces exist.
 //
-// Pyramid tier scope: unit. Contract tests (`*.contract.test.{ts,tsx}`) are
-// excluded here — they run via apps/api's dedicated contract config once
-// Story #170 lands.
+// Pyramid tier scope: unit + contract. The contract project mirrors the
+// per-workspace `api-contract` project in `apps/api/vitest.config.ts` so the
+// merged coverage report captures route-level coverage. Before Story #599
+// wired this in, the merged coverage rollup classified every route handler
+// as "untested" even when contract tests exercised it end-to-end (the
+// per-workspace `pnpm --filter @repo/api exec vitest run` path always
+// covered them; this project closes the merged-path gap).
 //
 // Two projects are declared so `.tsx` component tests run under jsdom while
 // pure-logic `.ts` tests stay on the faster node env. This mirrors the
@@ -74,6 +78,21 @@ export default defineConfig({
           globals: false,
           include: ['scripts/__tests__/**/*.test.mjs', 'scripts/migration-label-guard.test.mjs'],
           exclude: ['**/dist/**', '**/node_modules/**'],
+        },
+      },
+      {
+        extends: false,
+        test: {
+          name: 'contract',
+          environment: 'node',
+          globals: false,
+          include: ['apps/**/src/**/*.contract.test.{ts,tsx}'],
+          exclude: ['**/dist/**', '**/node_modules/**'],
+          pool: 'forks',
+          fileParallelism: true,
+          isolate: true,
+          hookTimeout: 30_000,
+          testTimeout: 30_000,
         },
       },
     ],

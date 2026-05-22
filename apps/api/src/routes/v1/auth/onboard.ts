@@ -135,13 +135,20 @@ function routeError(payload: RouteError): Error {
   return err;
 }
 
+const ROUTE_ERROR_CODES: ReadonlySet<RouteError['code']> = new Set([
+  'INACTIVE_LEGAL_VERSION',
+  'INVITE_EMAIL_MISMATCH',
+]);
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object';
+}
+
 function asRouteError(err: unknown): RouteError | null {
-  if (err === null || typeof err !== 'object') return null;
-  const cause = (err as { cause?: unknown }).cause;
-  if (cause === null || typeof cause !== 'object') return null;
-  const code = (cause as { code?: unknown }).code;
-  if (code === 'INACTIVE_LEGAL_VERSION' || code === 'INVITE_EMAIL_MISMATCH') {
-    return { code };
+  if (!isObject(err) || !isObject(err.cause)) return null;
+  const code = err.cause.code;
+  if (typeof code === 'string' && ROUTE_ERROR_CODES.has(code as RouteError['code'])) {
+    return { code: code as RouteError['code'] };
   }
   return null;
 }
@@ -223,30 +230,219 @@ function toPublicUser(auth: AuthContext, onboardedAt: Date, email: string): Publ
 
 // ── Route handler ──────────────────────────────────────────────────────────
 
+// ── Parsing helpers ────────────────────────────────────────────────────────
+
+type ParsedBody = { ok: true; input: OnboardInput } | { ok: false; body: OnboardErrorBody };
+
+async function parseAndValidateBody(c: { req: { json: () => Promise<unknown> } }): Promise<ParsedBody> {
+  const rawBody = (await c.req.json().catch(() => null)) as unknown;
+  if (rawBody === null) {
+    return { ok: false, body: errorBody('INVALID_BODY', 'Request body must be valid JSON.') };
+  }
+  const parsed = OnboardInputSchema.safeParse(rawBody);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      body: errorBody(
+        'INVALID_BODY',
+        'Request body did not match the expected onboarding payload shape.',
+      ),
+    };
+  }
+  return { ok: true, input: parsed.data };
+}
+
+// ── Email verification gate ────────────────────────────────────────────────
+
+const EMAIL_UNVERIFIED_BODY = errorBody(
+  'EMAIL_UNVERIFIED',
+  'Your primary email address must be verified before completing onboarding.',
+);
+
+type EmailGate = { ok: true; email: string } | { ok: false; body: OnboardErrorBody };
+
+async function resolveVerifiedEmail(env: Env, clerkSubjectId: string): Promise<EmailGate> {
+  let primary: PrimaryEmailCheck;
+  try {
+    primary = await fetchPrimaryEmailVerified(env, clerkSubjectId);
+  } catch {
+    // Treat any Clerk-side failure as unverified rather than echoing
+    // internal detail. Defence-in-depth per security baseline § Output
+    // & Rendering.
+    return { ok: false, body: EMAIL_UNVERIFIED_BODY };
+  }
+  if (!primary.verified || !primary.email) {
+    return { ok: false, body: EMAIL_UNVERIFIED_BODY };
+  }
+  return { ok: true, email: primary.email };
+}
+
+// ── Transactional commit ───────────────────────────────────────────────────
+
+type CommitResult = { stampedAt: Date } | { replay: { stampedAt: Date } };
+
+interface CommitArgs {
+  readonly tx: unknown;
+  readonly auth: AuthContext;
+  readonly input: OnboardInput;
+  readonly verifiedEmail: string;
+  readonly acceptedAt: Date;
+}
+
+// Verify the submitted legal versions still match the active rows.
+// Throws a tagged `INACTIVE_LEGAL_VERSION` route error when either
+// version has rotated since the client rendered the page.
+function assertActiveLegalVersions(
+  active: ReturnType<typeof getActiveLegalDocuments>,
+  input: OnboardInput,
+): void {
+  if (active.termsOfService.version !== input.legalAcceptances.termsOfServiceVersion) {
+    throw routeError({ code: 'INACTIVE_LEGAL_VERSION' });
+  }
+  if (active.privacyPolicy.version !== input.legalAcceptances.privacyPolicyVersion) {
+    throw routeError({ code: 'INACTIVE_LEGAL_VERSION' });
+  }
+}
+
+// Stamp the users row with the Clerk-verified email + onboarding /
+// age-attestation timestamps. The email-promotion side-effect is
+// intentional and is pinned by `onboard.contract.test.ts`.
+function stampUserRow(tx: unknown, args: CommitArgs): void {
+  const txHandle = tx as TxHandle;
+  const stampedRows = txHandle
+    .update(users)
+    .set({
+      onboardedAt: args.acceptedAt,
+      ageAttestedAt: args.acceptedAt,
+      updatedAt: args.acceptedAt,
+      email: args.verifiedEmail,
+    })
+    .where(eq(users.id, args.auth.userId))
+    .returning()
+    .all();
+  if (!stampedRows[0]) {
+    // Unreachable in practice — `requireInternalUser` upstream
+    // guarantees the row exists. Defensive throw so a schema-drift
+    // regression surfaces as 500 rather than a silent partial commit.
+    throw new Error('onboard.stamp.row_missing');
+  }
+}
+
+function commitOnboarding(args: CommitArgs): CommitResult {
+  const { tx, auth, input, verifiedEmail, acceptedAt } = args;
+
+  // 5a. Defence-in-depth idempotency re-read. Destructured so the
+  //     lint-baseline sentinel rule does not flag the access; the
+  //     sanctioned accessor is the only producer of the value.
+  const inTxState = getOnboardingState(tx, auth.userId);
+  const { onboardedAt: inTxOnboardedAt } = inTxState ?? { onboardedAt: null };
+  if (inTxOnboardedAt) {
+    return { replay: { stampedAt: inTxOnboardedAt } };
+  }
+
+  // 5b. Resolve + verify legal documents.
+  const active = getActiveLegalDocuments(tx, acceptedAt);
+  assertActiveLegalVersions(active, input);
+
+  // 5c. Persist the two acceptance rows.
+  recordOnboardingAcceptances(tx, {
+    userId: auth.userId,
+    tosId: active.termsOfService.id,
+    privacyId: active.privacyPolicy.id,
+    acceptedAt,
+  });
+
+  // 5d. Optional parent-athlete link.
+  if (input.inviteToken !== undefined) {
+    const linkResult = establishLinkFromInvite(tx, {
+      inviteToken: input.inviteToken,
+      athleteUserId: auth.userId,
+      athleteEmail: verifiedEmail,
+    });
+    if (linkResult === 'mismatch') {
+      throw routeError({ code: 'INVITE_EMAIL_MISMATCH' });
+    }
+  }
+
+  // 5e. Stamp the user — `onboardedAt` + `ageAttestedAt` share the
+  //     transaction clock so the audit pair is internally consistent.
+  stampUserRow(tx, args);
+
+  return { stampedAt: acceptedAt };
+}
+
+// ── Error mapping ──────────────────────────────────────────────────────────
+
+interface TaggedErrorMapping {
+  readonly code: OnboardErrorCode;
+  readonly message: string;
+  readonly status: 400;
+}
+
+const ROUTE_ERROR_RESPONSES: Record<RouteError['code'], TaggedErrorMapping> = {
+  INACTIVE_LEGAL_VERSION: {
+    code: 'INACTIVE_LEGAL_VERSION',
+    message: 'One or more accepted legal documents are no longer the active version.',
+    status: 400,
+  },
+  INVITE_EMAIL_MISMATCH: {
+    code: 'INVITE_EMAIL_MISMATCH',
+    message: 'The invite token does not match your account.',
+    status: 400,
+  },
+};
+
+function transactionErrorToResponse(
+  err: unknown,
+): { body: OnboardErrorBody; status: 400 | 500 } {
+  const tagged = asRouteError(err);
+  if (tagged) {
+    const mapped = ROUTE_ERROR_RESPONSES[tagged.code];
+    return { body: errorBody(mapped.code, mapped.message), status: mapped.status };
+  }
+  return {
+    body: errorBody('INTERNAL', 'Request could not be completed.'),
+    status: 500,
+  };
+}
+
+// ── Response builders ──────────────────────────────────────────────────────
+
+function buildSuccessBody(auth: AuthContext, stampedAt: Date, email: string) {
+  return {
+    success: true as const,
+    data: {
+      user: toPublicUser(auth, stampedAt, email),
+      onboardedAt: stampedAt,
+    },
+  };
+}
+
+function commitResultToStampedAt(committed: CommitResult): Date {
+  return 'replay' in committed ? committed.replay.stampedAt : committed.stampedAt;
+}
+
+function resolveTxDb(c: { get: (key: 'db') => unknown }): TxDb | null {
+  const db = c.get('db') as TxDb | undefined;
+  if (!db || typeof db.transaction !== 'function') return null;
+  return db;
+}
+
+// ── Route handler ──────────────────────────────────────────────────────────
+
 onboardRoute.post('/', async (c) => {
   const auth = c.get('auth');
 
   // 1. Parse + validate the body at the edge.
-  const rawBody = (await c.req.json().catch(() => null)) as unknown;
-  if (rawBody === null) {
-    return c.json(errorBody('INVALID_BODY', 'Request body must be valid JSON.'), 400);
+  const parsed = await parseAndValidateBody(c);
+  if (!parsed.ok) {
+    return c.json(parsed.body, 400);
   }
-
-  const parsed = OnboardInputSchema.safeParse(rawBody);
-  if (!parsed.success) {
-    return c.json(
-      errorBody(
-        'INVALID_BODY',
-        'Request body did not match the expected onboarding payload shape.',
-      ),
-      400,
-    );
-  }
-  const input: OnboardInput = parsed.data;
+  const input = parsed.input;
 
   // 2. DB handle.
-  const db = c.get('db') as TxDb | undefined;
-  if (!db || typeof db.transaction !== 'function') {
+  const db = resolveTxDb(c);
+  if (!db) {
     return c.json(errorBody('INTERNAL', 'Service temporarily unavailable.'), 500);
   }
 
@@ -254,203 +450,37 @@ onboardRoute.post('/', async (c) => {
   //    state. If non-null, return the existing state and write nothing.
   //    This runs BEFORE the email re-query so a replayed submission
   //    from an already-onboarded user does not consume a Clerk API
-  //    call. Destructured (rather than accessed via `.onboardedAt`) so
-  //    the lint-baseline sentinel rule does not flag the read.
+  //    call.
   const priorState = getOnboardingState(db, auth.userId);
   const { onboardedAt: priorOnboardedAt } = priorState ?? { onboardedAt: null };
   if (priorOnboardedAt) {
-    return c.json(
-      {
-        success: true as const,
-        data: {
-          user: toPublicUser(auth, priorOnboardedAt, auth.email),
-          onboardedAt: priorOnboardedAt,
-        },
-      },
-      200,
-    );
+    return c.json(buildSuccessBody(auth, priorOnboardedAt, auth.email), 200);
   }
 
   // 4. Server-side email-verification re-query. Stale UI is a UX bug;
   //    a stale server check is a gate bypass — re-read at submit time.
-  let primary: PrimaryEmailCheck;
-  try {
-    primary = await fetchPrimaryEmailVerified(c.env, auth.clerkSubjectId);
-  } catch {
-    // Treat any Clerk-side failure as unverified rather than echoing
-    // internal detail. The redactor and the request-completion logger
-    // capture the underlying failure; the caller sees a generic
-    // EMAIL_UNVERIFIED. Defence-in-depth per security baseline §
-    // Output & Rendering.
-    return c.json(
-      errorBody(
-        'EMAIL_UNVERIFIED',
-        'Your primary email address must be verified before completing onboarding.',
-      ),
-      400,
-    );
+  const emailGate = await resolveVerifiedEmail(c.env, auth.clerkSubjectId);
+  if (!emailGate.ok) {
+    return c.json(emailGate.body, 400);
   }
-  if (!primary.verified || !primary.email) {
-    return c.json(
-      errorBody(
-        'EMAIL_UNVERIFIED',
-        'Your primary email address must be verified before completing onboarding.',
-      ),
-      400,
-    );
-  }
-  const verifiedEmail = primary.email;
+  const verifiedEmail = emailGate.email;
 
   // 5. Transactional commit. Re-reads `onboarded_at` once more INSIDE
   //    the transaction so a parallel onboarding submission can't
   //    sneak two commits past the idempotency check (defence in depth
   //    against the time-of-check/time-of-use gap between step 3 and
-  //    step 5). All writes — acceptances, optional link, stamp — happen
-  //    here or not at all.
+  //    step 5). All writes — acceptances, optional link, stamp —
+  //    happen here or not at all.
   const acceptedAt = new Date();
-  // The local commit-result shape uses `stampedAt` (not `onboardedAt`)
-  // so reads against this struct do not trip the lint-baseline
-  // sentinel rule that polices `users.onboarded_at` reads outside the
-  // sanctioned `getOnboardingState` accessor. The semantic value is
-  // identical — the timestamp written into `users.onboarded_at` — but
-  // the field name is local to this handler.
-  let committed: { stampedAt: Date } | { replay: { stampedAt: Date } };
+  let committed: CommitResult;
   try {
-    committed = db.transaction((tx) => {
-      // 5a. Defence-in-depth idempotency re-read. Destructured so the
-      //     lint-baseline sentinel rule does not flag the access; the
-      //     sanctioned accessor is the only producer of the value.
-      const inTxState = getOnboardingState(tx, auth.userId);
-      const { onboardedAt: inTxOnboardedAt } = inTxState ?? { onboardedAt: null };
-      if (inTxOnboardedAt) {
-        return { replay: { stampedAt: inTxOnboardedAt } };
-      }
-
-      // 5b. Resolve the active legal documents and verify the
-      //     submitted versions match. The active row per kind is the
-      //     most-recent `effective_at <= now()`; a submitted version
-      //     that does not match means the document has rotated since
-      //     the client rendered the page.
-      const active = getActiveLegalDocuments(tx, acceptedAt);
-      if (active.termsOfService.version !== input.legalAcceptances.termsOfServiceVersion) {
-        throw routeError({ code: 'INACTIVE_LEGAL_VERSION' });
-      }
-      if (active.privacyPolicy.version !== input.legalAcceptances.privacyPolicyVersion) {
-        throw routeError({ code: 'INACTIVE_LEGAL_VERSION' });
-      }
-
-      // 5c. Persist the two acceptance rows.
-      recordOnboardingAcceptances(tx, {
-        userId: auth.userId,
-        tosId: active.termsOfService.id,
-        privacyId: active.privacyPolicy.id,
-        acceptedAt,
-      });
-
-      // 5d. Optional parent-athlete link.
-      if (input.inviteToken !== undefined) {
-        const linkResult = establishLinkFromInvite(tx, {
-          inviteToken: input.inviteToken,
-          athleteUserId: auth.userId,
-          athleteEmail: verifiedEmail,
-        });
-        if (linkResult === 'mismatch') {
-          throw routeError({ code: 'INVITE_EMAIL_MISMATCH' });
-        }
-      }
-
-      // 5e. Stamp the user. `onboardedAt` + `ageAttestedAt` share the
-      //     transaction clock so the audit pair is internally
-      //     consistent. The Zod boundary guarantees
-      //     `ageAttestation.isAtLeast13 === true` reaches this point.
-      const txHandle = tx as TxHandle;
-      const stampedRows = txHandle
-        .update(users)
-        .set({
-          onboardedAt: acceptedAt,
-          ageAttestedAt: acceptedAt,
-          updatedAt: acceptedAt,
-          // Persist the verified primary email. The JIT path in
-          // `requireInternalUser` seeded a synthetic
-          // `<clerk_subject_id>@clerk-jit.invalid` placeholder because
-          // the JIT row was created before any email had been server-
-          // verified. Onboarding is the first lifecycle moment at
-          // which the real Clerk-verified primary email is known —
-          // promote it into the row inside the same transaction that
-          // stamps `onboarded_at`, so a successful onboarding always
-          // leaves the row with a real, verified email and the
-          // placeholder never escapes onboarding. This side-effect is
-          // pinned by a contract test in
-          // `onboard.contract.test.ts` (see the
-          // "stamps users.email with the Clerk-verified primary
-          // email" case).
-          email: verifiedEmail,
-        })
-        .where(eq(users.id, auth.userId))
-        .returning()
-        .all();
-
-      if (!stampedRows[0]) {
-        // Unreachable in practice — `requireInternalUser` upstream
-        // guarantees the row exists. Defensive throw so a
-        // schema-drift regression surfaces as 500 rather than a
-        // silent partial commit.
-        throw new Error('onboard.stamp.row_missing');
-      }
-
-      // `acceptedAt` is the value we just wrote — return it directly
-      // rather than reading the column back, which would route around
-      // the sanctioned `getOnboardingState` accessor.
-      return { stampedAt: acceptedAt };
-    });
-  } catch (err) {
-    const tagged = asRouteError(err);
-    if (tagged) {
-      switch (tagged.code) {
-        case 'INACTIVE_LEGAL_VERSION':
-          return c.json(
-            errorBody(
-              'INACTIVE_LEGAL_VERSION',
-              'One or more accepted legal documents are no longer the active version.',
-            ),
-            400,
-          );
-        case 'INVITE_EMAIL_MISMATCH':
-          return c.json(
-            errorBody('INVITE_EMAIL_MISMATCH', 'The invite token does not match your account.'),
-            400,
-          );
-        default: {
-          const _exhaustive: never = tagged;
-          void _exhaustive;
-        }
-      }
-    }
-    // Unknown failure path. Never echo internal detail.
-    return c.json(errorBody('INTERNAL', 'Request could not be completed.'), 500);
-  }
-
-  if ('replay' in committed) {
-    return c.json(
-      {
-        success: true as const,
-        data: {
-          user: toPublicUser(auth, committed.replay.stampedAt, verifiedEmail),
-          onboardedAt: committed.replay.stampedAt,
-        },
-      },
-      200,
+    committed = db.transaction((tx) =>
+      commitOnboarding({ tx, auth, input, verifiedEmail, acceptedAt }),
     );
+  } catch (err) {
+    const mapped = transactionErrorToResponse(err);
+    return c.json(mapped.body, mapped.status);
   }
 
-  return c.json(
-    {
-      success: true as const,
-      data: {
-        user: toPublicUser(auth, committed.stampedAt, verifiedEmail),
-        onboardedAt: committed.stampedAt,
-      },
-    },
-    200,
-  );
+  return c.json(buildSuccessBody(auth, commitResultToStampedAt(committed), verifiedEmail), 200);
 });
