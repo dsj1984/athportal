@@ -316,4 +316,55 @@ describe('PATCH /api/v1/users/:id/role — last-admin invariant', () => {
     expect(reloaded[0]?.role).toBe('org_admin');
     expect(reloaded[0]?.orgId).toBe('org-b');
   });
+
+  it('returns 403 FORBIDDEN when a non-dev_admin actor has no orgId (pre-onboarding tenant scope)', async () => {
+    // Arrange — a `member` whose orgId is null (the routine
+    // post-JIT, pre-onboarding state per
+    // apps/api/src/middleware/auth.ts:252-255). The route should
+    // refuse the mutation as a *policy* outcome (403 FORBIDDEN),
+    // not as a server error. Pre-fix this path returned 500
+    // INTERNAL because scopedDb's constructor throw fell through
+    // to the generic catch in `role.ts` (bughunter bug_006).
+    const db = freshDb();
+    seedOrg(db, 'org-a');
+    const actor = seedActor(db, 'clerk_actor_noorg', {
+      id: 'u_actor_noorg',
+      role: 'member',
+      orgId: null,
+    });
+    const someTarget = seedUser(db, {
+      id: 'u_target_anyorg',
+      role: 'member',
+      orgId: 'org-a',
+    });
+
+    mockedVerifyToken.mockResolvedValueOnce({
+      data: { sub: actor.clerkSubjectId },
+    } as unknown as Awaited<ReturnType<typeof verifyToken>>);
+
+    const app = buildApp(db);
+
+    const res = await app.request(
+      `/api/v1/users/${someTarget.id}/role`,
+      {
+        method: 'PATCH',
+        headers: {
+          cookie: '__session=valid',
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({ role: 'team_admin' }),
+      },
+      env,
+    );
+
+    expect(res.status).toBe(403);
+    const body = (await res.json()) as {
+      success: boolean;
+      error: { code: string; message: string };
+    };
+    expect(body).toMatchObject({
+      success: false,
+      error: { code: 'FORBIDDEN' },
+    });
+  });
 });

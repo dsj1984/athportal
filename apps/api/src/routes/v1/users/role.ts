@@ -182,15 +182,33 @@ userRoleRoute.patch('/:id/role', async (c) => {
       // AuthContext widens role to `string` and uses `null` for the
       // missing-org case. Normalise to the shared shape — same data,
       // tighter type — before constructing the scoped view.
-      const scoped = isDevAdmin
-        ? null
-        : scopedDb(tx as unknown as ScopedDbHandle, {
+      //
+      // scopedDb's constructor throws synchronously when a
+      // non-dev_admin actor has no orgId (Tech Spec #596 §scopedDb).
+      // That throw is a *policy* outcome ("you have no tenant scope")
+      // not a server error, so we catch it here and re-route it as
+      // FORBIDDEN before it escapes the transaction and falls through
+      // to the generic 500 branch via `asRouteError`. Without this
+      // map, an onboarded `member` whose org has not been stamped yet
+      // (a routine post-JIT state) would see a 500 INTERNAL instead
+      // of the 403 the pre-PR code path produced — wire-shape
+      // regression. See bughunter bug_006.
+      let scoped: ReturnType<typeof scopedDb> | null;
+      if (isDevAdmin) {
+        scoped = null;
+      } else {
+        try {
+          scoped = scopedDb(tx as unknown as ScopedDbHandle, {
             userId: auth.userId,
             clerkSubjectId: auth.clerkSubjectId,
             role: auth.role as Role,
             orgId: auth.orgId ?? undefined,
             teamId: auth.teamId ?? undefined,
           });
+        } catch {
+          throw routeError({ code: 'FORBIDDEN' });
+        }
+      }
 
       // 1. Apply the update first so the admin-count read below
       //    reflects the post-mutation state. We constrain the
