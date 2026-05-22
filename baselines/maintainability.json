@@ -1,15 +1,61 @@
 {
   "$schema": ".agents/schemas/baselines/maintainability.schema.json",
+  "generatedAt": "2026-05-22T23:19:34.139Z",
   "kernelVersion": "1.0.0",
-  "generatedAt": "2026-05-22T22:26:21.127Z",
   "rollup": {
     "*": {
       "min": 70.515,
-      "p50": 109.238,
+      "p50": 106.74,
+      "p95": 171
+    },
+    "apps/api": {
+      "min": 78.354,
+      "p50": 107.516,
+      "p95": 171
+    },
+    "apps/mobile": {
+      "min": 96.11,
+      "p50": 96.11,
+      "p95": 121.195
+    },
+    "apps/web": {
+      "min": 80.074,
+      "p50": 108.206,
+      "p95": 147.989
+    },
+    "packages/baselines": {
+      "min": 98.311,
+      "p50": 104.945,
+      "p95": 171
+    },
+    "packages/config": {
+      "min": 104.952,
+      "p50": 104.952,
+      "p95": 115.627
+    },
+    "packages/shared": {
+      "min": 70.515,
+      "p50": 99.315,
       "p95": 171
     }
   },
   "rows": [
+    {
+      "mi": 171,
+      "path": "apps/api/src/env.ts"
+    },
+    {
+      "mi": 110.835,
+      "path": "apps/api/src/index.ts"
+    },
+    {
+      "mi": 120.696,
+      "path": "apps/api/src/lib/clerk-invitations.ts"
+    },
+    {
+      "mi": 103.9,
+      "path": "apps/api/src/lib/r2.ts"
+    },
     {
       "mi": 138.232,
       "path": "apps/api/src/middleware/__testing__/auth-test.ts"
@@ -35,7 +81,43 @@
       "path": "apps/api/src/routes/debug/synthetic-failure.ts"
     },
     {
-      "mi": 149.008,
+      "mi": 171,
+      "path": "apps/api/src/routes/v1/admin/csv-import/index.ts"
+    },
+    {
+      "mi": 84.62,
+      "path": "apps/api/src/routes/v1/admin/csv-import/router.ts"
+    },
+    {
+      "mi": 109.781,
+      "path": "apps/api/src/routes/v1/admin/index.ts"
+    },
+    {
+      "mi": 171,
+      "path": "apps/api/src/routes/v1/admin/invitations/index.ts"
+    },
+    {
+      "mi": 78.354,
+      "path": "apps/api/src/routes/v1/admin/invitations/router.ts"
+    },
+    {
+      "mi": 90.817,
+      "path": "apps/api/src/routes/v1/admin/org.ts"
+    },
+    {
+      "mi": 99.743,
+      "path": "apps/api/src/routes/v1/admin/reports.ts"
+    },
+    {
+      "mi": 98.159,
+      "path": "apps/api/src/routes/v1/admin/rollover.ts"
+    },
+    {
+      "mi": 91.441,
+      "path": "apps/api/src/routes/v1/admin/roster.ts"
+    },
+    {
+      "mi": 85.081,
       "path": "apps/api/src/routes/v1/admin/teams.ts"
     },
     {
@@ -57,6 +139,14 @@
     {
       "mi": 81.181,
       "path": "apps/api/src/routes/v1/users/role.ts"
+    },
+    {
+      "mi": 94.276,
+      "path": "apps/api/src/routes/webhooks/clerk-invitation-accepted.ts"
+    },
+    {
+      "mi": 116.475,
+      "path": "apps/api/src/routes/webhooks/clerk-invitation-shared.ts"
     },
     {
       "mi": 111.681,
@@ -127,6 +217,10 @@
       "path": "apps/web/e2e/steps/graph.steps.ts"
     },
     {
+      "mi": 142.539,
+      "path": "apps/web/e2e/steps/invitations.steps.ts"
+    },
+    {
       "mi": 118.974,
       "path": "apps/web/e2e/steps/navigation.steps.ts"
     },
@@ -139,8 +233,16 @@
       "path": "apps/web/e2e/steps/onboarding.steps.ts"
     },
     {
+      "mi": 118.206,
+      "path": "apps/web/e2e/steps/org-admin.steps.ts"
+    },
+    {
       "mi": 126.029,
       "path": "apps/web/e2e/steps/rbac.steps.ts"
+    },
+    {
+      "mi": 106.544,
+      "path": "apps/web/e2e/steps/team.steps.ts"
     },
     {
       "mi": 109.435,
@@ -151,16 +253,32 @@
       "path": "apps/web/playwright.config.ts"
     },
     {
+      "mi": 109.992,
+      "path": "apps/web/src/components/admin/CsvMappingTool.ts"
+    },
+    {
+      "mi": 97.556,
+      "path": "apps/web/src/components/admin/OrgConfigForm.ts"
+    },
+    {
+      "mi": 97.452,
+      "path": "apps/web/src/components/admin/reports/VerifiedAchievementReport.ts"
+    },
+    {
+      "mi": 97.585,
+      "path": "apps/web/src/components/admin/roster/RosterTable.ts"
+    },
+    {
+      "mi": 95.889,
+      "path": "apps/web/src/components/admin/teams/TeamForm.ts"
+    },
+    {
       "mi": 133.747,
       "path": "apps/web/src/components/onboarding/AgeAttestation.ts"
     },
     {
       "mi": 113.308,
       "path": "apps/web/src/components/onboarding/ClerkVerifyEmailIsland.ts"
-    },
-    {
-      "mi": 171,
-      "path": "apps/web/src/components/onboarding/index.ts"
     },
     {
       "mi": 103.923,
@@ -189,6 +307,10 @@
     {
       "mi": 107.91,
       "path": "apps/web/src/middleware.ts"
+    },
+    {
+      "mi": 131.444,
+      "path": "apps/web/src/pages/admin/teams/index.ts"
     },
     {
       "mi": 98.571,
@@ -259,6 +381,10 @@
       "path": "packages/shared/drizzle.config.ts"
     },
     {
+      "mi": 97.857,
+      "path": "packages/shared/src/csv/parse.ts"
+    },
+    {
       "mi": 94.082,
       "path": "packages/shared/src/db/queries/legalDocuments.ts"
     },
@@ -283,15 +409,31 @@
       "path": "packages/shared/src/db/schema/coachAssignments.ts"
     },
     {
+      "mi": 107.499,
+      "path": "packages/shared/src/db/schema/csvImportBatches.ts"
+    },
+    {
+      "mi": 113.115,
+      "path": "packages/shared/src/db/schema/index.ts"
+    },
+    {
+      "mi": 99.947,
+      "path": "packages/shared/src/db/schema/invitations.ts"
+    },
+    {
       "mi": 95.901,
       "path": "packages/shared/src/db/schema/legalDocuments.ts"
+    },
+    {
+      "mi": 88.453,
+      "path": "packages/shared/src/db/schema/organizations.ts"
     },
     {
       "mi": 108.651,
       "path": "packages/shared/src/db/schema/parentAthleteLinks.ts"
     },
     {
-      "mi": 102.752,
+      "mi": 93.939,
       "path": "packages/shared/src/db/schema/teams.ts"
     },
     {
@@ -333,6 +475,38 @@
     {
       "mi": 171,
       "path": "packages/shared/src/rbac/types.ts"
+    },
+    {
+      "mi": 99.32,
+      "path": "packages/shared/src/rollover/buildPlan.ts"
+    },
+    {
+      "mi": 73.141,
+      "path": "packages/shared/src/schemas/admin/csvImport.ts"
+    },
+    {
+      "mi": 86.881,
+      "path": "packages/shared/src/schemas/admin/invitations.ts"
+    },
+    {
+      "mi": 78.712,
+      "path": "packages/shared/src/schemas/admin/org.ts"
+    },
+    {
+      "mi": 89.7,
+      "path": "packages/shared/src/schemas/admin/reports.ts"
+    },
+    {
+      "mi": 70.956,
+      "path": "packages/shared/src/schemas/admin/rollover.ts"
+    },
+    {
+      "mi": 78.851,
+      "path": "packages/shared/src/schemas/admin/roster.ts"
+    },
+    {
+      "mi": 89.939,
+      "path": "packages/shared/src/schemas/admin/teams.ts"
     },
     {
       "mi": 70.515,
