@@ -404,6 +404,20 @@ const tupleArb: fc.Arbitrary<Tuple> = fc.record({
 });
 
 /**
+ * Case-count budget. PR CI runs at 100 (enough to walk the
+ * 3 × 5 × 4 × 2 = 120-tuple matrix with some duplication and a few
+ * shrunk paths). The nightly workflow bumps this via `FC_NUM_RUNS`
+ * so a regression hiding behind a rare-tuple shrink surfaces within
+ * 24h — see `.github/workflows/nightly.yml` § `cross-tenant-property`.
+ */
+const NUM_RUNS = (() => {
+  const raw = process.env.FC_NUM_RUNS;
+  if (!raw) return 100;
+  const parsed = Number.parseInt(raw, 10);
+  return Number.isFinite(parsed) && parsed >= 100 ? parsed : 100;
+})();
+
+/**
  * Resolve the read-side outcome through the scopedDb proxy. The proxy
  * never throws on a cross-tenant read; it injects the org-scope
  * predicate and SQLite quietly returns 0 rows. `findFirst` is the
@@ -531,7 +545,7 @@ describe('cross-tenant isolation property (Epic #9 AC-13)', () => {
           }
         }
       }),
-      { numRuns: 100 },
+      { numRuns: NUM_RUNS },
     );
   });
 
@@ -704,7 +718,7 @@ describe('cross-tenant isolation property (Epic #9 AC-13)', () => {
           expect(row).toBeDefined();
         }
       }),
-      { numRuns: 100 },
+      { numRuns: NUM_RUNS },
     );
   });
 });
