@@ -81,6 +81,5 @@ export function freshSchemaDb(): SchemaTestDb {
   applyMigration(client, loadMigration('0001_onboarding_schema.sql'));
   applyMigration(client, loadMigration('0002_org_team_graph.sql'));
   applyMigration(client, loadMigration('0003_invitations.sql'));
-  applyMigration(client, loadMigration('0004_team_metadata.sql'));
   return buildHandle(client);
 }

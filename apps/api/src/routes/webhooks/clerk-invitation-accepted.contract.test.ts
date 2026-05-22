@@ -53,7 +53,6 @@ const MIGRATION_FILES = [
   '0001_onboarding_schema.sql',
   '0002_org_team_graph.sql',
   '0003_invitations.sql',
-  '0004_team_metadata.sql',
 ];
 
 function freshProductionDb() {
