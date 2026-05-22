@@ -42,11 +42,7 @@
 
 import { randomUUID } from 'node:crypto';
 import { athleteMemberships, teams } from '@repo/shared/db/schema';
-import {
-  type MembershipSnapshot,
-  type RolloverChoice,
-  buildPlan,
-} from '@repo/shared/rollover/buildPlan';
+import { type MembershipSnapshot, buildPlan } from '@repo/shared/rollover/buildPlan';
 import {
   RolloverCommitInputSchema,
   type RolloverPlanOutput,
@@ -239,7 +235,7 @@ rolloverAdminRoute.post('/preview', async (c) => {
 
   const db = c.get('db') as RolloverDb;
   const memberships = await fetchSourceMemberships(db, orgId, input.sourceSeason);
-  const plan = buildPlan(memberships, input.choices as RolloverChoice[]);
+  const plan = buildPlan(memberships, input.choices);
 
   return c.json({ success: true, data: { plan: planToWire(plan) } }, 200);
 });
@@ -279,7 +275,7 @@ rolloverAdminRoute.post('/commit', async (c) => {
 
   // Re-fetch the live source-season snapshot and recompute the plan.
   const memberships = await fetchSourceMemberships(db, orgId, input.sourceSeason);
-  const recomputed = planToWire(buildPlan(memberships, input.choices as RolloverChoice[]));
+  const recomputed = planToWire(buildPlan(memberships, input.choices));
 
   // STALE_PLAN check. The builder is deterministic + the outputs are
   // sorted, so a structural inequality means the underlying DB state
@@ -339,7 +335,7 @@ rolloverAdminRoute.post('/commit', async (c) => {
         promotedCount += 1;
       }
     });
-  } catch (_err) {
+  } catch {
     // Do NOT leak the raw error message — it can carry SQL fragments
     // or constraint names. Keep the wire shape constant.
     return c.json(errorBody('INTERNAL', 'Failed to apply rollover plan.'), 500);
