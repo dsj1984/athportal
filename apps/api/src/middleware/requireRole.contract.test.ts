@@ -30,7 +30,7 @@ import { requireRole } from './requireRole';
  */
 function freshDb(): TestDbLike {
   const sqlite = new Database(':memory:');
-  return drizzle(sqlite, { schema: {} }) as unknown as TestDbLike;
+  return drizzle(sqlite, { schema: {} });
 }
 
 function actor(overrides: Partial<AuthContext> = {}): AuthContext {

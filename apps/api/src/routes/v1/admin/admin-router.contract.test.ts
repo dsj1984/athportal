@@ -28,7 +28,7 @@ import { adminRoute } from './index';
 
 function freshDb(): TestDbLike {
   const sqlite = new Database(':memory:');
-  return drizzle(sqlite, { schema: {} }) as unknown as TestDbLike;
+  return drizzle(sqlite, { schema: {} });
 }
 
 function actor(overrides: Partial<AuthContext> = {}): AuthContext {
@@ -76,10 +76,13 @@ describe('admin router scaffold — contract', () => {
         const res = await app.request(path, { method: 'GET' });
 
         expect(res.status).toBe(501);
-        expect(await res.json()).toMatchObject({
-          success: false,
-          error: { code: 'NOT_IMPLEMENTED', message: expect.stringContaining(feature) },
-        });
+        const body = (await res.json()) as {
+          success: boolean;
+          error: { code: string; message: string };
+        };
+        expect(body.success).toBe(false);
+        expect(body.error.code).toBe('NOT_IMPLEMENTED');
+        expect(body.error.message).toContain(feature);
       });
     }
   });
