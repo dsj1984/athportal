@@ -241,11 +241,7 @@ describe('admin csv-import — contract', () => {
     expect(batches[0]!.orgId).toBe(seed.orgA);
     expect(batches[0]!.rowCount).toBe(3);
 
-    const newAthletes = db
-      .select()
-      .from(users)
-      .where(eq(users.email, 'a@x.invalid'))
-      .all();
+    const newAthletes = db.select().from(users).where(eq(users.email, 'a@x.invalid')).all();
     expect(newAthletes.length).toBe(1);
 
     const memberships = db.select().from(athleteMemberships).all();
@@ -295,11 +291,7 @@ describe('admin csv-import — contract', () => {
     expect(body.data.successCount).toBe(3);
 
     // The existing user row was NOT duplicated.
-    const rowsForEmail = db
-      .select()
-      .from(users)
-      .where(eq(users.email, 'a@x.invalid'))
-      .all();
+    const rowsForEmail = db.select().from(users).where(eq(users.email, 'a@x.invalid')).all();
     expect(rowsForEmail.length).toBe(1);
 
     // A new athlete_memberships row points at the existing user in
@@ -380,9 +372,7 @@ describe('admin csv-import — contract', () => {
     };
     expect(body.error.code).toBe('IMPORT_FAILED');
     expect(body.error.rowErrors).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ code: 'TEAM_NOT_FOUND' }),
-      ]),
+      expect.arrayContaining([expect.objectContaining({ code: 'TEAM_NOT_FOUND' })]),
     );
 
     // No batch was persisted.

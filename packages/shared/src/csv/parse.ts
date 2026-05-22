@@ -40,12 +40,7 @@ export const REQUIRED_TARGET_FIELDS = ['email', 'firstName', 'lastName'] as cons
 export type RequiredTargetField = (typeof REQUIRED_TARGET_FIELDS)[number];
 
 /** All known target fields (required + optional). */
-export const KNOWN_TARGET_FIELDS = [
-  'email',
-  'firstName',
-  'lastName',
-  'teamName',
-] as const;
+export const KNOWN_TARGET_FIELDS = ['email', 'firstName', 'lastName', 'teamName'] as const;
 export type KnownTargetField = (typeof KNOWN_TARGET_FIELDS)[number];
 
 /**

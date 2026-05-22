@@ -46,12 +46,7 @@
 // be added to THIS org's roster.
 
 import { randomUUID } from 'node:crypto';
-import {
-  athleteMemberships,
-  csvImportBatches,
-  teams,
-  users,
-} from '@repo/shared/db/schema';
+import { athleteMemberships, csvImportBatches, teams, users } from '@repo/shared/db/schema';
 import { parseCsv, resolveRows } from '@repo/shared/csv/parse';
 import {
   type CsvImportCommitOutput,
@@ -133,9 +128,9 @@ function narrowDb(db: unknown): DbLike | null {
  * Extract the binary CSV bytes from a multipart upload's `file` field.
  * Returns `null` when the field is missing or the value is not a Blob.
  */
-async function extractUploadBytes(c: { req: { formData(): Promise<FormData> } }): Promise<
-  Uint8Array | null
-> {
+async function extractUploadBytes(c: {
+  req: { formData(): Promise<FormData> };
+}): Promise<Uint8Array | null> {
   let form: FormData;
   try {
     form = await c.req.formData();
@@ -178,10 +173,7 @@ csvImportAdminRouter.post('/parse', async (c) => {
 
   const contentType = c.req.header('content-type') ?? '';
   if (!contentType.toLowerCase().startsWith('multipart/form-data')) {
-    return c.json(
-      errorBody('UNSUPPORTED_MEDIA_TYPE', 'Upload must be multipart/form-data.'),
-      415,
-    );
+    return c.json(errorBody('UNSUPPORTED_MEDIA_TYPE', 'Upload must be multipart/form-data.'), 415);
   }
 
   const bytes = await extractUploadBytes(c);
@@ -270,7 +262,9 @@ csvImportAdminRouter.post('/commit', async (c) => {
   // column. Cross-tenant defence: the lookup is filtered by the
   // actor's `orgId`, so a CSV that names a peer-org team surfaces
   // `TEAM_NOT_FOUND` against THIS org.
-  const wantsTeam = resolved.rows.some((r) => typeof r.teamName === 'string' && r.teamName.length > 0);
+  const wantsTeam = resolved.rows.some(
+    (r) => typeof r.teamName === 'string' && r.teamName.length > 0,
+  );
   const teamByName = new Map<string, string>();
   if (wantsTeam) {
     const names = Array.from(
@@ -300,11 +294,7 @@ csvImportAdminRouter.post('/commit', async (c) => {
 
   if (rowErrors.length > 0) {
     return c.json(
-      errorBody(
-        'IMPORT_FAILED',
-        'CSV failed validation; no rows imported.',
-        rowErrors,
-      ),
+      errorBody('IMPORT_FAILED', 'CSV failed validation; no rows imported.', rowErrors),
       400,
     );
   }
@@ -319,15 +309,18 @@ csvImportAdminRouter.post('/commit', async (c) => {
   const emails = Array.from(new Set(resolved.rows.map((r) => (r.email ?? '').toLowerCase())));
   const existingUsers =
     emails.length > 0
-      ? (db
-          .select()
-          .from(users)
-          .where(inArray(users.email, emails))
-          .all() as Array<{ id: string; email: string; orgId: string | null }>)
+      ? (db.select().from(users).where(inArray(users.email, emails)).all() as Array<{
+          id: string;
+          email: string;
+          orgId: string | null;
+        }>)
       : [];
   const userByEmail = new Map<string, { id: string; orgId: string | null }>();
   for (const u of existingUsers) {
-    userByEmail.set(u.email.toLowerCase(), { id: u.id, orgId: (u as { orgId: string | null }).orgId ?? null });
+    userByEmail.set(u.email.toLowerCase(), {
+      id: u.id,
+      orgId: (u as { orgId: string | null }).orgId ?? null,
+    });
   }
 
   const batchId = `cib_${randomUUID()}`;

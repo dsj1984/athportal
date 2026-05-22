@@ -122,10 +122,7 @@ describe('resolveRows', () => {
   });
 
   it('happy path: 5 rows with a 4-column mapping resolves to 5 rows, 0 errors', () => {
-    const rows = Array.from(
-      { length: 5 },
-      (_, i) => `e${i}@x.com,F${i},L${i},Team ${i % 2}`,
-    );
+    const rows = Array.from({ length: 5 }, (_, i) => `e${i}@x.com,F${i},L${i},Team ${i % 2}`);
     const csv = ['email_col,first_col,last_col,team_col', ...rows].join('\n');
     const mapping = {
       email_col: 'email',

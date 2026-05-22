@@ -25,9 +25,7 @@ describe('isMappingComplete', () => {
   });
 
   it('returns true when every required target is mapped', () => {
-    expect(
-      isMappingComplete({ a: 'email', b: 'firstName', c: 'lastName' }),
-    ).toBe(true);
+    expect(isMappingComplete({ a: 'email', b: 'firstName', c: 'lastName' })).toBe(true);
   });
 
   it('ignores headers explicitly mapped to null', () => {
@@ -77,8 +75,8 @@ describe('tryBuildCommitPayload', () => {
 
 describe('formatStatus', () => {
   it('summarises imported / reused / failed counts', () => {
-    expect(
-      formatStatus({ rowCount: 5, successCount: 5, reusedCount: 2, errorCount: 0 }),
-    ).toBe('Imported 5 of 5 rows. Reused 2 existing accounts. 0 errors.');
+    expect(formatStatus({ rowCount: 5, successCount: 5, reusedCount: 2, errorCount: 0 })).toBe(
+      'Imported 5 of 5 rows. Reused 2 existing accounts. 0 errors.',
+    );
   });
 });
