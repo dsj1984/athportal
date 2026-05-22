@@ -1,0 +1,209 @@
+---
+// apps/web/src/components/admin/invitations/AthleteInviteForm.astro
+//
+// Direct-athlete-invitation form island for /admin/invitations/athlete
+// (Epic #10 / Story #662 / Task #681).
+//
+// Server-renders an email input + a single-team `<select>` picker
+// populated from `GET /api/v1/admin/teams`, then submits a single
+// JSON POST to `/api/v1/admin/invitations/athlete`. On success the
+// status region reads "Invitation sent"; on failure it reads the
+// server's error message verbatim. The picker stays a single-select
+// (no multi-team) — direct invites are scoped to one team by design
+// per Tech Spec #647.
+//
+// `data-testid` invariance (locked by the Tech Spec — acceptance
+// scenario #682 pins these names):
+//
+//   - admin-athlete-invite-form
+//   - admin-athlete-invite-team-picker
+//   - admin-athlete-invite-status
+//
+// The script bundle is plain DOM rather than React for parity with
+// `InvitationList.astro` and `TeamForm.astro` — the surface is one
+// input + one select + one button, so pulling a React island in
+// would be over-engineering for the scope.
+---
+
+<section class="athlete-invite">
+  <h2>Invite an athlete</h2>
+  <form
+    class="athlete-invite__form"
+    data-testid="admin-athlete-invite-form"
+    novalidate
+  >
+    <div class="athlete-invite__field">
+      <label for="athlete-invite-email">Athlete email</label>
+      <input
+        id="athlete-invite-email"
+        name="email"
+        type="email"
+        required
+        maxlength="254"
+        autocomplete="off"
+      />
+    </div>
+
+    <div class="athlete-invite__field">
+      <label for="athlete-invite-team">Team</label>
+      <select
+        id="athlete-invite-team"
+        name="teamId"
+        data-testid="admin-athlete-invite-team-picker"
+        required
+      >
+        <option value="">Loading teams…</option>
+      </select>
+    </div>
+
+    <button
+      type="submit"
+      class="athlete-invite__submit"
+    >
+      Send invitation
+    </button>
+
+    <p
+      class="athlete-invite__status"
+      data-testid="admin-athlete-invite-status"
+      role="status"
+      aria-live="polite"
+    ></p>
+  </form>
+</section>
+
+<script>
+  // Per Tech Spec #647: the page calls `GET /api/v1/admin/teams` to
+  // populate the picker, then submits `POST
+  // /api/v1/admin/invitations/athlete` with `{ email, teamId }`. The
+  // status region carries the user-visible outcome the acceptance
+  // scenario asserts on.
+
+  interface TeamRow {
+    readonly id: string;
+    readonly name: string;
+  }
+
+  interface TeamListResponse {
+    readonly success: true;
+    readonly data: readonly TeamRow[];
+  }
+
+  interface InviteSuccessResponse {
+    readonly success: true;
+  }
+
+  interface ErrorResponse {
+    readonly success: false;
+    readonly error: { readonly code: string; readonly message: string };
+  }
+
+  function isTeamListResponse(x: unknown): x is TeamListResponse {
+    if (typeof x !== 'object' || x === null) return false;
+    const o = x as { success?: unknown; data?: unknown };
+    return o.success === true && Array.isArray(o.data);
+  }
+
+  function isInviteSuccessResponse(x: unknown): x is InviteSuccessResponse {
+    if (typeof x !== 'object' || x === null) return false;
+    return (x as { success?: unknown }).success === true;
+  }
+
+  function isErrorResponse(x: unknown): x is ErrorResponse {
+    if (typeof x !== 'object' || x === null) return false;
+    const o = x as { success?: unknown; error?: unknown };
+    return o.success === false && typeof o.error === 'object' && o.error !== null;
+  }
+
+  async function loadTeams(picker: HTMLSelectElement): Promise<void> {
+    try {
+      const res = await fetch('/api/v1/admin/teams', {
+        method: 'GET',
+        credentials: 'include',
+      });
+      if (!res.ok) {
+        picker.innerHTML = '<option value="">Could not load teams.</option>';
+        return;
+      }
+      const body: unknown = await res.json();
+      if (!isTeamListResponse(body)) {
+        picker.innerHTML = '<option value="">Could not load teams.</option>';
+        return;
+      }
+      if (body.data.length === 0) {
+        picker.innerHTML = '<option value="">No teams available.</option>';
+        return;
+      }
+      const placeholder = document.createElement('option');
+      placeholder.value = '';
+      placeholder.textContent = 'Select a team';
+      picker.innerHTML = '';
+      picker.appendChild(placeholder);
+      for (const team of body.data) {
+        const opt = document.createElement('option');
+        opt.value = team.id;
+        opt.textContent = team.name;
+        picker.appendChild(opt);
+      }
+    } catch {
+      picker.innerHTML = '<option value="">Could not load teams.</option>';
+    }
+  }
+
+  function setStatus(form: HTMLFormElement, text: string): void {
+    const status = form.querySelector<HTMLElement>(
+      '[data-testid="admin-athlete-invite-status"]',
+    );
+    if (status) status.textContent = text;
+  }
+
+  const form = document.querySelector<HTMLFormElement>(
+    '[data-testid="admin-athlete-invite-form"]',
+  );
+  if (form) {
+    const picker = form.querySelector<HTMLSelectElement>(
+      '[data-testid="admin-athlete-invite-team-picker"]',
+    );
+    const emailInput = form.querySelector<HTMLInputElement>('input[name="email"]');
+    const submit = form.querySelector<HTMLButtonElement>('button[type="submit"]');
+
+    if (picker) void loadTeams(picker);
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (!picker || !emailInput) return;
+      const email = emailInput.value.trim();
+      const teamId = picker.value;
+      if (email.length === 0 || teamId.length === 0) {
+        setStatus(form, 'Please enter an email and select a team.');
+        return;
+      }
+      if (submit) submit.disabled = true;
+      setStatus(form, 'Sending…');
+      try {
+        const res = await fetch('/api/v1/admin/invitations/athlete', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ email, teamId }),
+        });
+        const body: unknown = await res.json().catch(() => null);
+        if (res.ok && isInviteSuccessResponse(body)) {
+          setStatus(form, 'Invitation sent');
+          emailInput.value = '';
+          picker.value = '';
+          return;
+        }
+        if (isErrorResponse(body)) {
+          setStatus(form, body.error.message);
+        } else {
+          setStatus(form, 'We could not send the invitation. Try again in a moment.');
+        }
+      } catch {
+        setStatus(form, 'We could not reach the server. Check your connection and try again.');
+      } finally {
+        if (submit) submit.disabled = false;
+      }
+    });
+  }
+</script>
