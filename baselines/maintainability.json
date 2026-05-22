@@ -1,7 +1,7 @@
 {
   "$schema": ".agents/schemas/baselines/maintainability.schema.json",
-  "kernelVersion": "1.0.0",
-  "generatedAt": "2026-05-21T21:27:56.317Z",
+  "kernelVersion": "0.1.0",
+  "generatedAt": "2026-05-22T10:51:19.140Z",
   "rollup": {
     "*": {
       "min": 70.515,
@@ -231,24 +231,12 @@
       "path": "packages/shared/src/db/queries/users.ts"
     },
     {
-      "mi": 122.384,
-      "path": "packages/shared/src/db/schema/index.ts"
-    },
-    {
       "mi": 95.901,
       "path": "packages/shared/src/db/schema/legalDocuments.ts"
     },
     {
-      "mi": 97.145,
-      "path": "packages/shared/src/db/schema/organizations.ts"
-    },
-    {
       "mi": 108.651,
       "path": "packages/shared/src/db/schema/parentAthleteLinks.ts"
-    },
-    {
-      "mi": 105.085,
-      "path": "packages/shared/src/db/schema/teams.ts"
     },
     {
       "mi": 109.655,

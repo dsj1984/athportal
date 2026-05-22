@@ -1,13 +1,13 @@
 {
   "$schema": ".agents/schemas/baselines/crap.schema.json",
-  "generatedAt": "2026-05-22T01:38:16.611Z",
-  "kernelVersion": "1.0.0",
+  "kernelVersion": "0.1.0",
+  "generatedAt": "2026-05-22T10:51:19.345Z",
   "rollup": {
     "*": {
-      "max": 90,
-      "methodsAbove20": 25,
       "p50": 2,
-      "p95": 30
+      "p95": 30,
+      "max": 90,
+      "methodsAbove20": 25
     }
   },
   "rows": [
@@ -1594,12 +1594,6 @@
       "method": "<anon method-3>",
       "path": "packages/shared/src/db/schema/parentAthleteLinks.ts",
       "startLine": 34
-    },
-    {
-      "crap": 2,
-      "method": "<anon method-1>",
-      "path": "packages/shared/src/db/schema/teams.ts",
-      "startLine": 18
     },
     {
       "crap": 2,
