@@ -21,6 +21,15 @@ export {
   type NewCoachAssignment,
 } from './coachAssignments';
 export {
+  invitations,
+  INVITATION_ROLES,
+  INVITATION_STATUSES,
+  type Invitation,
+  type InvitationRole,
+  type InvitationStatus,
+  type NewInvitation,
+} from './invitations';
+export {
   legalDocuments,
   type LegalDocument,
   type NewLegalDocument,
@@ -47,6 +56,7 @@ export { users, type User, type NewUser } from './users';
 
 import { athleteMemberships } from './athleteMemberships';
 import { coachAssignments } from './coachAssignments';
+import { invitations } from './invitations';
 import { legalDocuments } from './legalDocuments';
 import { organizations } from './organizations';
 import { parentAthleteLinks } from './parentAthleteLinks';
@@ -57,6 +67,7 @@ import { users } from './users';
 export const schema = {
   athleteMemberships,
   coachAssignments,
+  invitations,
   legalDocuments,
   organizations,
   parentAthleteLinks,
