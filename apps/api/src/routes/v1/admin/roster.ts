@@ -189,7 +189,8 @@ rosterAdminRoute.get('/', async (c) => {
   // `resolveOrgScope` above and is stripped here before validation —
   // it is NOT part of the public query contract for org_admin callers,
   // so the schema must not see it.
-  const { orgId: _stripped, ...rawQuery } = c.req.query();
+  const { orgId: _orgIdEscape, ...rawQuery } = c.req.query();
+  void _orgIdEscape;
 
   const parsed = RosterQuerySchema.safeParse(rawQuery);
   if (!parsed.success) {
@@ -201,7 +202,7 @@ rosterAdminRoute.get('/', async (c) => {
   const q = parsed.data;
   const pageSize = Math.min(q.limit ?? DEFAULT_LIMIT, MAX_LIMIT);
 
-  const db = c.get('db') as unknown as RosterDb;
+  const db = c.get('db') as RosterDb;
 
   // Build the predicate. The org-scope predicate is load-bearing — it
   // is the only thing keeping org A's roster out of org B's response.
