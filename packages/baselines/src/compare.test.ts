@@ -29,6 +29,23 @@ describe('evaluate', () => {
     it('fails when next falls more than pp below prev', () => {
       expect(evaluate({ kind: 'absolute-pp', pp: 2 }, 90, 87, 'higher-is-better')).toBe('fail');
     });
+    it('passes at the exact boundary (next = prev - pp)', () => {
+      // The check is strict-less-than, so equality is conforming.
+      expect(evaluate({ kind: 'absolute-pp', pp: 2 }, 90, 88, 'higher-is-better')).toBeNull();
+    });
+    it('defaults polarity to higher-is-better when undefined (coverage caller)', () => {
+      expect(evaluate({ kind: 'absolute-pp', pp: 2 }, 90, 87, undefined)).toBe('fail');
+      expect(evaluate({ kind: 'absolute-pp', pp: 2 }, 90, 89, undefined)).toBeNull();
+    });
+  });
+
+  describe('absolute-pp (lower-is-better)', () => {
+    it('fails when next rises more than pp above prev', () => {
+      expect(evaluate({ kind: 'absolute-pp', pp: 2 }, 5, 8, 'lower-is-better')).toBe('fail');
+    });
+    it('passes when next stays inside the upward band', () => {
+      expect(evaluate({ kind: 'absolute-pp', pp: 2 }, 5, 7, 'lower-is-better')).toBeNull();
+    });
   });
 
   describe('relative-pct (higher-is-better, mutation-shaped)', () => {
@@ -39,11 +56,35 @@ describe('evaluate', () => {
       // 5% of 80 = 4. 80 → 75 is a 5-point drop → fail.
       expect(evaluate({ kind: 'relative-pct', pct: 5 }, 80, 75, 'higher-is-better')).toBe('fail');
     });
+    it('passes at the exact boundary (next = prev - pct%·prev)', () => {
+      expect(evaluate({ kind: 'relative-pct', pct: 5 }, 80, 76, 'higher-is-better')).toBeNull();
+    });
     it('treats prev=0 as a free pass for higher-is-better axes', () => {
       expect(evaluate({ kind: 'relative-pct', pct: 5 }, 0, 1, 'higher-is-better')).toBeNull();
     });
     it('treats prev=0 as a fail when lower-is-better and next>0', () => {
       expect(evaluate({ kind: 'relative-pct', pct: 5 }, 0, 1, 'lower-is-better')).toBe('fail');
+    });
+    it('treats prev=0 and next=0 as conforming for lower-is-better', () => {
+      expect(evaluate({ kind: 'relative-pct', pct: 5 }, 0, 0, 'lower-is-better')).toBeNull();
+    });
+    it('defaults polarity to higher-is-better when undefined (mutation caller)', () => {
+      expect(evaluate({ kind: 'relative-pct', pct: 5 }, 80, 75, undefined)).toBe('fail');
+      expect(evaluate({ kind: 'relative-pct', pct: 5 }, 80, 77, undefined)).toBeNull();
+    });
+  });
+
+  describe('relative-pct (lower-is-better, CRAP-shaped)', () => {
+    it('fails on a relative rise greater than pct%', () => {
+      // 5% of 100 = 5. 100 → 106 is a 6-point rise → fail.
+      expect(evaluate({ kind: 'relative-pct', pct: 5 }, 100, 106, 'lower-is-better')).toBe('fail');
+    });
+    it('passes inside the upward band', () => {
+      expect(evaluate({ kind: 'relative-pct', pct: 5 }, 100, 104, 'lower-is-better')).toBeNull();
+    });
+    it('uses |prev| for the allowance (negative prev path)', () => {
+      // 5% of |−100| = 5. next = −94 is +6 above prev → fail.
+      expect(evaluate({ kind: 'relative-pct', pct: 5 }, -100, -94, 'lower-is-better')).toBe('fail');
     });
   });
 
@@ -53,6 +94,24 @@ describe('evaluate', () => {
     });
     it('fails on any increase when delta=0', () => {
       expect(evaluate({ kind: 'absolute-int', delta: 0 }, 3, 4, 'lower-is-better')).toBe('fail');
+    });
+    it('allows an increase up to delta', () => {
+      expect(evaluate({ kind: 'absolute-int', delta: 2 }, 3, 5, 'lower-is-better')).toBeNull();
+      expect(evaluate({ kind: 'absolute-int', delta: 2 }, 3, 6, 'lower-is-better')).toBe('fail');
+    });
+    it('defaults polarity to lower-is-better when undefined', () => {
+      expect(evaluate({ kind: 'absolute-int', delta: 0 }, 3, 4, undefined)).toBe('fail');
+      expect(evaluate({ kind: 'absolute-int', delta: 0 }, 3, 3, undefined)).toBeNull();
+    });
+  });
+
+  describe('absolute-int (higher-is-better, MI-floor-shaped)', () => {
+    it('fails on a drop greater than delta', () => {
+      expect(evaluate({ kind: 'absolute-int', delta: 0 }, 80, 79, 'higher-is-better')).toBe('fail');
+    });
+    it('passes inside the downward band', () => {
+      expect(evaluate({ kind: 'absolute-int', delta: 2 }, 80, 78, 'higher-is-better')).toBeNull();
+      expect(evaluate({ kind: 'absolute-int', delta: 2 }, 80, 77, 'higher-is-better')).toBe('fail');
     });
   });
 

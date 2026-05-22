@@ -1,11 +1,11 @@
 {
   "$schema": ".agents/schemas/baselines/crap.schema.json",
-  "generatedAt": "2026-05-21T22:46:45.897Z",
+  "generatedAt": "2026-05-22T00:22:33.445Z",
   "kernelVersion": "1.0.0",
   "rollup": {
     "*": {
-      "max": 462,
-      "methodsAbove20": 28,
+      "max": 156,
+      "methodsAbove20": 29,
       "p50": 2,
       "p95": 42
     }
@@ -1215,31 +1215,67 @@
       "crap": 20,
       "method": "compareWithTolerance",
       "path": "packages/baselines/src/compare.ts",
-      "startLine": 91
+      "startLine": 94
     },
     {
       "crap": 6,
       "method": "indexRows",
       "path": "packages/baselines/src/compare.ts",
-      "startLine": 125
+      "startLine": 128
     },
     {
       "crap": 6,
       "method": "readIdentifier",
       "path": "packages/baselines/src/compare.ts",
-      "startLine": 134
+      "startLine": 137
     },
     {
       "crap": 6,
       "method": "readNumeric",
       "path": "packages/baselines/src/compare.ts",
-      "startLine": 139
+      "startLine": 142
     },
     {
-      "crap": 462,
+      "crap": 42,
       "method": "evaluate",
       "path": "packages/baselines/src/compare.ts",
-      "startLine": 154
+      "startLine": 163
+    },
+    {
+      "crap": 20,
+      "method": "evaluateAbsolutePp",
+      "path": "packages/baselines/src/compare.ts",
+      "startLine": 187
+    },
+    {
+      "crap": 30,
+      "method": "evaluateRelativePct",
+      "path": "packages/baselines/src/compare.ts",
+      "startLine": 203
+    },
+    {
+      "crap": 12,
+      "method": "evaluateRelativePctZeroPrev",
+      "path": "packages/baselines/src/compare.ts",
+      "startLine": 219
+    },
+    {
+      "crap": 20,
+      "method": "evaluateAbsoluteInt",
+      "path": "packages/baselines/src/compare.ts",
+      "startLine": 227
+    },
+    {
+      "crap": 12,
+      "method": "evaluateHardCap",
+      "path": "packages/baselines/src/compare.ts",
+      "startLine": 242
+    },
+    {
+      "crap": 6,
+      "method": "evaluateRouteBand",
+      "path": "packages/baselines/src/compare.ts",
+      "startLine": 253
     },
     {
       "crap": 20,
