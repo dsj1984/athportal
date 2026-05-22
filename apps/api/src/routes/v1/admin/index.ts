@@ -17,9 +17,11 @@
 //      `org_admin` (or a `dev_admin` — the role gate admits the
 //      platform-root role on every triple, see
 //      `apps/api/src/middleware/requireRole.ts`).
-//   2. Six feature sub-routers mounted at fixed paths. The paths are
+//   2. Seven feature sub-routers mounted at fixed paths. The paths are
 //      part of the API contract — the URL stays the same across the
-//      placeholder-to-real-handler swap.
+//      placeholder-to-real-handler swap. The `reports` sub-router was
+//      added by Epic #10 / Story #679 / Task #698 for the
+//      verified-achievement aggregation report.
 //
 // Mount sequence in the API entrypoint:
 //
@@ -36,6 +38,7 @@ import { requireRole } from '../../../middleware/requireRole';
 import { csvImportAdminRoute } from './csv-import';
 import { invitationsAdminRoute } from './invitations';
 import { orgAdminRoute } from './org';
+import { reportsAdminRoute } from './reports';
 import { rolloverAdminRoute } from './rollover';
 import { rosterAdminRoute } from './roster';
 import { teamsAdminRoute } from './teams';
@@ -46,13 +49,14 @@ export const adminRoute = new Hono<RequireInternalUserEnv>();
 //    is admitted by the gate's short-circuit (platform-root role).
 adminRoute.use('*', requireRole('org_admin'));
 
-// 2) Mount the six feature sub-routers. Order is alphabetical to
+// 2) Mount the seven feature sub-routers. Order is alphabetical to
 //    match the directory listing — Hono does NOT match longest-prefix
-//    first the way some routers do, but the six paths here are
+//    first the way some routers do, but the seven paths here are
 //    disjoint so order does not affect matching.
 adminRoute.route('/csv-import', csvImportAdminRoute);
 adminRoute.route('/invitations', invitationsAdminRoute);
 adminRoute.route('/org', orgAdminRoute);
+adminRoute.route('/reports', reportsAdminRoute);
 adminRoute.route('/rollover', rolloverAdminRoute);
 adminRoute.route('/roster', rosterAdminRoute);
 adminRoute.route('/teams', teamsAdminRoute);
