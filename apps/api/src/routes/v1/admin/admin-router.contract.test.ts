@@ -77,9 +77,7 @@ function buildApp(a: AuthContext) {
 // `./csv-import/router.ts` and its dedicated contract test is
 // `./csv-import/csv-import.contract.test.ts`. Only `rollover`
 // remains as a placeholder.
-const SUB_ROUTES = [
-  { path: '/api/v1/admin/rollover', feature: 'rollover' },
-] as const;
+const SUB_ROUTES = [{ path: '/api/v1/admin/rollover', feature: 'rollover' }] as const;
 
 describe('admin router scaffold — contract', () => {
   describe('placeholder sub-routers respond 501 NOT_IMPLEMENTED to an admitted actor', () => {
