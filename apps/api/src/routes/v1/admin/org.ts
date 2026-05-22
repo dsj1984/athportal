@@ -29,10 +29,7 @@
 // form skeleton already speaks the final shape.
 
 import { organizations } from '@repo/shared/db/schema';
-import {
-  OrgConfigPatchSchema,
-  type OrgConfigOutput,
-} from '@repo/shared/schemas/admin/org';
+import { OrgConfigPatchSchema, type OrgConfigOutput } from '@repo/shared/schemas/admin/org';
 import { eq } from 'drizzle-orm';
 import { Hono } from 'hono';
 import {
@@ -43,10 +40,7 @@ import {
   mintLogoUploadUrl,
 } from '../../../lib/r2';
 import type { RequireInternalUserEnv } from '../../../middleware/auth';
-import type {
-  DrizzleSelectChain,
-  DrizzleUpdateChain,
-} from '../../../types/drizzle-structural';
+import type { DrizzleSelectChain, DrizzleUpdateChain } from '../../../types/drizzle-structural';
 
 /**
  * Structural narrowing of the Drizzle handle this router consumes.
@@ -75,10 +69,7 @@ interface ErrorBody {
   };
 }
 
-function errorBody(
-  code: ErrorBody['error']['code'],
-  message: string,
-): ErrorBody {
+function errorBody(code: ErrorBody['error']['code'], message: string): ErrorBody {
   return { success: false, error: { code, message } };
 }
 
@@ -313,10 +304,7 @@ orgAdminRoute.post('/logo-finalize', async (c) => {
   const rawBody = await c.req.json().catch(() => null);
   const body = parseFinalizeBody(rawBody);
   if (!body) {
-    return c.json(
-      errorBody('VALIDATION_ERROR', 'Request body must be { key: string }.'),
-      400,
-    );
+    return c.json(errorBody('VALIDATION_ERROR', 'Request body must be { key: string }.'), 400);
   }
 
   // Cross-tenant guard: the key was minted under `logos/<orgId>/...` by

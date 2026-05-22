@@ -36,10 +36,7 @@ import { adminRoute } from './index';
 // The Drizzle migrations live under `packages/shared/src/db/migrations`.
 // Resolve the path relative to this test file so the suite is portable
 // across worktrees.
-const MIGRATIONS_DIR = join(
-  __dirname,
-  '../../../../../../packages/shared/src/db/migrations',
-);
+const MIGRATIONS_DIR = join(__dirname, '../../../../../../packages/shared/src/db/migrations');
 const MIGRATION_FILES = [
   '0000_auth_and_rbac.sql',
   '0001_onboarding_schema.sql',
@@ -61,7 +58,12 @@ function freshDb() {
 
 function seedOrg(
   db: ReturnType<typeof freshDb>,
-  overrides: { id: string; name?: string; primaryColorHex?: string | null; logoR2Key?: string | null },
+  overrides: {
+    id: string;
+    name?: string;
+    primaryColorHex?: string | null;
+    logoR2Key?: string | null;
+  },
 ): void {
   db.insert(organizations)
     .values({
@@ -87,7 +89,9 @@ function actor(overrides: Partial<AuthContext> = {}): AuthContext {
 }
 
 function buildApp(db: ReturnType<typeof freshDb>, a: AuthContext) {
-  const app = createTestApp(db as unknown as TestDbLike, { actor: a }) as unknown as Hono<RequireInternalUserEnv>;
+  const app = createTestApp(db as unknown as TestDbLike, {
+    actor: a,
+  }) as unknown as Hono<RequireInternalUserEnv>;
   app.route('/api/v1/admin', adminRoute);
   return app;
 }
@@ -172,11 +176,7 @@ describe('PATCH /api/v1/admin/org — contract', () => {
     expect(patched.data.primaryColorHex).toBe('#abcdef');
 
     // Assert — DB side-effect
-    const reloaded = db
-      .select()
-      .from(organizations)
-      .where(eq(organizations.id, 'org-a'))
-      .all();
+    const reloaded = db.select().from(organizations).where(eq(organizations.id, 'org-a')).all();
     expect(reloaded[0]?.name).toBe('Alpha Athletics Renamed');
     expect(reloaded[0]?.primaryColorHex).toBe('#abcdef');
 
@@ -207,11 +207,7 @@ describe('PATCH /api/v1/admin/org — contract', () => {
     });
 
     // And the DB column is unchanged.
-    const reloaded = db
-      .select()
-      .from(organizations)
-      .where(eq(organizations.id, 'org-a'))
-      .all();
+    const reloaded = db.select().from(organizations).where(eq(organizations.id, 'org-a')).all();
     expect(reloaded[0]?.primaryColorHex).toBeNull();
   });
 
@@ -263,11 +259,7 @@ describe('cross-tenant isolation — contract', () => {
     });
 
     // org-b row MUST be untouched.
-    const reloaded = db
-      .select()
-      .from(organizations)
-      .where(eq(organizations.id, 'org-b'))
-      .all();
+    const reloaded = db.select().from(organizations).where(eq(organizations.id, 'org-b')).all();
     expect(reloaded[0]?.primaryColorHex).toBe('#bbbbbb');
     expect(reloaded[0]?.name).toBe('Bravo');
   });

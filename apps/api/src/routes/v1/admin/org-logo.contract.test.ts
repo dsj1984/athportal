@@ -36,10 +36,7 @@ import type { RequireInternalUserEnv } from '../../../middleware/auth';
 import { adminRoute } from './index';
 import type { LogoUploadSigner } from './org';
 
-const MIGRATIONS_DIR = join(
-  __dirname,
-  '../../../../../../packages/shared/src/db/migrations',
-);
+const MIGRATIONS_DIR = join(__dirname, '../../../../../../packages/shared/src/db/migrations');
 const MIGRATION_FILES = [
   '0000_auth_and_rbac.sql',
   '0001_onboarding_schema.sql',
@@ -95,7 +92,9 @@ function buildApp(
   a: AuthContext,
   signer: LogoUploadSigner | null = stubSigner(),
 ) {
-  const app = createTestApp(db as unknown as TestDbLike, { actor: a }) as unknown as Hono<RequireInternalUserEnv>;
+  const app = createTestApp(db as unknown as TestDbLike, {
+    actor: a,
+  }) as unknown as Hono<RequireInternalUserEnv>;
   if (signer) {
     app.use('*', async (c, next) => {
       (c.set as unknown as (k: string, v: unknown) => void)('logoUploadSigner', signer);
@@ -225,11 +224,7 @@ describe('POST /api/v1/admin/org/logo-finalize — contract', () => {
     expect(body.data.logoUrl).toBe(`https://cdn.example.invalid/${key}`);
 
     // DB side-effect: column persisted on the row.
-    const reloaded = db
-      .select()
-      .from(organizations)
-      .where(eq(organizations.id, 'org-a'))
-      .all();
+    const reloaded = db.select().from(organizations).where(eq(organizations.id, 'org-a')).all();
     expect(reloaded[0]?.logoR2Key).toBe(key);
   });
 
@@ -252,11 +247,7 @@ describe('POST /api/v1/admin/org/logo-finalize — contract', () => {
     });
 
     // org-a row's logo_r2_key MUST remain null.
-    const reloaded = db
-      .select()
-      .from(organizations)
-      .where(eq(organizations.id, 'org-a'))
-      .all();
+    const reloaded = db.select().from(organizations).where(eq(organizations.id, 'org-a')).all();
     expect(reloaded[0]?.logoR2Key).toBeNull();
   });
 });

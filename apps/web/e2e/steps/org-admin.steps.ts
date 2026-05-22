@@ -32,13 +32,10 @@ When('I open the admin org configuration page', async ({ page }) => {
   await page.goto(ADMIN_ORG_CONFIG_PATH);
 });
 
-When(
-  'I change the organization name to {string}',
-  async ({ page }, name: string) => {
-    const field = page.getByTestId('admin-org-name-input');
-    await field.fill(name);
-  },
-);
+When('I change the organization name to {string}', async ({ page }, name: string) => {
+  const field = page.getByTestId('admin-org-name-input');
+  await field.fill(name);
+});
 
 When('I save the org configuration changes', async ({ page }) => {
   const submit = page.getByTestId('admin-org-config-submit');

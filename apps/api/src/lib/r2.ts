@@ -36,11 +36,7 @@ import { randomUUID } from 'node:crypto';
  * widening the set requires a security review (the CDN serves these
  * directly and an unsafe mime would expand the XSS surface).
  */
-export const ALLOWED_LOGO_CONTENT_TYPES = [
-  'image/png',
-  'image/jpeg',
-  'image/webp',
-] as const;
+export const ALLOWED_LOGO_CONTENT_TYPES = ['image/png', 'image/jpeg', 'image/webp'] as const;
 export type AllowedLogoContentType = (typeof ALLOWED_LOGO_CONTENT_TYPES)[number];
 
 /**

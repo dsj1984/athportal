@@ -5,12 +5,7 @@
 // key-shape construction in isolation.
 
 import { describe, expect, it } from 'vitest';
-import {
-  ALLOWED_LOGO_CONTENT_TYPES,
-  MAX_LOGO_BYTES,
-  buildLogoKey,
-  validateLogoUpload,
-} from './r2';
+import { ALLOWED_LOGO_CONTENT_TYPES, MAX_LOGO_BYTES, buildLogoKey, validateLogoUpload } from './r2';
 
 describe('validateLogoUpload', () => {
   it.each(ALLOWED_LOGO_CONTENT_TYPES)('accepts %s under the size cap', (ct) => {
