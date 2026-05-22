@@ -38,8 +38,20 @@ export type Role = 'dev_admin' | 'org_admin' | 'team_admin' | 'member';
  * that introduce new resources (e.g. `event`, `invoice`) MUST extend
  * this union and add the corresponding rows to `rules.ts` — never
  * widen at the call site with `as Resource` casts.
+ *
+ * Epic #9 (Tech Spec #596) extends the union with the two graph
+ * resources `coachAssignment` and `athleteMembership`. Both join
+ * a `user` to a `team` within the actor's org and inherit the
+ * existing `sameOrg` / `sameTeam` scope guards — no new predicates
+ * are introduced.
  */
-export type Resource = 'organization' | 'team' | 'user' | 'invitation';
+export type Resource =
+  | 'organization'
+  | 'team'
+  | 'user'
+  | 'invitation'
+  | 'coachAssignment'
+  | 'athleteMembership';
 
 /**
  * Verbs the policy decides over.

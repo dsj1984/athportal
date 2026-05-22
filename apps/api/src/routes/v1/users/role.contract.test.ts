@@ -248,4 +248,123 @@ describe('PATCH /api/v1/users/:id/role — last-admin invariant', () => {
     const reloaded = db.select().from(users).where(eq(users.id, actor.id)).all();
     expect(reloaded[0]?.role).toBe('org_admin');
   });
+
+  // Story #615 (Epic #9, Task #629): cross-tenant defense — an
+  // org_admin in org A patching a user in org B MUST surface 404
+  // NOT_FOUND (scopedDb scopes the UPDATE's WHERE to
+  // `eq(users.org_id, actor.orgId)`, so the cross-tenant target
+  // matches zero rows and the route's existing NOT_FOUND branch
+  // fires). The org B row MUST remain untouched.
+  it('returns 404 NOT_FOUND and leaves the cross-tenant row untouched when an org_admin targets a user in a different org', async () => {
+    // Arrange — two orgs, one org_admin per org. The actor sits
+    // in org-a and attempts to demote the org-b admin.
+    const db = freshDb();
+    seedOrg(db, 'org-a');
+    seedOrg(db, 'org-b');
+    const actor = seedActor(db, 'clerk_actor_cross', {
+      id: 'u_actor_cross',
+      role: 'org_admin',
+      orgId: 'org-a',
+    });
+    const crossTarget = seedUser(db, {
+      id: 'u_target_orgb',
+      role: 'org_admin',
+      orgId: 'org-b',
+    });
+
+    mockedVerifyToken.mockResolvedValueOnce({
+      data: { sub: actor.clerkSubjectId },
+    } as unknown as Awaited<ReturnType<typeof verifyToken>>);
+
+    const app = buildApp(db);
+
+    // Act — patch the org-b target's role from the org-a actor.
+    const res = await app.request(
+      `/api/v1/users/${crossTarget.id}/role`,
+      {
+        method: 'PATCH',
+        headers: {
+          cookie: '__session=valid',
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({ role: 'member' }),
+      },
+      env,
+    );
+
+    // Assert — wire shape: 404 with the canonical NOT_FOUND
+    // envelope. The exact wording of the message is not pinned
+    // (copy decision, not a wire contract) — only that the
+    // envelope shape and code are correct.
+    expect(res.status).toBe(404);
+    const body = (await res.json()) as {
+      success: boolean;
+      error: { code: string; message: string };
+    };
+    expect(body).toMatchObject({
+      success: false,
+      error: { code: 'NOT_FOUND' },
+    });
+    expect(typeof body.error.message).toBe('string');
+    expect(body.error.message.length).toBeGreaterThan(0);
+
+    // Assert — DB side-effect: the org-b target's row is
+    // unchanged. This is the load-bearing cross-tenant defense
+    // assertion — the scopedDb-wrapped UPDATE must have matched
+    // zero rows, so the column value stays 'org_admin'.
+    const reloaded = db.select().from(users).where(eq(users.id, crossTarget.id)).all();
+    expect(reloaded[0]?.role).toBe('org_admin');
+    expect(reloaded[0]?.orgId).toBe('org-b');
+  });
+
+  it('returns 403 FORBIDDEN when a non-dev_admin actor has no orgId (pre-onboarding tenant scope)', async () => {
+    // Arrange — a `member` whose orgId is null (the routine
+    // post-JIT, pre-onboarding state per
+    // apps/api/src/middleware/auth.ts:252-255). The route should
+    // refuse the mutation as a *policy* outcome (403 FORBIDDEN),
+    // not as a server error. Pre-fix this path returned 500
+    // INTERNAL because scopedDb's constructor throw fell through
+    // to the generic catch in `role.ts` (bughunter bug_006).
+    const db = freshDb();
+    seedOrg(db, 'org-a');
+    const actor = seedActor(db, 'clerk_actor_noorg', {
+      id: 'u_actor_noorg',
+      role: 'member',
+      orgId: null,
+    });
+    const someTarget = seedUser(db, {
+      id: 'u_target_anyorg',
+      role: 'member',
+      orgId: 'org-a',
+    });
+
+    mockedVerifyToken.mockResolvedValueOnce({
+      data: { sub: actor.clerkSubjectId },
+    } as unknown as Awaited<ReturnType<typeof verifyToken>>);
+
+    const app = buildApp(db);
+
+    const res = await app.request(
+      `/api/v1/users/${someTarget.id}/role`,
+      {
+        method: 'PATCH',
+        headers: {
+          cookie: '__session=valid',
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({ role: 'team_admin' }),
+      },
+      env,
+    );
+
+    expect(res.status).toBe(403);
+    const body = (await res.json()) as {
+      success: boolean;
+      error: { code: string; message: string };
+    };
+    expect(body).toMatchObject({
+      success: false,
+      error: { code: 'FORBIDDEN' },
+    });
+  });
 });

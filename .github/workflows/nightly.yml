@@ -119,6 +119,71 @@ jobs:
           } > /tmp/mutation-summary.md
           gh issue comment "$NIGHTLY_REPORT_ISSUE" --body-file /tmp/mutation-summary.md
 
+  cross-tenant-property:
+    # Story #627, Task #636 (Epic #9, Tech Spec #596). Re-run the
+    # cross-tenant isolation property test at a higher case count than
+    # the per-PR contract suite (which runs at `numRuns: 100` to stay
+    # inside the PR wall-clock budget). The nightly run bumps the
+    # budget via `FC_NUM_RUNS=1000` so a regression that hides behind
+    # rare-tuple shrinking on PR CI surfaces here within 24h. A failure
+    # in this job fails the nightly workflow and routes through the
+    # existing `NIGHTLY_REPORT_ISSUE` notification surface below.
+    name: Cross-tenant isolation property (Epic #9 AC-13)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - name: Set up toolchain (checkout + pnpm + node + install)
+        uses: ./.github/actions/setup-toolchain
+
+      - name: Run cross-tenant isolation property test
+        id: property
+        env:
+          # Higher case count for the randomized cadence. The seam
+          # exposed by `fast-check@4` reads `numRuns` from the call
+          # site; the test file honors `FC_NUM_RUNS` when present and
+          # falls back to its PR-budget default of 100.
+          FC_NUM_RUNS: '1000'
+        run: |
+          mkdir -p reports/cross-tenant-property
+          set -o pipefail
+          pnpm --filter @repo/shared exec vitest run \
+            src/testing/__tests__/crossTenantIsolation.property.contract.test.ts \
+            2>&1 | tee reports/cross-tenant-property/property.log
+
+      - name: Upload property test log
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: cross-tenant-property-log
+          path: reports/cross-tenant-property/
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Post regression summary to the nightly-report issue
+        if: failure() && steps.property.outcome == 'failure' && vars.NIGHTLY_REPORT_ISSUE != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NIGHTLY_REPORT_ISSUE: ${{ vars.NIGHTLY_REPORT_ISSUE }}
+        run: |
+          {
+            echo "### Cross-tenant property regression — $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+            echo
+            echo "Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            echo
+            echo '```'
+            tail -n 80 reports/cross-tenant-property/property.log || echo '(no log captured)'
+            echo '```'
+          } > /tmp/property-summary.md
+          gh issue comment "$NIGHTLY_REPORT_ISSUE" --body-file /tmp/property-summary.md
+
   knip-strict:
     # ADR-0006 — local hook stack v1. Strict `knip` runs unused-files,
     # unused-exports, AND unused-dependencies in one pass. The pre-push

@@ -1,17 +1,17 @@
 {
   "$schema": ".agents/schemas/baselines/coverage.schema.json",
-  "generatedAt": "2026-05-22T01:28:17.005Z",
+  "generatedAt": "2026-05-22T18:29:59.156Z",
   "kernelVersion": "1.0.0",
   "rollup": {
     "*": {
-      "branches": 91.43,
-      "functions": 87.16,
-      "lines": 85.37
+      "branches": 92.03,
+      "functions": 82.56,
+      "lines": 81.64
     },
     "apps/api": {
-      "branches": 90.33,
+      "branches": 91.03,
       "functions": 86.9,
-      "lines": 86.15
+      "lines": 86.56
     },
     "apps/mobile": {
       "branches": 0,
@@ -34,9 +34,9 @@
       "lines": 0
     },
     "packages/shared": {
-      "branches": 97.53,
-      "functions": 87,
-      "lines": 87.2
+      "branches": 97.65,
+      "functions": 77.43,
+      "lines": 78.99
     }
   },
   "rows": [
@@ -107,9 +107,9 @@
       "path": "apps/api/src/routes/v1/sign-out.ts"
     },
     {
-      "branches": 58.93,
+      "branches": 68.75,
       "functions": 83.33,
-      "lines": 72.13,
+      "lines": 77.94,
       "path": "apps/api/src/routes/v1/users/role.ts"
     },
     {
@@ -270,6 +270,12 @@
     },
     {
       "branches": 100,
+      "functions": 0,
+      "lines": 0,
+      "path": "packages/shared/src/db/queries/__tests__/graphDb.ts"
+    },
+    {
+      "branches": 100,
       "functions": 100,
       "lines": 100,
       "path": "packages/shared/src/db/queries/__tests__/onboardingDb.ts"
@@ -287,10 +293,34 @@
       "path": "packages/shared/src/db/queries/parentAthleteLinks.ts"
     },
     {
+      "branches": 91.67,
+      "functions": 100,
+      "lines": 98.57,
+      "path": "packages/shared/src/db/queries/scopedDb.ts"
+    },
+    {
       "branches": 100,
       "functions": 100,
       "lines": 100,
       "path": "packages/shared/src/db/queries/users.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 0,
+      "lines": 0,
+      "path": "packages/shared/src/db/schema/__tests__/freshSchemaDb.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 0,
+      "lines": 25,
+      "path": "packages/shared/src/db/schema/athleteMemberships.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 0,
+      "lines": 25,
+      "path": "packages/shared/src/db/schema/coachAssignments.ts"
     },
     {
       "branches": 100,

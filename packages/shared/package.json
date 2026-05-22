@@ -20,6 +20,10 @@
       "types": "./dist/db/queries/users.d.ts",
       "import": "./src/db/queries/users.ts"
     },
+    "./db/queries/scopedDb": {
+      "types": "./dist/db/queries/scopedDb.d.ts",
+      "import": "./src/db/queries/scopedDb.ts"
+    },
     "./db/queries/legalDocuments": {
       "types": "./dist/db/queries/legalDocuments.d.ts",
       "import": "./src/db/queries/legalDocuments.ts"
@@ -65,6 +69,7 @@
     "@types/react-dom": "^19.1.0",
     "@vitejs/plugin-react": "^5.0.0",
     "drizzle-kit": "^0.30.0",
+    "fast-check": "^4.8.0",
     "jsdom": "^26.0.0",
     "vitest": "^4.1.6"
   }
