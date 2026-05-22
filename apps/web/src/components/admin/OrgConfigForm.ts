@@ -118,11 +118,11 @@ export type BuildPayloadResult = BuildPayloadOk | BuildPayloadErr;
  * an explicit `null` `logoR2Key` clears the column.
  */
 export function buildOrgConfigPatchPayload(state: OrgConfigFormState): OrgConfigPatchInput {
-  const payload: Record<string, unknown> = {};
+  const payload: OrgConfigPatchInput = {};
   if (state.name.length > 0) payload.name = state.name;
   if (state.primaryColorHex.length > 0) payload.primaryColorHex = state.primaryColorHex;
   if (state.logoR2Key !== null) payload.logoR2Key = state.logoR2Key;
-  return payload as OrgConfigPatchInput;
+  return payload;
 }
 
 export function tryBuildOrgConfigPatchPayload(state: OrgConfigFormState): BuildPayloadResult {
