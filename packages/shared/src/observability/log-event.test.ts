@@ -31,9 +31,9 @@ describe('LogEventSchema', () => {
     });
 
     it('defaults metadata to an empty object when omitted', () => {
-      const event = baseEvent() as Record<string, unknown>;
-      delete event.metadata;
-      const result = LogEventSchema.safeParse(event);
+      const { metadata, ...rest } = baseEvent();
+      void metadata;
+      const result = LogEventSchema.safeParse(rest);
       expect(result.success).toBe(true);
       if (result.success) {
         expect(result.data.metadata).toEqual({});
