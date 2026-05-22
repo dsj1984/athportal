@@ -28,6 +28,7 @@
 // admin guard — e.g. an `org_admin` trying to mutate a user in a
 // different org.
 
+import { type ScopedDbHandle, scopedDb } from '@repo/shared/db/queries/scopedDb';
 import { users } from '@repo/shared/db/schema';
 import { canPerform } from '@repo/shared/rbac';
 import type { Role } from '@repo/shared/rbac';
@@ -165,16 +166,61 @@ userRoleRoute.patch('/:id/role', async (c) => {
     // rolls back the UPDATE — `remainingAdminsAfter === 0` rows
     // never persist.
     const updated = db.transaction((tx) => {
+      // Story #615 (Epic #9): non-dev_admin actors MUST go through
+      // the org-scoped query view. scopedDb injects
+      // `eq(users.org_id, actor.orgId)` into every read and write
+      // against the users table, so a cross-tenant target id
+      // matches zero rows and falls through to the NOT_FOUND
+      // branch below — the route can never mutate a row outside
+      // the actor's org. `dev_admin` is the platform role allowed
+      // to operate cross-org (Tech Spec #596 §scopedDb); for that
+      // role we keep the raw `tx` path. The dev_admin branch is
+      // grep-able for review via `crossTenant`-style intent.
+      const isDevAdmin = auth.role === 'dev_admin';
+      // scopedDb is typed against the shared/rbac AuthContext shape
+      // (Role enum + optional orgId/teamId); the middleware's
+      // AuthContext widens role to `string` and uses `null` for the
+      // missing-org case. Normalise to the shared shape — same data,
+      // tighter type — before constructing the scoped view.
+      const scoped = isDevAdmin
+        ? null
+        : scopedDb(tx as unknown as ScopedDbHandle, {
+            userId: auth.userId,
+            clerkSubjectId: auth.clerkSubjectId,
+            role: auth.role as Role,
+            orgId: auth.orgId ?? undefined,
+            teamId: auth.teamId ?? undefined,
+          });
+
       // 1. Apply the update first so the admin-count read below
       //    reflects the post-mutation state. We constrain the
       //    update so it only matches when the row actually exists;
       //    `returning()` then tells us whether the target was found.
-      const rows = tx
-        .update(users)
-        .set({ role: body.role, updatedAt: new Date() })
-        .where(eq(users.id, targetId))
-        .returning()
-        .all();
+      //    For non-dev_admin actors the scopedDb-wrapped update
+      //    additionally injects `eq(users.org_id, actor.orgId)`, so
+      //    a cross-tenant id returns zero rows → NOT_FOUND.
+      // Both branches converge on the structural `.returning().all()`
+      // terminal step exposed by Drizzle's UPDATE builder. scopedDb's
+      // proxy types the post-`where()` step as `unknown` (the helper
+      // does not assume a single driver's union); we re-pin that
+      // step to the structural shape defined in
+      // `types/drizzle-structural` so the call site stays type-safe
+      // and the two branches share one terminal.
+      type ReturningAll = ReturnType<
+        DrizzleUpdateChain<typeof users.$inferSelect>['set']
+      >['where'] extends (predicate: unknown) => infer R
+        ? R
+        : never;
+      const updateBuilder: ReturningAll = scoped
+        ? (scoped
+            .update(users)
+            .set({ role: body.role, updatedAt: new Date() })
+            .where(eq(users.id, targetId)) as ReturningAll)
+        : tx
+            .update(users)
+            .set({ role: body.role, updatedAt: new Date() })
+            .where(eq(users.id, targetId));
+      const rows = updateBuilder.returning().all();
 
       const targetRow = rows[0];
       if (!targetRow) {
@@ -201,6 +247,18 @@ userRoleRoute.patch('/:id/role', async (c) => {
         // the policy (> 0).
         remainingAdminsAfter = Number.POSITIVE_INFINITY;
       } else {
+        // The count read is functionally tenant-scoped: the
+        // `eq(users.orgId, orgIdForCount)` predicate below pins
+        // it to exactly one org, and for non-dev_admin actors
+        // `orgIdForCount === auth.orgId` (the UPDATE above
+        // already proved the target lives in the actor's tenant
+        // via scopedDb). We use raw `tx` rather than
+        // `scoped.users.findMany(...)` because the better-sqlite3
+        // transaction callback is synchronous while scopedDb's
+        // Relational-Query surface is `Promise`-returning — the
+        // two shapes are incompatible inside the same tx. The
+        // write boundary (the UPDATE) is where the cross-tenant
+        // defense matters; this read carries no escalation power.
         const countRows = tx
           .select({ count: sql<number>`count(*)` })
           .from(users)
