@@ -1,64 +1,16 @@
 {
   "$schema": ".agents/schemas/baselines/crap.schema.json",
-  "generatedAt": "2026-05-22T20:22:58.194Z",
-  "kernelVersion": "1.0.0",
+  "kernelVersion": "0.1.0",
+  "generatedAt": "2026-05-22T20:24:46.646Z",
   "rollup": {
     "*": {
-      "max": 90,
-      "methodsAbove20": 31,
       "p50": 2,
-      "p95": 30
+      "p95": 30,
+      "max": 90,
+      "methodsAbove20": 27
     }
   },
   "rows": [
-    {
-      "crap": 2,
-      "method": "<anon method-1>",
-      "path": "apps/api/src/index.ts",
-      "startLine": 55
-    },
-    {
-      "crap": 2,
-      "method": "<anon method-2>",
-      "path": "apps/api/src/index.ts",
-      "startLine": 56
-    },
-    {
-      "crap": 2,
-      "method": "createInvitation",
-      "path": "apps/api/src/lib/clerk-invitations.ts",
-      "startLine": 81
-    },
-    {
-      "crap": 2,
-      "method": "resendInvitation",
-      "path": "apps/api/src/lib/clerk-invitations.ts",
-      "startLine": 106
-    },
-    {
-      "crap": 2,
-      "method": "revokeInvitation",
-      "path": "apps/api/src/lib/clerk-invitations.ts",
-      "startLine": 121
-    },
-    {
-      "crap": 2,
-      "method": "asInvitationClient",
-      "path": "apps/api/src/lib/clerk-invitations.ts",
-      "startLine": 133
-    },
-    {
-      "crap": 2,
-      "method": "<anon method-1>",
-      "path": "apps/api/src/lib/clerk-invitations.ts",
-      "startLine": 136
-    },
-    {
-      "crap": 2,
-      "method": "<anon method-2>",
-      "path": "apps/api/src/lib/clerk-invitations.ts",
-      "startLine": 137
-    },
     {
       "crap": 2,
       "method": "authTest",
@@ -254,42 +206,6 @@
     {
       "crap": 2,
       "method": "errorBody",
-      "path": "apps/api/src/routes/v1/admin/invitations/router.ts",
-      "startLine": 63
-    },
-    {
-      "crap": 2,
-      "method": "narrowDb",
-      "path": "apps/api/src/routes/v1/admin/invitations/router.ts",
-      "startLine": 85
-    },
-    {
-      "crap": 12,
-      "method": "toWire",
-      "path": "apps/api/src/routes/v1/admin/invitations/router.ts",
-      "startLine": 104
-    },
-    {
-      "crap": 6,
-      "method": "<anon method-1>",
-      "path": "apps/api/src/routes/v1/admin/invitations/router.ts",
-      "startLine": 117
-    },
-    {
-      "crap": 56,
-      "method": "<anon method-2>",
-      "path": "apps/api/src/routes/v1/admin/invitations/router.ts",
-      "startLine": 138
-    },
-    {
-      "crap": 42,
-      "method": "<anon method-3>",
-      "path": "apps/api/src/routes/v1/admin/invitations/router.ts",
-      "startLine": 193
-    },
-    {
-      "crap": 2,
-      "method": "errorBody",
       "path": "apps/api/src/routes/v1/auth/onboard.ts",
       "startLine": 119
     },
@@ -448,48 +364,6 @@
       "method": "<anon method-3>",
       "path": "apps/api/src/routes/v1/users/role.ts",
       "startLine": 168
-    },
-    {
-      "crap": 2,
-      "method": "unauthenticated",
-      "path": "apps/api/src/routes/webhooks/clerk-invitation-accepted.ts",
-      "startLine": 86
-    },
-    {
-      "crap": 2,
-      "method": "narrowDb",
-      "path": "apps/api/src/routes/webhooks/clerk-invitation-accepted.ts",
-      "startLine": 117
-    },
-    {
-      "crap": 42,
-      "method": "<anon method-1>",
-      "path": "apps/api/src/routes/webhooks/clerk-invitation-accepted.ts",
-      "startLine": 123
-    },
-    {
-      "crap": 12,
-      "method": "<anon method-2>",
-      "path": "apps/api/src/routes/webhooks/clerk-invitation-accepted.ts",
-      "startLine": 196
-    },
-    {
-      "crap": 2,
-      "method": "loadProductionVerifier",
-      "path": "apps/api/src/routes/webhooks/clerk-invitation-accepted.ts",
-      "startLine": 259
-    },
-    {
-      "crap": 2,
-      "method": "<anon method-3>",
-      "path": "apps/api/src/routes/webhooks/clerk-invitation-accepted.ts",
-      "startLine": 261
-    },
-    {
-      "crap": 56,
-      "method": "isInvitationAcceptedEvent",
-      "path": "apps/api/src/routes/webhooks/clerk-invitation-shared.ts",
-      "startLine": 63
     },
     {
       "crap": 2,
@@ -814,42 +688,6 @@
       "method": "<anon method-24>",
       "path": "apps/web/e2e/steps/graph.steps.ts",
       "startLine": 165
-    },
-    {
-      "crap": 2,
-      "method": "<anon method-1>",
-      "path": "apps/web/e2e/steps/invitations.steps.ts",
-      "startLine": 34
-    },
-    {
-      "crap": 2,
-      "method": "<anon method-2>",
-      "path": "apps/web/e2e/steps/invitations.steps.ts",
-      "startLine": 40
-    },
-    {
-      "crap": 2,
-      "method": "<anon method-3>",
-      "path": "apps/web/e2e/steps/invitations.steps.ts",
-      "startLine": 44
-    },
-    {
-      "crap": 2,
-      "method": "<anon method-4>",
-      "path": "apps/web/e2e/steps/invitations.steps.ts",
-      "startLine": 49
-    },
-    {
-      "crap": 2,
-      "method": "<anon method-5>",
-      "path": "apps/web/e2e/steps/invitations.steps.ts",
-      "startLine": 55
-    },
-    {
-      "crap": 2,
-      "method": "<anon method-6>",
-      "path": "apps/web/e2e/steps/invitations.steps.ts",
-      "startLine": 59
     },
     {
       "crap": 20,
@@ -1996,24 +1834,6 @@
       "method": "<anon method-3>",
       "path": "packages/shared/src/db/schema/coachAssignments.ts",
       "startLine": 37
-    },
-    {
-      "crap": 2,
-      "method": "<anon method-1>",
-      "path": "packages/shared/src/db/schema/invitations.ts",
-      "startLine": 70
-    },
-    {
-      "crap": 2,
-      "method": "<anon method-2>",
-      "path": "packages/shared/src/db/schema/invitations.ts",
-      "startLine": 80
-    },
-    {
-      "crap": 2,
-      "method": "<anon method-3>",
-      "path": "packages/shared/src/db/schema/invitations.ts",
-      "startLine": 84
     },
     {
       "crap": 2,
