@@ -52,6 +52,14 @@
       "types": "./dist/schemas/admin/roster.d.ts",
       "import": "./src/schemas/admin/roster.ts"
     },
+    "./schemas/admin/rollover": {
+      "types": "./dist/schemas/admin/rollover.d.ts",
+      "import": "./src/schemas/admin/rollover.ts"
+    },
+    "./rollover/buildPlan": {
+      "types": "./dist/rollover/buildPlan.d.ts",
+      "import": "./src/rollover/buildPlan.ts"
+    },
     "./schemas/admin/invitations": {
       "types": "./dist/schemas/admin/invitations.d.ts",
       "import": "./src/schemas/admin/invitations.ts"

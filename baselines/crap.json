@@ -1,7 +1,7 @@
 {
   "$schema": ".agents/schemas/baselines/crap.schema.json",
-  "kernelVersion": "1.0.0",
-  "generatedAt": "2026-05-22T20:24:46.646Z",
+  "kernelVersion": "0.1.0",
+  "generatedAt": "2026-05-22T22:07:48.737Z",
   "rollup": {
     "*": {
       "p50": 2,
@@ -184,24 +184,6 @@
       "method": "<anon method-2>",
       "path": "apps/api/src/routes/debug/synthetic-failure.ts",
       "startLine": 120
-    },
-    {
-      "crap": 2,
-      "method": "notImplemented",
-      "path": "apps/api/src/routes/v1/admin/_placeholder.ts",
-      "startLine": 39
-    },
-    {
-      "crap": 2,
-      "method": "placeholderRouter",
-      "path": "apps/api/src/routes/v1/admin/_placeholder.ts",
-      "startLine": 56
-    },
-    {
-      "crap": 2,
-      "method": "<anon method-1>",
-      "path": "apps/api/src/routes/v1/admin/_placeholder.ts",
-      "startLine": 58
     },
     {
       "crap": 2,

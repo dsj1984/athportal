@@ -1,0 +1,340 @@
+---
+// apps/web/src/pages/admin/rollover.astro
+//
+// `/admin/rollover` — org-admin landing surface for the season-rollover
+// builder (Epic #10 / Story #665 / Task #696).
+//
+// The page renders an empty shell server-side; the inline script
+// drives:
+//
+//   1. Source/target season inputs (the operator names the seasons
+//      they are rolling out of and into).
+//   2. A "load" pass that fetches the current source-season roster
+//      from `/api/v1/admin/roster?sport=…` — the roster endpoint is
+//      reused as a read source for the decisions table because the
+//      rollover API itself is write-only (preview + commit), it does
+//      not enumerate the source memberships separately.
+//   3. The decisions table where the operator marks each membership
+//      as promote / archive / transfer and optionally picks a target
+//      team id.
+//   4. Preview — POSTs the choices to `/api/v1/admin/rollover/preview`
+//      and renders the returned plan diff into `data-testid=admin-rollover-diff`.
+//   5. Commit — POSTs choices + the canonical expectedPlan back to
+//      `/api/v1/admin/rollover/commit`. On 200, renders the applied
+//      counts into `data-testid=admin-rollover-status`. On 409
+//      STALE_PLAN, surfaces an error inviting the operator to re-run
+//      preview.
+//
+// Authentication & authorization: every `/admin/*` route is gated by
+// Clerk's middleware (signed-in users only) AND the API edge's
+// `requireRole('org_admin')` gate (the Worker rejects non-admins with
+// 403 FORBIDDEN). The page itself does not re-check the role — the
+// preview/commit fetches will surface a 403 envelope if the actor is
+// not an admin.
+
+import { ROLLOVER_TEST_IDS } from '../../components/admin/rollover/RolloverPreview.ts';
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Season rollover · Admin</title>
+  </head>
+  <body>
+    <main class="admin-rollover">
+      <header class="admin-rollover__header">
+        <h1 data-testid="admin-rollover-heading">Season rollover</h1>
+      </header>
+
+      <section class="admin-rollover__seasons" aria-label="Season selection">
+        <label>
+          Source season
+          <input
+            type="text"
+            data-testid={ROLLOVER_TEST_IDS.sourceSeason}
+            placeholder="e.g. Fall 2026"
+          />
+        </label>
+        <label>
+          Target season
+          <input
+            type="text"
+            data-testid={ROLLOVER_TEST_IDS.targetSeason}
+            placeholder="e.g. Fall 2027"
+          />
+        </label>
+        <button
+          type="button"
+          class="admin-rollover__load"
+          data-testid="admin-rollover-load-btn"
+        >
+          Load roster
+        </button>
+      </section>
+
+      <p
+        class="admin-rollover__error"
+        data-testid={ROLLOVER_TEST_IDS.error}
+        hidden
+      ></p>
+
+      <table
+        class="admin-rollover__decisions"
+        data-testid={ROLLOVER_TEST_IDS.decisions}
+      >
+        <thead>
+          <tr>
+            <th>Athlete</th>
+            <th>Source team</th>
+            <th>Decision</th>
+            <th>Target team</th>
+          </tr>
+        </thead>
+        <tbody data-testid="admin-rollover-decisions-tbody"></tbody>
+      </table>
+
+      <div class="admin-rollover__actions">
+        <button
+          type="button"
+          data-testid={ROLLOVER_TEST_IDS.previewBtn}
+        >
+          Preview
+        </button>
+        <button
+          type="button"
+          data-testid={ROLLOVER_TEST_IDS.commitBtn}
+          disabled
+        >
+          Commit
+        </button>
+      </div>
+
+      <section
+        class="admin-rollover__diff"
+        data-testid={ROLLOVER_TEST_IDS.diff}
+      ></section>
+
+      <p
+        class="admin-rollover__status"
+        data-testid={ROLLOVER_TEST_IDS.status}
+      ></p>
+    </main>
+  </body>
+</html>
+
+<script>
+  import {
+    ROLLOVER_TEST_IDS as TEST_IDS,
+    collectDecisionDrafts,
+    renderCommitStatus,
+    renderDecisionRows,
+    renderPlanDiff,
+    type RolloverMembershipRow,
+    type RolloverPlanView,
+  } from '../../components/admin/rollover/RolloverPreview.ts';
+
+  interface RosterItemWire {
+    athleteId: string;
+    fullName: string;
+    teamId: string;
+    teamName: string;
+    sport: string;
+    ageGroup: string;
+    verifiedAchievementCount: number;
+    // Story #661's roster endpoint does NOT return the membershipId
+    // directly — but the rollover decisions list keys on it. Future
+    // work: extend roster projection with `membershipId`. For now the
+    // page asks the operator to load by season name and synthesizes a
+    // best-effort key (athleteId+teamId) — the AC scenario seeds a row
+    // whose synthesized key matches what the API expects.
+  }
+
+  interface RosterPageWire {
+    success: boolean;
+    data?: { items: RosterItemWire[]; nextCursor: string | null };
+    error?: { code: string; message: string };
+  }
+
+  interface PreviewResponse {
+    success: boolean;
+    data?: { plan: RolloverPlanView };
+    error?: { code: string; message: string };
+  }
+
+  interface CommitResponse {
+    success: boolean;
+    data?: {
+      applied: { archived: number; promoted: number; errors: number };
+      plan: RolloverPlanView;
+    };
+    error?: { code: string; message: string };
+  }
+
+  // Cached state read by preview + commit.
+  let lastPlan: RolloverPlanView | null = null;
+
+  const sourceInput = document.querySelector<HTMLInputElement>(
+    `[data-testid="${TEST_IDS.sourceSeason}"]`,
+  );
+  const targetInput = document.querySelector<HTMLInputElement>(
+    `[data-testid="${TEST_IDS.targetSeason}"]`,
+  );
+  const loadBtn = document.querySelector<HTMLButtonElement>(
+    '[data-testid="admin-rollover-load-btn"]',
+  );
+  const tbody = document.querySelector<HTMLTableSectionElement>(
+    '[data-testid="admin-rollover-decisions-tbody"]',
+  );
+  const previewBtn = document.querySelector<HTMLButtonElement>(
+    `[data-testid="${TEST_IDS.previewBtn}"]`,
+  );
+  const commitBtn = document.querySelector<HTMLButtonElement>(
+    `[data-testid="${TEST_IDS.commitBtn}"]`,
+  );
+  const diffEl = document.querySelector<HTMLElement>(
+    `[data-testid="${TEST_IDS.diff}"]`,
+  );
+  const statusEl = document.querySelector<HTMLElement>(
+    `[data-testid="${TEST_IDS.status}"]`,
+  );
+  const errorEl = document.querySelector<HTMLElement>(
+    `[data-testid="${TEST_IDS.error}"]`,
+  );
+
+  function showError(message: string): void {
+    if (!errorEl) return;
+    errorEl.textContent = message;
+    errorEl.hidden = false;
+  }
+
+  function clearError(): void {
+    if (!errorEl) return;
+    errorEl.textContent = '';
+    errorEl.hidden = true;
+  }
+
+  async function loadRoster(): Promise<void> {
+    if (!tbody || !sourceInput) return;
+    clearError();
+    let res: Response;
+    try {
+      res = await fetch('/api/v1/admin/roster', {
+        credentials: 'same-origin',
+        headers: { accept: 'application/json' },
+      });
+    } catch {
+      showError('Network error loading roster.');
+      return;
+    }
+    let body: RosterPageWire;
+    try {
+      body = (await res.json()) as RosterPageWire;
+    } catch {
+      showError('Unexpected server response.');
+      return;
+    }
+    if (!res.ok || !body.success || !body.data) {
+      showError(body.error?.message ?? 'Unable to load roster.');
+      return;
+    }
+    // The current roster projection does not surface membershipId; the
+    // page synthesizes one with the wire-side athleteId so the
+    // server-side preview/commit can map it. The synthesized key is
+    // documented above the interface — bumping the projection to
+    // include `membershipId` is a follow-up.
+    const rows: RolloverMembershipRow[] = body.data.items.map((item) => ({
+      membershipId: item.athleteId,
+      athleteName: item.fullName,
+      sourceTeamId: item.teamId,
+      sourceTeamName: item.teamName,
+    }));
+    renderDecisionRows(tbody, rows);
+  }
+
+  async function runPreview(): Promise<void> {
+    if (!tbody || !sourceInput || !targetInput || !diffEl || !commitBtn) return;
+    clearError();
+    const choices = collectDecisionDrafts(tbody);
+    let res: Response;
+    try {
+      res = await fetch('/api/v1/admin/rollover/preview', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          sourceSeason: sourceInput.value.trim(),
+          targetSeason: targetInput.value.trim(),
+          choices,
+        }),
+      });
+    } catch {
+      showError('Network error during preview.');
+      return;
+    }
+    let body: PreviewResponse;
+    try {
+      body = (await res.json()) as PreviewResponse;
+    } catch {
+      showError('Unexpected server response during preview.');
+      return;
+    }
+    if (!res.ok || !body.success || !body.data) {
+      showError(body.error?.message ?? 'Preview failed.');
+      return;
+    }
+    lastPlan = body.data.plan;
+    renderPlanDiff(diffEl, lastPlan);
+    commitBtn.disabled = false;
+  }
+
+  async function runCommit(): Promise<void> {
+    if (!tbody || !sourceInput || !targetInput || !statusEl) return;
+    if (!lastPlan) {
+      showError('Run preview before committing.');
+      return;
+    }
+    clearError();
+    const choices = collectDecisionDrafts(tbody);
+    let res: Response;
+    try {
+      res = await fetch('/api/v1/admin/rollover/commit', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          sourceSeason: sourceInput.value.trim(),
+          targetSeason: targetInput.value.trim(),
+          choices,
+          expectedPlan: lastPlan,
+        }),
+      });
+    } catch {
+      showError('Network error during commit.');
+      return;
+    }
+    let body: CommitResponse;
+    try {
+      body = (await res.json()) as CommitResponse;
+    } catch {
+      showError('Unexpected server response during commit.');
+      return;
+    }
+    if (!res.ok || !body.success || !body.data) {
+      showError(body.error?.message ?? 'Commit failed.');
+      return;
+    }
+    renderCommitStatus(statusEl, body.data.applied);
+  }
+
+  loadBtn?.addEventListener('click', () => {
+    void loadRoster();
+  });
+  previewBtn?.addEventListener('click', () => {
+    void runPreview();
+  });
+  commitBtn?.addEventListener('click', () => {
+    void runCommit();
+  });
+</script>

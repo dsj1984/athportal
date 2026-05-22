@@ -28,6 +28,7 @@ void Given;
 
 const ADMIN_ORG_CONFIG_PATH = '/admin/org';
 const ADMIN_ROSTER_PATH = '/admin/roster';
+const ADMIN_ROLLOVER_PATH = '/admin/rollover';
 
 When('I open the admin org configuration page', async ({ page }) => {
   await page.goto(ADMIN_ORG_CONFIG_PATH);
@@ -60,4 +61,19 @@ When('I save the org configuration changes', async ({ page }) => {
 Then('I see the org configuration saved confirmation', async ({ page }) => {
   const status = page.getByTestId('admin-org-config-status');
   await expect(status).toHaveText('Saved');
+});
+
+When('I open the season rollover page', async ({ page }) => {
+  await page.goto(ADMIN_ROLLOVER_PATH);
+});
+
+Then('I see the season rollover surface', async ({ page }) => {
+  // The page renders the empty rollover shell server-side; the inline
+  // script wires up preview + commit. Asserting the decisions table
+  // surface is visible is enough to prove the page reached the org
+  // admin — plan shape, STALE_PLAN refusal, and the transactional
+  // commit invariants live in the contract tier
+  // (`apps/api/src/routes/v1/admin/rollover.contract.test.ts`).
+  const decisions = page.getByTestId('admin-rollover-decisions');
+  await expect(decisions).toBeVisible();
 });

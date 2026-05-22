@@ -177,25 +177,25 @@ describe('/api/v1/admin mount — contract', () => {
     });
   });
 
-  // Story #656 (Epic #10) replaced the `/api/v1/admin/org` placeholder
-  // with real handlers; Story #657 (Epic #10) replaced
-  // `/api/v1/admin/teams`; Story #663 (Epic #10) replaced
-  // `/api/v1/admin/csv-import`. The placeholder-passthrough proof
-  // therefore uses `/api/v1/admin/rollover`, still owned by a
-  // downstream Story under Epic #10.
-  it('passes an authenticated onboarded org_admin through to the placeholder (501)', async () => {
+  // Story #656/#657/#663 replaced the org / teams / csv-import
+  // placeholders; Story #665 (Epic #10) replaced the rollover
+  // placeholder. Every admin sub-router is now real, so the
+  // passthrough proof targets a real read endpoint
+  // (`/api/v1/admin/teams`) and asserts the request reached the
+  // handler — a 200 envelope is the only honest signal we can
+  // assert here without re-pinning a downstream handler's wire shape.
+  it('passes an authenticated onboarded org_admin through to a real admin handler', async () => {
     const db = freshOnboardingProdDb();
     const a = actor({ role: 'org_admin', orgId: 'org_test_a' });
     seedActor(db, a, new Date('2026-05-01T00:00:00.000Z'));
 
     const harness = buildAuthChain(db, a);
 
-    const res = await harness.request('/api/v1/admin/rollover', { method: 'GET' });
+    const res = await harness.request('/api/v1/admin/teams', { method: 'GET' });
 
-    expect(res.status).toBe(501);
-    expect(await res.json()).toMatchObject({
-      success: false,
-      error: { code: 'NOT_IMPLEMENTED' },
-    });
+    // 200 envelope from the real teams list handler is proof the
+    // auth chain admitted the request past the role gate.
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ success: true });
   });
 });
