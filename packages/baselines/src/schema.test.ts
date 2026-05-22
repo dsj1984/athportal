@@ -18,7 +18,15 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // the production `defaultSchemaDir` walk. Used to pin the schemaDir
 // return value and to give buildValidators an explicit path that
 // exercises the non-default branch.
-const REAL_SCHEMA_DIR = path.resolve(__dirname, '..', '..', '..', '.agents', 'schemas', 'baselines');
+const REAL_SCHEMA_DIR = path.resolve(
+  __dirname,
+  '..',
+  '..',
+  '..',
+  '.agents',
+  'schemas',
+  'baselines',
+);
 
 function validEnvelope() {
   return {
@@ -111,12 +119,8 @@ describe('buildValidators', () => {
     });
 
     expect(validate('lint')(envelopeFor({ errorCount: 0, warningCount: 0 }))).toBe(true);
-    expect(
-      validate('coverage')(envelopeFor({ lines: 0, functions: 0, branches: 0 })),
-    ).toBe(true);
-    expect(validate('crap')(envelopeFor({ p50: 0, p95: 0, max: 0, methodsAbove20: 0 }))).toBe(
-      true,
-    );
+    expect(validate('coverage')(envelopeFor({ lines: 0, functions: 0, branches: 0 }))).toBe(true);
+    expect(validate('crap')(envelopeFor({ p50: 0, p95: 0, max: 0, methodsAbove20: 0 }))).toBe(true);
     expect(validate('maintainability')(envelopeFor({ min: 0, p50: 0, p95: 0 }))).toBe(true);
     expect(
       validate('mutation')(envelopeFor({ score: 0, killed: 0, survived: 0, noCoverage: 0 })),
