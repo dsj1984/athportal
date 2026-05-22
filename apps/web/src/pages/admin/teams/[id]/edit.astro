@@ -1,0 +1,107 @@
+---
+// apps/web/src/pages/admin/teams/[id]/edit.astro
+//
+// `/admin/teams/:id/edit` — edit-team page (Story #657 / Task #676).
+//
+// Renders an empty form shell; the inline script GETs
+// `/api/v1/admin/teams/:id` to hydrate the initial values, then re-uses
+// the shared TeamForm submit machinery (PATCH on submit, redirect to
+// the list on success).
+
+import TeamForm from '../../../../components/admin/teams/TeamForm.astro';
+
+const { id } = Astro.params;
+if (typeof id !== 'string' || id.length === 0) {
+  return new Response('Not Found', { status: 404 });
+}
+const action = `/api/v1/admin/teams/${id}`;
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Edit team · Admin</title>
+  </head>
+  <body>
+    <main class="admin-teams-edit" data-team-id={id}>
+      <header class="admin-teams-edit__header">
+        <h1>Edit team</h1>
+        <a href="/admin/teams">Back to teams</a>
+      </header>
+
+      <p class="admin-teams-edit__load-error" data-testid="admin-team-load-error" hidden></p>
+
+      <TeamForm mode="edit" action={action} />
+    </main>
+  </body>
+</html>
+
+<script>
+  import { TEAM_FORM_TEST_IDS } from '../../../../components/admin/teams/TeamForm.ts';
+
+  interface ApiTeam {
+    id: string;
+    name: string;
+    sport: string;
+    season: string;
+    ageGroup: string;
+    archivedAt: string | null;
+  }
+
+  interface ApiEnvelope {
+    success: boolean;
+    data?: ApiTeam;
+    error?: { code?: string; message?: string };
+  }
+
+  function hydrate(team: ApiTeam): void {
+    const form = document.querySelector<HTMLFormElement>(
+      `[data-testid="${TEAM_FORM_TEST_IDS.editForm}"]`,
+    );
+    if (!form) return;
+    form.dataset.initialName = team.name;
+    form.dataset.initialSport = team.sport;
+    form.dataset.initialSeason = team.season;
+    form.dataset.initialAgeGroup = team.ageGroup;
+    const fields: ReadonlyArray<[string, string]> = [
+      [TEAM_FORM_TEST_IDS.nameInput, team.name],
+      [TEAM_FORM_TEST_IDS.sportInput, team.sport],
+      [TEAM_FORM_TEST_IDS.seasonInput, team.season],
+      [TEAM_FORM_TEST_IDS.ageGroupInput, team.ageGroup],
+    ];
+    for (const [testId, value] of fields) {
+      const input = form.querySelector<HTMLInputElement>(`[data-testid="${testId}"]`);
+      if (input) input.value = value;
+    }
+  }
+
+  async function load(): Promise<void> {
+    const root = document.querySelector<HTMLElement>('.admin-teams-edit');
+    const errorEl = document.querySelector<HTMLElement>('[data-testid="admin-team-load-error"]');
+    const id = root?.dataset.teamId;
+    if (!id) return;
+    try {
+      const res = await fetch(`/api/v1/admin/teams/${encodeURIComponent(id)}`, {
+        headers: { accept: 'application/json' },
+      });
+      const envelope = (await res.json().catch(() => null)) as ApiEnvelope | null;
+      if (!res.ok || envelope?.success !== true || !envelope.data) {
+        if (errorEl) {
+          errorEl.textContent = envelope?.error?.message ?? 'Could not load this team.';
+          errorEl.hidden = false;
+        }
+        return;
+      }
+      hydrate(envelope.data);
+    } catch {
+      if (errorEl) {
+        errorEl.textContent = 'Could not reach the server.';
+        errorEl.hidden = false;
+      }
+    }
+  }
+
+  void load();
+</script>
