@@ -35,6 +35,13 @@ import {
 } from '@repo/shared/schemas/admin/org';
 import { eq } from 'drizzle-orm';
 import { Hono } from 'hono';
+import {
+  type AllowedLogoContentType,
+  type LogoUploadSigner,
+  ALLOWED_LOGO_CONTENT_TYPES,
+  MAX_LOGO_BYTES,
+  mintLogoUploadUrl,
+} from '../../../lib/r2';
 import type { RequireInternalUserEnv } from '../../../middleware/auth';
 import type {
   DrizzleSelectChain,
@@ -61,7 +68,9 @@ interface ErrorBody {
       | 'VALIDATION_ERROR'
       | 'FORBIDDEN'
       | 'NOT_FOUND'
-      | 'INTERNAL';
+      | 'INTERNAL'
+      | 'UNSUPPORTED_MEDIA_TYPE'
+      | 'PAYLOAD_TOO_LARGE';
     readonly message: string;
   };
 }
@@ -191,3 +200,164 @@ orgAdminRoute.patch('/', async (c) => {
   const base = (c.env as { R2_PUBLIC_BASE_URL?: string } | undefined)?.R2_PUBLIC_BASE_URL;
   return c.json({ success: true as const, data: toOutput(row, base) }, 200);
 });
+
+// ---------------------------------------------------------------------------
+// Logo upload — POST /logo-upload-url and POST /logo-finalize (Task #675)
+// ---------------------------------------------------------------------------
+
+/**
+ * Per-request signer slot. The route reads the signer from
+ * `c.var.logoUploadSigner` (contract tests inject a stub via middleware);
+ * production wires a SigV4 signer at the API entrypoint in a follow-up
+ * PR. When no signer is bound the route returns 500 rather than minting
+ * a useless URL.
+ */
+function resolveSigner(c: {
+  get: (k: 'logoUploadSigner') => LogoUploadSigner | undefined;
+  env: unknown;
+}): LogoUploadSigner | null {
+  const fromVar = c.get('logoUploadSigner');
+  if (fromVar) return fromVar;
+  const fromEnv = (c.env as { LOGO_UPLOAD_SIGNER?: LogoUploadSigner } | undefined)
+    ?.LOGO_UPLOAD_SIGNER;
+  return fromEnv ?? null;
+}
+
+interface LogoUploadUrlBody {
+  readonly contentType: string;
+  readonly contentLength: number;
+}
+
+function parseUploadUrlBody(payload: unknown): LogoUploadUrlBody | null {
+  if (payload === null || typeof payload !== 'object') return null;
+  const ct = (payload as { contentType?: unknown }).contentType;
+  const cl = (payload as { contentLength?: unknown }).contentLength;
+  if (typeof ct !== 'string' || typeof cl !== 'number') return null;
+  return { contentType: ct, contentLength: cl };
+}
+
+orgAdminRoute.post('/logo-upload-url', async (c) => {
+  const auth = c.get('auth');
+  const orgId = resolveActorOrgId(auth.orgId);
+  if (orgId === null) {
+    return c.json(errorBody('NOT_FOUND', 'Organization not found.'), 404);
+  }
+
+  const rawBody = await c.req.json().catch(() => null);
+  const body = parseUploadUrlBody(rawBody);
+  if (!body) {
+    return c.json(
+      errorBody(
+        'VALIDATION_ERROR',
+        'Request body must be { contentType: string, contentLength: number }.',
+      ),
+      400,
+    );
+  }
+
+  const signer = resolveSigner(c as unknown as Parameters<typeof resolveSigner>[0]);
+  if (!signer) {
+    return c.json(errorBody('INTERNAL', 'Upload service is not configured.'), 500);
+  }
+
+  const result = await mintLogoUploadUrl({
+    orgId,
+    input: { contentType: body.contentType, contentLength: body.contentLength },
+    signer,
+  });
+
+  if (!result.ok) {
+    if (result.reason === 'UNSUPPORTED_MEDIA_TYPE') {
+      return c.json(
+        errorBody(
+          'UNSUPPORTED_MEDIA_TYPE',
+          `Logo content type must be one of: ${ALLOWED_LOGO_CONTENT_TYPES.join(', ')}.`,
+        ),
+        400,
+      );
+    }
+    // PAYLOAD_TOO_LARGE
+    return c.json(
+      errorBody(
+        'PAYLOAD_TOO_LARGE',
+        `Logo upload must be > 0 bytes and <= ${MAX_LOGO_BYTES} bytes.`,
+      ),
+      400,
+    );
+  }
+
+  return c.json(
+    { success: true as const, data: { uploadUrl: result.uploadUrl, key: result.key } },
+    200,
+  );
+});
+
+interface LogoFinalizeBody {
+  readonly key: string;
+}
+
+function parseFinalizeBody(payload: unknown): LogoFinalizeBody | null {
+  if (payload === null || typeof payload !== 'object') return null;
+  const key = (payload as { key?: unknown }).key;
+  if (typeof key !== 'string' || key.length === 0) return null;
+  return { key };
+}
+
+orgAdminRoute.post('/logo-finalize', async (c) => {
+  const auth = c.get('auth');
+  const orgId = resolveActorOrgId(auth.orgId);
+  if (orgId === null) {
+    return c.json(errorBody('NOT_FOUND', 'Organization not found.'), 404);
+  }
+
+  const rawBody = await c.req.json().catch(() => null);
+  const body = parseFinalizeBody(rawBody);
+  if (!body) {
+    return c.json(
+      errorBody('VALIDATION_ERROR', 'Request body must be { key: string }.'),
+      400,
+    );
+  }
+
+  // Cross-tenant guard: the key was minted under `logos/<orgId>/...` by
+  // `buildLogoKey` — refuse to persist a key whose prefix does not
+  // match the actor's org. Without this guard a finalize call could
+  // adopt a foreign org's uploaded asset.
+  const expectedPrefix = `logos/${orgId}/`;
+  if (!body.key.startsWith(expectedPrefix)) {
+    return c.json(
+      errorBody('VALIDATION_ERROR', 'Logo key does not belong to this organization.'),
+      400,
+    );
+  }
+
+  const db = c.get('db') as OrgDb | undefined;
+  if (!db || typeof db.update !== 'function') {
+    return c.json(errorBody('INTERNAL', 'Service temporarily unavailable.'), 500);
+  }
+
+  const updated = db
+    .update(organizations)
+    .set({ logoR2Key: body.key, updatedAt: new Date() })
+    .where(eq(organizations.id, orgId))
+    .returning()
+    .all();
+
+  const row = updated[0];
+  if (!row) {
+    return c.json(errorBody('NOT_FOUND', 'Organization not found.'), 404);
+  }
+
+  const base = (c.env as { R2_PUBLIC_BASE_URL?: string } | undefined)?.R2_PUBLIC_BASE_URL;
+  return c.json(
+    {
+      success: true as const,
+      data: { logoUrl: deriveLogoUrl(row.logoR2Key ?? null, base) },
+    },
+    200,
+  );
+});
+
+// Re-export the upload type so the contract test can declare the signer
+// stub against the same shape the route consumes.
+export type { AllowedLogoContentType, LogoUploadSigner };
