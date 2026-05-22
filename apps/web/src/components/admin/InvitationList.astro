@@ -1,0 +1,191 @@
+---
+// apps/web/src/components/admin/InvitationList.astro
+//
+// Pending-invitations table island for the /admin/invitations page
+// (Epic #10 / Story #655 / Task #669).
+//
+// Server-renders an initial empty table shell with the stable
+// `data-testid="admin-invitations-list"` selector the Tech Spec
+// pins, then hands over to an inline `<script>` that fetches the
+// initial list from `GET /api/v1/admin/invitations` and wires the
+// resend / revoke buttons to their respective POST endpoints. On
+// revoke the row is removed from the DOM in place — no full-page
+// reload — which is the user-visible contract the acceptance
+// scenario (Task #667) asserts.
+//
+// `data-testid` invariance (locked by the Tech Spec):
+//
+//   - admin-invitations-list           (table wrapper)
+//   - admin-invitation-resend-btn      (one per row)
+//   - admin-invitation-revoke-btn      (one per row)
+//
+// The Astro shell carries the minimum HTML the script needs to
+// progressively enhance — a wrapper with the testid, a status region
+// for the empty / loading states, and a template element the script
+// clones per row. This keeps the no-JS surface honest (the table
+// renders empty rather than crashing) without shipping a React
+// runtime for a small enough surface that vanilla DOM is the
+// pragmatic choice.
+---
+
+<section class="invitation-list" data-testid="admin-invitations-list">
+  <h2>Pending invitations</h2>
+  <p class="invitation-list__status" data-testid="admin-invitations-status">Loading…</p>
+  <table class="invitation-list__table" hidden>
+    <thead>
+      <tr>
+        <th scope="col">Email</th>
+        <th scope="col">Role</th>
+        <th scope="col">Sent</th>
+        <th scope="col">Actions</th>
+      </tr>
+    </thead>
+    <tbody class="invitation-list__rows"></tbody>
+  </table>
+
+  <template class="invitation-list__row-template">
+    <tr class="invitation-list__row">
+      <td class="invitation-list__email"></td>
+      <td class="invitation-list__role"></td>
+      <td class="invitation-list__created"></td>
+      <td class="invitation-list__actions">
+        <button
+          type="button"
+          class="invitation-list__resend"
+          data-testid="admin-invitation-resend-btn"
+        >
+          Resend
+        </button>
+        <button
+          type="button"
+          class="invitation-list__revoke"
+          data-testid="admin-invitation-revoke-btn"
+        >
+          Revoke
+        </button>
+      </td>
+    </tr>
+  </template>
+</section>
+
+<script>
+  // Per Tech Spec #647: the page calls the admin invitations API and
+  // mutates the list in place on resend / revoke. The script lives in
+  // the page island rather than a shared bundle because the surface
+  // is small and the dependency footprint is zero — pulling in React
+  // for one table is the wrong trade-off at this scope.
+
+  interface InvitationRow {
+    readonly id: string;
+    readonly email: string;
+    readonly role: 'coach' | 'athlete';
+    readonly createdAt: number;
+  }
+
+  interface ListResponse {
+    readonly success: true;
+    readonly data: readonly InvitationRow[];
+  }
+
+  function isListResponse(x: unknown): x is ListResponse {
+    if (typeof x !== 'object' || x === null) return false;
+    const o = x as { success?: unknown; data?: unknown };
+    return o.success === true && Array.isArray(o.data);
+  }
+
+  function format(ts: number): string {
+    return new Date(ts * 1000).toLocaleString();
+  }
+
+  function render(root: HTMLElement, rows: readonly InvitationRow[]): void {
+    const status = root.querySelector<HTMLElement>('.invitation-list__status');
+    const table = root.querySelector<HTMLTableElement>('.invitation-list__table');
+    const tbody = root.querySelector<HTMLTableSectionElement>('.invitation-list__rows');
+    const template = root.querySelector<HTMLTemplateElement>('.invitation-list__row-template');
+    if (!status || !table || !tbody || !template) return;
+
+    tbody.innerHTML = '';
+    if (rows.length === 0) {
+      status.textContent = 'No pending invitations.';
+      table.hidden = true;
+      return;
+    }
+
+    status.textContent = '';
+    table.hidden = false;
+    for (const row of rows) {
+      const fragment = template.content.cloneNode(true) as DocumentFragment;
+      const tr = fragment.querySelector<HTMLTableRowElement>('.invitation-list__row');
+      if (!tr) continue;
+      tr.dataset.invitationId = row.id;
+      const email = tr.querySelector<HTMLElement>('.invitation-list__email');
+      const role = tr.querySelector<HTMLElement>('.invitation-list__role');
+      const created = tr.querySelector<HTMLElement>('.invitation-list__created');
+      if (email) email.textContent = row.email;
+      if (role) role.textContent = row.role;
+      if (created) created.textContent = format(row.createdAt);
+      tbody.appendChild(fragment);
+    }
+  }
+
+  async function load(root: HTMLElement): Promise<void> {
+    const res = await fetch('/api/v1/admin/invitations', {
+      method: 'GET',
+      credentials: 'include',
+    });
+    if (!res.ok) {
+      const status = root.querySelector<HTMLElement>('.invitation-list__status');
+      if (status) status.textContent = 'Failed to load invitations.';
+      return;
+    }
+    const body: unknown = await res.json();
+    if (!isListResponse(body)) return;
+    render(root, body.data);
+  }
+
+  function bind(root: HTMLElement): void {
+    root.addEventListener('click', async (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      const row = target.closest<HTMLTableRowElement>('.invitation-list__row');
+      const id = row?.dataset.invitationId;
+      if (!id) return;
+
+      if (target.classList.contains('invitation-list__resend')) {
+        await fetch(`/api/v1/admin/invitations/${encodeURIComponent(id)}/resend`, {
+          method: 'POST',
+          credentials: 'include',
+        });
+        return;
+      }
+
+      if (target.classList.contains('invitation-list__revoke')) {
+        const res = await fetch(`/api/v1/admin/invitations/${encodeURIComponent(id)}/revoke`, {
+          method: 'POST',
+          credentials: 'include',
+        });
+        if (res.ok && row) {
+          row.remove();
+          // If the table is empty post-remove, flip back to the empty
+          // status copy so the user sees the same state they would
+          // after a fresh load with no invitations.
+          const tbody = root.querySelector<HTMLTableSectionElement>(
+            '.invitation-list__rows',
+          );
+          if (tbody && tbody.children.length === 0) {
+            const status = root.querySelector<HTMLElement>('.invitation-list__status');
+            const table = root.querySelector<HTMLTableElement>('.invitation-list__table');
+            if (status) status.textContent = 'No pending invitations.';
+            if (table) table.hidden = true;
+          }
+        }
+      }
+    });
+  }
+
+  const root = document.querySelector<HTMLElement>('[data-testid="admin-invitations-list"]');
+  if (root) {
+    bind(root);
+    void load(root);
+  }
+</script>
