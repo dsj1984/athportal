@@ -1,0 +1,157 @@
+---
+// apps/web/src/pages/admin/reports.astro
+//
+// `/admin/reports` — org-admin landing surface for the
+// verified-achievement aggregation report (Epic #10 / Story #679 /
+// Task #699).
+//
+// Renders the empty shells server-side; the inline script fetches
+// `/api/v1/admin/reports/verified-achievements` and renders the
+// resulting rows into the two tables via `renderByTeamRows` /
+// `renderBySportRows` from the sibling `VerifiedAchievementReport.ts`
+// module.
+//
+// Authentication & authorization: every `/admin/*` route is gated by
+// Clerk's middleware (signed-in users only) AND the API edge's
+// `requireRole('org_admin')` gate (the Worker rejects non-admins with
+// 403 FORBIDDEN). The page itself does not re-check the role — the
+// fetch will surface an error envelope if the actor is not an admin.
+
+import { REPORT_TEST_IDS } from '../../components/admin/reports/VerifiedAchievementReport.ts';
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Reports · Admin</title>
+  </head>
+  <body>
+    <main class="admin-report">
+      <header class="admin-report__header">
+        <h1 class="admin-report__heading" data-testid="admin-report-heading">
+          Verified achievements
+        </h1>
+      </header>
+
+      <p
+        class="admin-report__error"
+        data-testid={REPORT_TEST_IDS.error}
+        hidden
+      ></p>
+
+      <section class="admin-report__section" aria-label="By team">
+        <h2 class="admin-report__subheading">By team</h2>
+        <table
+          class="admin-report__table"
+          data-testid={REPORT_TEST_IDS.byTeamTable}
+        >
+          <thead>
+            <tr>
+              <th>Team</th>
+              <th>Verified achievements</th>
+            </tr>
+          </thead>
+          <tbody data-testid={REPORT_TEST_IDS.byTeamTbody}></tbody>
+        </table>
+      </section>
+
+      <section class="admin-report__section" aria-label="By sport">
+        <h2 class="admin-report__subheading">By sport</h2>
+        <table
+          class="admin-report__table"
+          data-testid={REPORT_TEST_IDS.bySportTable}
+        >
+          <thead>
+            <tr>
+              <th>Sport</th>
+              <th>Verified achievements</th>
+            </tr>
+          </thead>
+          <tbody data-testid={REPORT_TEST_IDS.bySportTbody}></tbody>
+        </table>
+      </section>
+
+      <p
+        class="admin-report__empty"
+        data-testid={REPORT_TEST_IDS.emptyState}
+        hidden
+      >
+        No verified achievements to show.
+      </p>
+    </main>
+  </body>
+</html>
+
+<script>
+  import {
+    REPORT_TEST_IDS as TEST_IDS,
+    renderBySportRows,
+    renderByTeamRows,
+    type VerifiedAchievementReportPayload,
+  } from '../../components/admin/reports/VerifiedAchievementReport.ts';
+
+  interface ReportEnvelope {
+    success: boolean;
+    data?: VerifiedAchievementReportPayload;
+    error?: { code: string; message: string };
+  }
+
+  const byTeamBody = document.querySelector<HTMLTableSectionElement>(
+    `[data-testid="${TEST_IDS.byTeamTbody}"]`,
+  );
+  const bySportBody = document.querySelector<HTMLTableSectionElement>(
+    `[data-testid="${TEST_IDS.bySportTbody}"]`,
+  );
+  const empty = document.querySelector<HTMLElement>(
+    `[data-testid="${TEST_IDS.emptyState}"]`,
+  );
+  const errorEl = document.querySelector<HTMLElement>(
+    `[data-testid="${TEST_IDS.error}"]`,
+  );
+
+  function showError(message: string): void {
+    if (!errorEl) return;
+    errorEl.textContent = message;
+    errorEl.hidden = false;
+  }
+
+  function clearError(): void {
+    if (!errorEl) return;
+    errorEl.textContent = '';
+    errorEl.hidden = true;
+  }
+
+  async function loadReport(): Promise<void> {
+    if (!byTeamBody || !bySportBody || !empty) return;
+    clearError();
+    let res: Response;
+    try {
+      res = await fetch('/api/v1/admin/reports/verified-achievements', {
+        credentials: 'same-origin',
+        headers: { accept: 'application/json' },
+      });
+    } catch {
+      showError('Network error loading report.');
+      return;
+    }
+    let body: ReportEnvelope;
+    try {
+      body = (await res.json()) as ReportEnvelope;
+    } catch {
+      showError('Unexpected server response.');
+      return;
+    }
+    if (!res.ok || !body.success || !body.data) {
+      showError(body.error?.message ?? 'Unable to load report.');
+      return;
+    }
+    const report = body.data;
+    renderByTeamRows(byTeamBody, report.byTeam);
+    renderBySportRows(bySportBody, report.bySport);
+    empty.hidden = report.byTeam.length > 0 || report.bySport.length > 0;
+  }
+
+  void loadReport();
+</script>
