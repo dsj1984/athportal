@@ -178,10 +178,11 @@ describe('/api/v1/admin mount — contract', () => {
   });
 
   // Story #656 (Epic #10) replaced the `/api/v1/admin/org` placeholder
-  // with real handlers and Story #657 (Epic #10) replaced
-  // `/api/v1/admin/teams`; the placeholder-passthrough proof now uses
-  // `/api/v1/admin/csv-import`, still owned by a downstream Story
-  // under Epic #10.
+  // with real handlers; Story #657 (Epic #10) replaced
+  // `/api/v1/admin/teams`; Story #663 (Epic #10) replaced
+  // `/api/v1/admin/csv-import`. The placeholder-passthrough proof
+  // therefore uses `/api/v1/admin/rollover`, still owned by a
+  // downstream Story under Epic #10.
   it('passes an authenticated onboarded org_admin through to the placeholder (501)', async () => {
     const db = freshOnboardingProdDb();
     const a = actor({ role: 'org_admin', orgId: 'org_test_a' });
@@ -189,7 +190,7 @@ describe('/api/v1/admin mount — contract', () => {
 
     const harness = buildAuthChain(db, a);
 
-    const res = await harness.request('/api/v1/admin/csv-import', { method: 'GET' });
+    const res = await harness.request('/api/v1/admin/rollover', { method: 'GET' });
 
     expect(res.status).toBe(501);
     expect(await res.json()).toMatchObject({
