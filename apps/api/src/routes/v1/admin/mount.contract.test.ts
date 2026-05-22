@@ -42,7 +42,8 @@ function freshOnboardingProdDb() {
     '0000_auth_and_rbac.sql',
     '0001_onboarding_schema.sql',
     '0002_org_team_graph.sql',
-    '0003_org_branding.sql',
+    '0003_invitations.sql',
+    '0004_org_branding.sql',
   ]) {
     const sql = readFileSync(join(MIGRATIONS_DIR, file), 'utf8');
     for (const stmt of sql.split('--> statement-breakpoint').map((s) => s.trim())) {
