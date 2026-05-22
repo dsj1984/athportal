@@ -1,6 +1,6 @@
 {
   "$schema": ".agents/schemas/baselines/crap.schema.json",
-  "generatedAt": "2026-05-22T01:15:41.963Z",
+  "generatedAt": "2026-05-22T01:38:16.611Z",
   "kernelVersion": "1.0.0",
   "rollup": {
     "*": {
@@ -231,37 +231,37 @@
       "crap": 2,
       "method": "<anon method-2>",
       "path": "apps/api/src/routes/v1/auth/onboard.ts",
-      "startLine": 238
+      "startLine": 240
     },
     {
       "crap": 12,
       "method": "resolveVerifiedEmail",
       "path": "apps/api/src/routes/v1/auth/onboard.ts",
-      "startLine": 264
+      "startLine": 266
     },
     {
       "crap": 12,
       "method": "assertActiveLegalVersions",
       "path": "apps/api/src/routes/v1/auth/onboard.ts",
-      "startLine": 295
+      "startLine": 297
     },
     {
       "crap": 6,
       "method": "stampUserRow",
       "path": "apps/api/src/routes/v1/auth/onboard.ts",
-      "startLine": 310
+      "startLine": 312
     },
     {
       "crap": 20,
       "method": "commitOnboarding",
       "path": "apps/api/src/routes/v1/auth/onboard.ts",
-      "startLine": 331
+      "startLine": 333
     },
     {
       "crap": 6,
       "method": "transactionErrorToResponse",
       "path": "apps/api/src/routes/v1/auth/onboard.ts",
-      "startLine": 395
+      "startLine": 397
     },
     {
       "crap": 2,
@@ -1113,79 +1113,79 @@
       "crap": 6,
       "method": "<anon method-1>",
       "path": "apps/web/src/components/onboarding/OnboardingForm.ts",
-      "startLine": 126
+      "startLine": 117
     },
     {
       "crap": 6,
       "method": "<anon method-2>",
       "path": "apps/web/src/components/onboarding/OnboardingForm.ts",
-      "startLine": 130
+      "startLine": 121
     },
     {
       "crap": 6,
       "method": "<anon method-3>",
       "path": "apps/web/src/components/onboarding/OnboardingForm.ts",
-      "startLine": 134
+      "startLine": 125
     },
     {
       "crap": 6,
       "method": "<anon method-4>",
       "path": "apps/web/src/components/onboarding/OnboardingForm.ts",
-      "startLine": 138
+      "startLine": 129
     },
     {
       "crap": 6,
       "method": "<anon method-5>",
       "path": "apps/web/src/components/onboarding/OnboardingForm.ts",
-      "startLine": 142
+      "startLine": 133
     },
     {
       "crap": 6,
       "method": "<anon method-6>",
       "path": "apps/web/src/components/onboarding/OnboardingForm.ts",
-      "startLine": 147
+      "startLine": 138
     },
     {
       "crap": 6,
       "method": "<anon method-7>",
       "path": "apps/web/src/components/onboarding/OnboardingForm.ts",
-      "startLine": 152
+      "startLine": 143
     },
     {
       "crap": 6,
       "method": "collectRequiredFieldErrors",
       "path": "apps/web/src/components/onboarding/OnboardingForm.ts",
-      "startLine": 156
+      "startLine": 147
     },
     {
       "crap": 6,
       "method": "foldZodIssuesIntoFieldMap",
       "path": "apps/web/src/components/onboarding/OnboardingForm.ts",
-      "startLine": 170
+      "startLine": 161
     },
     {
       "crap": 12,
       "method": "evaluateOnboardingFormState",
       "path": "apps/web/src/components/onboarding/OnboardingForm.ts",
-      "startLine": 190
+      "startLine": 184
     },
     {
       "crap": 20,
       "method": "buildOnboardingPayload",
       "path": "apps/web/src/components/onboarding/OnboardingForm.ts",
-      "startLine": 226
+      "startLine": 220
     },
     {
       "crap": 6,
       "method": "tryBuildOnboardingPayload",
       "path": "apps/web/src/components/onboarding/OnboardingForm.ts",
-      "startLine": 261
+      "startLine": 255
     },
     {
       "crap": 20,
       "method": "foldServerErrorsIntoFieldMap",
       "path": "apps/web/src/components/onboarding/OnboardingForm.ts",
-      "startLine": 293
+      "startLine": 287
     },
     {
       "crap": 2,
