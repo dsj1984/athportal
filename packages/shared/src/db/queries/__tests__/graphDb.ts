@@ -75,42 +75,20 @@ function applyMigration(client: SqliteDatabase, sql: string): void {
  * Drizzle schema and the SQLite shape agree during the Wave 1 parallel
  * cycle.
  */
-const GRAPH_ALTERS_DDL = `
-ALTER TABLE organizations ADD COLUMN organization_type TEXT NOT NULL DEFAULT 'CLUB';
-ALTER TABLE teams ADD COLUMN deleted_at INTEGER;
-`;
-
-const GRAPH_TABLES_DDL = `
-CREATE TABLE IF NOT EXISTS coach_assignments (
-  id TEXT PRIMARY KEY NOT NULL,
-  org_id TEXT NOT NULL,
-  team_id TEXT NOT NULL,
-  coach_user_id TEXT NOT NULL,
-  ended_at INTEGER,
-  created_at INTEGER DEFAULT (unixepoch()) NOT NULL,
-  updated_at INTEGER DEFAULT (unixepoch()) NOT NULL,
-  FOREIGN KEY (org_id) REFERENCES organizations(id),
-  FOREIGN KEY (team_id) REFERENCES teams(id),
-  FOREIGN KEY (coach_user_id) REFERENCES users(id)
-);
-CREATE TABLE IF NOT EXISTS athlete_memberships (
-  id TEXT PRIMARY KEY NOT NULL,
-  org_id TEXT NOT NULL,
-  team_id TEXT NOT NULL,
-  athlete_user_id TEXT NOT NULL,
-  ended_at INTEGER,
-  created_at INTEGER DEFAULT (unixepoch()) NOT NULL,
-  updated_at INTEGER DEFAULT (unixepoch()) NOT NULL,
-  FOREIGN KEY (org_id) REFERENCES organizations(id),
-  FOREIGN KEY (team_id) REFERENCES teams(id),
-  FOREIGN KEY (athlete_user_id) REFERENCES users(id)
-);
-`;
-
 /**
  * Build an ephemeral in-memory SQLite handle with the full graph schema
  * (organizations, teams, users, coachAssignments, athleteMemberships)
  * plus the legacy onboarding tables required by FK constraints.
+ *
+ * Applies the canonical migrations 0000, 0001, and 0002 directly so the
+ * test surface matches the post-migration production shape — including
+ * the table-rebuild that strips the temporary `organization_type`
+ * DEFAULT, the cross-tenant CHECK triggers, and the PRAGMA wrap that
+ * lets the rebuild step run with FK enforcement live. This replaces an
+ * earlier inline DDL that diverged from the migration in two ways: it
+ * kept the temporary DEFAULT (so an INSERT omitting organization_type
+ * succeeded in the test fixture but failed in production with NOT NULL
+ * constraint failed), and it omitted the CHECK triggers entirely.
  *
  * Foreign-key enforcement is enabled.
  */
@@ -119,7 +97,6 @@ export function freshGraphDb(): GraphTestDb {
   client.pragma('foreign_keys = ON');
   applyMigration(client, loadMigration('0000_auth_and_rbac.sql'));
   applyMigration(client, loadMigration('0001_onboarding_schema.sql'));
-  client.exec(GRAPH_ALTERS_DDL);
-  client.exec(GRAPH_TABLES_DDL);
+  applyMigration(client, loadMigration('0002_org_team_graph.sql'));
   return buildHandle(client);
 }
