@@ -40,15 +40,21 @@
  * `scopedDb` for every graph read and write — pinning isolation here
  * pins it for every current and future route that honors the seam.
  *
- * Authentication seam: each generated actor is paired with a seeded
- * users row whose `clerk_subject_id` is fed through
- * `authHeaders(seededUser)` to confirm the contract-tier auth seam at
- * `packages/shared/src/testing/auth.ts` resolves to a well-formed
- * header bag for the synthetic Clerk test-instance subject. This is
- * the same seam consumed by `createTestApp(db, { actor })` — the
- * property test wires it explicitly so a future route-tier extension
- * (e.g. `apps/api/src/routes/v1/teams/list.contract.test.ts`) inherits
- * an already-validated header bag rather than re-deriving one.
+ * Authentication seam (scope note): the property runs exercise the
+ * `scopedDb(actor)` routing boundary directly — they construct
+ * AuthContext objects from the seeded user rows and drive the proxy.
+ * They do NOT make HTTP requests through `createTestApp` and do NOT
+ * roundtrip through Clerk's `verifyToken` middleware. As a smoke for
+ * the contract-tier auth seam at `packages/shared/src/testing/auth.ts`,
+ * a single separate `it()` block (below) calls `authHeaders(...)` once
+ * against a seeded user and asserts the returned header bag shape is
+ * well-formed. That smoke pins the helper's contract so a future
+ * route-tier extension (e.g. `apps/api/src/routes/v1/teams/list.contract.test.ts`)
+ * inherits an already-validated header builder; it does not certify
+ * the HTTP→Clerk→handler chain on every generated tuple. If a future
+ * regression of that chain matters, author it as a route-tier
+ * property under the contract suite at `apps/api/src` driving
+ * `app.request(...)` per case.
  *
  * The property runs ≥ 100 generated cases per invocation (the
  * `numRuns: 100` budget exercises the full role × resource × action

@@ -10,10 +10,14 @@ Feature: Cross-tenant isolation holds under randomized actor and resource pairin
   leakage across orgs, and `canPerform`'s verdict agrees with the
   routed outcome for every generated tuple. The implementation is at
   `packages/shared/src/testing/__tests__/crossTenantIsolation.property.contract.test.ts`,
-  authored via `fast-check` and authenticated against a real Clerk
-  test instance through the test-auth seam at
-  `packages/shared/src/testing/auth.ts` (no dev bypass). The nightly
-  job at `.github/workflows/nightly.yml` re-runs the property with
+  authored via `fast-check`. The property runs exercise the `scopedDb`
+  routing boundary directly; the test-auth helper at
+  `packages/shared/src/testing/auth.ts` is exercised once as a
+  separate smoke `it()` block to pin the header-bag contract that
+  route-tier extensions will inherit. The HTTP→Clerk→handler chain is
+  not exercised per generated tuple; pinning that chain is route-tier
+  property work for the routes Epic #10/#11 will add. The nightly job
+  at `.github/workflows/nightly.yml` re-runs the property with
   `FC_NUM_RUNS=1000` so regressions hidden behind rare-tuple shrinking
   on the per-PR run surface within 24h.
 
