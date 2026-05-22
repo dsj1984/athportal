@@ -101,15 +101,6 @@ export interface OnboardingFormEvaluation {
   readonly fieldErrors: Readonly<Record<string, string>>;
 }
 
-/**
- * Evaluate the working state and return whether the form is submittable
- * plus any per-field validation errors. The submit-enabled invariant
- * (Task #584 AC): every required field must validate against
- * `OnboardInputSchema` AND `emailVerified` must be true AND both legal
- * checkboxes must be ticked AND age attestation must be ticked.
- *
- * The function is pure — same input always produces the same evaluation.
- */
 // Required-field rule table. Each entry returns a per-field error
 // message when the rule fires, or `null` when the field is OK. Keeping
 // the rules as data rather than a long `if (…) fieldErrors.x = '…'`
@@ -168,7 +159,10 @@ function collectRequiredFieldErrors(state: OnboardingFormState): Record<string, 
 // returns. `path` may be empty (a top-level form error), in which case
 // we key under `'form'`.
 function foldZodIssuesIntoFieldMap(
-  issues: ReadonlyArray<{ readonly path: ReadonlyArray<string | number>; readonly message: string }>,
+  issues: ReadonlyArray<{
+    readonly path: ReadonlyArray<string | number>;
+    readonly message: string;
+  }>,
 ): Record<string, string> {
   const fieldErrors: Record<string, string> = {};
   for (const issue of issues) {

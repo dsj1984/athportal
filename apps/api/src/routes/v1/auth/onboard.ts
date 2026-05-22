@@ -234,7 +234,9 @@ function toPublicUser(auth: AuthContext, onboardedAt: Date, email: string): Publ
 
 type ParsedBody = { ok: true; input: OnboardInput } | { ok: false; body: OnboardErrorBody };
 
-async function parseAndValidateBody(c: { req: { json: () => Promise<unknown> } }): Promise<ParsedBody> {
+async function parseAndValidateBody(c: {
+  req: { json: () => Promise<unknown> };
+}): Promise<ParsedBody> {
   const rawBody = (await c.req.json().catch(() => null)) as unknown;
   if (rawBody === null) {
     return { ok: false, body: errorBody('INVALID_BODY', 'Request body must be valid JSON.') };
@@ -392,9 +394,7 @@ const ROUTE_ERROR_RESPONSES: Record<RouteError['code'], TaggedErrorMapping> = {
   },
 };
 
-function transactionErrorToResponse(
-  err: unknown,
-): { body: OnboardErrorBody; status: 400 | 500 } {
+function transactionErrorToResponse(err: unknown): { body: OnboardErrorBody; status: 400 | 500 } {
   const tagged = asRouteError(err);
   if (tagged) {
     const mapped = ROUTE_ERROR_RESPONSES[tagged.code];
