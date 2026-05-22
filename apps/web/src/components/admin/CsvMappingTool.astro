@@ -1,0 +1,240 @@
+---
+// apps/web/src/components/admin/CsvMappingTool.astro
+//
+// Admin CSV import island: upload, parse, map headers → target fields,
+// preview, commit. Wired to:
+//
+//   POST /api/v1/admin/csv-import/parse   (multipart file upload)
+//   POST /api/v1/admin/csv-import/commit  (JSON { fileBase64, mapping })
+//
+// Epic #10 / Story #663 / Task #689. The five data-testid attributes
+// (`admin-csv-upload-input`, `admin-csv-mapping`, `admin-csv-preview`,
+// `admin-csv-commit-btn`, `admin-csv-status`) are part of the
+// acceptance-test contract (Task #686) and MUST NOT drift.
+
+import { CSV_IMPORT_TEST_IDS } from './CsvMappingTool.ts';
+---
+
+<section class="admin-csv-import">
+  <h2 class="admin-csv-import__title">Import roster from CSV</h2>
+
+  <label class="admin-csv-import__upload">
+    <span>Choose a CSV file</span>
+    <input
+      type="file"
+      accept=".csv,text/csv"
+      data-testid={CSV_IMPORT_TEST_IDS.uploadInput}
+    />
+  </label>
+
+  <fieldset
+    class="admin-csv-import__mapping"
+    data-testid={CSV_IMPORT_TEST_IDS.mapping}
+    hidden
+  >
+    <legend>Map each CSV column to a target field</legend>
+    <div class="admin-csv-import__mapping-rows"></div>
+  </fieldset>
+
+  <table
+    class="admin-csv-import__preview"
+    data-testid={CSV_IMPORT_TEST_IDS.preview}
+    hidden
+  >
+    <thead><tr></tr></thead>
+    <tbody></tbody>
+  </table>
+
+  <button
+    type="button"
+    class="admin-csv-import__commit"
+    data-testid={CSV_IMPORT_TEST_IDS.commitBtn}
+    disabled
+  >Import roster</button>
+
+  <p
+    class="admin-csv-import__status"
+    data-testid={CSV_IMPORT_TEST_IDS.status}
+    aria-live="polite"
+  ></p>
+</section>
+
+<script>
+  import {
+    CSV_IMPORT_TEST_IDS,
+    fileToBase64,
+    formatStatus,
+    isMappingComplete,
+    tryBuildCommitPayload,
+    type CsvMappingState,
+    type TargetField,
+  } from './CsvMappingTool.ts';
+
+  const TARGET_OPTIONS: ReadonlyArray<{ value: '' | TargetField; label: string }> = [
+    { value: '', label: '— Skip this column —' },
+    { value: 'email', label: 'Email (required)' },
+    { value: 'firstName', label: 'First name (required)' },
+    { value: 'lastName', label: 'Last name (required)' },
+    { value: 'teamName', label: 'Team' },
+  ];
+
+  function $<T extends HTMLElement>(selector: string): T | null {
+    return document.querySelector(selector) as T | null;
+  }
+
+  const uploadInput = $<HTMLInputElement>(
+    `[data-testid="${CSV_IMPORT_TEST_IDS.uploadInput}"]`,
+  );
+  const mappingFieldset = $<HTMLFieldSetElement>(
+    `[data-testid="${CSV_IMPORT_TEST_IDS.mapping}"]`,
+  );
+  const mappingRows = $<HTMLDivElement>('.admin-csv-import__mapping-rows');
+  const previewTable = $<HTMLTableElement>(
+    `[data-testid="${CSV_IMPORT_TEST_IDS.preview}"]`,
+  );
+  const commitBtn = $<HTMLButtonElement>(
+    `[data-testid="${CSV_IMPORT_TEST_IDS.commitBtn}"]`,
+  );
+  const statusEl = $<HTMLParagraphElement>(
+    `[data-testid="${CSV_IMPORT_TEST_IDS.status}"]`,
+  );
+
+  if (
+    uploadInput &&
+    mappingFieldset &&
+    mappingRows &&
+    previewTable &&
+    commitBtn &&
+    statusEl
+  ) {
+    const state: { current: CsvMappingState } = {
+      current: { parse: null, mapping: {}, fileBase64: null },
+    };
+
+    function refreshCommitButton(): void {
+      commitBtn!.disabled = !isMappingComplete(state.current.mapping);
+    }
+
+    function renderMapping(headers: readonly string[]): void {
+      mappingRows!.innerHTML = '';
+      const fragment = document.createDocumentFragment();
+      for (const header of headers) {
+        const row = document.createElement('label');
+        row.className = 'admin-csv-import__mapping-row';
+        const span = document.createElement('span');
+        span.textContent = header;
+        row.appendChild(span);
+
+        const select = document.createElement('select');
+        select.dataset.header = header;
+        for (const opt of TARGET_OPTIONS) {
+          const option = document.createElement('option');
+          option.value = opt.value;
+          option.textContent = opt.label;
+          select.appendChild(option);
+        }
+        select.addEventListener('change', () => {
+          const v = select.value;
+          const next = { ...state.current.mapping };
+          if (v === '') {
+            next[header] = null;
+          } else {
+            next[header] = v as TargetField;
+          }
+          state.current = { ...state.current, mapping: next };
+          refreshCommitButton();
+        });
+        row.appendChild(select);
+        fragment.appendChild(row);
+      }
+      mappingRows!.appendChild(fragment);
+      mappingFieldset!.hidden = false;
+    }
+
+    function renderPreview(headers: readonly string[], rows: readonly (readonly string[])[]): void {
+      const head = previewTable!.querySelector('thead tr')!;
+      head.innerHTML = '';
+      for (const h of headers) {
+        const th = document.createElement('th');
+        th.textContent = h;
+        head.appendChild(th);
+      }
+      const body = previewTable!.querySelector('tbody')!;
+      body.innerHTML = '';
+      for (const row of rows) {
+        const tr = document.createElement('tr');
+        for (const cell of row) {
+          const td = document.createElement('td');
+          td.textContent = cell;
+          tr.appendChild(td);
+        }
+        body.appendChild(tr);
+      }
+      previewTable!.hidden = false;
+    }
+
+    uploadInput.addEventListener('change', async () => {
+      const file = uploadInput.files?.[0];
+      if (!file) return;
+      statusEl!.textContent = 'Parsing…';
+      const form = new FormData();
+      form.set('file', file);
+      const res = await fetch('/api/v1/admin/csv-import/parse', {
+        method: 'POST',
+        body: form,
+      });
+      if (!res.ok) {
+        statusEl!.textContent = 'Could not parse the CSV. Please check the file and try again.';
+        return;
+      }
+      const body = (await res.json()) as {
+        success: true;
+        data: { headers: string[]; previewRows: string[][] };
+      };
+      const fileBase64 = await fileToBase64(file);
+      state.current = {
+        parse: body.data,
+        mapping: {},
+        fileBase64,
+      };
+      renderMapping(body.data.headers);
+      renderPreview(body.data.headers, body.data.previewRows);
+      refreshCommitButton();
+      statusEl!.textContent = `Loaded ${body.data.headers.length} columns. Map each one to commit the import.`;
+    });
+
+    commitBtn.addEventListener('click', async () => {
+      const payload = tryBuildCommitPayload(state.current);
+      if (!payload) return;
+      commitBtn!.disabled = true;
+      statusEl!.textContent = 'Importing…';
+      const res = await fetch('/api/v1/admin/csv-import/commit', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const body = (await res.json()) as
+        | {
+            success: true;
+            data: {
+              rowCount: number;
+              successCount: number;
+              errorCount: number;
+              reusedUserIds: string[];
+            };
+          }
+        | { success: false; error: { code: string; message: string } };
+      if (!body.success) {
+        statusEl!.textContent = `Import failed: ${body.error.message}`;
+        commitBtn!.disabled = false;
+        return;
+      }
+      statusEl!.textContent = formatStatus({
+        rowCount: body.data.rowCount,
+        successCount: body.data.successCount,
+        reusedCount: body.data.reusedUserIds.length,
+        errorCount: body.data.errorCount,
+      });
+    });
+  }
+</script>
