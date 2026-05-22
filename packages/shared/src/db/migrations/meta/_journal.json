@@ -43,6 +43,13 @@
       "when": 1779482900182,
       "tag": "0005_team_metadata",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1779484552031,
+      "tag": "0006_csv_import_batches",
+      "breakpoints": true
     }
   ]
 }
