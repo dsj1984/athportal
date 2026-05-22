@@ -12,7 +12,10 @@
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 import { readBaseline, writeBaseline } from './io.js';
 import { serialiseBaseline } from './serialise.js';
 import type { BaselineEnvelope } from './types.js';
@@ -100,6 +103,42 @@ describe('readBaseline / writeBaseline', () => {
     const starWithoutWarn = omitKey(base.rollup['*'], 'warningCount') as unknown as LintRollup;
     const bad = { ...base, rollup: { '*': starWithoutWarn } };
     expect(() => writeBaseline(file, bad, 'lint')).toThrow(/validation failed/);
+  });
+
+  it('throws on a missing file with the path in the message (ENOENT)', () => {
+    const file = path.join(tmp, 'does-not-exist.json');
+    expect(() => readBaseline(file, 'lint')).toThrow(/does-not-exist\.json|ENOENT/);
+  });
+
+  it('honors an explicit schemaDir option on read', () => {
+    const file = path.join(tmp, 'lint.json');
+    writeFileSync(file, serialiseBaseline(validLintEnvelope()), 'utf8');
+    const realSchemaDir = path.resolve(
+      __dirname,
+      '..',
+      '..',
+      '..',
+      '.agents',
+      'schemas',
+      'baselines',
+    );
+    const snap = readBaseline<LintRow, LintRollup>(file, 'lint', { schemaDir: realSchemaDir });
+    expect(snap.kernelVersion).toBe('1.0.0');
+  });
+
+  it('honors an explicit schemaDir option on write', () => {
+    const file = path.join(tmp, 'lint.json');
+    const realSchemaDir = path.resolve(
+      __dirname,
+      '..',
+      '..',
+      '..',
+      '.agents',
+      'schemas',
+      'baselines',
+    );
+    writeBaseline(file, validLintEnvelope(), 'lint', { schemaDir: realSchemaDir });
+    expect(readFileSync(file, 'utf8').endsWith('\n')).toBe(true);
   });
 
   it('read → write → read round-trips byte-identically', () => {

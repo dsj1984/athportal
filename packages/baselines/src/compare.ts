@@ -71,6 +71,9 @@ export interface CompareConfig {
   polarity?: 'higher-is-better' | 'lower-is-better';
 }
 
+type Polarity = NonNullable<CompareConfig['polarity']>;
+type Severity = 'fail' | 'warn';
+
 /**
  * Compare two envelopes against a configured tolerance and return
  * the per-row diffs that exceed it. The returned array is empty when
@@ -150,63 +153,107 @@ function readNumeric(row: Row, key: string): number {
  * tolerance to a rollup axis (the rollup is `prev.rollup['*'][axis]`
  * vs `next.rollup['*'][axis]`); the row-iterating wrapper above is
  * the typical path.
+ *
+ * The dispatch is intentionally thin — each `ToleranceSpec.kind` is
+ * handled by a single-responsibility helper below. Keeping the
+ * branch density per helper low keeps the CRAP score per method
+ * manageable even when per-method coverage is treated as zero (the
+ * default for the CRAP gate today).
  */
 export function evaluate(
   tolerance: ToleranceSpec,
   prev: number,
   next: number,
   polarity: CompareConfig['polarity'],
-): 'fail' | 'warn' | null {
+): Severity | null {
   switch (tolerance.kind) {
-    case 'absolute-pp': {
-      // For higher-is-better axes (coverage), `next < prev - pp` is a
-      // fail. For lower-is-better axes, the symmetric direction
-      // applies; defaulting to higher-is-better matches the canonical
-      // coverage caller.
-      const pol = polarity ?? 'higher-is-better';
-      if (pol === 'higher-is-better') {
-        return next < prev - tolerance.pp ? 'fail' : null;
-      }
-      return next > prev + tolerance.pp ? 'fail' : null;
-    }
-    case 'relative-pct': {
-      // `relative-pct` interprets `pct` as a percent of `prev`. For
-      // higher-is-better axes, a `pct`% drop is the threshold. For
-      // lower-is-better axes, a `pct`% rise is the threshold. When
-      // prev is 0 (new row), any positive next on a lower-is-better
-      // axis fails; any positive next on a higher-is-better axis
-      // passes (gain is never a regression).
-      const pol = polarity ?? 'higher-is-better';
-      if (prev === 0) {
-        if (pol === 'higher-is-better') return null;
-        return next > 0 ? 'fail' : null;
-      }
-      const allowed = (tolerance.pct / 100) * Math.abs(prev);
-      if (pol === 'higher-is-better') {
-        return next < prev - allowed ? 'fail' : null;
-      }
-      return next > prev + allowed ? 'fail' : null;
-    }
-    case 'absolute-int': {
-      const pol = polarity ?? 'lower-is-better';
-      if (pol === 'higher-is-better') {
-        return next < prev - tolerance.delta ? 'fail' : null;
-      }
-      return next > prev + tolerance.delta ? 'fail' : null;
-    }
-    case 'hard-cap': {
-      // Hard cap is polarity-free — the cap is the cap. The warn band
-      // sits at `warnPct * cap` (typically 0.9). Below the warn band:
-      // conforming. Inside the warn band: warn. At or above the cap:
-      // fail.
-      if (next >= tolerance.cap) return 'fail';
-      if (next >= tolerance.warnPct * tolerance.cap) return 'warn';
-      return null;
-    }
-    case 'route-band': {
-      // Two-sided ±plusMinus check. Either direction past the band
-      // is a fail; the band itself is conforming.
-      return Math.abs(next - prev) > tolerance.plusMinus ? 'fail' : null;
-    }
+    case 'absolute-pp':
+      return evaluateAbsolutePp(tolerance, prev, next, polarity ?? 'higher-is-better');
+    case 'relative-pct':
+      return evaluateRelativePct(tolerance, prev, next, polarity ?? 'higher-is-better');
+    case 'absolute-int':
+      return evaluateAbsoluteInt(tolerance, prev, next, polarity ?? 'lower-is-better');
+    case 'hard-cap':
+      return evaluateHardCap(tolerance, next);
+    case 'route-band':
+      return evaluateRouteBand(tolerance, prev, next);
   }
+}
+
+// `absolute-pp` — coverage-shaped. For higher-is-better axes a drop
+// of more than `pp` below `prev` fails; for lower-is-better axes the
+// symmetric rise fails. Polarity defaults higher-is-better (coverage)
+// at the dispatcher.
+function evaluateAbsolutePp(
+  spec: Extract<ToleranceSpec, { kind: 'absolute-pp' }>,
+  prev: number,
+  next: number,
+  polarity: Polarity,
+): Severity | null {
+  if (polarity === 'higher-is-better') {
+    return next < prev - spec.pp ? 'fail' : null;
+  }
+  return next > prev + spec.pp ? 'fail' : null;
+}
+
+// `relative-pct` — mutation/CRAP-shaped. The percent is taken against
+// |prev|; a `prev === 0` row is a free pass for higher-is-better
+// (any gain is welcome) and fails on any positive next for
+// lower-is-better (the implicit floor catches new regressions).
+function evaluateRelativePct(
+  spec: Extract<ToleranceSpec, { kind: 'relative-pct' }>,
+  prev: number,
+  next: number,
+  polarity: Polarity,
+): Severity | null {
+  if (prev === 0) {
+    return evaluateRelativePctZeroPrev(next, polarity);
+  }
+  const allowed = (spec.pct / 100) * Math.abs(prev);
+  if (polarity === 'higher-is-better') {
+    return next < prev - allowed ? 'fail' : null;
+  }
+  return next > prev + allowed ? 'fail' : null;
+}
+
+function evaluateRelativePctZeroPrev(next: number, polarity: Polarity): Severity | null {
+  if (polarity === 'higher-is-better') return null;
+  return next > 0 ? 'fail' : null;
+}
+
+// `absolute-int` — lint-warning-shaped. Integer-delta tolerance with
+// polarity defaulting lower-is-better (rising warning counts are
+// bad) at the dispatcher.
+function evaluateAbsoluteInt(
+  spec: Extract<ToleranceSpec, { kind: 'absolute-int' }>,
+  prev: number,
+  next: number,
+  polarity: Polarity,
+): Severity | null {
+  if (polarity === 'higher-is-better') {
+    return next < prev - spec.delta ? 'fail' : null;
+  }
+  return next > prev + spec.delta ? 'fail' : null;
+}
+
+// `hard-cap` — bundle-size-shaped. Polarity-free: the cap is the
+// cap. Two thresholds — below `warnPct * cap` is conforming, between
+// the warn band and the cap is `warn`, at or above the cap is `fail`.
+function evaluateHardCap(
+  spec: Extract<ToleranceSpec, { kind: 'hard-cap' }>,
+  next: number,
+): Severity | null {
+  if (next >= spec.cap) return 'fail';
+  if (next >= spec.warnPct * spec.cap) return 'warn';
+  return null;
+}
+
+// `route-band` — lighthouse-shaped. Two-sided ±plusMinus check;
+// either direction past the band is a fail.
+function evaluateRouteBand(
+  spec: Extract<ToleranceSpec, { kind: 'route-band' }>,
+  prev: number,
+  next: number,
+): Severity | null {
+  return Math.abs(next - prev) > spec.plusMinus ? 'fail' : null;
 }

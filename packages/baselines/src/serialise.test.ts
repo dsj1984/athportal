@@ -63,4 +63,24 @@ describe('serialiseBaseline', () => {
     expect(() => serialiseBaseline(undefined)).toThrow();
     expect(() => serialiseBaseline({ fn: () => 1 })).toThrow();
   });
+
+  it('serialises primitive scalars verbatim', () => {
+    expect(serialiseBaseline(null)).toBe('null\n');
+    expect(serialiseBaseline(true)).toBe('true\n');
+    expect(serialiseBaseline(false)).toBe('false\n');
+    expect(serialiseBaseline(0)).toBe('0\n');
+    expect(serialiseBaseline(1.5)).toBe('1.5\n');
+    expect(serialiseBaseline('hello')).toBe('"hello"\n');
+  });
+
+  it('escapes special characters in string keys and values', () => {
+    const out = serialiseBaseline({ 'a"b': 'c\nd' });
+    // JSON.stringify handles the escaping; we only assert the result
+    // is parseable and round-trips.
+    expect(reserialiseFromString(out)).toBe(out);
+  });
+
+  it('rejects negative-infinity explicitly', () => {
+    expect(() => serialiseBaseline({ x: Number.NEGATIVE_INFINITY })).toThrow(/non-finite/);
+  });
 });

@@ -1,17 +1,17 @@
 {
   "$schema": ".agents/schemas/baselines/coverage.schema.json",
-  "generatedAt": "2026-05-18T21:14:19.166Z",
+  "generatedAt": "2026-05-22T00:33:25.566Z",
   "kernelVersion": "1.0.0",
   "rollup": {
     "*": {
-      "branches": 84.44,
-      "functions": 74.17,
-      "lines": 72.87
+      "branches": 86.61,
+      "functions": 78.56,
+      "lines": 79.27
     },
     "apps/api": {
-      "branches": 64.38,
-      "functions": 33.33,
-      "lines": 49.43
+      "branches": 67.41,
+      "functions": 45.15,
+      "lines": 56.92
     },
     "apps/mobile": {
       "branches": 0,
@@ -19,14 +19,14 @@
       "lines": 0
     },
     "apps/web": {
-      "branches": 80,
-      "functions": 80,
-      "lines": 40
+      "branches": 85.78,
+      "functions": 87.5,
+      "lines": 80.94
     },
     "packages/baselines": {
-      "branches": 84.6,
+      "branches": 92.52,
       "functions": 100,
-      "lines": 95.81
+      "lines": 97.49
     },
     "packages/config": {
       "branches": 0,
@@ -34,9 +34,9 @@
       "lines": 0
     },
     "packages/shared": {
-      "branches": 99.03,
-      "functions": 87.14,
-      "lines": 87.67
+      "branches": 97.53,
+      "functions": 87,
+      "lines": 87.2
     }
   },
   "rows": [
@@ -49,7 +49,7 @@
     {
       "branches": 100,
       "functions": 50,
-      "lines": 91.67,
+      "lines": 92.86,
       "path": "apps/api/src/index.ts"
     },
     {
@@ -60,8 +60,8 @@
     },
     {
       "branches": 0,
-      "functions": 16.67,
-      "lines": 4.55,
+      "functions": 15.38,
+      "lines": 4.48,
       "path": "apps/api/src/middleware/auth.ts"
     },
     {
@@ -71,10 +71,28 @@
       "path": "apps/api/src/middleware/request-logger.ts"
     },
     {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/api/src/middleware/requireOnboarded.ts"
+    },
+    {
       "branches": 0,
       "functions": 0,
       "lines": 30.77,
       "path": "apps/api/src/routes/debug/synthetic-failure.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/api/src/routes/v1/auth/index.ts"
+    },
+    {
+      "branches": 0,
+      "functions": 0,
+      "lines": 2.44,
+      "path": "apps/api/src/routes/v1/auth/onboard.ts"
     },
     {
       "branches": 100,
@@ -91,7 +109,7 @@
     {
       "branches": 0,
       "functions": 0,
-      "lines": 7.55,
+      "lines": 6.56,
       "path": "apps/api/src/routes/v1/users/role.ts"
     },
     {
@@ -101,10 +119,64 @@
       "path": "apps/api/src/sentry.ts"
     },
     {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/api/src/types/drizzle-structural.ts"
+    },
+    {
       "branches": 0,
       "functions": 0,
       "lines": 0,
       "path": "apps/mobile/src/sentry.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/web/src/components/onboarding/AgeAttestation.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/web/src/components/onboarding/ClerkVerifyEmailIsland.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/web/src/components/onboarding/LegalAcceptanceCheckboxes.ts"
+    },
+    {
+      "branches": 89.13,
+      "functions": 100,
+      "lines": 92.45,
+      "path": "apps/web/src/components/onboarding/OnboardingForm.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/web/src/components/onboarding/ProfilePhotoUploader.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/web/src/components/onboarding/index.ts"
+    },
+    {
+      "branches": 83.33,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/web/src/components/ui/Avatar.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/web/src/components/ui/EmptyState.ts"
     },
     {
       "branches": 100,
@@ -120,9 +192,21 @@
     },
     {
       "branches": 100,
-      "functions": 100,
-      "lines": 0,
+      "functions": 60,
+      "lines": 89.29,
       "path": "apps/web/src/middleware.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/web/src/pages/dashboard.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/web/src/pages/onboarding.ts"
     },
     {
       "branches": 0,
@@ -137,9 +221,15 @@
       "path": "apps/web/src/sentry.ts"
     },
     {
-      "branches": 69.09,
+      "branches": 0,
+      "functions": 40,
+      "lines": 13.33,
+      "path": "apps/web/src/testing/astro-middleware-shim.ts"
+    },
+    {
+      "branches": 92.73,
       "functions": 100,
-      "lines": 91.84,
+      "lines": 98.08,
       "path": "packages/baselines/src/compare.ts"
     },
     {
@@ -161,15 +251,15 @@
       "path": "packages/baselines/src/io.ts"
     },
     {
-      "branches": 76.47,
+      "branches": 88.24,
       "functions": 100,
       "lines": 93.62,
       "path": "packages/baselines/src/schema.ts"
     },
     {
-      "branches": 80,
+      "branches": 100,
       "functions": 100,
-      "lines": 94.44,
+      "lines": 100,
       "path": "packages/baselines/src/serialise.ts"
     },
     {
@@ -182,7 +272,37 @@
       "branches": 100,
       "functions": 100,
       "lines": 100,
+      "path": "packages/shared/src/db/queries/__tests__/onboardingDb.ts"
+    },
+    {
+      "branches": 85.71,
+      "functions": 100,
+      "lines": 92.31,
+      "path": "packages/shared/src/db/queries/legalDocuments.ts"
+    },
+    {
+      "branches": 85.71,
+      "functions": 100,
+      "lines": 86.67,
+      "path": "packages/shared/src/db/queries/parentAthleteLinks.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "packages/shared/src/db/queries/users.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
       "path": "packages/shared/src/db/schema/index.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "packages/shared/src/db/schema/legalDocuments.ts"
     },
     {
       "branches": 100,
@@ -192,15 +312,33 @@
     },
     {
       "branches": 100,
+      "functions": 33.33,
+      "lines": 50,
+      "path": "packages/shared/src/db/schema/parentAthleteLinks.ts"
+    },
+    {
+      "branches": 100,
       "functions": 0,
       "lines": 50,
       "path": "packages/shared/src/db/schema/teams.ts"
     },
     {
       "branches": 100,
-      "functions": 0,
-      "lines": 25,
+      "functions": 33.33,
+      "lines": 50,
+      "path": "packages/shared/src/db/schema/userLegalAgreements.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 33.33,
+      "lines": 50,
       "path": "packages/shared/src/db/schema/users.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "packages/shared/src/db/seed.ts"
     },
     {
       "branches": 100,
@@ -247,6 +385,12 @@
     {
       "branches": 100,
       "functions": 100,
+      "lines": 100,
+      "path": "packages/shared/src/schemas/auth.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
       "lines": 0,
       "path": "packages/shared/src/testing/__tests__/fixtures/echo-schema.ts"
     },
@@ -257,9 +401,9 @@
       "path": "packages/shared/src/testing/app.ts"
     },
     {
-      "branches": 100,
-      "functions": 100,
-      "lines": 100,
+      "branches": 75,
+      "functions": 80,
+      "lines": 70.83,
       "path": "packages/shared/src/testing/auth.ts"
     },
     {
