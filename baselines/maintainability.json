@@ -1,6 +1,6 @@
 {
   "$schema": ".agents/schemas/baselines/maintainability.schema.json",
-  "kernelVersion": "0.1.0",
+  "kernelVersion": "1.0.0",
   "generatedAt": "2026-05-22T10:51:19.140Z",
   "rollup": {
     "*": {
