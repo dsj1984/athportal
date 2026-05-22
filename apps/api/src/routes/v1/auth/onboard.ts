@@ -237,7 +237,7 @@ type ParsedBody = { ok: true; input: OnboardInput } | { ok: false; body: Onboard
 async function parseAndValidateBody(c: {
   req: { json: () => Promise<unknown> };
 }): Promise<ParsedBody> {
-  const rawBody = (await c.req.json().catch(() => null)) as unknown;
+  const rawBody = await c.req.json().catch(() => null);
   if (rawBody === null) {
     return { ok: false, body: errorBody('INVALID_BODY', 'Request body must be valid JSON.') };
   }
