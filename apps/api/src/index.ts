@@ -35,10 +35,12 @@ import { type ClerkAuthEnv, clerkAuth, requireInternalUser } from './middleware/
 import { type RequestLoggerEnv, requestLogger } from './middleware/request-logger';
 import { requireOnboarded } from './middleware/requireOnboarded';
 import { type SyntheticFailureEnv, syntheticFailureRoute } from './routes/debug/synthetic-failure';
+import { adminRoute } from './routes/v1/admin';
 import { authRoute } from './routes/v1/auth';
 import { meRoute } from './routes/v1/me';
 import { signOutRoute } from './routes/v1/sign-out';
 import { userRoleRoute } from './routes/v1/users/role';
+import { clerkInvitationAcceptedRoute } from './routes/webhooks/clerk-invitation-accepted';
 
 type AppEnv = RequestLoggerEnv & SyntheticFailureEnv & ClerkAuthEnv;
 
@@ -58,6 +60,13 @@ app.get('/api/v1/health', (c) => c.json({ ok: true }));
 //    auth path. The route is gated by an env binding — see its module
 //    docstring.
 app.route('/api/v1/_debug/synthetic-failure', syntheticFailureRoute);
+
+// 3.5) Clerk webhooks. Mounted BEFORE clerkAuth because webhook
+//      callers present a Standard Webhooks signature, not a Clerk
+//      session cookie — the signature verifier inside the handler is
+//      the security boundary for this endpoint (Epic #10 / Story #655
+//      / Task #666).
+app.route('/webhooks/clerk/invitation-accepted', clerkInvitationAcceptedRoute);
 
 // 4) Clerk JWT validation. Runs on every remaining request.
 app.use('*', clerkAuth());
@@ -89,6 +98,11 @@ app.route('/api/v1/me', meRoute);
 // PATCH /api/v1/users/:id/role — last-admin invariant route. The
 // child router defines `/:id/role` so we mount at `/api/v1/users`.
 app.route('/api/v1/users', userRoleRoute);
+// Admin router tree (Story #654, Epic #10). The router itself gates
+// the entire `/api/v1/admin/*` subtree behind `requireRole('org_admin')`;
+// downstream Stories swap individual placeholder sub-routers for real
+// handlers without re-editing this entrypoint.
+app.route('/api/v1/admin', adminRoute);
 
 export default app.fetch;
 export { app };

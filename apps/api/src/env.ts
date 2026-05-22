@@ -63,4 +63,15 @@ export interface Env {
    * of truth at deploy time.
    */
   CLERK_PUBLISHABLE_KEY: string;
+
+  /**
+   * Clerk webhook signing secret (`whsec_...`). Required by
+   * `verifyWebhook` from `@clerk/backend/webhooks` to validate the
+   * Standard Webhooks signature on every `invitation.accepted` POST
+   * (Epic #10 / Story #655 / Task #666). A missing or wrong secret
+   * causes the verifier to throw, which the handler maps to 401 with
+   * the canonical UNAUTHENTICATED envelope — never echoing the
+   * verifier's error detail to the caller.
+   */
+  CLERK_WEBHOOK_SIGNING_SECRET: string;
 }

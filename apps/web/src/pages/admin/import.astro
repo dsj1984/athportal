@@ -1,0 +1,34 @@
+---
+// apps/web/src/pages/admin/import.astro
+//
+// `/admin/import` — admin CSV import landing page (Epic #10 / Story
+// #663 / Task #689). Composes the `CsvMappingTool` island; the island
+// owns every browser interaction (upload, parse, map, preview,
+// commit) and talks directly to `/api/v1/admin/csv-import/{parse,commit}`.
+//
+// Auth: this page is reachable only when the actor passes the
+// `requireRole('org_admin')` gate on `/api/v1/admin/*`. The web
+// runtime carries the session cookie via Clerk so fetches from the
+// island arrive at the API edge already authenticated.
+
+import CsvMappingTool from '../../components/admin/CsvMappingTool.astro';
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Import roster</title>
+  </head>
+  <body>
+    <main class="admin-import-page">
+      <h1 class="admin-import-page__title">Import roster</h1>
+      <p class="admin-import-page__intro">
+        Upload a CSV of athletes; map each column to a target field; then
+        commit the import. Existing platform accounts are re-used
+        automatically.
+      </p>
+      <CsvMappingTool />
+    </main>
+  </body>
+</html>

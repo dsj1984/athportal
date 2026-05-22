@@ -80,5 +80,9 @@ export function freshSchemaDb(): SchemaTestDb {
   applyMigration(client, loadMigration('0000_auth_and_rbac.sql'));
   applyMigration(client, loadMigration('0001_onboarding_schema.sql'));
   applyMigration(client, loadMigration('0002_org_team_graph.sql'));
+  applyMigration(client, loadMigration('0003_invitations.sql'));
+  applyMigration(client, loadMigration('0004_org_branding.sql'));
+  applyMigration(client, loadMigration('0005_team_metadata.sql'));
+  applyMigration(client, loadMigration('0006_csv_import_batches.sql'));
   return buildHandle(client);
 }

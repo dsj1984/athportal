@@ -40,6 +40,42 @@
       "types": "./dist/schemas/auth.d.ts",
       "import": "./src/schemas/auth.ts"
     },
+    "./schemas/admin/org": {
+      "types": "./dist/schemas/admin/org.d.ts",
+      "import": "./src/schemas/admin/org.ts"
+    },
+    "./schemas/admin/teams": {
+      "types": "./dist/schemas/admin/teams.d.ts",
+      "import": "./src/schemas/admin/teams.ts"
+    },
+    "./schemas/admin/roster": {
+      "types": "./dist/schemas/admin/roster.d.ts",
+      "import": "./src/schemas/admin/roster.ts"
+    },
+    "./schemas/admin/reports": {
+      "types": "./dist/schemas/admin/reports.d.ts",
+      "import": "./src/schemas/admin/reports.ts"
+    },
+    "./schemas/admin/rollover": {
+      "types": "./dist/schemas/admin/rollover.d.ts",
+      "import": "./src/schemas/admin/rollover.ts"
+    },
+    "./rollover/buildPlan": {
+      "types": "./dist/rollover/buildPlan.d.ts",
+      "import": "./src/rollover/buildPlan.ts"
+    },
+    "./schemas/admin/invitations": {
+      "types": "./dist/schemas/admin/invitations.d.ts",
+      "import": "./src/schemas/admin/invitations.ts"
+    },
+    "./schemas/admin/csvImport": {
+      "types": "./dist/schemas/admin/csvImport.d.ts",
+      "import": "./src/schemas/admin/csvImport.ts"
+    },
+    "./csv/parse": {
+      "types": "./dist/csv/parse.d.ts",
+      "import": "./src/csv/parse.ts"
+    },
     "./rbac": {
       "types": "./dist/rbac/index.d.ts",
       "import": "./src/rbac/index.ts"

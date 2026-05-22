@@ -1,0 +1,196 @@
+---
+// apps/web/src/pages/admin/roster.astro
+//
+// `/admin/roster` — org-admin landing surface for the org-wide
+// athlete roster (Epic #10 / Story #661 / Task #693).
+//
+// Renders an empty shell server-side; the inline script fetches
+// `/api/v1/admin/roster` (plus optional `?teamId=` and `?sport=`
+// filters and the opaque `?cursor=` for forward pagination) and
+// renders the resulting rows into the table via
+// `renderRosterRows` from the sibling `RosterTable.ts` module.
+//
+// Authentication & authorization: every `/admin/*` route is gated by
+// Clerk's middleware (signed-in users only) AND the API edge's
+// `requireRole('org_admin')` gate (the Worker rejects non-admins with
+// 403 FORBIDDEN). The page itself does not re-check the role — the
+// list-fetch will surface a 403 envelope if the actor is not an admin.
+
+import { ROSTER_TEST_IDS } from '../../components/admin/roster/RosterTable.ts';
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Roster · Admin</title>
+  </head>
+  <body>
+    <main class="admin-roster">
+      <header class="admin-roster__header">
+        <h1 class="admin-roster__heading" data-testid="admin-roster-heading">
+          Roster
+        </h1>
+      </header>
+
+      <section class="admin-roster__filters" aria-label="Roster filters">
+        <label class="admin-roster__filter">
+          Team
+          <input
+            type="text"
+            data-testid={ROSTER_TEST_IDS.filterTeam}
+            placeholder="Team id"
+          />
+        </label>
+        <label class="admin-roster__filter">
+          Sport
+          <input
+            type="text"
+            data-testid={ROSTER_TEST_IDS.filterSport}
+            placeholder="Sport (e.g. Volleyball)"
+          />
+        </label>
+      </section>
+
+      <p
+        class="admin-roster__error"
+        data-testid={ROSTER_TEST_IDS.error}
+        hidden
+      ></p>
+
+      <table class="admin-roster__table" data-testid={ROSTER_TEST_IDS.table}>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Team</th>
+            <th>Sport</th>
+            <th>Age group</th>
+            <th>Verified achievements</th>
+          </tr>
+        </thead>
+        <tbody data-testid={ROSTER_TEST_IDS.tbody}></tbody>
+      </table>
+
+      <p
+        class="admin-roster__empty"
+        data-testid={ROSTER_TEST_IDS.emptyState}
+        hidden
+      >
+        No athletes to show.
+      </p>
+
+      <button
+        type="button"
+        class="admin-roster__next"
+        data-testid={ROSTER_TEST_IDS.nextPage}
+        disabled
+      >
+        Next page
+      </button>
+    </main>
+  </body>
+</html>
+
+<script>
+  import {
+    ROSTER_TEST_IDS as TEST_IDS,
+    buildRosterQuery,
+    renderRosterRows,
+    type RosterPagePayload,
+  } from '../../components/admin/roster/RosterTable.ts';
+
+  interface RosterEnvelope {
+    success: boolean;
+    data?: RosterPagePayload;
+    error?: { code: string; message: string };
+  }
+
+  // Module-level filter / cursor state — read by every fetch trigger
+  // (initial load, filter change, next-page click).
+  let currentTeamId = '';
+  let currentSport = '';
+  let currentCursor: string | null = null;
+
+  const tbody = document.querySelector<HTMLTableSectionElement>(
+    `[data-testid="${TEST_IDS.tbody}"]`,
+  );
+  const empty = document.querySelector<HTMLElement>(
+    `[data-testid="${TEST_IDS.emptyState}"]`,
+  );
+  const errorEl = document.querySelector<HTMLElement>(
+    `[data-testid="${TEST_IDS.error}"]`,
+  );
+  const nextBtn = document.querySelector<HTMLButtonElement>(
+    `[data-testid="${TEST_IDS.nextPage}"]`,
+  );
+  const teamInput = document.querySelector<HTMLInputElement>(
+    `[data-testid="${TEST_IDS.filterTeam}"]`,
+  );
+  const sportInput = document.querySelector<HTMLInputElement>(
+    `[data-testid="${TEST_IDS.filterSport}"]`,
+  );
+
+  function showError(message: string): void {
+    if (!errorEl) return;
+    errorEl.textContent = message;
+    errorEl.hidden = false;
+  }
+
+  function clearError(): void {
+    if (!errorEl) return;
+    errorEl.textContent = '';
+    errorEl.hidden = true;
+  }
+
+  async function loadPage(): Promise<void> {
+    if (!tbody || !empty || !nextBtn) return;
+    clearError();
+    const qs = buildRosterQuery({
+      teamId: currentTeamId,
+      sport: currentSport,
+      cursor: currentCursor ?? undefined,
+    });
+    let res: Response;
+    try {
+      res = await fetch(`/api/v1/admin/roster${qs}`, {
+        credentials: 'same-origin',
+        headers: { accept: 'application/json' },
+      });
+    } catch {
+      showError('Network error loading roster.');
+      return;
+    }
+    let body: RosterEnvelope;
+    try {
+      body = (await res.json()) as RosterEnvelope;
+    } catch {
+      showError('Unexpected server response.');
+      return;
+    }
+    if (!res.ok || !body.success || !body.data) {
+      showError(body.error?.message ?? 'Unable to load roster.');
+      return;
+    }
+    const page = body.data;
+    renderRosterRows(tbody, page.items);
+    empty.hidden = page.items.length > 0;
+    currentCursor = page.nextCursor;
+    nextBtn.disabled = currentCursor === null;
+  }
+
+  function onFilterChange(): void {
+    currentTeamId = teamInput?.value.trim() ?? '';
+    currentSport = sportInput?.value.trim() ?? '';
+    currentCursor = null;
+    void loadPage();
+  }
+
+  teamInput?.addEventListener('change', onFilterChange);
+  sportInput?.addEventListener('change', onFilterChange);
+  nextBtn?.addEventListener('click', () => {
+    void loadPage();
+  });
+
+  void loadPage();
+</script>

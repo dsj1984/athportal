@@ -1,0 +1,223 @@
+---
+// apps/web/src/components/admin/teams/TeamForm.astro
+//
+// Shared form surface used by `/admin/teams/new` and
+// `/admin/teams/[id]/edit`. The `mode` prop swaps the form's data-testid
+// (`admin-team-create-form` vs `admin-team-edit-form`) and the submit
+// behavior — create POSTs to `/api/v1/admin/teams` then redirects to
+// `/admin/teams`; edit PATCHes to `/api/v1/admin/teams/:id` then
+// redirects back to the list.
+//
+// Story #657 / Task #676.
+
+import { TEAM_FORM_TEST_IDS } from './TeamForm.ts';
+
+interface Props {
+  readonly mode: 'create' | 'edit';
+  readonly action: string;
+  readonly initial?: {
+    readonly name: string;
+    readonly sport: string;
+    readonly season: string;
+    readonly ageGroup: string;
+  };
+}
+
+const { mode, action, initial } = Astro.props;
+const formTestId = mode === 'create' ? TEAM_FORM_TEST_IDS.createForm : TEAM_FORM_TEST_IDS.editForm;
+const submitLabel = mode === 'create' ? 'Create team' : 'Save changes';
+const httpMethod = mode === 'create' ? 'POST' : 'PATCH';
+const safeInitial = initial ?? { name: '', sport: '', season: '', ageGroup: '' };
+---
+
+<form
+  class="team-form"
+  data-testid={formTestId}
+  data-mode={mode}
+  data-action={action}
+  data-method={httpMethod}
+  data-initial-name={safeInitial.name}
+  data-initial-sport={safeInitial.sport}
+  data-initial-season={safeInitial.season}
+  data-initial-age-group={safeInitial.ageGroup}
+  novalidate
+>
+  <p
+    class="team-form__form-error"
+    data-testid={TEAM_FORM_TEST_IDS.formError}
+    hidden
+  ></p>
+
+  <div class="team-form__field">
+    <label for="team-name">Team name</label>
+    <input
+      id="team-name"
+      name="name"
+      type="text"
+      data-testid={TEAM_FORM_TEST_IDS.nameInput}
+      value={safeInitial.name}
+      required
+      maxlength="120"
+    />
+    <p class="team-form__field-error" data-field-error="name" hidden></p>
+  </div>
+
+  <div class="team-form__field">
+    <label for="team-sport">Sport</label>
+    <input
+      id="team-sport"
+      name="sport"
+      type="text"
+      data-testid={TEAM_FORM_TEST_IDS.sportInput}
+      value={safeInitial.sport}
+      required
+      maxlength="120"
+    />
+    <p class="team-form__field-error" data-field-error="sport" hidden></p>
+  </div>
+
+  <div class="team-form__field">
+    <label for="team-season">Season</label>
+    <input
+      id="team-season"
+      name="season"
+      type="text"
+      data-testid={TEAM_FORM_TEST_IDS.seasonInput}
+      value={safeInitial.season}
+      required
+      maxlength="120"
+    />
+    <p class="team-form__field-error" data-field-error="season" hidden></p>
+  </div>
+
+  <div class="team-form__field">
+    <label for="team-age-group">Age group</label>
+    <input
+      id="team-age-group"
+      name="ageGroup"
+      type="text"
+      data-testid={TEAM_FORM_TEST_IDS.ageGroupInput}
+      value={safeInitial.ageGroup}
+      required
+      maxlength="120"
+    />
+    <p class="team-form__field-error" data-field-error="ageGroup" hidden></p>
+  </div>
+
+  <button type="submit" class="team-form__submit" data-testid={TEAM_FORM_TEST_IDS.submit}>
+    {submitLabel}
+  </button>
+</form>
+
+<script>
+  import {
+    TEAM_FORM_TEST_IDS as TEST_IDS,
+    tryBuildCreatePayload,
+    tryBuildUpdatePayload,
+    type TeamFormState,
+  } from './TeamForm.ts';
+
+  function findForm(): HTMLFormElement | null {
+    return (
+      document.querySelector<HTMLFormElement>(`[data-testid="${TEST_IDS.createForm}"]`) ??
+      document.querySelector<HTMLFormElement>(`[data-testid="${TEST_IDS.editForm}"]`)
+    );
+  }
+
+  function readState(form: HTMLFormElement): TeamFormState {
+    const data = new FormData(form);
+    return {
+      name: String(data.get('name') ?? '').trim(),
+      sport: String(data.get('sport') ?? '').trim(),
+      season: String(data.get('season') ?? '').trim(),
+      ageGroup: String(data.get('ageGroup') ?? '').trim(),
+    };
+  }
+
+  function readInitial(form: HTMLFormElement): TeamFormState {
+    return {
+      name: form.dataset.initialName ?? '',
+      sport: form.dataset.initialSport ?? '',
+      season: form.dataset.initialSeason ?? '',
+      ageGroup: form.dataset.initialAgeGroup ?? '',
+    };
+  }
+
+  function renderFieldErrors(
+    form: HTMLFormElement,
+    errors: Readonly<Record<string, string>>,
+  ): void {
+    const containers = form.querySelectorAll<HTMLElement>('[data-field-error]');
+    containers.forEach((el) => {
+      const key = el.dataset.fieldError ?? '';
+      const msg = errors[key];
+      if (typeof msg === 'string' && msg.length > 0) {
+        el.textContent = msg;
+        el.hidden = false;
+      } else {
+        el.textContent = '';
+        el.hidden = true;
+      }
+    });
+    const formError = form.querySelector<HTMLElement>(
+      `[data-testid="${TEST_IDS.formError}"]`,
+    );
+    if (formError) {
+      const top = errors.form ?? '';
+      if (top.length > 0) {
+        formError.textContent = top;
+        formError.hidden = false;
+      } else {
+        formError.textContent = '';
+        formError.hidden = true;
+      }
+    }
+  }
+
+  const form = findForm();
+  if (form) {
+    const submit = form.querySelector<HTMLButtonElement>(
+      `[data-testid="${TEST_IDS.submit}"]`,
+    );
+    const mode = form.dataset.mode === 'edit' ? 'edit' : 'create';
+    const action = form.dataset.action ?? '';
+    const method = form.dataset.method ?? 'POST';
+    const initial = readInitial(form);
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const state = readState(form);
+      const built = mode === 'create'
+        ? tryBuildCreatePayload(state)
+        : tryBuildUpdatePayload(state, initial);
+      if (!built.ok) {
+        renderFieldErrors(form, built.fieldErrors);
+        return;
+      }
+      if (submit) submit.disabled = true;
+      try {
+        const res = await fetch(action, {
+          method,
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(built.value),
+        });
+        if (res.ok) {
+          window.location.assign('/admin/teams');
+          return;
+        }
+        const envelope = (await res.json().catch(() => null)) as {
+          error?: { code?: string; message?: string };
+        } | null;
+        renderFieldErrors(form, {
+          form: envelope?.error?.message ?? 'We could not save the team. Try again in a moment.',
+        });
+      } catch {
+        renderFieldErrors(form, {
+          form: 'We could not reach the server. Check your connection and try again.',
+        });
+      } finally {
+        if (submit) submit.disabled = false;
+      }
+    });
+  }
+</script>

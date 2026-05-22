@@ -28,6 +28,9 @@ importers:
       js-yaml:
         specifier: ^4.1.1
         version: 4.1.1
+      minimatch:
+        specifier: ^10.2.5
+        version: 10.2.5
       picomatch:
         specifier: ^4.0.4
         version: 4.0.4
@@ -12108,7 +12111,7 @@ snapshots:
       obug: 2.1.1
       std-env: 4.1.0
       tinyrainbow: 3.1.0
-      vitest: 4.1.6(@opentelemetry/api@1.9.1)(@types/node@25.9.0)(@vitest/coverage-v8@4.1.6)(jsdom@26.1.0(bufferutil@4.1.0)(utf-8-validate@6.0.6))(vite@8.0.13(@types/node@25.9.0)(esbuild@0.19.12)(jiti@2.7.0)(terser@5.47.1)(yaml@2.9.0))
+      vitest: 4.1.6(@opentelemetry/api@1.9.1)(@types/node@25.9.0)(@vitest/coverage-v8@4.1.6)(jsdom@26.1.0(bufferutil@4.1.0)(utf-8-validate@6.0.6))(vite@8.0.13(@types/node@25.9.0)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.47.1)(yaml@2.9.0))
 
   '@vitest/expect@4.1.6':
     dependencies:

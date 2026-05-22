@@ -38,7 +38,13 @@ import { type RequireInternalUserEnv, requireInternalUser } from '../../middlewa
 import { meRoute } from './me';
 
 const MIGRATIONS_DIR = join(__dirname, '../../../../../packages/shared/src/db/migrations');
-const MIGRATION_FILES = ['0000_auth_and_rbac.sql', '0001_onboarding_schema.sql'];
+const MIGRATION_FILES = [
+  '0000_auth_and_rbac.sql',
+  '0001_onboarding_schema.sql',
+  '0002_org_team_graph.sql',
+  '0003_invitations.sql',
+  '0004_org_branding.sql',
+];
 
 /**
  * Build a fresh in-memory SQLite handle backed by the production

@@ -1,0 +1,288 @@
+---
+// apps/web/src/components/admin/OrgConfigForm.astro
+//
+// Renders the admin org-config form's controlled surface: organization
+// name, sports (placeholder list — read-only on this Story until the
+// matching schema columns land), contact email/phone (placeholder),
+// primary colour, and the logo upload control.
+//
+// Browser-side behavior:
+//   • The inline <script> reads working state from the form's inputs,
+//     runs `evaluateOrgConfigFormState` after every change, and toggles
+//     the submit button's `disabled` attribute against the result.
+//   • On logo selection, the script POSTs to
+//     `/api/v1/admin/org/logo-upload-url` to mint a presigned URL,
+//     PUTs the file body, then POSTs the resulting key to
+//     `/api/v1/admin/org/logo-finalize` to persist the row update.
+//   • On form submit, `tryBuildOrgConfigPatchPayload` converts the
+//     working state into the strict OrgConfigPatchInput payload and
+//     PATCHes /api/v1/admin/org. A success swaps the status element to
+//     read "Saved"; a 400 envelope folds back into per-field errors.
+//
+// Story #656 / Task #674.
+
+import { ORG_CONFIG_FORM_TEST_IDS } from './OrgConfigForm.ts';
+import type { OrgConfigLoaderPayload } from './OrgConfigForm.ts';
+
+interface Props {
+  readonly loader: OrgConfigLoaderPayload;
+}
+const { loader } = Astro.props;
+---
+
+<form
+  class="admin-org-config"
+  data-testid={ORG_CONFIG_FORM_TEST_IDS.form}
+  novalidate
+>
+  <p
+    class="admin-org-config__form-error"
+    data-testid={ORG_CONFIG_FORM_TEST_IDS.formError}
+    hidden
+  ></p>
+
+  <div class="admin-org-config__field">
+    <label for="admin-org-name">Organization name</label>
+    <input
+      id="admin-org-name"
+      name="name"
+      type="text"
+      data-testid={ORG_CONFIG_FORM_TEST_IDS.name}
+      value={loader.name}
+      required
+      maxlength="200"
+    />
+    <p class="admin-org-config__field-error" data-field-error="name" hidden></p>
+  </div>
+
+  <div class="admin-org-config__field">
+    <label for="admin-org-sports">Sports</label>
+    <ul id="admin-org-sports" data-testid="admin-org-sports-list">
+      {loader.sports.length === 0
+        ? <li class="admin-org-config__placeholder">No sports configured.</li>
+        : loader.sports.map((s) => <li>{s}</li>)
+      }
+    </ul>
+  </div>
+
+  <div class="admin-org-config__field">
+    <label for="admin-org-contact-email">Contact email</label>
+    <input
+      id="admin-org-contact-email"
+      name="contactEmail"
+      type="email"
+      data-testid="admin-org-contact-email-input"
+      value={loader.contactEmail ?? ''}
+      disabled
+    />
+  </div>
+
+  <div class="admin-org-config__field">
+    <label for="admin-org-contact-phone">Contact phone</label>
+    <input
+      id="admin-org-contact-phone"
+      name="contactPhone"
+      type="tel"
+      data-testid="admin-org-contact-phone-input"
+      value={loader.contactPhone ?? ''}
+      disabled
+    />
+  </div>
+
+  <div class="admin-org-config__field">
+    <label for="admin-org-logo">Logo</label>
+    <input
+      id="admin-org-logo"
+      name="logo"
+      type="file"
+      accept="image/png,image/jpeg,image/webp"
+      data-testid={ORG_CONFIG_FORM_TEST_IDS.logo}
+    />
+    <p class="admin-org-config__field-error" data-field-error="logo" hidden></p>
+    {loader.logoUrl
+      ? <img class="admin-org-config__logo-preview" src={loader.logoUrl} alt="Current logo" />
+      : null
+    }
+  </div>
+
+  <div class="admin-org-config__field">
+    <label for="admin-org-primary-color">Primary colour</label>
+    <input
+      id="admin-org-primary-color"
+      name="primaryColorHex"
+      type="text"
+      data-testid={ORG_CONFIG_FORM_TEST_IDS.primaryColor}
+      value={loader.primaryColorHex ?? ''}
+      placeholder="#RRGGBB"
+      maxlength="7"
+    />
+    <p class="admin-org-config__field-error" data-field-error="primaryColorHex" hidden></p>
+  </div>
+
+  <button
+    type="submit"
+    class="admin-org-config__submit"
+    data-testid={ORG_CONFIG_FORM_TEST_IDS.submit}
+  >
+    Save changes
+  </button>
+
+  <p
+    class="admin-org-config__status"
+    data-testid={ORG_CONFIG_FORM_TEST_IDS.status}
+  ></p>
+</form>
+
+<script>
+  import {
+    ORG_CONFIG_FORM_TEST_IDS as TEST_IDS,
+    evaluateOrgConfigFormState,
+    foldServerErrorIntoFieldMap,
+    tryBuildOrgConfigPatchPayload,
+    type OrgConfigFormState,
+  } from './OrgConfigForm.ts';
+
+  const form = document.querySelector<HTMLFormElement>(`[data-testid="${TEST_IDS.form}"]`);
+  const submit = document.querySelector<HTMLButtonElement>(
+    `[data-testid="${TEST_IDS.submit}"]`,
+  );
+  const status = document.querySelector<HTMLElement>(
+    `[data-testid="${TEST_IDS.status}"]`,
+  );
+  const formError = document.querySelector<HTMLElement>(
+    `[data-testid="${TEST_IDS.formError}"]`,
+  );
+  const logoInput = document.querySelector<HTMLInputElement>(
+    `[data-testid="${TEST_IDS.logo}"]`,
+  );
+
+  if (form && submit && status) {
+    let logoR2Key: string | null = null;
+
+    const readState = (): OrgConfigFormState => {
+      const data = new FormData(form);
+      return {
+        name: String(data.get('name') ?? ''),
+        primaryColorHex: String(data.get('primaryColorHex') ?? ''),
+        logoR2Key,
+      };
+    };
+
+    const renderFieldErrors = (
+      errors: Readonly<Partial<Record<string, string>>>,
+    ) => {
+      const containers = form.querySelectorAll<HTMLElement>('[data-field-error]');
+      containers.forEach((el) => {
+        const key = el.dataset.fieldError ?? '';
+        const msg = errors[key];
+        if (typeof msg === 'string' && msg.length > 0) {
+          el.textContent = msg;
+          el.hidden = false;
+        } else {
+          el.textContent = '';
+          el.hidden = true;
+        }
+      });
+      if (formError) {
+        const top = errors.form ?? '';
+        if (top.length > 0) {
+          formError.textContent = top;
+          formError.hidden = false;
+        } else {
+          formError.textContent = '';
+          formError.hidden = true;
+        }
+      }
+    };
+
+    const update = () => {
+      const state = readState();
+      const evaluation = evaluateOrgConfigFormState(state);
+      submit.disabled = !evaluation.canSubmit;
+      renderFieldErrors(evaluation.fieldErrors);
+    };
+
+    form.addEventListener('input', update);
+    form.addEventListener('change', update);
+
+    if (logoInput) {
+      logoInput.addEventListener('change', async () => {
+        const file = logoInput.files?.[0];
+        if (!file) return;
+        try {
+          const mint = await fetch('/api/v1/admin/org/logo-upload-url', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ contentType: file.type, contentLength: file.size }),
+          });
+          if (!mint.ok) {
+            const envelope = (await mint.json().catch(() => null)) as {
+              error?: { message?: string };
+            } | null;
+            renderFieldErrors({ logo: envelope?.error?.message ?? 'Upload rejected.' });
+            return;
+          }
+          const mintBody = (await mint.json()) as { data: { uploadUrl: string; key: string } };
+          const put = await fetch(mintBody.data.uploadUrl, {
+            method: 'PUT',
+            headers: { 'content-type': file.type },
+            body: file,
+          });
+          if (!put.ok) {
+            renderFieldErrors({ logo: 'Upload failed.' });
+            return;
+          }
+          const finalize = await fetch('/api/v1/admin/org/logo-finalize', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ key: mintBody.data.key }),
+          });
+          if (!finalize.ok) {
+            renderFieldErrors({ logo: 'Finalize failed.' });
+            return;
+          }
+          logoR2Key = mintBody.data.key;
+          renderFieldErrors({});
+        } catch {
+          renderFieldErrors({ logo: 'Network error during upload.' });
+        }
+      });
+    }
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const state = readState();
+      const result = tryBuildOrgConfigPatchPayload(state);
+      if (!result.ok) {
+        renderFieldErrors(result.fieldErrors);
+        return;
+      }
+      submit.disabled = true;
+      try {
+        const response = await fetch('/api/v1/admin/org', {
+          method: 'PATCH',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(result.value),
+        });
+        if (response.ok) {
+          status.textContent = 'Saved';
+          renderFieldErrors({});
+          return;
+        }
+        const envelope = (await response.json().catch(() => null)) as {
+          error?: { code?: string; message?: string };
+        } | null;
+        const errors = envelope?.error
+          ? foldServerErrorIntoFieldMap(envelope.error)
+          : { form: 'Could not save changes.' };
+        renderFieldErrors(errors);
+      } catch {
+        renderFieldErrors({ form: 'Could not reach the server.' });
+      } finally {
+        submit.disabled = false;
+      }
+    });
+
+    update();
+  }
+</script>

@@ -1,0 +1,63 @@
+---
+// apps/web/src/pages/admin/org.astro
+//
+// `/admin/org` — admin org-config landing page (Epic #10 / Story #656
+// / Task #674). Composes the `OrgConfigForm` island which loads from
+// `GET /api/v1/admin/org` on mount, persists via `PATCH /api/v1/admin/org`,
+// and routes logo uploads through the R2 signed-URL + finalize endpoints.
+//
+// Loader placeholder: the web runtime does not yet carry a DB handle or
+// a server-side fetch helper (same shape as the onboarding page —
+// Story #574 / Task #580). Until the binding lands the page renders a
+// minimal placeholder payload so the form skeleton is exercised
+// end-to-end against the real Zod contract. The island's inline script
+// re-fetches `GET /api/v1/admin/org` on mount in a follow-up patch
+// (deferred to the binding-cutover Story) so live data populates the
+// fields once the runtime can serve it.
+//
+// The PRD-defined data-testid surface is fully present here so the
+// acceptance scenario (`tests/features/org-admin/org-config.feature`)
+// targets stable selectors across the placeholder-to-live-data swap.
+
+import OrgConfigForm from '../../components/admin/OrgConfigForm.astro';
+import type { OrgConfigLoaderPayload } from '../../components/admin/OrgConfigForm.ts';
+
+/**
+ * Placeholder loader. Production wires the real DB-backed reader once
+ * the web runtime carries a DB handle; today the placeholder mirrors
+ * the canonical `OrgConfigOutput` shape from
+ * `@repo/shared/schemas/admin/org` so the form skeleton renders
+ * end-to-end against the same contract the API edge re-validates
+ * against.
+ */
+function readOrgConfigPlaceholder(): OrgConfigLoaderPayload {
+  return {
+    id: 'org-placeholder',
+    name: 'My Organization',
+    sports: [],
+    contactEmail: null,
+    contactPhone: null,
+    primaryColorHex: null,
+    logoUrl: null,
+  };
+}
+
+const loader = readOrgConfigPlaceholder();
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Organization configuration</title>
+  </head>
+  <body>
+    <main class="admin-org-page">
+      <h1 class="admin-org-page__title">Organization configuration</h1>
+      <p class="admin-org-page__intro">
+        Update your organization’s public profile, brand colour, and logo.
+      </p>
+      <OrgConfigForm loader={loader} />
+    </main>
+  </body>
+</html>
