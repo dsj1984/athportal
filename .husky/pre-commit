@@ -48,3 +48,13 @@ node .agents/scripts/quality-preview.js --changed-since HEAD --staged
 # IS staged, the three rule classes documented in docs/testing-strategy.md
 # (forbidden patterns, duplicate phrases, unused-step warning) are enforced.
 pnpm run lint:steps --staged
+
+# --- 5. RBAC matrix drift check ------------------------------------------
+# Epic #9 / Story #616 — packages/shared/src/rbac/rules.ts is the source of
+# truth for the RBAC matrix; docs/data-dictionary.md publishes it between
+# sentinel comments. render-rbac-matrix.mjs --check re-derives the table
+# from rules.ts and exits non-zero if the doc has drifted. Fix locally
+# with `node scripts/render-rbac-matrix.mjs --write`.
+if git diff --cached --name-only --diff-filter=ACMR | grep -qE '^packages/shared/src/rbac/rules\.ts$|^docs/data-dictionary\.md$|^scripts/render-rbac-matrix\.mjs$'; then
+	node scripts/render-rbac-matrix.mjs --check
+fi
