@@ -27,6 +27,7 @@
 //   1  drift detected (--check) OR malformed input (predicate not recognized)
 //   2  CLI usage error
 
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -43,10 +44,11 @@ const SENTINEL_END = '<!-- rbac-matrix:end -->';
 // ---------------------------------------------------------------------------
 
 function parseArgs(argv) {
-  const args = { check: false, write: false };
+  const args = { check: false, write: false, staged: false };
   for (const a of argv.slice(2)) {
     if (a === '--check') args.check = true;
     else if (a === '--write') args.write = true;
+    else if (a === '--staged') args.staged = true;
     else if (a === '--help' || a === '-h') args.help = true;
     else {
       process.stderr.write(`render-rbac-matrix: unknown argument: ${a}\n`);
@@ -54,6 +56,30 @@ function parseArgs(argv) {
     }
   }
   return args;
+}
+
+/**
+ * Read a file in `--staged` mode via `git show :<path>` so the check
+ * operates on the index, not the working tree. Solves bug_004 — a
+ * developer who runs `--write` to sync both files, then stages only
+ * `rules.ts` (forgetting `docs/data-dictionary.md`), would otherwise
+ * pass the pre-commit hook because both working-tree files agree.
+ * With `--staged` the script reads what `git commit` is actually about
+ * to record. Falls back to a working-tree read if the file is absent
+ * from the index (e.g. a fresh checkout running the check manually).
+ */
+function readStagedOrWorktree(absPath, staged) {
+  if (!staged) return fs.readFileSync(absPath, 'utf8');
+  const rel = path.relative(REPO_ROOT, absPath).replaceAll('\\', '/');
+  const result = spawnSync('git', ['show', `:${rel}`], {
+    cwd: REPO_ROOT,
+    encoding: 'utf8',
+    maxBuffer: 50 * 1024 * 1024,
+  });
+  if (result.status === 0) return result.stdout;
+  // Path is not in the index — fall back to the working-tree read so
+  // a `--check --staged` invocation on a fresh clone still works.
+  return fs.readFileSync(absPath, 'utf8');
 }
 
 function printUsageAndExit(code) {
@@ -408,12 +434,17 @@ function main() {
     printUsageAndExit(2);
   }
 
-  const rulesSource = fs.readFileSync(RULES_PATH, 'utf8');
+  // In --staged mode read both source-of-truth and target files via
+  // `git show :<path>` so the check evaluates what `git commit` is
+  // about to record. --write always writes the working tree (callers
+  // pair --write with a fresh `git add`).
+  const readSource = (p) => readStagedOrWorktree(p, args.staged && !args.write);
+  const rulesSource = readSource(RULES_PATH);
   const arrayBody = extractRulesArrayBody(rulesSource);
   const rows = parseRules(arrayBody);
   const section = renderSection(rows);
 
-  const dictionary = fs.readFileSync(DICTIONARY_PATH, 'utf8');
+  const dictionary = readSource(DICTIONARY_PATH);
   const updated = applySection(dictionary, section);
 
   if (args.write) {
