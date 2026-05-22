@@ -75,43 +75,18 @@ function buildApp(a: AuthContext) {
 // `/api/v1/admin/csv-import` was promoted out of the placeholder set
 // by Story #663 / Task #687 — its real handlers live in
 // `./csv-import/router.ts` and its dedicated contract test is
-// `./csv-import/csv-import.contract.test.ts`. Only `rollover`
-// remains as a placeholder.
-const SUB_ROUTES = [{ path: '/api/v1/admin/rollover', feature: 'rollover' }] as const;
+// `./csv-import/csv-import.contract.test.ts`. As of Story #665 /
+// Task #695, `/api/v1/admin/rollover` was also promoted out of the
+// placeholder set — its real handlers live in `./rollover.ts` and
+// its dedicated contract test is `./rollover.contract.test.ts`. The
+// placeholder set is now empty; the role-gate behavior is still
+// exercised by the team_admin / member / dev_admin coverage below
+// (which hits real handlers but only at the gate boundary).
+const SUB_ROUTES: ReadonlyArray<{ readonly path: string; readonly feature: string }> = [];
 
 describe('admin router scaffold — contract', () => {
-  describe('placeholder sub-routers respond 501 NOT_IMPLEMENTED to an admitted actor', () => {
-    for (const { path, feature } of SUB_ROUTES) {
-      it(`${path} returns 501 NOT_IMPLEMENTED for org_admin`, async () => {
-        const a = actor({ role: 'org_admin' });
-        const app = buildApp(a);
-
-        const res = await app.request(path, { method: 'GET' });
-
-        expect(res.status).toBe(501);
-        const body = (await res.json()) as {
-          success: boolean;
-          error: { code: string; message: string };
-        };
-        expect(body.success).toBe(false);
-        expect(body.error.code).toBe('NOT_IMPLEMENTED');
-        expect(body.error.message).toContain(feature);
-      });
-    }
-  });
-
-  it('placeholder responds 501 for any HTTP verb (POST, PATCH, DELETE)', async () => {
-    const a = actor({ role: 'org_admin' });
-    const app = buildApp(a);
-
-    for (const method of ['POST', 'PATCH', 'DELETE'] as const) {
-      const res = await app.request('/api/v1/admin/rollover', { method });
-      expect(res.status).toBe(501);
-      expect(await res.json()).toMatchObject({
-        success: false,
-        error: { code: 'NOT_IMPLEMENTED' },
-      });
-    }
+  it('placeholder set is empty (every sub-router is implemented)', () => {
+    expect(SUB_ROUTES).toHaveLength(0);
   });
 
   it('refuses a team_admin actor with 403 FORBIDDEN before reaching the placeholder', async () => {
@@ -131,7 +106,7 @@ describe('admin router scaffold — contract', () => {
     const a = actor({ role: 'member', orgId: 'org_test_a' });
     const app = buildApp(a);
 
-    const res = await app.request('/api/v1/admin/rollover', { method: 'GET' });
+    const res = await app.request('/api/v1/admin/teams', { method: 'GET' });
 
     expect(res.status).toBe(403);
     expect(await res.json()).toMatchObject({
@@ -140,17 +115,15 @@ describe('admin router scaffold — contract', () => {
     });
   });
 
-  it('admits a dev_admin actor to every sub-router (platform-root short-circuit)', async () => {
+  it('admits a dev_admin actor through the admin gate (platform-root short-circuit)', async () => {
     const a = actor({ role: 'dev_admin', orgId: null });
     const app = buildApp(a);
 
-    for (const { path } of SUB_ROUTES) {
-      const res = await app.request(path, { method: 'GET' });
-      expect(res.status).toBe(501);
-      expect(await res.json()).toMatchObject({
-        success: false,
-        error: { code: 'NOT_IMPLEMENTED' },
-      });
-    }
+    // A dev_admin admitted past the gate must NOT receive a 403; the
+    // downstream handler decides what to do. The teams list handler
+    // returns 400 MISSING_ORG_SCOPE for a dev_admin without ?orgId=,
+    // which is the proof the gate let the request through.
+    const res = await app.request('/api/v1/admin/teams', { method: 'GET' });
+    expect(res.status).not.toBe(403);
   });
 });
