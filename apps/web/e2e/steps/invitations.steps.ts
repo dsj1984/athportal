@@ -83,7 +83,34 @@ When('I submit the direct athlete invitation form', async () => {
 Then('I see confirmation that the invitation was sent', async () => {
   // The success-status copy is pinned by the page island:
   // apps/web/src/components/admin/invitations/AthleteInviteForm.astro
-  // renders "Invitation sent" into the admin-athlete-invite-status
-  // region on 201. The DOM-side assertion lands with the admin auth
-  // bring-up in Epic #10 v0.2.
+  // and CoachInviteForm.astro render "Invitation sent" into the
+  // admin-<role>-invite-status region on 201. The DOM-side assertion
+  // lands with the admin auth bring-up in Epic #10 v0.2.
+});
+
+// ── Coach invitation (Story #664) ─────────────────────────────────────
+
+When('I open the coach invitation admin page', async () => {
+  // Navigation lands with the admin route wiring — Epic #10 v0.2.
+});
+
+When('I submit the coach invitation form', async () => {
+  // The form-submit wire flow is pinned at the contract tier:
+  // apps/api/src/routes/v1/admin/invitations/coach.contract.test.ts.
+});
+
+When('after the invited coach accepts the invitation', async () => {
+  // The Clerk accept webhook fan-out (membership row creation, role
+  // assignment, team binding) is pinned at the contract tier when
+  // the webhook handler lands — Epic #10 v0.2. The Outcome wording
+  // anchors the user-visible side of the flow so the scenario reads
+  // end-to-end now that the invite half is in place.
+});
+
+Then('the coach appears on the team roster', async () => {
+  // The roster-visibility outcome lands when the team roster page is
+  // reachable via Playwright — Epic #10 v0.2. The membership invariant
+  // (a coach_assignments row scoped to the actor's org and the named
+  // team) is pinned at the contract tier in the accept-webhook
+  // contract test that lands with the webhook handler.
 });
