@@ -5,11 +5,7 @@
 // tests assert return values only, never wire shapes or DB state.
 
 import { describe, expect, it } from 'vitest';
-import {
-  type MembershipSnapshot,
-  type RolloverChoice,
-  buildPlan,
-} from './buildPlan';
+import { type MembershipSnapshot, type RolloverChoice, buildPlan } from './buildPlan';
 
 const ORG = 'org_test_a';
 
@@ -169,9 +165,10 @@ describe('buildPlan', () => {
   it('performs no DB or network I/O (the function is pure and synchronous)', () => {
     // The signature itself is synchronous; if it ever becomes async this
     // assertion guards against an accidental side-effect import.
-    const result = buildPlan([snap('am_1', 't_a', 'u_ada')], [
-      { membershipId: 'am_1', decision: 'archive' },
-    ]);
+    const result = buildPlan(
+      [snap('am_1', 't_a', 'u_ada')],
+      [{ membershipId: 'am_1', decision: 'archive' }],
+    );
     expect(result).toBeDefined();
     expect(typeof (result as unknown as Promise<unknown>).then).toBe('undefined');
   });

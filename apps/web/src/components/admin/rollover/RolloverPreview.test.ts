@@ -156,7 +156,13 @@ describe('renderPlanDiff', () => {
         { membershipId: 'am_1', athleteUserId: 'u_a', sourceTeamId: 't_a', reason: 'promote' },
       ],
       promotions: [
-        { athleteUserId: 'u_a', orgId: 'org_a', sourceTeamId: 't_a', targetTeamId: 't_b', reason: 'promote' },
+        {
+          athleteUserId: 'u_a',
+          orgId: 'org_a',
+          sourceTeamId: 't_a',
+          targetTeamId: 't_b',
+          reason: 'promote',
+        },
       ],
       errors: [{ membershipId: 'am_z', code: 'UNKNOWN_MEMBERSHIP' }],
     });

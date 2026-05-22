@@ -58,11 +58,7 @@ import type { RequireInternalUserEnv } from '../../../middleware/auth';
 
 // ── Error taxonomy ─────────────────────────────────────────────────────────
 
-type RolloverErrorCode =
-  | 'INVALID_BODY'
-  | 'MISSING_ORG_SCOPE'
-  | 'STALE_PLAN'
-  | 'INTERNAL';
+type RolloverErrorCode = 'INVALID_BODY' | 'MISSING_ORG_SCOPE' | 'STALE_PLAN' | 'INTERNAL';
 
 interface RolloverErrorBody {
   readonly success: false;
@@ -314,8 +310,7 @@ rolloverAdminRoute.post('/commit', async (c) => {
         // Defence in depth: pin orgId on the WHERE clause so a row
         // somehow seeded into the wrong org cannot be touched from
         // this surface.
-        tx
-          .update(athleteMemberships)
+        tx.update(athleteMemberships)
           .set({ endedAt: now, updatedAt: now })
           .where(
             and(
@@ -331,8 +326,7 @@ rolloverAdminRoute.post('/commit', async (c) => {
       // enforces that target team and athlete user share the same org
       // as the membership row.
       for (const promotion of recomputed.promotions) {
-        tx
-          .insert(athleteMemberships)
+        tx.insert(athleteMemberships)
           .values([
             {
               id: `am_${randomUUID()}`,

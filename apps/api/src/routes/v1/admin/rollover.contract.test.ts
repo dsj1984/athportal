@@ -101,7 +101,11 @@ function seedTeam(
   return id;
 }
 
-function seedAthleteUser(db: RolloverDb, orgId: string, opts: { id?: string; email?: string } = {}): string {
+function seedAthleteUser(
+  db: RolloverDb,
+  orgId: string,
+  opts: { id?: string; email?: string } = {},
+): string {
   const id = opts.id ?? `u_${orgId}_${Math.random().toString(36).slice(2, 8)}`;
   db.insert(users)
     .values({
@@ -139,7 +143,12 @@ function buildApp(db: RolloverDb, a: AuthContext) {
 const STUB_ENV = { ANALYTICS: { writeDataPoint: () => undefined } };
 
 interface PlanShape {
-  archives: Array<{ membershipId: string; athleteUserId: string; sourceTeamId: string; reason: string }>;
+  archives: Array<{
+    membershipId: string;
+    athleteUserId: string;
+    sourceTeamId: string;
+    reason: string;
+  }>;
   promotions: Array<{
     athleteUserId: string;
     orgId: string;
@@ -390,10 +399,7 @@ describe('POST /api/v1/admin/rollover/commit', () => {
       .select()
       .from(athleteMemberships)
       .where(
-        and(
-          eq(athleteMemberships.teamId, teamU15),
-          eq(athleteMemberships.athleteUserId, ada),
-        ),
+        and(eq(athleteMemberships.teamId, teamU15), eq(athleteMemberships.athleteUserId, ada)),
       );
     expect(newU15).toHaveLength(0);
   });
