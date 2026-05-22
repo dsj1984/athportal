@@ -1,7 +1,7 @@
 {
   "$schema": ".agents/schemas/baselines/maintainability.schema.json",
-  "kernelVersion": "1.0.0",
-  "generatedAt": "2026-05-22T20:24:46.369Z",
+  "kernelVersion": "0.1.0",
+  "generatedAt": "2026-05-22T20:43:07.586Z",
   "rollup": {
     "*": {
       "min": 70.515,
@@ -45,10 +45,6 @@
     {
       "mi": 112.033,
       "path": "apps/api/src/routes/v1/admin/index.ts"
-    },
-    {
-      "mi": 149.008,
-      "path": "apps/api/src/routes/v1/admin/org.ts"
     },
     {
       "mi": 149.008,
@@ -309,10 +305,6 @@
     {
       "mi": 95.901,
       "path": "packages/shared/src/db/schema/legalDocuments.ts"
-    },
-    {
-      "mi": 91.315,
-      "path": "packages/shared/src/db/schema/organizations.ts"
     },
     {
       "mi": 108.651,
