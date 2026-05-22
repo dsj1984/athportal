@@ -36,8 +36,11 @@
 
 import { randomUUID } from 'node:crypto';
 import { type Invitation, invitations, teams } from '@repo/shared/db/schema';
-import { AthleteInvitationCreateInputSchema } from '@repo/shared/schemas/admin/invitations';
-import { and, eq } from 'drizzle-orm';
+import {
+  AthleteInvitationCreateInputSchema,
+  CoachInvitationCreateInputSchema,
+} from '@repo/shared/schemas/admin/invitations';
+import { and, eq, inArray } from 'drizzle-orm';
 import { Hono } from 'hono';
 import {
   type ClerkInvitationClient,
@@ -269,6 +272,122 @@ invitationsAdminRouter.post('/athlete', async (c) => {
         email: input.email,
         role: 'athlete' as const,
         teamIds: [input.teamId],
+        status: 'pending' as const,
+        createdAt: now.getTime(),
+      },
+    },
+    201,
+  );
+});
+
+/**
+ * POST /api/v1/admin/invitations/coach
+ *
+ * Coach invitation creation (Epic #10 / Story #664 / Task #684).
+ *
+ * Pins the invitation to one or more existing teams in the actor's
+ * org. Coach invites without a team have no operational meaning
+ * (Epic body), so the Zod schema rejects an empty `teamIds` array at
+ * the boundary with 400 INVALID_BODY. The server NEVER trusts the
+ * caller's role claim — `role` is hard-coded to `'coach'` on the
+ * inserted row, and the schema's `.strict()` rejects a forged `role`
+ * field.
+ *
+ * Tenant isolation:
+ *   - Every requested teamId is looked up with `where teamId IN (:ids)
+ *     AND orgId = :actor_org_id`. If any teamId fails to resolve under
+ *     the actor's org (because it is missing or belongs to a different
+ *     org) the request is refused with `404 NOT_FOUND` — same wire
+ *     shape as a non-existent id, so cross-tenant probes do not
+ *     surface an existence oracle.
+ *   - The persisted row carries `orgId = :actor_org_id` so subsequent
+ *     management surface reads (list/resend/revoke) keep the row
+ *     scoped to the issuing org.
+ *
+ * The Clerk wrapper is called BEFORE the local row is inserted so a
+ * third-party failure does not orphan a `pending` row with no live
+ * Clerk invitation behind it.
+ */
+invitationsAdminRouter.post('/coach', async (c) => {
+  const auth = c.get('auth');
+  const orgId = auth.orgId;
+  if (!orgId) {
+    return c.json(errorBody('FORBIDDEN', 'Actor has no org context.'), 403);
+  }
+
+  const rawBody: unknown = await c.req.json().catch(() => null);
+  if (rawBody === null) {
+    return c.json(errorBody('INVALID_BODY', 'Request body must be valid JSON.'), 400);
+  }
+  const parsed = CoachInvitationCreateInputSchema.safeParse(rawBody);
+  if (!parsed.success) {
+    return c.json(
+      errorBody('INVALID_BODY', parsed.error.issues[0]?.message ?? 'Invalid body.'),
+      400,
+    );
+  }
+  const input = parsed.data;
+
+  // Verify every requested team exists AND belongs to the actor's
+  // org. A teamId owned by a different org returns the same 404 as a
+  // missing id so the surface is not a cross-tenant existence oracle.
+  // We resolve the full set in a single query and compare cardinality
+  // against the requested set to detect partial matches without
+  // surfacing which id failed.
+  const requestedTeamIds = Array.from(new Set(input.teamIds));
+  const teamsDb = narrowTeamsDb(c.get('db'));
+  const teamRows = teamsDb
+    .select()
+    .from(teams)
+    .where(and(inArray(teams.id, requestedTeamIds), eq(teams.orgId, orgId)))
+    .all();
+  if (teamRows.length !== requestedTeamIds.length) {
+    return c.json(errorBody('NOT_FOUND', 'Team not found.'), 404);
+  }
+
+  const client = c.get('clerkInvitationClient');
+  if (!client) {
+    return c.json(errorBody('INTERNAL', 'Invitation client unavailable.'), 500);
+  }
+
+  let created: { clerkInvitationId: string };
+  try {
+    created = await createInvitation(client, {
+      email: input.email,
+      orgId,
+      role: 'coach',
+      teamIds: requestedTeamIds,
+    });
+  } catch {
+    return c.json(errorBody('INTERNAL', 'Failed to create invitation.'), 502);
+  }
+
+  const db = narrowDb(c.get('db'));
+  const newId = `inv_${randomUUID()}`;
+  const now = new Date();
+  db.insert(invitations)
+    .values({
+      id: newId,
+      orgId,
+      email: input.email,
+      role: 'coach',
+      teamIds: requestedTeamIds,
+      clerkInvitationId: created.clerkInvitationId,
+      status: 'pending',
+      invitedByUserId: auth.userId,
+      createdAt: now,
+      updatedAt: now,
+    })
+    .run();
+
+  return c.json(
+    {
+      success: true,
+      data: {
+        id: newId,
+        email: input.email,
+        role: 'coach' as const,
+        teamIds: requestedTeamIds,
         status: 'pending' as const,
         createdAt: now.getTime(),
       },
