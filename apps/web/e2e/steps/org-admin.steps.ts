@@ -27,9 +27,24 @@ const { Given, When, Then } = createBdd();
 void Given;
 
 const ADMIN_ORG_CONFIG_PATH = '/admin/org';
+const ADMIN_ROSTER_PATH = '/admin/roster';
 
 When('I open the admin org configuration page', async ({ page }) => {
   await page.goto(ADMIN_ORG_CONFIG_PATH);
+});
+
+When('I open the admin roster page', async ({ page }) => {
+  await page.goto(ADMIN_ROSTER_PATH);
+});
+
+Then('I see the org-wide roster table', async ({ page }) => {
+  // The page renders the empty table shell server-side; the inline
+  // script populates rows from the API. Asserting the table surface
+  // is visible is enough to prove the page reached the org admin —
+  // shape and pagination assertions live in the contract tier
+  // (`apps/api/src/routes/v1/admin/roster.contract.test.ts`).
+  const table = page.getByTestId('admin-roster-table');
+  await expect(table).toBeVisible();
 });
 
 When('I change the organization name to {string}', async ({ page }, name: string) => {
