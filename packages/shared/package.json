@@ -48,9 +48,9 @@
       "types": "./dist/schemas/admin/teams.d.ts",
       "import": "./src/schemas/admin/teams.ts"
     },
-    "./schemas/admin/invitations": {
-      "types": "./dist/schemas/admin/invitations.d.ts",
-      "import": "./src/schemas/admin/invitations.ts"
+    "./schemas/admin/roster": {
+      "types": "./dist/schemas/admin/roster.d.ts",
+      "import": "./src/schemas/admin/roster.ts"
     },
     "./rbac": {
       "types": "./dist/rbac/index.d.ts",
