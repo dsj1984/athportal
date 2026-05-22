@@ -26,7 +26,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { organizations } from '@repo/shared/db/schema';
-import { type AuthContext, type TestDbLike, createTestApp } from '@repo/shared/testing';
+import { type AuthContext, createTestApp } from '@repo/shared/testing';
 import Database from 'better-sqlite3';
 import { eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
@@ -81,9 +81,10 @@ function actor(overrides: Partial<AuthContext> = {}): AuthContext {
  */
 function stubSigner(): LogoUploadSigner {
   return {
-    async createPresignedPutUrl({ key, contentType }) {
-      return { uploadUrl: `https://r2-stub.invalid/${key}?ct=${encodeURIComponent(contentType)}` };
-    },
+    createPresignedPutUrl: ({ key, contentType }) =>
+      Promise.resolve({
+        uploadUrl: `https://r2-stub.invalid/${key}?ct=${encodeURIComponent(contentType)}`,
+      }),
   };
 }
 
@@ -92,7 +93,7 @@ function buildApp(
   a: AuthContext,
   signer: LogoUploadSigner | null = stubSigner(),
 ) {
-  const app = createTestApp(db as unknown as TestDbLike, {
+  const app = createTestApp(db, {
     actor: a,
   }) as unknown as Hono<RequireInternalUserEnv>;
   if (signer) {

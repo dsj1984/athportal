@@ -143,7 +143,7 @@ orgAdminRoute.patch('/', async (c) => {
     return c.json(errorBody('NOT_FOUND', 'Organization not found.'), 404);
   }
 
-  const rawBody = await c.req.json().catch(() => null);
+  const rawBody: unknown = await c.req.json().catch(() => null);
   const parsed = OrgConfigPatchSchema.safeParse(rawBody);
   if (!parsed.success) {
     // Surface the first issue path / message — keep the body terse so
@@ -203,10 +203,12 @@ orgAdminRoute.patch('/', async (c) => {
  * PR. When no signer is bound the route returns 500 rather than minting
  * a useless URL.
  */
-function resolveSigner(c: {
-  get: (k: 'logoUploadSigner') => LogoUploadSigner | undefined;
-  env: unknown;
-}): LogoUploadSigner | null {
+interface SignerLookup {
+  readonly get: (k: 'logoUploadSigner') => LogoUploadSigner | undefined;
+  readonly env: unknown;
+}
+
+function resolveSigner(c: SignerLookup): LogoUploadSigner | null {
   const fromVar = c.get('logoUploadSigner');
   if (fromVar) return fromVar;
   const fromEnv = (c.env as { LOGO_UPLOAD_SIGNER?: LogoUploadSigner } | undefined)
@@ -234,7 +236,7 @@ orgAdminRoute.post('/logo-upload-url', async (c) => {
     return c.json(errorBody('NOT_FOUND', 'Organization not found.'), 404);
   }
 
-  const rawBody = await c.req.json().catch(() => null);
+  const rawBody: unknown = await c.req.json().catch(() => null);
   const body = parseUploadUrlBody(rawBody);
   if (!body) {
     return c.json(
@@ -246,7 +248,16 @@ orgAdminRoute.post('/logo-upload-url', async (c) => {
     );
   }
 
-  const signer = resolveSigner(c as unknown as Parameters<typeof resolveSigner>[0]);
+  // `c.get('logoUploadSigner')` reads from a variable slot the test
+  // harness installs via middleware. The slot is not part of
+  // `RequireInternalUserEnv`'s declared `Variables` (production wires
+  // the signer through `c.env.LOGO_UPLOAD_SIGNER` instead), so widen
+  // the getter through a `Map`-shaped accessor for the lookup.
+  const variableBag = c.var as unknown as Record<string, unknown>;
+  const signer = resolveSigner({
+    get: () => variableBag.logoUploadSigner as LogoUploadSigner | undefined,
+    env: c.env,
+  });
   if (!signer) {
     return c.json(errorBody('INTERNAL', 'Upload service is not configured.'), 500);
   }
@@ -301,7 +312,7 @@ orgAdminRoute.post('/logo-finalize', async (c) => {
     return c.json(errorBody('NOT_FOUND', 'Organization not found.'), 404);
   }
 
-  const rawBody = await c.req.json().catch(() => null);
+  const rawBody: unknown = await c.req.json().catch(() => null);
   const body = parseFinalizeBody(rawBody);
   if (!body) {
     return c.json(errorBody('VALIDATION_ERROR', 'Request body must be { key: string }.'), 400);
