@@ -53,9 +53,7 @@ async function seedTeamWithRoster(): Promise<SoftDeleteWorld> {
   const membershipId = 'am_1';
   const assignmentId = 'ca_1';
 
-  await db
-    .insert(organizations)
-    .values({ id: orgId, name: 'Org 1', organizationType: 'COLLEGE' });
+  await db.insert(organizations).values({ id: orgId, name: 'Org 1', organizationType: 'COLLEGE' });
   await db.insert(teams).values({ id: teamId, orgId, name: 'Team 1' });
   await db.insert(users).values([
     {
