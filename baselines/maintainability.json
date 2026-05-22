@@ -1,6 +1,6 @@
 {
   "$schema": ".agents/schemas/baselines/maintainability.schema.json",
-  "kernelVersion": "0.1.0",
+  "kernelVersion": "1.0.0",
   "generatedAt": "2026-05-22T21:36:41.952Z",
   "rollup": {
     "*": {
@@ -37,10 +37,6 @@
     {
       "mi": 127.977,
       "path": "apps/api/src/routes/v1/admin/_placeholder.ts"
-    },
-    {
-      "mi": 149.008,
-      "path": "apps/api/src/routes/v1/admin/csv-import.ts"
     },
     {
       "mi": 112.033,

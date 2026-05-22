@@ -71,10 +71,13 @@ function buildApp(a: AuthContext) {
 // `/api/v1/admin/roster` was promoted out of the placeholder set by
 // Story #661 / Task #692 (Epic #10) — its real handler lives in
 // `./roster.ts` and its dedicated contract test is
-// `./roster.contract.test.ts`. The two remaining mount points
-// (csv-import, rollover) are still placeholders.
+// `./roster.contract.test.ts`.
+// `/api/v1/admin/csv-import` was promoted out of the placeholder set
+// by Story #663 / Task #687 — its real handlers live in
+// `./csv-import/router.ts` and its dedicated contract test is
+// `./csv-import/csv-import.contract.test.ts`. Only `rollover`
+// remains as a placeholder.
 const SUB_ROUTES = [
-  { path: '/api/v1/admin/csv-import', feature: 'CSV import' },
   { path: '/api/v1/admin/rollover', feature: 'rollover' },
 ] as const;
 
@@ -104,7 +107,7 @@ describe('admin router scaffold — contract', () => {
     const app = buildApp(a);
 
     for (const method of ['POST', 'PATCH', 'DELETE'] as const) {
-      const res = await app.request('/api/v1/admin/csv-import', { method });
+      const res = await app.request('/api/v1/admin/rollover', { method });
       expect(res.status).toBe(501);
       expect(await res.json()).toMatchObject({
         success: false,
@@ -130,7 +133,7 @@ describe('admin router scaffold — contract', () => {
     const a = actor({ role: 'member', orgId: 'org_test_a' });
     const app = buildApp(a);
 
-    const res = await app.request('/api/v1/admin/csv-import', { method: 'GET' });
+    const res = await app.request('/api/v1/admin/rollover', { method: 'GET' });
 
     expect(res.status).toBe(403);
     expect(await res.json()).toMatchObject({
