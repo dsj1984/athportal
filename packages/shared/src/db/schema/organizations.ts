@@ -29,6 +29,11 @@ export const organizations = sqliteTable('organizations', {
   organizationType: text('organization_type', {
     enum: ORGANIZATION_TYPES,
   }).notNull(),
+  // Story #656: branding columns persisted by the org-config page.
+  // Both are nullable and have no default — orgs may be created before
+  // a logo is uploaded or a brand colour is chosen.
+  logoR2Key: text('logo_r2_key'),
+  primaryColorHex: text('primary_color_hex'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
 });

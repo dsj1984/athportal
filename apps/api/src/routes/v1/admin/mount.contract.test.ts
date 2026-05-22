@@ -43,6 +43,8 @@ function freshOnboardingProdDb() {
     '0001_onboarding_schema.sql',
     '0002_org_team_graph.sql',
     '0003_invitations.sql',
+    '0004_org_branding.sql',
+    '0005_team_metadata.sql',
   ]) {
     const sql = readFileSync(join(MIGRATIONS_DIR, file), 'utf8');
     for (const stmt of sql.split('--> statement-breakpoint').map((s) => s.trim())) {
@@ -175,6 +177,11 @@ describe('/api/v1/admin mount — contract', () => {
     });
   });
 
+  // Story #656 (Epic #10) replaced the `/api/v1/admin/org` placeholder
+  // with real handlers and Story #657 (Epic #10) replaced
+  // `/api/v1/admin/teams`; the placeholder-passthrough proof now uses
+  // `/api/v1/admin/csv-import`, still owned by a downstream Story
+  // under Epic #10.
   it('passes an authenticated onboarded org_admin through to the placeholder (501)', async () => {
     const db = freshOnboardingProdDb();
     const a = actor({ role: 'org_admin', orgId: 'org_test_a' });
@@ -182,7 +189,7 @@ describe('/api/v1/admin mount — contract', () => {
 
     const harness = buildAuthChain(db, a);
 
-    const res = await harness.request('/api/v1/admin/org', { method: 'GET' });
+    const res = await harness.request('/api/v1/admin/csv-import', { method: 'GET' });
 
     expect(res.status).toBe(501);
     expect(await res.json()).toMatchObject({

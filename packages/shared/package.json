@@ -40,6 +40,10 @@
       "types": "./dist/schemas/auth.d.ts",
       "import": "./src/schemas/auth.ts"
     },
+    "./schemas/admin/org": {
+      "types": "./dist/schemas/admin/org.d.ts",
+      "import": "./src/schemas/admin/org.ts"
+    },
     "./schemas/admin/teams": {
       "types": "./dist/schemas/admin/teams.d.ts",
       "import": "./src/schemas/admin/teams.ts"

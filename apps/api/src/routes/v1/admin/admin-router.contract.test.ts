@@ -62,12 +62,14 @@ function buildApp(a: AuthContext) {
  * `./invitations/router.ts` and are pinned by
  * `./invitations/management.contract.test.ts`.
  */
+// `/api/v1/admin/org` was promoted out of the placeholder set by
+// Story #656 (Epic #10) — its real handlers live in `./org.ts` and
+// its dedicated contract test is `./org.contract.test.ts`.
 // `/api/v1/admin/teams` was promoted out of the placeholder set by
 // Story #657 / Task #678 — its real handlers live in `./teams.ts` and
-// its dedicated contract test is `./teams.contract.test.ts`. The four
+// its dedicated contract test is `./teams.contract.test.ts`. The three
 // remaining mount points are still placeholders.
 const SUB_ROUTES = [
-  { path: '/api/v1/admin/org', feature: 'organization' },
   { path: '/api/v1/admin/csv-import', feature: 'CSV import' },
   { path: '/api/v1/admin/rollover', feature: 'rollover' },
   { path: '/api/v1/admin/roster', feature: 'roster' },
@@ -99,7 +101,7 @@ describe('admin router scaffold — contract', () => {
     const app = buildApp(a);
 
     for (const method of ['POST', 'PATCH', 'DELETE'] as const) {
-      const res = await app.request('/api/v1/admin/org', { method });
+      const res = await app.request('/api/v1/admin/csv-import', { method });
       expect(res.status).toBe(501);
       expect(await res.json()).toMatchObject({
         success: false,
@@ -112,7 +114,7 @@ describe('admin router scaffold — contract', () => {
     const a = actor({ role: 'team_admin', orgId: 'org_test_a', teamId: 'team_test_1' });
     const app = buildApp(a);
 
-    const res = await app.request('/api/v1/admin/org', { method: 'GET' });
+    const res = await app.request('/api/v1/admin/teams', { method: 'GET' });
 
     expect(res.status).toBe(403);
     expect(await res.json()).toMatchObject({
