@@ -1,13 +1,13 @@
 {
   "$schema": ".agents/schemas/baselines/crap.schema.json",
+  "generatedAt": "2026-05-22T17:26:46.818Z",
   "kernelVersion": "1.0.0",
-  "generatedAt": "2026-05-22T12:18:02.999Z",
   "rollup": {
     "*": {
-      "p50": 2,
-      "p95": 30,
       "max": 90,
-      "methodsAbove20": 21
+      "methodsAbove20": 26,
+      "p50": 2,
+      "p95": 30
     }
   },
   "rows": [
@@ -306,6 +306,42 @@
       "startLine": 39
     },
     {
+      "crap": 30,
+      "method": "parseBody",
+      "path": "apps/api/src/routes/v1/users/role.ts",
+      "startLine": 66
+    },
+    {
+      "crap": 2,
+      "method": "routeError",
+      "path": "apps/api/src/routes/v1/users/role.ts",
+      "startLine": 106
+    },
+    {
+      "crap": 72,
+      "method": "asRouteError",
+      "path": "apps/api/src/routes/v1/users/role.ts",
+      "startLine": 115
+    },
+    {
+      "crap": 72,
+      "method": "<anon method-1>",
+      "path": "apps/api/src/routes/v1/users/role.ts",
+      "startLine": 126
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-2>",
+      "path": "apps/api/src/routes/v1/users/role.ts",
+      "startLine": 130
+    },
+    {
+      "crap": 56,
+      "method": "<anon method-3>",
+      "path": "apps/api/src/routes/v1/users/role.ts",
+      "startLine": 168
+    },
+    {
       "crap": 2,
       "method": "<anon method-1>",
       "path": "apps/api/src/sentry.ts",
@@ -484,6 +520,150 @@
       "method": "<anon method-3>",
       "path": "apps/web/e2e/steps/auth.steps.ts",
       "startLine": 52
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "apps/web/e2e/steps/graph.steps.ts",
+      "startLine": 38
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-2>",
+      "path": "apps/web/e2e/steps/graph.steps.ts",
+      "startLine": 43
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-3>",
+      "path": "apps/web/e2e/steps/graph.steps.ts",
+      "startLine": 47
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-4>",
+      "path": "apps/web/e2e/steps/graph.steps.ts",
+      "startLine": 51
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-5>",
+      "path": "apps/web/e2e/steps/graph.steps.ts",
+      "startLine": 57
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-6>",
+      "path": "apps/web/e2e/steps/graph.steps.ts",
+      "startLine": 62
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-7>",
+      "path": "apps/web/e2e/steps/graph.steps.ts",
+      "startLine": 66
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-8>",
+      "path": "apps/web/e2e/steps/graph.steps.ts",
+      "startLine": 72
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-9>",
+      "path": "apps/web/e2e/steps/graph.steps.ts",
+      "startLine": 80
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-10>",
+      "path": "apps/web/e2e/steps/graph.steps.ts",
+      "startLine": 84
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-11>",
+      "path": "apps/web/e2e/steps/graph.steps.ts",
+      "startLine": 88
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-12>",
+      "path": "apps/web/e2e/steps/graph.steps.ts",
+      "startLine": 94
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-13>",
+      "path": "apps/web/e2e/steps/graph.steps.ts",
+      "startLine": 102
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-14>",
+      "path": "apps/web/e2e/steps/graph.steps.ts",
+      "startLine": 108
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-15>",
+      "path": "apps/web/e2e/steps/graph.steps.ts",
+      "startLine": 112
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-16>",
+      "path": "apps/web/e2e/steps/graph.steps.ts",
+      "startLine": 117
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-17>",
+      "path": "apps/web/e2e/steps/graph.steps.ts",
+      "startLine": 125
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-18>",
+      "path": "apps/web/e2e/steps/graph.steps.ts",
+      "startLine": 132
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-19>",
+      "path": "apps/web/e2e/steps/graph.steps.ts",
+      "startLine": 136
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-20>",
+      "path": "apps/web/e2e/steps/graph.steps.ts",
+      "startLine": 140
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-21>",
+      "path": "apps/web/e2e/steps/graph.steps.ts",
+      "startLine": 146
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-22>",
+      "path": "apps/web/e2e/steps/graph.steps.ts",
+      "startLine": 151
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-23>",
+      "path": "apps/web/e2e/steps/graph.steps.ts",
+      "startLine": 158
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-24>",
+      "path": "apps/web/e2e/steps/graph.steps.ts",
+      "startLine": 165
     },
     {
       "crap": 20,
@@ -1524,6 +1704,66 @@
       "startLine": 128
     },
     {
+      "crap": 12,
+      "method": "scopePredicate",
+      "path": "packages/shared/src/db/queries/scopedDb.ts",
+      "startLine": 206
+    },
+    {
+      "crap": 6,
+      "method": "resolveScopedTableName",
+      "path": "packages/shared/src/db/queries/scopedDb.ts",
+      "startLine": 225
+    },
+    {
+      "crap": 2,
+      "method": "buildQueryNode",
+      "path": "packages/shared/src/db/queries/scopedDb.ts",
+      "startLine": 237
+    },
+    {
+      "crap": 20,
+      "method": "scopedDb",
+      "path": "packages/shared/src/db/queries/scopedDb.ts",
+      "startLine": 267
+    },
+    {
+      "crap": 6,
+      "method": "requireScopedOrgId",
+      "path": "packages/shared/src/db/queries/scopedDb.ts",
+      "startLine": 283
+    },
+    {
+      "crap": 42,
+      "method": "buildInsert",
+      "path": "packages/shared/src/db/queries/scopedDb.ts",
+      "startLine": 292
+    },
+    {
+      "crap": 6,
+      "method": "buildUpdate",
+      "path": "packages/shared/src/db/queries/scopedDb.ts",
+      "startLine": 330
+    },
+    {
+      "crap": 6,
+      "method": "wrap",
+      "path": "packages/shared/src/db/queries/scopedDb.ts",
+      "startLine": 339
+    },
+    {
+      "crap": 6,
+      "method": "buildDelete",
+      "path": "packages/shared/src/db/queries/scopedDb.ts",
+      "startLine": 355
+    },
+    {
+      "crap": 2,
+      "method": "readNode",
+      "path": "packages/shared/src/db/queries/scopedDb.ts",
+      "startLine": 374
+    },
+    {
       "crap": 6,
       "method": "getOnboardingState",
       "path": "packages/shared/src/db/queries/users.ts",
@@ -1534,6 +1774,42 @@
       "method": "isOnboarded",
       "path": "packages/shared/src/db/queries/users.ts",
       "startLine": 95
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "packages/shared/src/db/schema/athleteMemberships.ts",
+      "startLine": 30
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-2>",
+      "path": "packages/shared/src/db/schema/athleteMemberships.ts",
+      "startLine": 33
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-3>",
+      "path": "packages/shared/src/db/schema/athleteMemberships.ts",
+      "startLine": 36
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "packages/shared/src/db/schema/coachAssignments.ts",
+      "startLine": 31
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-2>",
+      "path": "packages/shared/src/db/schema/coachAssignments.ts",
+      "startLine": 34
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-3>",
+      "path": "packages/shared/src/db/schema/coachAssignments.ts",
+      "startLine": 37
     },
     {
       "crap": 2,
@@ -1558,6 +1834,12 @@
       "method": "<anon method-3>",
       "path": "packages/shared/src/db/schema/parentAthleteLinks.ts",
       "startLine": 34
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "packages/shared/src/db/schema/teams.ts",
+      "startLine": 20
     },
     {
       "crap": 2,
@@ -1630,6 +1912,66 @@
       "method": "canPerform",
       "path": "packages/shared/src/rbac/policy.ts",
       "startLine": 40
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "packages/shared/src/rbac/rules.ts",
+      "startLine": 48
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-2>",
+      "path": "packages/shared/src/rbac/rules.ts",
+      "startLine": 49
+    },
+    {
+      "crap": 12,
+      "method": "<anon method-3>",
+      "path": "packages/shared/src/rbac/rules.ts",
+      "startLine": 59
+    },
+    {
+      "crap": 20,
+      "method": "<anon method-4>",
+      "path": "packages/shared/src/rbac/rules.ts",
+      "startLine": 70
+    },
+    {
+      "crap": 12,
+      "method": "<anon method-5>",
+      "path": "packages/shared/src/rbac/rules.ts",
+      "startLine": 82
+    },
+    {
+      "crap": 6,
+      "method": "<anon method-6>",
+      "path": "packages/shared/src/rbac/rules.ts",
+      "startLine": 95
+    },
+    {
+      "crap": 6,
+      "method": "<anon method-7>",
+      "path": "packages/shared/src/rbac/rules.ts",
+      "startLine": 102
+    },
+    {
+      "crap": 2,
+      "method": "rule",
+      "path": "packages/shared/src/rbac/rules.ts",
+      "startLine": 127
+    },
+    {
+      "crap": 6,
+      "method": "buildRuleIndex",
+      "path": "packages/shared/src/rbac/rules.ts",
+      "startLine": 401
+    },
+    {
+      "crap": 2,
+      "method": "findRule",
+      "path": "packages/shared/src/rbac/rules.ts",
+      "startLine": 427
     },
     {
       "crap": 6,

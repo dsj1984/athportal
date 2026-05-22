@@ -1,11 +1,41 @@
 {
   "$schema": ".agents/schemas/baselines/maintainability.schema.json",
+  "generatedAt": "2026-05-22T17:26:48.258Z",
   "kernelVersion": "1.0.0",
-  "generatedAt": "2026-05-22T12:18:02.705Z",
   "rollup": {
     "*": {
       "min": 70.515,
-      "p50": 109.655,
+      "p50": 109.435,
+      "p95": 171
+    },
+    "apps/api": {
+      "min": 82.15,
+      "p50": 112.621,
+      "p95": 171
+    },
+    "apps/mobile": {
+      "min": 96.11,
+      "p50": 96.11,
+      "p95": 121.195
+    },
+    "apps/web": {
+      "min": 80.074,
+      "p50": 109.435,
+      "p95": 171
+    },
+    "packages/baselines": {
+      "min": 98.311,
+      "p50": 104.945,
+      "p95": 171
+    },
+    "packages/config": {
+      "min": 104.952,
+      "p50": 104.952,
+      "p95": 115.627
+    },
+    "packages/shared": {
+      "min": 70.515,
+      "p50": 108.651,
       "p95": 171
     }
   },
@@ -43,7 +73,7 @@
       "path": "apps/api/src/routes/v1/auth/index.ts"
     },
     {
-      "mi": 86.935,
+      "mi": 96.056,
       "path": "apps/api/src/routes/v1/auth/onboard.ts"
     },
     {
@@ -53,6 +83,10 @@
     {
       "mi": 111.461,
       "path": "apps/api/src/routes/v1/sign-out.ts"
+    },
+    {
+      "mi": 82.15,
+      "path": "apps/api/src/routes/v1/users/role.ts"
     },
     {
       "mi": 111.681,
@@ -119,12 +153,20 @@
       "path": "apps/web/e2e/steps/form.steps.ts"
     },
     {
-      "mi": 121.389,
+      "mi": 142.877,
+      "path": "apps/web/e2e/steps/graph.steps.ts"
+    },
+    {
+      "mi": 118.974,
       "path": "apps/web/e2e/steps/navigation.steps.ts"
     },
     {
       "mi": 117.922,
       "path": "apps/web/e2e/steps/observability.steps.ts"
+    },
+    {
+      "mi": 117.16,
+      "path": "apps/web/e2e/steps/onboarding.steps.ts"
     },
     {
       "mi": 126.029,
@@ -139,6 +181,34 @@
       "path": "apps/web/playwright.config.ts"
     },
     {
+      "mi": 133.747,
+      "path": "apps/web/src/components/onboarding/AgeAttestation.ts"
+    },
+    {
+      "mi": 113.308,
+      "path": "apps/web/src/components/onboarding/ClerkVerifyEmailIsland.ts"
+    },
+    {
+      "mi": 103.923,
+      "path": "apps/web/src/components/onboarding/LegalAcceptanceCheckboxes.ts"
+    },
+    {
+      "mi": 103.249,
+      "path": "apps/web/src/components/onboarding/OnboardingForm.ts"
+    },
+    {
+      "mi": 106.74,
+      "path": "apps/web/src/components/onboarding/ProfilePhotoUploader.ts"
+    },
+    {
+      "mi": 171,
+      "path": "apps/web/src/components/onboarding/index.ts"
+    },
+    {
+      "mi": 107.592,
+      "path": "apps/web/src/components/ui/Avatar.ts"
+    },
+    {
       "mi": 99.6,
       "path": "apps/web/src/components/ui/EmptyState.ts"
     },
@@ -147,12 +217,16 @@
       "path": "apps/web/src/index.ts"
     },
     {
-      "mi": 108.228,
+      "mi": 107.91,
       "path": "apps/web/src/middleware.ts"
     },
     {
       "mi": 98.571,
       "path": "apps/web/src/pages/dashboard.ts"
+    },
+    {
+      "mi": 94.355,
+      "path": "apps/web/src/pages/onboarding.ts"
     },
     {
       "mi": 113.043,
@@ -171,7 +245,7 @@
       "path": "apps/web/vitest.config.ts"
     },
     {
-      "mi": 94.702,
+      "mi": 104.945,
       "path": "packages/baselines/src/compare.ts"
     },
     {
@@ -223,16 +297,40 @@
       "path": "packages/shared/src/db/queries/parentAthleteLinks.ts"
     },
     {
+      "mi": 95.558,
+      "path": "packages/shared/src/db/queries/scopedDb.ts"
+    },
+    {
       "mi": 112.464,
       "path": "packages/shared/src/db/queries/users.ts"
+    },
+    {
+      "mi": 110.893,
+      "path": "packages/shared/src/db/schema/athleteMemberships.ts"
+    },
+    {
+      "mi": 110.893,
+      "path": "packages/shared/src/db/schema/coachAssignments.ts"
+    },
+    {
+      "mi": 117.231,
+      "path": "packages/shared/src/db/schema/index.ts"
     },
     {
       "mi": 95.901,
       "path": "packages/shared/src/db/schema/legalDocuments.ts"
     },
     {
+      "mi": 91.315,
+      "path": "packages/shared/src/db/schema/organizations.ts"
+    },
+    {
       "mi": 108.651,
       "path": "packages/shared/src/db/schema/parentAthleteLinks.ts"
+    },
+    {
+      "mi": 102.752,
+      "path": "packages/shared/src/db/schema/teams.ts"
     },
     {
       "mi": 109.655,
@@ -265,6 +363,14 @@
     {
       "mi": 122.978,
       "path": "packages/shared/src/rbac/policy.ts"
+    },
+    {
+      "mi": 88.209,
+      "path": "packages/shared/src/rbac/rules.ts"
+    },
+    {
+      "mi": 171,
+      "path": "packages/shared/src/rbac/types.ts"
     },
     {
       "mi": 70.515,
