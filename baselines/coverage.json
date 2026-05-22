@@ -1,17 +1,17 @@
 {
   "$schema": ".agents/schemas/baselines/coverage.schema.json",
-  "generatedAt": "2026-05-22T16:30:45.988Z",
+  "generatedAt": "2026-05-22T17:22:54.900Z",
   "kernelVersion": "1.0.0",
   "rollup": {
     "*": {
-      "branches": 96.83,
-      "functions": 80.61,
-      "lines": 86.38
+      "branches": 91.99,
+      "functions": 82.56,
+      "lines": 81.62
     },
     "apps/api": {
-      "branches": 0,
-      "functions": 0,
-      "lines": 0
+      "branches": 90.8,
+      "functions": 86.9,
+      "lines": 86.46
     },
     "apps/mobile": {
       "branches": 0,
@@ -19,14 +19,14 @@
       "lines": 0
     },
     "apps/web": {
-      "branches": 0,
-      "functions": 0,
-      "lines": 0
+      "branches": 86.17,
+      "functions": 87.5,
+      "lines": 81.28
     },
     "packages/baselines": {
-      "branches": 0,
-      "functions": 0,
-      "lines": 0
+      "branches": 92.52,
+      "functions": 100,
+      "lines": 97.49
     },
     "packages/config": {
       "branches": 0,
@@ -34,9 +34,9 @@
       "lines": 0
     },
     "packages/shared": {
-      "branches": 96.83,
-      "functions": 80.61,
-      "lines": 86.38
+      "branches": 97.65,
+      "functions": 77.43,
+      "lines": 78.99
     }
   },
   "rows": [
@@ -44,6 +44,234 @@
       "branches": 100,
       "functions": 100,
       "lines": 100,
+      "path": "apps/api/src/env.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 50,
+      "lines": 92.86,
+      "path": "apps/api/src/index.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 0,
+      "lines": 0,
+      "path": "apps/api/src/middleware/__testing__/auth-test.ts"
+    },
+    {
+      "branches": 76.19,
+      "functions": 100,
+      "lines": 85.07,
+      "path": "apps/api/src/middleware/auth.ts"
+    },
+    {
+      "branches": 61.54,
+      "functions": 83.33,
+      "lines": 70.97,
+      "path": "apps/api/src/middleware/request-logger.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/api/src/middleware/requireOnboarded.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/api/src/routes/debug/synthetic-failure.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/api/src/routes/v1/auth/index.ts"
+    },
+    {
+      "branches": 74.14,
+      "functions": 100,
+      "lines": 89.8,
+      "path": "apps/api/src/routes/v1/auth/onboard.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/api/src/routes/v1/me.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/api/src/routes/v1/sign-out.ts"
+    },
+    {
+      "branches": 65.63,
+      "functions": 83.33,
+      "lines": 76.56,
+      "path": "apps/api/src/routes/v1/users/role.ts"
+    },
+    {
+      "branches": 93.75,
+      "functions": 100,
+      "lines": 95.24,
+      "path": "apps/api/src/sentry.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/api/src/types/drizzle-structural.ts"
+    },
+    {
+      "branches": 0,
+      "functions": 0,
+      "lines": 0,
+      "path": "apps/mobile/src/sentry.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/web/src/components/onboarding/AgeAttestation.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/web/src/components/onboarding/ClerkVerifyEmailIsland.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/web/src/components/onboarding/LegalAcceptanceCheckboxes.ts"
+    },
+    {
+      "branches": 95.45,
+      "functions": 100,
+      "lines": 97.92,
+      "path": "apps/web/src/components/onboarding/OnboardingForm.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/web/src/components/onboarding/ProfilePhotoUploader.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/web/src/components/onboarding/index.ts"
+    },
+    {
+      "branches": 83.33,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/web/src/components/ui/Avatar.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/web/src/components/ui/EmptyState.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/web/src/env.d.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/web/src/index.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 60,
+      "lines": 89.29,
+      "path": "apps/web/src/middleware.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/web/src/pages/dashboard.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/web/src/pages/onboarding.ts"
+    },
+    {
+      "branches": 0,
+      "functions": 0,
+      "lines": 0,
+      "path": "apps/web/src/pages/sign-out.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 0,
+      "path": "apps/web/src/sentry.ts"
+    },
+    {
+      "branches": 0,
+      "functions": 40,
+      "lines": 13.33,
+      "path": "apps/web/src/testing/astro-middleware-shim.ts"
+    },
+    {
+      "branches": 92.73,
+      "functions": 100,
+      "lines": 98.08,
+      "path": "packages/baselines/src/compare.ts"
+    },
+    {
+      "branches": 86.67,
+      "functions": 100,
+      "lines": 96,
+      "path": "packages/baselines/src/format.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "packages/baselines/src/index.ts"
+    },
+    {
+      "branches": 80,
+      "functions": 100,
+      "lines": 94.74,
+      "path": "packages/baselines/src/io.ts"
+    },
+    {
+      "branches": 88.24,
+      "functions": 100,
+      "lines": 93.62,
+      "path": "packages/baselines/src/schema.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "packages/baselines/src/serialise.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "packages/baselines/src/types.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 0,
+      "lines": 0,
       "path": "packages/shared/src/db/queries/__tests__/graphDb.ts"
     },
     {
@@ -65,21 +293,21 @@
       "path": "packages/shared/src/db/queries/parentAthleteLinks.ts"
     },
     {
-      "branches": 94.44,
+      "branches": 91.67,
       "functions": 100,
       "lines": 98.57,
       "path": "packages/shared/src/db/queries/scopedDb.ts"
     },
     {
-      "branches": 75,
-      "functions": 50,
-      "lines": 85.71,
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
       "path": "packages/shared/src/db/queries/users.ts"
     },
     {
       "branches": 100,
-      "functions": 100,
-      "lines": 100,
+      "functions": 0,
+      "lines": 0,
       "path": "packages/shared/src/db/schema/__tests__/freshSchemaDb.ts"
     },
     {
@@ -93,6 +321,12 @@
       "functions": 0,
       "lines": 25,
       "path": "packages/shared/src/db/schema/coachAssignments.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "packages/shared/src/db/schema/index.ts"
     },
     {
       "branches": 100,
@@ -176,12 +410,18 @@
       "branches": 100,
       "functions": 100,
       "lines": 100,
-      "path": "packages/shared/src/schemas/auth.ts"
+      "path": "packages/shared/src/rbac/types.ts"
     },
     {
       "branches": 100,
       "functions": 100,
       "lines": 100,
+      "path": "packages/shared/src/schemas/auth.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 0,
       "path": "packages/shared/src/testing/__tests__/fixtures/echo-schema.ts"
     },
     {
@@ -199,7 +439,7 @@
     {
       "branches": 100,
       "functions": 80,
-      "lines": 96.3,
+      "lines": 96.15,
       "path": "packages/shared/src/testing/db.ts"
     },
     {
