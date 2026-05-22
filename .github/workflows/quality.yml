@@ -46,6 +46,15 @@ jobs:
       - name: Lint baseline check
         run: pnpm run lint:baseline:check
 
+      # Epic #9 / Story #616 — RBAC matrix drift check.
+      # packages/shared/src/rbac/rules.ts is the source of truth for the
+      # (role, resource, action) matrix; docs/data-dictionary.md publishes it
+      # between <!-- rbac-matrix:start --> / <!-- rbac-matrix:end --> sentinels.
+      # render-rbac-matrix.mjs --check re-derives the table from rules.ts and
+      # fails if the doc has drifted. Fix locally with `--write`.
+      - name: RBAC matrix drift check
+        run: node scripts/render-rbac-matrix.mjs --check
+
   typecheck:
     name: Typecheck
     runs-on: ubuntu-latest
