@@ -48,6 +48,10 @@
       "types": "./dist/schemas/admin/teams.d.ts",
       "import": "./src/schemas/admin/teams.ts"
     },
+    "./schemas/admin/roster": {
+      "types": "./dist/schemas/admin/roster.d.ts",
+      "import": "./src/schemas/admin/roster.ts"
+    },
     "./rbac": {
       "types": "./dist/rbac/index.d.ts",
       "import": "./src/rbac/index.ts"

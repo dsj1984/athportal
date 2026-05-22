@@ -67,12 +67,15 @@ function buildApp(a: AuthContext) {
 // its dedicated contract test is `./org.contract.test.ts`.
 // `/api/v1/admin/teams` was promoted out of the placeholder set by
 // Story #657 / Task #678 — its real handlers live in `./teams.ts` and
-// its dedicated contract test is `./teams.contract.test.ts`. The three
-// remaining mount points are still placeholders.
+// its dedicated contract test is `./teams.contract.test.ts`.
+// `/api/v1/admin/roster` was promoted out of the placeholder set by
+// Story #661 / Task #692 (Epic #10) — its real handler lives in
+// `./roster.ts` and its dedicated contract test is
+// `./roster.contract.test.ts`. The two remaining mount points
+// (csv-import, rollover) are still placeholders.
 const SUB_ROUTES = [
   { path: '/api/v1/admin/csv-import', feature: 'CSV import' },
   { path: '/api/v1/admin/rollover', feature: 'rollover' },
-  { path: '/api/v1/admin/roster', feature: 'roster' },
 ] as const;
 
 describe('admin router scaffold — contract', () => {
