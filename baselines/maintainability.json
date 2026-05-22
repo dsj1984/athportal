@@ -1,19 +1,15 @@
 {
   "$schema": ".agents/schemas/baselines/maintainability.schema.json",
   "kernelVersion": "0.1.0",
-  "generatedAt": "2026-05-22T19:40:29.438Z",
+  "generatedAt": "2026-05-22T20:24:46.369Z",
   "rollup": {
     "*": {
       "min": 70.515,
-      "p50": 109.435,
+      "p50": 110.893,
       "p95": 171
     }
   },
   "rows": [
-    {
-      "mi": 171,
-      "path": "apps/api/src/env.ts"
-    },
     {
       "mi": 138.232,
       "path": "apps/api/src/middleware/__testing__/auth-test.ts"
@@ -31,8 +27,40 @@
       "path": "apps/api/src/middleware/requireOnboarded.ts"
     },
     {
+      "mi": 107.516,
+      "path": "apps/api/src/middleware/requireRole.ts"
+    },
+    {
       "mi": 116.953,
       "path": "apps/api/src/routes/debug/synthetic-failure.ts"
+    },
+    {
+      "mi": 127.977,
+      "path": "apps/api/src/routes/v1/admin/_placeholder.ts"
+    },
+    {
+      "mi": 149.008,
+      "path": "apps/api/src/routes/v1/admin/csv-import.ts"
+    },
+    {
+      "mi": 112.033,
+      "path": "apps/api/src/routes/v1/admin/index.ts"
+    },
+    {
+      "mi": 149.008,
+      "path": "apps/api/src/routes/v1/admin/org.ts"
+    },
+    {
+      "mi": 149.008,
+      "path": "apps/api/src/routes/v1/admin/rollover.ts"
+    },
+    {
+      "mi": 149.008,
+      "path": "apps/api/src/routes/v1/admin/roster.ts"
+    },
+    {
+      "mi": 149.008,
+      "path": "apps/api/src/routes/v1/admin/teams.ts"
     },
     {
       "mi": 143.367,
@@ -277,10 +305,6 @@
     {
       "mi": 110.893,
       "path": "packages/shared/src/db/schema/coachAssignments.ts"
-    },
-    {
-      "mi": 117.231,
-      "path": "packages/shared/src/db/schema/index.ts"
     },
     {
       "mi": 95.901,
