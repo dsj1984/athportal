@@ -29,6 +29,13 @@
       "when": 1779479766254,
       "tag": "0003_invitations",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1779482256507,
+      "tag": "0004_org_branding",
+      "breakpoints": true
     }
   ]
 }
