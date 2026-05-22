@@ -20,9 +20,9 @@
 
 import {
   HEX_COLOR_PATTERN,
-  OrgConfigPatchSchema,
   type OrgConfigOutput,
   type OrgConfigPatchInput,
+  OrgConfigPatchSchema,
 } from '@repo/shared/schemas/admin/org';
 
 /**

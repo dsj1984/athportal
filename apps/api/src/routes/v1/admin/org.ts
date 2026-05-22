@@ -29,13 +29,13 @@
 // form skeleton already speaks the final shape.
 
 import { organizations } from '@repo/shared/db/schema';
-import { OrgConfigPatchSchema, type OrgConfigOutput } from '@repo/shared/schemas/admin/org';
+import { type OrgConfigOutput, OrgConfigPatchSchema } from '@repo/shared/schemas/admin/org';
 import { eq } from 'drizzle-orm';
 import { Hono } from 'hono';
 import {
+  ALLOWED_LOGO_CONTENT_TYPES,
   type AllowedLogoContentType,
   type LogoUploadSigner,
-  ALLOWED_LOGO_CONTENT_TYPES,
   MAX_LOGO_BYTES,
   mintLogoUploadUrl,
 } from '../../../lib/r2';
