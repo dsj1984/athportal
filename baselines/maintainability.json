@@ -1,6 +1,6 @@
 {
   "$schema": ".agents/schemas/baselines/maintainability.schema.json",
-  "generatedAt": "2026-05-22T17:26:48.258Z",
+  "generatedAt": "2026-05-22T18:30:02.598Z",
   "kernelVersion": "1.0.0",
   "rollup": {
     "*": {
@@ -9,7 +9,7 @@
       "p95": 171
     },
     "apps/api": {
-      "min": 82.15,
+      "min": 81.181,
       "p50": 112.621,
       "p95": 171
     },
@@ -85,7 +85,7 @@
       "path": "apps/api/src/routes/v1/sign-out.ts"
     },
     {
-      "mi": 82.15,
+      "mi": 81.181,
       "path": "apps/api/src/routes/v1/users/role.ts"
     },
     {

@@ -1,17 +1,17 @@
 {
   "$schema": ".agents/schemas/baselines/coverage.schema.json",
-  "generatedAt": "2026-05-22T17:22:54.900Z",
+  "generatedAt": "2026-05-22T18:29:59.156Z",
   "kernelVersion": "1.0.0",
   "rollup": {
     "*": {
-      "branches": 91.99,
+      "branches": 92.03,
       "functions": 82.56,
-      "lines": 81.62
+      "lines": 81.64
     },
     "apps/api": {
-      "branches": 90.8,
+      "branches": 91.03,
       "functions": 86.9,
-      "lines": 86.46
+      "lines": 86.56
     },
     "apps/mobile": {
       "branches": 0,
@@ -107,9 +107,9 @@
       "path": "apps/api/src/routes/v1/sign-out.ts"
     },
     {
-      "branches": 65.63,
+      "branches": 68.75,
       "functions": 83.33,
-      "lines": 76.56,
+      "lines": 77.94,
       "path": "apps/api/src/routes/v1/users/role.ts"
     },
     {
