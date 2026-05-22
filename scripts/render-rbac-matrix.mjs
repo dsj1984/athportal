@@ -33,14 +33,7 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..');
-const RULES_PATH = path.join(
-  REPO_ROOT,
-  'packages',
-  'shared',
-  'src',
-  'rbac',
-  'rules.ts',
-);
+const RULES_PATH = path.join(REPO_ROOT, 'packages', 'shared', 'src', 'rbac', 'rules.ts');
 const DICTIONARY_PATH = path.join(REPO_ROOT, 'docs', 'data-dictionary.md');
 const SENTINEL_START = '<!-- rbac-matrix:start -->';
 const SENTINEL_END = '<!-- rbac-matrix:end -->';
@@ -105,15 +98,11 @@ function extractRulesArrayBody(source) {
   const marker = 'export const RULES';
   const startIdx = source.indexOf(marker);
   if (startIdx === -1) {
-    throw new Error(
-      'render-rbac-matrix: cannot locate `export const RULES` in rules.ts',
-    );
+    throw new Error('render-rbac-matrix: cannot locate `export const RULES` in rules.ts');
   }
   const openIdx = source.indexOf('[', startIdx);
   if (openIdx === -1) {
-    throw new Error(
-      'render-rbac-matrix: cannot locate opening `[` for RULES array',
-    );
+    throw new Error('render-rbac-matrix: cannot locate opening `[` for RULES array');
   }
   // Walk forward and track bracket depth, ignoring brackets inside strings
   // and line/block comments. Predicates are simple identifiers and notes
@@ -412,9 +401,7 @@ function main() {
   const args = parseArgs(process.argv);
   if (args.help) printUsageAndExit(0);
   if (args.check === args.write) {
-    process.stderr.write(
-      'render-rbac-matrix: pass exactly one of --check or --write\n',
-    );
+    process.stderr.write('render-rbac-matrix: pass exactly one of --check or --write\n');
     printUsageAndExit(2);
   }
 
