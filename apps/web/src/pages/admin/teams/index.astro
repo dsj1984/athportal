@@ -1,0 +1,215 @@
+---
+// apps/web/src/pages/admin/teams/index.astro
+//
+// `/admin/teams` — org-admin Team CRUD landing surface (Story #657 /
+// Task #676).
+//
+// Renders an empty shell server-side; the inline script fetches
+// `/api/v1/admin/teams` (or `?archived=true` when the user flips the
+// "Show archived" toggle) and renders the resulting rows into the
+// table. The active vs archived view is a single round-trip — there is
+// no client-side filter of one combined list.
+//
+// Authentication & authorization: every `/admin/*` route is gated by
+// Clerk's middleware (signed-in users only) AND the API edge's
+// `requireRole('org_admin')` gate (the Worker rejects non-admins with
+// 403 FORBIDDEN). The page itself does not re-check the role — the
+// list-fetch will surface a 403 envelope if the actor is not an admin.
+
+import { TEAMS_LIST_TEST_IDS } from '../../../components/admin/teams/TeamForm.ts';
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Teams · Admin</title>
+  </head>
+  <body>
+    <main class="admin-teams">
+      <header class="admin-teams__header">
+        <h1 class="admin-teams__heading" data-testid="admin-teams-heading">Teams</h1>
+        <a
+          class="admin-teams__create"
+          data-testid={TEAMS_LIST_TEST_IDS.createLink}
+          href="/admin/teams/new"
+        >
+          New team
+        </a>
+      </header>
+
+      <label class="admin-teams__filter">
+        <input
+          type="checkbox"
+          data-testid={TEAMS_LIST_TEST_IDS.showArchivedToggle}
+        />
+        Show archived
+      </label>
+
+      <p class="admin-teams__error" data-testid="admin-teams-error" hidden></p>
+
+      <table class="admin-teams__table" data-testid={TEAMS_LIST_TEST_IDS.list}>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Sport</th>
+            <th>Season</th>
+            <th>Age group</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody data-testid="admin-teams-tbody"></tbody>
+      </table>
+
+      <p
+        class="admin-teams__empty"
+        data-testid={TEAMS_LIST_TEST_IDS.emptyState}
+        hidden
+      >
+        No teams to show.
+      </p>
+    </main>
+  </body>
+</html>
+
+<script>
+  import { TEAMS_LIST_TEST_IDS as TEST_IDS } from '../../../components/admin/teams/TeamForm.ts';
+
+  interface ApiTeam {
+    id: string;
+    name: string;
+    sport: string;
+    season: string;
+    ageGroup: string;
+    archivedAt: string | null;
+  }
+
+  interface ApiEnvelope {
+    success: boolean;
+    data?: ApiTeam[];
+    error?: { code?: string; message?: string };
+  }
+
+  const toggle = document.querySelector<HTMLInputElement>(
+    `[data-testid="${TEST_IDS.showArchivedToggle}"]`,
+  );
+  const tbody = document.querySelector<HTMLTableSectionElement>('[data-testid="admin-teams-tbody"]');
+  const heading = document.querySelector<HTMLElement>('[data-testid="admin-teams-heading"]');
+  const empty = document.querySelector<HTMLElement>(`[data-testid="${TEST_IDS.emptyState}"]`);
+  const errorEl = document.querySelector<HTMLElement>('[data-testid="admin-teams-error"]');
+
+  function escapeHtml(value: string): string {
+    return value.replace(/[&<>"']/g, (ch) => {
+      switch (ch) {
+        case '&': return '&amp;';
+        case '<': return '&lt;';
+        case '>': return '&gt;';
+        case '"': return '&quot;';
+        case "'": return '&#39;';
+        default: return ch;
+      }
+    });
+  }
+
+  function renderRows(teams: ReadonlyArray<ApiTeam>): void {
+    if (!tbody) return;
+    if (teams.length === 0) {
+      tbody.innerHTML = '';
+      if (empty) empty.hidden = false;
+      return;
+    }
+    if (empty) empty.hidden = true;
+    tbody.innerHTML = teams
+      .map((t) => {
+        const safeName = escapeHtml(t.name);
+        const safeSport = escapeHtml(t.sport);
+        const safeSeason = escapeHtml(t.season);
+        const safeAgeGroup = escapeHtml(t.ageGroup);
+        const safeId = encodeURIComponent(t.id);
+        const archiveLabel = t.archivedAt ? 'Restore' : 'Archive';
+        const archiveTestId = t.archivedAt
+          ? 'admin-team-restore-btn'
+          : TEST_IDS.archiveButton;
+        return `<tr data-testid="${TEST_IDS.row}" data-team-id="${escapeHtml(t.id)}">
+            <td>${safeName}</td>
+            <td>${safeSport}</td>
+            <td>${safeSeason}</td>
+            <td>${safeAgeGroup}</td>
+            <td>
+              <a data-testid="${TEST_IDS.editLink}" href="/admin/teams/${safeId}/edit">Edit</a>
+              <button type="button" data-testid="${archiveTestId}" data-team-id="${escapeHtml(t.id)}">${archiveLabel}</button>
+            </td>
+          </tr>`;
+      })
+      .join('');
+  }
+
+  function setHeading(showingArchived: boolean): void {
+    if (heading) heading.textContent = showingArchived ? 'Archived teams' : 'Teams';
+  }
+
+  async function load(): Promise<void> {
+    const showingArchived = toggle?.checked === true;
+    setHeading(showingArchived);
+    if (errorEl) {
+      errorEl.textContent = '';
+      errorEl.hidden = true;
+    }
+    try {
+      const url = showingArchived ? '/api/v1/admin/teams?archived=true' : '/api/v1/admin/teams';
+      const res = await fetch(url, { headers: { accept: 'application/json' } });
+      const envelope = (await res.json().catch(() => null)) as ApiEnvelope | null;
+      if (!res.ok || envelope?.success !== true || !envelope.data) {
+        if (errorEl) {
+          errorEl.textContent = envelope?.error?.message ?? 'Could not load teams.';
+          errorEl.hidden = false;
+        }
+        renderRows([]);
+        return;
+      }
+      renderRows(envelope.data);
+    } catch {
+      if (errorEl) {
+        errorEl.textContent = 'Could not reach the server.';
+        errorEl.hidden = false;
+      }
+      renderRows([]);
+    }
+  }
+
+  toggle?.addEventListener('change', () => {
+    void load();
+  });
+
+  document.addEventListener('click', async (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) return;
+    const isArchive = target.dataset.testid === TEST_IDS.archiveButton;
+    const isRestore = target.dataset.testid === 'admin-team-restore-btn';
+    if (!isArchive && !isRestore) return;
+    const teamId = target.dataset.teamId;
+    if (!teamId) return;
+    const verbPath = isArchive ? 'archive' : 'restore';
+    try {
+      const res = await fetch(
+        `/api/v1/admin/teams/${encodeURIComponent(teamId)}/${verbPath}`,
+        { method: 'POST' },
+      );
+      if (res.ok) {
+        await load();
+      } else if (errorEl) {
+        const envelope = (await res.json().catch(() => null)) as ApiEnvelope | null;
+        errorEl.textContent = envelope?.error?.message ?? 'Could not update the team.';
+        errorEl.hidden = false;
+      }
+    } catch {
+      if (errorEl) {
+        errorEl.textContent = 'Could not reach the server.';
+        errorEl.hidden = false;
+      }
+    }
+  });
+
+  void load();
+</script>

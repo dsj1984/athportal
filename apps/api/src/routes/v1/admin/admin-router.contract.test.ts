@@ -62,13 +62,14 @@ function buildApp(a: AuthContext) {
  * `./invitations/router.ts` and are pinned by
  * `./invitations/management.contract.test.ts`.
  */
-// Story #656 (Epic #10) replaced the `/api/v1/admin/org` placeholder
-// with real GET/PATCH handlers — that route is excluded from this
-// placeholder-coverage suite and gets its own contract test under
-// `org.contract.test.ts`. The five remaining sub-routers are still
-// placeholders awaiting their owning Stories.
+// `/api/v1/admin/org` was promoted out of the placeholder set by
+// Story #656 (Epic #10) — its real handlers live in `./org.ts` and
+// its dedicated contract test is `./org.contract.test.ts`.
+// `/api/v1/admin/teams` was promoted out of the placeholder set by
+// Story #657 / Task #678 — its real handlers live in `./teams.ts` and
+// its dedicated contract test is `./teams.contract.test.ts`. The three
+// remaining mount points are still placeholders.
 const SUB_ROUTES = [
-  { path: '/api/v1/admin/teams', feature: 'teams' },
   { path: '/api/v1/admin/csv-import', feature: 'CSV import' },
   { path: '/api/v1/admin/rollover', feature: 'rollover' },
   { path: '/api/v1/admin/roster', feature: 'roster' },
@@ -100,7 +101,7 @@ describe('admin router scaffold — contract', () => {
     const app = buildApp(a);
 
     for (const method of ['POST', 'PATCH', 'DELETE'] as const) {
-      const res = await app.request('/api/v1/admin/teams', { method });
+      const res = await app.request('/api/v1/admin/csv-import', { method });
       expect(res.status).toBe(501);
       expect(await res.json()).toMatchObject({
         success: false,
@@ -126,7 +127,7 @@ describe('admin router scaffold — contract', () => {
     const a = actor({ role: 'member', orgId: 'org_test_a' });
     const app = buildApp(a);
 
-    const res = await app.request('/api/v1/admin/teams', { method: 'GET' });
+    const res = await app.request('/api/v1/admin/csv-import', { method: 'GET' });
 
     expect(res.status).toBe(403);
     expect(await res.json()).toMatchObject({

@@ -44,6 +44,10 @@
       "types": "./dist/schemas/admin/org.d.ts",
       "import": "./src/schemas/admin/org.ts"
     },
+    "./schemas/admin/teams": {
+      "types": "./dist/schemas/admin/teams.d.ts",
+      "import": "./src/schemas/admin/teams.ts"
+    },
     "./rbac": {
       "types": "./dist/rbac/index.d.ts",
       "import": "./src/rbac/index.ts"

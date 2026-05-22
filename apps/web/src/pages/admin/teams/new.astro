@@ -1,0 +1,28 @@
+---
+// apps/web/src/pages/admin/teams/new.astro
+//
+// `/admin/teams/new` — create-team page. Renders the shared TeamForm in
+// `create` mode pointing at the POST endpoint. On 2xx the form
+// redirects back to `/admin/teams`. Story #657 / Task #676.
+
+import TeamForm from '../../../components/admin/teams/TeamForm.astro';
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>New team · Admin</title>
+  </head>
+  <body>
+    <main class="admin-teams-new">
+      <header class="admin-teams-new__header">
+        <h1>Create team</h1>
+        <a href="/admin/teams">Back to teams</a>
+      </header>
+
+      <TeamForm mode="create" action="/api/v1/admin/teams" />
+    </main>
+  </body>
+</html>
