@@ -61,3 +61,29 @@ Then('I no longer see that invitation on the pending invitations list', async ()
   // 'revoked' + exclusion from the next list call). The DOM-side
   // assertion lands with the admin auth bring-up in Epic #10 v0.2.
 });
+
+// ── Direct athlete invitation (Story #662) ─────────────────────────────
+
+Given('my organization has at least one team', async () => {
+  // Seeding lands with the admin auth bring-up — Epic #10 v0.2 (#646).
+  // The persistence-layer invariant (a team scoped to the actor's org
+  // exists) is pinned at the contract tier:
+  // apps/api/src/routes/v1/admin/invitations/athlete.contract.test.ts.
+});
+
+When('I open the direct athlete invitation admin page', async () => {
+  // Navigation lands with the admin route wiring — Epic #10 v0.2.
+});
+
+When('I submit the direct athlete invitation form', async () => {
+  // The form-submit wire flow is pinned at the contract tier:
+  // apps/api/src/routes/v1/admin/invitations/athlete.contract.test.ts.
+});
+
+Then('I see confirmation that the invitation was sent', async () => {
+  // The success-status copy is pinned by the page island:
+  // apps/web/src/components/admin/invitations/AthleteInviteForm.astro
+  // renders "Invitation sent" into the admin-athlete-invite-status
+  // region on 201. The DOM-side assertion lands with the admin auth
+  // bring-up in Epic #10 v0.2.
+});
