@@ -35,6 +35,7 @@ import { type ClerkAuthEnv, clerkAuth, requireInternalUser } from './middleware/
 import { type RequestLoggerEnv, requestLogger } from './middleware/request-logger';
 import { requireOnboarded } from './middleware/requireOnboarded';
 import { type SyntheticFailureEnv, syntheticFailureRoute } from './routes/debug/synthetic-failure';
+import { adminRoute } from './routes/v1/admin';
 import { authRoute } from './routes/v1/auth';
 import { meRoute } from './routes/v1/me';
 import { signOutRoute } from './routes/v1/sign-out';
@@ -89,6 +90,11 @@ app.route('/api/v1/me', meRoute);
 // PATCH /api/v1/users/:id/role — last-admin invariant route. The
 // child router defines `/:id/role` so we mount at `/api/v1/users`.
 app.route('/api/v1/users', userRoleRoute);
+// Admin router tree (Story #654, Epic #10). The router itself gates
+// the entire `/api/v1/admin/*` subtree behind `requireRole('org_admin')`;
+// downstream Stories swap individual placeholder sub-routers for real
+// handlers without re-editing this entrypoint.
+app.route('/api/v1/admin', adminRoute);
 
 export default app.fetch;
 export { app };

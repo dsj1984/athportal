@@ -1,28 +1,16 @@
 {
   "$schema": ".agents/schemas/baselines/crap.schema.json",
-  "generatedAt": "2026-05-22T18:30:01.243Z",
-  "kernelVersion": "1.0.0",
+  "kernelVersion": "0.1.0",
+  "generatedAt": "2026-05-22T19:40:29.628Z",
   "rollup": {
     "*": {
-      "max": 90,
-      "methodsAbove20": 26,
       "p50": 2,
-      "p95": 30
+      "p95": 30,
+      "max": 90,
+      "methodsAbove20": 26
     }
   },
   "rows": [
-    {
-      "crap": 2,
-      "method": "<anon method-1>",
-      "path": "apps/api/src/index.ts",
-      "startLine": 53
-    },
-    {
-      "crap": 2,
-      "method": "<anon method-2>",
-      "path": "apps/api/src/index.ts",
-      "startLine": 54
-    },
     {
       "crap": 2,
       "method": "authTest",
