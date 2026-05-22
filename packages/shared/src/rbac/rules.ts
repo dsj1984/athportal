@@ -365,22 +365,10 @@ export const RULES: ReadonlyArray<Rule> = [
   // ─── member × graph resources ────────────────────────────────
   // Athletes read their team's roster; never mutate it.
   rule('member', 'coachAssignment', 'create', deny),
-  rule(
-    'member',
-    'coachAssignment',
-    'read',
-    sameTeam,
-    'athletes see who coaches their own team',
-  ),
+  rule('member', 'coachAssignment', 'read', sameTeam, 'athletes see who coaches their own team'),
   rule('member', 'coachAssignment', 'update', deny),
   rule('member', 'coachAssignment', 'delete', deny),
-  rule(
-    'member',
-    'coachAssignment',
-    'list',
-    sameTeam,
-    'athletes list their own team’s coaches',
-  ),
+  rule('member', 'coachAssignment', 'list', sameTeam, 'athletes list their own team’s coaches'),
   rule('member', 'athleteMembership', 'create', deny),
   rule(
     'member',
