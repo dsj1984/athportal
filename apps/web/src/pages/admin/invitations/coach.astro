@@ -1,0 +1,33 @@
+---
+// apps/web/src/pages/admin/invitations/coach.astro
+//
+// /admin/invitations/coach — the coach invitation admin page
+// (Epic #10 / Story #664 / Task #685). Org-admin surface: lets an
+// admin invite a coach to one or more existing teams in their org.
+//
+// The page is a thin Astro shell that renders an h1 + the
+// `CoachInviteForm` island. The island owns the team picker fetch
+// and the POST submit; the shell exists so the page has a route, a
+// title, and a landmark heading for the acceptance scenario to
+// anchor on.
+//
+// Auth gating lives upstream — the Astro middleware redirects
+// anonymous callers to sign-in, and the API endpoint the form posts
+// to is gated by `requireRole('org_admin')` per Tech Spec #647. The
+// page therefore assumes the caller has reached it legitimately and
+// does not re-check role server-side.
+import CoachInviteForm from '../../../components/admin/invitations/CoachInviteForm.astro';
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Invite a coach</title>
+  </head>
+  <body>
+    <main aria-label="Invite a coach">
+      <h1>Invite a coach</h1>
+      <CoachInviteForm />
+    </main>
+  </body>
+</html>

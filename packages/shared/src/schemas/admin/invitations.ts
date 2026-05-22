@@ -40,3 +40,35 @@ export const AthleteInvitationCreateInputSchema = z
   .strict();
 
 export type AthleteInvitationCreateInput = z.infer<typeof AthleteInvitationCreateInputSchema>;
+
+/**
+ * Body of `POST /api/v1/admin/invitations/coach` (Epic #10 / Story #664
+ * / Task #684).
+ *
+ * Coach invitations are pinned to one or more existing teams in the
+ * actor's org. The `teamIds` array MUST be non-empty — a coach invite
+ * without a team has no operational meaning per the Epic body — and
+ * every entry MUST resolve to a team the actor's org owns. The router
+ * verifies the org-ownership invariant against the live `teams` table
+ * before any Clerk call or DB insert fires; a teamId belonging to a
+ * different org returns `404 NOT_FOUND` (no cross-tenant existence
+ * oracle), matching the athlete-invite contract.
+ *
+ * `email` is lower-cased so the persistence layer never stores two
+ * invitations for the same logical address.
+ *
+ * `.strict()` rejects unknown keys (e.g. a forged `role` claim from a
+ * stale client) at the boundary — the server pins `role` to `'coach'`
+ * on the inserted row, never trusting client-supplied role data.
+ */
+export const CoachInvitationCreateInputSchema = z
+  .object({
+    email: z.string().trim().email().toLowerCase().max(254),
+    teamIds: z
+      .array(z.string().trim().min(1).max(120))
+      .min(1, 'Coach invitations require at least one team.')
+      .max(50),
+  })
+  .strict();
+
+export type CoachInvitationCreateInput = z.infer<typeof CoachInvitationCreateInputSchema>;
