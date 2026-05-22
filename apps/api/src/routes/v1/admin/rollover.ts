@@ -40,6 +40,7 @@
 //   - Error envelopes carry `{ success: false, error: { code, message } }`
 //     with no stack traces or internal class names.
 
+import { randomUUID } from 'node:crypto';
 import { athleteMemberships, teams } from '@repo/shared/db/schema';
 import {
   type MembershipSnapshot,
@@ -51,7 +52,6 @@ import {
   type RolloverPlanOutput,
   RolloverPreviewInputSchema,
 } from '@repo/shared/schemas/admin/rollover';
-import { randomUUID } from 'node:crypto';
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { Hono } from 'hono';
 import type { RequireInternalUserEnv } from '../../../middleware/auth';
