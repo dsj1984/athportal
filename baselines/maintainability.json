@@ -1,7 +1,7 @@
 {
   "$schema": ".agents/schemas/baselines/maintainability.schema.json",
-  "kernelVersion": "1.0.0",
-  "generatedAt": "2026-05-22T10:51:19.140Z",
+  "kernelVersion": "0.1.0",
+  "generatedAt": "2026-05-22T11:26:18.797Z",
   "rollup": {
     "*": {
       "min": 70.515,
@@ -269,14 +269,6 @@
     {
       "mi": 122.978,
       "path": "packages/shared/src/rbac/policy.ts"
-    },
-    {
-      "mi": 94.363,
-      "path": "packages/shared/src/rbac/rules.ts"
-    },
-    {
-      "mi": 171,
-      "path": "packages/shared/src/rbac/types.ts"
     },
     {
       "mi": 70.515,
