@@ -39,7 +39,14 @@ import type { Action, RbacContext, Resource, Role } from './types';
 
 const ROLES: ReadonlyArray<Role> = ['dev_admin', 'org_admin', 'team_admin', 'member'];
 
-const RESOURCES: ReadonlyArray<Resource> = ['organization', 'team', 'user', 'invitation'];
+const RESOURCES: ReadonlyArray<Resource> = [
+  'organization',
+  'team',
+  'user',
+  'invitation',
+  'coachAssignment',
+  'athleteMembership',
+];
 
 const ACTIONS: ReadonlyArray<Action> = ['create', 'read', 'update', 'delete', 'list'];
 
@@ -93,6 +100,20 @@ const EXPECTED: Record<Role, Record<Resource, Record<Action, Shape>>> = {
       delete: 'allow',
       list: 'allow',
     },
+    coachAssignment: {
+      create: 'allow',
+      read: 'allow',
+      update: 'allow',
+      delete: 'allow',
+      list: 'allow',
+    },
+    athleteMembership: {
+      create: 'allow',
+      read: 'allow',
+      update: 'allow',
+      delete: 'allow',
+      list: 'allow',
+    },
   },
   org_admin: {
     organization: {
@@ -117,6 +138,20 @@ const EXPECTED: Record<Role, Record<Resource, Record<Action, Shape>>> = {
       list: 'sameOrg',
     },
     invitation: {
+      create: 'sameOrg',
+      read: 'sameOrg',
+      update: 'sameOrg',
+      delete: 'sameOrg',
+      list: 'sameOrg',
+    },
+    coachAssignment: {
+      create: 'sameOrg',
+      read: 'sameOrg',
+      update: 'sameOrg',
+      delete: 'sameOrg',
+      list: 'sameOrg',
+    },
+    athleteMembership: {
       create: 'sameOrg',
       read: 'sameOrg',
       update: 'sameOrg',
@@ -153,6 +188,20 @@ const EXPECTED: Record<Role, Record<Resource, Record<Action, Shape>>> = {
       delete: 'sameTeam',
       list: 'sameTeam',
     },
+    coachAssignment: {
+      create: 'sameTeam',
+      read: 'sameTeam',
+      update: 'sameTeam',
+      delete: 'sameTeam',
+      list: 'sameTeam',
+    },
+    athleteMembership: {
+      create: 'sameTeam',
+      read: 'sameTeam',
+      update: 'sameTeam',
+      delete: 'sameTeam',
+      list: 'sameTeam',
+    },
   },
   member: {
     organization: {
@@ -182,6 +231,20 @@ const EXPECTED: Record<Role, Record<Resource, Record<Action, Shape>>> = {
       update: 'deny',
       delete: 'deny',
       list: 'deny',
+    },
+    coachAssignment: {
+      create: 'deny',
+      read: 'sameTeam',
+      update: 'deny',
+      delete: 'deny',
+      list: 'sameTeam',
+    },
+    athleteMembership: {
+      create: 'deny',
+      read: 'sameTeam',
+      update: 'deny',
+      delete: 'deny',
+      list: 'sameTeam',
     },
   },
 };
