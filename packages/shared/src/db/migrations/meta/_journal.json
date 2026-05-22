@@ -26,8 +26,15 @@
     {
       "idx": 3,
       "version": "6",
-      "when": 1779560000000,
-      "tag": "0003_team_metadata",
+      "when": 1779479766254,
+      "tag": "0003_invitations",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1779482261998,
+      "tag": "0004_team_metadata",
       "breakpoints": true
     }
   ]

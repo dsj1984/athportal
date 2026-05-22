@@ -40,6 +40,7 @@ import { authRoute } from './routes/v1/auth';
 import { meRoute } from './routes/v1/me';
 import { signOutRoute } from './routes/v1/sign-out';
 import { userRoleRoute } from './routes/v1/users/role';
+import { clerkInvitationAcceptedRoute } from './routes/webhooks/clerk-invitation-accepted';
 
 type AppEnv = RequestLoggerEnv & SyntheticFailureEnv & ClerkAuthEnv;
 
@@ -59,6 +60,13 @@ app.get('/api/v1/health', (c) => c.json({ ok: true }));
 //    auth path. The route is gated by an env binding — see its module
 //    docstring.
 app.route('/api/v1/_debug/synthetic-failure', syntheticFailureRoute);
+
+// 3.5) Clerk webhooks. Mounted BEFORE clerkAuth because webhook
+//      callers present a Standard Webhooks signature, not a Clerk
+//      session cookie — the signature verifier inside the handler is
+//      the security boundary for this endpoint (Epic #10 / Story #655
+//      / Task #666).
+app.route('/webhooks/clerk/invitation-accepted', clerkInvitationAcceptedRoute);
 
 // 4) Clerk JWT validation. Runs on every remaining request.
 app.use('*', clerkAuth());

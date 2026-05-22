@@ -51,19 +51,23 @@ function buildApp(a: AuthContext) {
 }
 
 /**
- * The six feature sub-router mount points. Listed here as a fixture
- * so the placeholder-coverage test below is exhaustive: adding a
- * seventh feature requires extending this array AND adding its
- * corresponding `app.route(...)` line in `./index.ts` — the contract
- * test fails loudly if either side drifts.
+ * The five feature sub-router mount points still on the placeholder
+ * factory. Listed here as a fixture so the placeholder-coverage test
+ * below is exhaustive: adding a seventh feature requires extending
+ * this array AND adding its corresponding `app.route(...)` line in
+ * `./index.ts` — the contract test fails loudly if either side drifts.
+ *
+ * `/api/v1/admin/invitations` was promoted off the placeholder by
+ * Epic #10 / Story #655 / Task #668 — its real handlers live in
+ * `./invitations/router.ts` and are pinned by
+ * `./invitations/management.contract.test.ts`.
  */
 // `/api/v1/admin/teams` was promoted out of the placeholder set by
 // Story #657 / Task #678 — its real handlers live in `./teams.ts` and
-// its dedicated contract test is `./teams.contract.test.ts`. The five
+// its dedicated contract test is `./teams.contract.test.ts`. The four
 // remaining mount points are still placeholders.
 const SUB_ROUTES = [
   { path: '/api/v1/admin/org', feature: 'organization' },
-  { path: '/api/v1/admin/invitations', feature: 'invitations' },
   { path: '/api/v1/admin/csv-import', feature: 'CSV import' },
   { path: '/api/v1/admin/rollover', feature: 'rollover' },
   { path: '/api/v1/admin/roster', feature: 'roster' },
@@ -121,7 +125,7 @@ describe('admin router scaffold — contract', () => {
     const a = actor({ role: 'member', orgId: 'org_test_a' });
     const app = buildApp(a);
 
-    const res = await app.request('/api/v1/admin/teams', { method: 'GET' });
+    const res = await app.request('/api/v1/admin/csv-import', { method: 'GET' });
 
     expect(res.status).toBe(403);
     expect(await res.json()).toMatchObject({

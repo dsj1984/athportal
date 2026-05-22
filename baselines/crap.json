@@ -1,13 +1,13 @@
 {
   "$schema": ".agents/schemas/baselines/crap.schema.json",
-  "kernelVersion": "0.1.0",
-  "generatedAt": "2026-05-22T19:40:29.628Z",
+  "kernelVersion": "1.0.0",
+  "generatedAt": "2026-05-22T20:24:46.646Z",
   "rollup": {
     "*": {
       "p50": 2,
       "p95": 30,
       "max": 90,
-      "methodsAbove20": 26
+      "methodsAbove20": 27
     }
   },
   "rows": [
@@ -156,6 +156,24 @@
       "startLine": 82
     },
     {
+      "crap": 2,
+      "method": "forbidden",
+      "path": "apps/api/src/middleware/requireRole.ts",
+      "startLine": 61
+    },
+    {
+      "crap": 2,
+      "method": "requireRole",
+      "path": "apps/api/src/middleware/requireRole.ts",
+      "startLine": 95
+    },
+    {
+      "crap": 30,
+      "method": "<anon method-1>",
+      "path": "apps/api/src/middleware/requireRole.ts",
+      "startLine": 96
+    },
+    {
       "crap": 6,
       "method": "<anon method-1>",
       "path": "apps/api/src/routes/debug/synthetic-failure.ts",
@@ -166,6 +184,24 @@
       "method": "<anon method-2>",
       "path": "apps/api/src/routes/debug/synthetic-failure.ts",
       "startLine": 120
+    },
+    {
+      "crap": 2,
+      "method": "notImplemented",
+      "path": "apps/api/src/routes/v1/admin/_placeholder.ts",
+      "startLine": 39
+    },
+    {
+      "crap": 2,
+      "method": "placeholderRouter",
+      "path": "apps/api/src/routes/v1/admin/_placeholder.ts",
+      "startLine": 56
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "apps/api/src/routes/v1/admin/_placeholder.ts",
+      "startLine": 58
     },
     {
       "crap": 2,
