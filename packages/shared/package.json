@@ -52,6 +52,10 @@
       "types": "./dist/schemas/admin/roster.d.ts",
       "import": "./src/schemas/admin/roster.ts"
     },
+    "./schemas/admin/invitations": {
+      "types": "./dist/schemas/admin/invitations.d.ts",
+      "import": "./src/schemas/admin/invitations.ts"
+    },
     "./schemas/admin/csvImport": {
       "types": "./dist/schemas/admin/csvImport.d.ts",
       "import": "./src/schemas/admin/csvImport.ts"
