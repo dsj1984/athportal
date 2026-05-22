@@ -101,6 +101,77 @@ export interface OnboardingFormEvaluation {
   readonly fieldErrors: Readonly<Record<string, string>>;
 }
 
+// Required-field rule table. Each entry returns a per-field error
+// message when the rule fires, or `null` when the field is OK. Keeping
+// the rules as data rather than a long `if (…) fieldErrors.x = '…'`
+// chain keeps the evaluator's cyclomatic complexity (and CRAP) low and
+// lets new fields land by appending a row.
+type RequiredFieldRule = {
+  readonly field: string;
+  readonly check: (state: OnboardingFormState) => string | null;
+};
+
+const REQUIRED_FIELD_RULES: readonly RequiredFieldRule[] = [
+  {
+    field: 'email',
+    check: (s) => (s.emailVerified ? null : 'Verify your email address to continue.'),
+  },
+  {
+    field: 'firstName',
+    check: (s) => (s.firstName.trim().length === 0 ? 'First name is required.' : null),
+  },
+  {
+    field: 'lastName',
+    check: (s) => (s.lastName.trim().length === 0 ? 'Last name is required.' : null),
+  },
+  {
+    field: 'displayName',
+    check: (s) => (s.displayName.trim().length === 0 ? 'Display name is required.' : null),
+  },
+  {
+    field: 'acceptsTermsOfService',
+    check: (s) =>
+      s.acceptsTermsOfService ? null : 'You must accept the Terms of Service to continue.',
+  },
+  {
+    field: 'acceptsPrivacyPolicy',
+    check: (s) =>
+      s.acceptsPrivacyPolicy ? null : 'You must accept the Privacy Policy to continue.',
+  },
+  {
+    field: 'isAtLeast13',
+    check: (s) => (s.isAtLeast13 ? null : 'You must confirm you are 13 years of age or older.'),
+  },
+];
+
+function collectRequiredFieldErrors(state: OnboardingFormState): Record<string, string> {
+  const errors: Record<string, string> = {};
+  for (const rule of REQUIRED_FIELD_RULES) {
+    const message = rule.check(state);
+    if (message !== null) {
+      errors[rule.field] = message;
+    }
+  }
+  return errors;
+}
+
+// Fold Zod issues into the per-field error map shape the evaluator
+// returns. `path` may be empty (a top-level form error), in which case
+// we key under `'form'`.
+function foldZodIssuesIntoFieldMap(
+  issues: ReadonlyArray<{
+    readonly path: ReadonlyArray<string | number>;
+    readonly message: string;
+  }>,
+): Record<string, string> {
+  const fieldErrors: Record<string, string> = {};
+  for (const issue of issues) {
+    const fieldId = issue.path.join('.') || 'form';
+    fieldErrors[fieldId] = issue.message;
+  }
+  return fieldErrors;
+}
+
 /**
  * Evaluate the working state and return whether the form is submittable
  * plus any per-field validation errors. The submit-enabled invariant
@@ -111,42 +182,13 @@ export interface OnboardingFormEvaluation {
  * The function is pure — same input always produces the same evaluation.
  */
 export function evaluateOnboardingFormState(state: OnboardingFormState): OnboardingFormEvaluation {
-  const fieldErrors: Record<string, string> = {};
-
-  // Email verification is enforced by Clerk on the client; the API edge
-  // independently re-checks via `getUser(subjectId).primaryEmailAddress`
-  // so the worst-case path here is still safe. Surface the gate to the
-  // user when the flag is false.
-  if (!state.emailVerified) {
-    fieldErrors.email = 'Verify your email address to continue.';
-  }
-
-  // Surface obvious empty-string errors before running Zod so the user
-  // sees "First name is required" rather than a generic Zod "Required".
-  if (state.firstName.trim().length === 0) {
-    fieldErrors.firstName = 'First name is required.';
-  }
-  if (state.lastName.trim().length === 0) {
-    fieldErrors.lastName = 'Last name is required.';
-  }
-  if (state.displayName.trim().length === 0) {
-    fieldErrors.displayName = 'Display name is required.';
-  }
-  if (!state.acceptsTermsOfService) {
-    fieldErrors.acceptsTermsOfService = 'You must accept the Terms of Service to continue.';
-  }
-  if (!state.acceptsPrivacyPolicy) {
-    fieldErrors.acceptsPrivacyPolicy = 'You must accept the Privacy Policy to continue.';
-  }
-  if (!state.isAtLeast13) {
-    fieldErrors.isAtLeast13 = 'You must confirm you are 13 years of age or older.';
-  }
+  const requiredErrors = collectRequiredFieldErrors(state);
 
   // If the synchronous boolean and length checks already failed, the
   // payload is not submittable and we short-circuit — running Zod on a
   // half-empty payload would just produce duplicate noise.
-  if (Object.keys(fieldErrors).length > 0) {
-    return { canSubmit: false, fieldErrors };
+  if (Object.keys(requiredErrors).length > 0) {
+    return { canSubmit: false, fieldErrors: requiredErrors };
   }
 
   // The payload-build helper enforces the strict shape OnboardInputSchema
@@ -156,15 +198,7 @@ export function evaluateOnboardingFormState(state: OnboardingFormState): Onboard
   const candidate = buildOnboardingPayload(state);
   const parsed = OnboardInputSchema.safeParse(candidate);
   if (!parsed.success) {
-    for (const issue of parsed.error.issues) {
-      // `path[0]` is "profile" | "ageAttestation" | "legalAcceptances" |
-      // "inviteToken" | "profilePhotoUploadId" — fold the nested path
-      // into a stable per-field key so the UI binding can show the
-      // error next to the matching input.
-      const fieldId = issue.path.join('.') || 'form';
-      fieldErrors[fieldId] = issue.message;
-    }
-    return { canSubmit: false, fieldErrors };
+    return { canSubmit: false, fieldErrors: foldZodIssuesIntoFieldMap(parsed.error.issues) };
   }
 
   return { canSubmit: true, fieldErrors: {} };
@@ -222,12 +256,7 @@ export function tryBuildOnboardingPayload(state: OnboardingFormState): Onboardin
   const candidate = buildOnboardingPayload(state);
   const parsed = OnboardInputSchema.safeParse(candidate);
   if (!parsed.success) {
-    const fieldErrors: Record<string, string> = {};
-    for (const issue of parsed.error.issues) {
-      const fieldId = issue.path.join('.') || 'form';
-      fieldErrors[fieldId] = issue.message;
-    }
-    return { ok: false, fieldErrors };
+    return { ok: false, fieldErrors: foldZodIssuesIntoFieldMap(parsed.error.issues) };
   }
   return { ok: true, value: parsed.data };
 }
@@ -258,16 +287,12 @@ export interface ServerErrorEnvelope {
 export function foldServerErrorsIntoFieldMap(
   envelope: ServerErrorEnvelope,
 ): Readonly<Record<string, string>> {
-  const fieldErrors: Record<string, string> = {};
   if (envelope.details && envelope.details.length > 0) {
-    for (const issue of envelope.details) {
-      const fieldId = issue.path.join('.') || 'form';
-      fieldErrors[fieldId] = issue.message;
-    }
-    return fieldErrors;
+    return foldZodIssuesIntoFieldMap(envelope.details);
   }
-  if (envelope.message && envelope.message.trim().length > 0) {
-    fieldErrors.form = envelope.message;
+  const message = envelope.message?.trim() ?? '';
+  if (message.length > 0) {
+    return { form: message };
   }
-  return fieldErrors;
+  return {};
 }

@@ -2,15 +2,19 @@ import { defineConfig } from 'vitest/config';
 import { vitestBaseConfig } from './packages/config/vitest.base';
 
 /**
- * Root Vitest workspace config — declares the pyramid's unit project(s).
+ * Root Vitest workspace config — declares the pyramid's projects.
  *
  * Two unit projects are declared so component tests (which import
  * `@testing-library/react` and need a DOM) run under jsdom while pure
  * logic tests stay on the faster node env.
  *
- * Contract tests (`*.contract.test.ts`) are excluded here; they live in
- * their own future project (apps/api/**) once the contract tier lands
- * under Story #170.
+ * The `contract` project mirrors the per-workspace `api-contract`
+ * project in `apps/api/vitest.config.ts` so the merged coverage report
+ * produced by `pnpm run test:coverage` captures route-level coverage.
+ * Without this project the merged coverage rollup classified every
+ * route handler as "untested" even when contract tests exercised it
+ * end-to-end (the per-workspace `pnpm --filter @repo/api exec vitest run`
+ * path always covered them; this project closes the merged-path gap).
  *
  * Workspaces still ship their own `vitest.config.ts` that extends the
  * shared base so `pnpm --filter @repo/<name> exec vitest run` continues
@@ -49,6 +53,21 @@ export default defineConfig({
           globals: false,
           include: ['scripts/__tests__/**/*.test.mjs', 'scripts/migration-label-guard.test.mjs'],
           exclude: ['**/dist/**', '**/node_modules/**'],
+        },
+      },
+      {
+        extends: false,
+        test: {
+          name: 'contract',
+          environment: 'node',
+          globals: false,
+          include: ['apps/**/src/**/*.contract.test.{ts,tsx}'],
+          exclude: ['**/dist/**', '**/node_modules/**'],
+          pool: 'forks',
+          fileParallelism: true,
+          isolate: true,
+          hookTimeout: 30_000,
+          testTimeout: 30_000,
         },
       },
     ],

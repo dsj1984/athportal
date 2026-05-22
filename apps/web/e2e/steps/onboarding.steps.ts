@@ -29,22 +29,24 @@ const { Given, When, Then } = createBdd();
  * `.feature` scenarios free of URL literals and gives a single place
  * to migrate when routes move.
  */
+const SURFACE_NAME_TO_PATH: ReadonlyMap<string, string> = new Map([
+  ['dashboard', '/dashboard'],
+  ['dashboard page', '/dashboard'],
+  ['dashboard surface', '/dashboard'],
+  ['onboarding', '/onboarding'],
+  ['onboarding screen', '/onboarding'],
+  ['onboarding surface', '/onboarding'],
+]);
+
 function resolveOnboardingSurfacePath(surfaceName: string): string {
-  switch (surfaceName) {
-    case 'dashboard':
-    case 'dashboard page':
-    case 'dashboard surface':
-      return '/dashboard';
-    case 'onboarding':
-    case 'onboarding screen':
-    case 'onboarding surface':
-      return '/onboarding';
-    default:
-      throw new Error(
-        `Unknown onboarding surface: "${surfaceName}". ` +
-          'Add it to resolveOnboardingSurfacePath in apps/web/e2e/steps/onboarding.steps.ts.',
-      );
+  const path = SURFACE_NAME_TO_PATH.get(surfaceName);
+  if (path === undefined) {
+    throw new Error(
+      `Unknown onboarding surface: "${surfaceName}". ` +
+        'Add it to SURFACE_NAME_TO_PATH in apps/web/e2e/steps/onboarding.steps.ts.',
+    );
   }
+  return path;
 }
 
 // ---------------------------------------------------------------------------
