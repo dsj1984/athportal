@@ -1,13 +1,13 @@
 {
   "$schema": ".agents/schemas/baselines/crap.schema.json",
-  "kernelVersion": "1.0.0",
-  "generatedAt": "2026-05-22T11:26:19.193Z",
+  "kernelVersion": "0.1.0",
+  "generatedAt": "2026-05-22T12:11:41.203Z",
   "rollup": {
     "*": {
       "p50": 2,
       "p95": 30,
       "max": 90,
-      "methodsAbove20": 25
+      "methodsAbove20": 21
     }
   },
   "rows": [
@@ -304,42 +304,6 @@
       "method": "<anon method-1>",
       "path": "apps/api/src/routes/v1/sign-out.ts",
       "startLine": 39
-    },
-    {
-      "crap": 30,
-      "method": "parseBody",
-      "path": "apps/api/src/routes/v1/users/role.ts",
-      "startLine": 65
-    },
-    {
-      "crap": 2,
-      "method": "routeError",
-      "path": "apps/api/src/routes/v1/users/role.ts",
-      "startLine": 105
-    },
-    {
-      "crap": 72,
-      "method": "asRouteError",
-      "path": "apps/api/src/routes/v1/users/role.ts",
-      "startLine": 114
-    },
-    {
-      "crap": 72,
-      "method": "<anon method-1>",
-      "path": "apps/api/src/routes/v1/users/role.ts",
-      "startLine": 125
-    },
-    {
-      "crap": 2,
-      "method": "<anon method-2>",
-      "path": "apps/api/src/routes/v1/users/role.ts",
-      "startLine": 129
-    },
-    {
-      "crap": 30,
-      "method": "<anon method-3>",
-      "path": "apps/api/src/routes/v1/users/role.ts",
-      "startLine": 167
     },
     {
       "crap": 2,
