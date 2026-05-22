@@ -51,16 +51,20 @@ function buildApp(a: AuthContext) {
 }
 
 /**
- * The six feature sub-router mount points. Listed here as a fixture
- * so the placeholder-coverage test below is exhaustive: adding a
- * seventh feature requires extending this array AND adding its
- * corresponding `app.route(...)` line in `./index.ts` — the contract
- * test fails loudly if either side drifts.
+ * The five feature sub-router mount points still on the placeholder
+ * factory. Listed here as a fixture so the placeholder-coverage test
+ * below is exhaustive: adding a seventh feature requires extending
+ * this array AND adding its corresponding `app.route(...)` line in
+ * `./index.ts` — the contract test fails loudly if either side drifts.
+ *
+ * `/api/v1/admin/invitations` was promoted off the placeholder by
+ * Epic #10 / Story #655 / Task #668 — its real handlers live in
+ * `./invitations/router.ts` and are pinned by
+ * `./invitations/management.contract.test.ts`.
  */
 const SUB_ROUTES = [
   { path: '/api/v1/admin/org', feature: 'organization' },
   { path: '/api/v1/admin/teams', feature: 'teams' },
-  { path: '/api/v1/admin/invitations', feature: 'invitations' },
   { path: '/api/v1/admin/csv-import', feature: 'CSV import' },
   { path: '/api/v1/admin/rollover', feature: 'rollover' },
   { path: '/api/v1/admin/roster', feature: 'roster' },
