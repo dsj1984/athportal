@@ -59,12 +59,9 @@ Given('one of my teams was soft-deleted in the last 30 days', async () => {
   // packages/shared/src/db/schema/__tests__/teamSoftDelete.contract.test.ts
 });
 
-When(
-  'I open the recently deleted teams view and restore that team',
-  async () => {
-    // Admin UI lands in Epic #10.
-  },
-);
+When('I open the recently deleted teams view and restore that team', async () => {
+  // Admin UI lands in Epic #10.
+});
 
 Then('I see the team return to my active roster', async () => {
   // Roster surface lands in Epic #11.
@@ -136,37 +133,25 @@ When('the quality workflow runs against the pull request', async () => {
   // CI surface — exercised by quality.yml.
 });
 
-Then(
-  'I see the RBAC matrix drift check fail with a clear remediation message',
-  async () => {
-    // The script prints a remediation hint pointing to `--write`.
-  },
-);
+Then('I see the RBAC matrix drift check fail with a clear remediation message', async () => {
+  // The script prints a remediation hint pointing to `--write`.
+});
 
-Then(
-  'the pull request is blocked from merging until the drift is resolved',
-  async () => {
-    // Required-checks ratchet on `main` is configured by the operator.
-  },
-);
+Then('the pull request is blocked from merging until the drift is resolved', async () => {
+  // Required-checks ratchet on `main` is configured by the operator.
+});
 
 // --- AC-95: cross-tenant isolation property ---------------------------
 
-Given(
-  'the nightly cross-tenant isolation property job has completed today',
-  async () => {
-    // The job is wired in .github/workflows/nightly.yml at
-    // `cross-tenant-property` and runs 1000 fast-check cases.
-  },
-);
+Given('the nightly cross-tenant isolation property job has completed today', async () => {
+  // The job is wired in .github/workflows/nightly.yml at
+  // `cross-tenant-property` and runs 1000 fast-check cases.
+});
 
-When(
-  'I review the nightly report for the cross-tenant isolation property',
-  async () => {
-    // Nightly report routing surface — exercised by the existing
-    // NIGHTLY_REPORT_ISSUE notification path.
-  },
-);
+When('I review the nightly report for the cross-tenant isolation property', async () => {
+  // Nightly report routing surface — exercised by the existing
+  // NIGHTLY_REPORT_ISSUE notification path.
+});
 
 Then(
   'I see that every generated actor-and-resource pairing held the isolation invariant',
