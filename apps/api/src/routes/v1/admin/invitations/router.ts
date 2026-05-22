@@ -1,15 +1,21 @@
 // apps/api/src/routes/v1/admin/invitations/router.ts
 //
 // Real implementation of the `/api/v1/admin/invitations` sub-router
-// (Epic #10 / Story #655 / Task #668). Replaces the placeholder
-// shipped by Story #654 (Task #658) on a one-file swap — the mount
-// point in `apps/api/src/routes/v1/admin/index.ts` does not change.
+// (Epic #10 / Story #655 / Task #668; athlete POST added in Story
+// #662 / Task #680). Replaces the placeholder shipped by Story #654
+// (Task #658) on a one-file swap — the mount point in
+// `apps/api/src/routes/v1/admin/index.ts` does not change.
 //
 // Endpoints:
 //
 //   GET    /                 → list pending invitations, scoped to the
 //                              actor's org. Response is
 //                              { success: true, data: [...] }.
+//   POST   /athlete          → create a direct athlete invitation pinned
+//                              to a single team in the actor's org.
+//                              Returns 201 + envelope. A teamId belonging
+//                              to a different org returns 404 NOT_FOUND
+//                              (no cross-tenant existence oracle).
 //   POST   /:id/resend       → call the Clerk wrapper's resend path
 //                              (revoke + recreate), update the local
 //                              row's clerk_invitation_id to the new
@@ -28,11 +34,14 @@
 // `apps/api/src/routes/v1/admin/invitations/management.contract.test.ts`
 // pins this contract.
 
-import { type Invitation, invitations } from '@repo/shared/db/schema';
+import { randomUUID } from 'node:crypto';
+import { type Invitation, invitations, teams } from '@repo/shared/db/schema';
+import { AthleteInvitationCreateInputSchema } from '@repo/shared/schemas/admin/invitations';
 import { and, eq } from 'drizzle-orm';
 import { Hono } from 'hono';
 import {
   type ClerkInvitationClient,
+  createInvitation,
   resendInvitation,
   revokeInvitation,
 } from '../../../../lib/clerk-invitations';
@@ -53,7 +62,7 @@ type InvitationsRouterEnv = RequireInternalUserEnv & {
   Variables: RequireInternalUserEnv['Variables'] & InvitationsRouterVariables;
 };
 
-type ErrorCode = 'FORBIDDEN' | 'NOT_FOUND' | 'BAD_REQUEST' | 'INTERNAL';
+type ErrorCode = 'FORBIDDEN' | 'NOT_FOUND' | 'BAD_REQUEST' | 'INVALID_BODY' | 'INTERNAL';
 
 interface ErrorBody {
   readonly success: false;
@@ -69,17 +78,43 @@ function errorBody(code: ErrorCode, message: string): ErrorBody {
  * keeps the call sites honest and lets the contract test pass any
  * better-sqlite3 / libsql handle that exposes these four verbs.
  */
+interface TeamRowLike {
+  readonly id: string;
+  readonly orgId: string;
+}
+
 interface DrizzleLike {
   select(): {
     from(table: typeof invitations): {
       where(predicate: unknown): { all(): readonly Invitation[] };
     };
   };
+  insert(table: typeof invitations): {
+    values(values: typeof invitations.$inferInsert): { run(): void };
+  };
   update(table: typeof invitations): {
     set(values: Partial<typeof invitations.$inferInsert>): {
       where(predicate: unknown): { run(): void };
     };
   };
+}
+
+/**
+ * Narrower view of the Drizzle handle for `teams` lookups — kept
+ * separate from `DrizzleLike` so the teams read can be stubbed
+ * independently in unit-level slicing if a future refactor needs it.
+ * The teams contract test exercises the production read.
+ */
+interface TeamsReadDb {
+  select(): {
+    from(table: typeof teams): {
+      where(predicate: unknown): { all(): readonly TeamRowLike[] };
+    };
+  };
+}
+
+function narrowTeamsDb(db: unknown): TeamsReadDb {
+  return db as TeamsReadDb;
 }
 
 function narrowDb(db: unknown): DrizzleLike {
@@ -133,6 +168,113 @@ invitationsAdminRouter.get('/', (c) => {
     .all();
 
   return c.json({ success: true, data: rows.map(toWire) }, 200);
+});
+
+/**
+ * POST /api/v1/admin/invitations/athlete
+ *
+ * Direct athlete-invitation creation (Story #662 / Task #680).
+ *
+ * Pins the invitation to a single team in the actor's org. The
+ * server NEVER trusts the caller's role claim — `role` is hard-coded
+ * to `'athlete'` on the inserted row, and the Zod schema's
+ * `.strict()` rejects a forged `role` field at the boundary.
+ *
+ * Tenant isolation:
+ *   - The `teamId` is looked up with `where teamId = :id AND orgId =
+ *     :actor_org_id`. A teamId belonging to a different org returns
+ *     `404 NOT_FOUND` — same wire shape as a non-existent id, so
+ *     cross-tenant probes do not surface an existence oracle.
+ *   - The persisted row carries `orgId = :actor_org_id` so subsequent
+ *     management surface reads (list/resend/revoke) keep the row
+ *     scoped to the issuing org.
+ *
+ * The Clerk wrapper is called BEFORE the local row is inserted so a
+ * third-party failure does not orphan a `pending` row with no live
+ * Clerk invitation behind it.
+ */
+invitationsAdminRouter.post('/athlete', async (c) => {
+  const auth = c.get('auth');
+  const orgId = auth.orgId;
+  if (!orgId) {
+    return c.json(errorBody('FORBIDDEN', 'Actor has no org context.'), 403);
+  }
+
+  const rawBody: unknown = await c.req.json().catch(() => null);
+  if (rawBody === null) {
+    return c.json(errorBody('INVALID_BODY', 'Request body must be valid JSON.'), 400);
+  }
+  const parsed = AthleteInvitationCreateInputSchema.safeParse(rawBody);
+  if (!parsed.success) {
+    return c.json(
+      errorBody('INVALID_BODY', parsed.error.issues[0]?.message ?? 'Invalid body.'),
+      400,
+    );
+  }
+  const input = parsed.data;
+
+  // Verify the team exists AND belongs to the actor's org. A teamId
+  // owned by a different org returns the same 404 as a missing id so
+  // the surface is not a cross-tenant existence oracle.
+  const teamsDb = narrowTeamsDb(c.get('db'));
+  const teamRows = teamsDb
+    .select()
+    .from(teams)
+    .where(and(eq(teams.id, input.teamId), eq(teams.orgId, orgId)))
+    .all();
+  if (teamRows.length === 0) {
+    return c.json(errorBody('NOT_FOUND', 'Team not found.'), 404);
+  }
+
+  const client = c.get('clerkInvitationClient');
+  if (!client) {
+    return c.json(errorBody('INTERNAL', 'Invitation client unavailable.'), 500);
+  }
+
+  let created: { clerkInvitationId: string };
+  try {
+    created = await createInvitation(client, {
+      email: input.email,
+      orgId,
+      role: 'athlete',
+      teamIds: [input.teamId],
+    });
+  } catch {
+    return c.json(errorBody('INTERNAL', 'Failed to create invitation.'), 502);
+  }
+
+  const db = narrowDb(c.get('db'));
+  const newId = `inv_${randomUUID()}`;
+  const now = new Date();
+  db.insert(invitations)
+    .values({
+      id: newId,
+      orgId,
+      email: input.email,
+      role: 'athlete',
+      teamIds: [input.teamId],
+      clerkInvitationId: created.clerkInvitationId,
+      status: 'pending',
+      invitedByUserId: auth.userId,
+      createdAt: now,
+      updatedAt: now,
+    })
+    .run();
+
+  return c.json(
+    {
+      success: true,
+      data: {
+        id: newId,
+        email: input.email,
+        role: 'athlete' as const,
+        teamIds: [input.teamId],
+        status: 'pending' as const,
+        createdAt: now.getTime(),
+      },
+    },
+    201,
+  );
 });
 
 invitationsAdminRouter.post('/:id/resend', async (c) => {
