@@ -44,7 +44,13 @@ import { userRoleRoute } from './role';
 const mockedVerifyToken = vi.mocked(verifyToken);
 
 const MIGRATIONS_DIR = join(__dirname, '../../../../../../packages/shared/src/db/migrations');
-const MIGRATION_FILES = ['0000_auth_and_rbac.sql', '0001_onboarding_schema.sql'];
+const MIGRATION_FILES = [
+  '0000_auth_and_rbac.sql',
+  '0001_onboarding_schema.sql',
+  '0002_org_team_graph.sql',
+  '0003_invitations.sql',
+  '0004_org_branding.sql',
+];
 
 function freshDb() {
   const sqlite = new Database(':memory:');
@@ -114,7 +120,9 @@ function seedUser(db: ReturnType<typeof freshDb>, overrides: Partial<SeededUser>
 function seedOrg(db: ReturnType<typeof freshDb>, orgId: string): void {
   // The migration declares organizations.id as a FK target; insert
   // a row so users.org_id passes the FK check.
-  db.run(`INSERT INTO organizations (id, name) VALUES ('${orgId}', 'Test Org ${orgId}')`);
+  db.run(
+    `INSERT INTO organizations (id, name, organization_type) VALUES ('${orgId}', 'Test Org ${orgId}', 'CLUB')`,
+  );
 }
 
 /**

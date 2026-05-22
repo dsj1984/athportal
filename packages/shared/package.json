@@ -40,6 +40,10 @@
       "types": "./dist/schemas/auth.d.ts",
       "import": "./src/schemas/auth.ts"
     },
+    "./schemas/admin/org": {
+      "types": "./dist/schemas/admin/org.d.ts",
+      "import": "./src/schemas/admin/org.ts"
+    },
     "./rbac": {
       "types": "./dist/rbac/index.d.ts",
       "import": "./src/rbac/index.ts"
