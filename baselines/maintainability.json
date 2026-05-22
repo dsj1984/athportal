@@ -1,11 +1,11 @@
 {
   "$schema": ".agents/schemas/baselines/maintainability.schema.json",
   "kernelVersion": "0.1.0",
-  "generatedAt": "2026-05-22T22:07:48.438Z",
+  "generatedAt": "2026-05-22T22:26:21.127Z",
   "rollup": {
     "*": {
       "min": 70.515,
-      "p50": 109.435,
+      "p50": 109.238,
       "p95": 171
     }
   },
@@ -33,10 +33,6 @@
     {
       "mi": 116.953,
       "path": "apps/api/src/routes/debug/synthetic-failure.ts"
-    },
-    {
-      "mi": 112.033,
-      "path": "apps/api/src/routes/v1/admin/index.ts"
     },
     {
       "mi": 149.008,

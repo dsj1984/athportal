@@ -52,6 +52,10 @@
       "types": "./dist/schemas/admin/roster.d.ts",
       "import": "./src/schemas/admin/roster.ts"
     },
+    "./schemas/admin/reports": {
+      "types": "./dist/schemas/admin/reports.d.ts",
+      "import": "./src/schemas/admin/reports.ts"
+    },
     "./schemas/admin/rollover": {
       "types": "./dist/schemas/admin/rollover.d.ts",
       "import": "./src/schemas/admin/rollover.ts"

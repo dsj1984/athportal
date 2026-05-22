@@ -29,6 +29,7 @@ void Given;
 const ADMIN_ORG_CONFIG_PATH = '/admin/org';
 const ADMIN_ROSTER_PATH = '/admin/roster';
 const ADMIN_ROLLOVER_PATH = '/admin/rollover';
+const ADMIN_REPORTS_PATH = '/admin/reports';
 
 When('I open the admin org configuration page', async ({ page }) => {
   await page.goto(ADMIN_ORG_CONFIG_PATH);
@@ -76,4 +77,20 @@ Then('I see the season rollover surface', async ({ page }) => {
   // (`apps/api/src/routes/v1/admin/rollover.contract.test.ts`).
   const decisions = page.getByTestId('admin-rollover-decisions');
   await expect(decisions).toBeVisible();
+});
+
+When('I open the admin reports page', async ({ page }) => {
+  await page.goto(ADMIN_REPORTS_PATH);
+});
+
+Then('I see the verified-achievement report', async ({ page }) => {
+  // The page renders the empty by-team and by-sport tables
+  // server-side; the inline script populates rows from the API.
+  // Asserting both table surfaces are visible is enough to prove the
+  // page reached the org admin — aggregation shape, cross-tenant
+  // isolation, and the pinned-zero count invariant live in the
+  // contract tier
+  // (`apps/api/src/routes/v1/admin/reports.contract.test.ts`).
+  await expect(page.getByTestId('admin-report-by-team')).toBeVisible();
+  await expect(page.getByTestId('admin-report-by-sport')).toBeVisible();
 });
