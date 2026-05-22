@@ -33,7 +33,14 @@ ALTER TABLE `organizations` ADD COLUMN `organization_type` text NOT NULL DEFAULT
 UPDATE `organizations` SET `organization_type` = 'CLUB' WHERE `organization_type` IS NULL;--> statement-breakpoint
 
 -- Strip the default so future inserts must specify organization_type.
--- SQLite has no ALTER COLUMN DROP DEFAULT, so rebuild the table.
+-- SQLite has no ALTER COLUMN DROP DEFAULT, so rebuild the table per the
+-- canonical 12-step ALTER recipe at sqlite.org/lang_altertable.html#7.
+-- The PRAGMA foreign_keys=OFF / foreign_key_check / foreign_keys=ON
+-- wrap is REQUIRED: with FKs enforced the `DROP TABLE organizations`
+-- below performs an implicit DELETE that fires FK enforcement against
+-- every row in users.org_id and teams.org_id, which would otherwise
+-- abort the migration on any database that already has org membership.
+PRAGMA foreign_keys=OFF;--> statement-breakpoint
 CREATE TABLE `__new_organizations` (
 	`id` text PRIMARY KEY NOT NULL,
 	`name` text NOT NULL,
@@ -45,6 +52,11 @@ INSERT INTO `__new_organizations` (`id`, `name`, `organization_type`, `created_a
 SELECT `id`, `name`, `organization_type`, `created_at`, `updated_at` FROM `organizations`;--> statement-breakpoint
 DROP TABLE `organizations`;--> statement-breakpoint
 ALTER TABLE `__new_organizations` RENAME TO `organizations`;--> statement-breakpoint
+-- foreign_key_check catches any genuinely-bad FK rows that snuck in
+-- under the OFF window; re-enabling enforcement without the check would
+-- silently authorize bad data.
+PRAGMA foreign_key_check;--> statement-breakpoint
+PRAGMA foreign_keys=ON;--> statement-breakpoint
 
 -- 2. teams.deleted_at — nullable soft-delete timestamp
 ALTER TABLE `teams` ADD COLUMN `deleted_at` integer;--> statement-breakpoint
@@ -73,9 +85,9 @@ BEFORE INSERT ON `coach_assignments`
 FOR EACH ROW
 BEGIN
 	SELECT CASE
-		WHEN (SELECT `org_id` FROM `teams` WHERE `id` = NEW.`team_id`) <> NEW.`org_id`
+		WHEN (SELECT `org_id` FROM `teams` WHERE `id` = NEW.`team_id`) IS NOT NEW.`org_id`
 			THEN RAISE(ABORT, 'coach_assignments.org_id does not match teams.org_id')
-		WHEN (SELECT `org_id` FROM `users` WHERE `id` = NEW.`coach_user_id`) <> NEW.`org_id`
+		WHEN (SELECT `org_id` FROM `users` WHERE `id` = NEW.`coach_user_id`) IS NOT NEW.`org_id`
 			THEN RAISE(ABORT, 'coach_assignments.org_id does not match users.org_id')
 	END;
 END;--> statement-breakpoint
@@ -85,9 +97,9 @@ BEFORE UPDATE OF `org_id`, `team_id`, `coach_user_id` ON `coach_assignments`
 FOR EACH ROW
 BEGIN
 	SELECT CASE
-		WHEN (SELECT `org_id` FROM `teams` WHERE `id` = NEW.`team_id`) <> NEW.`org_id`
+		WHEN (SELECT `org_id` FROM `teams` WHERE `id` = NEW.`team_id`) IS NOT NEW.`org_id`
 			THEN RAISE(ABORT, 'coach_assignments.org_id does not match teams.org_id')
-		WHEN (SELECT `org_id` FROM `users` WHERE `id` = NEW.`coach_user_id`) <> NEW.`org_id`
+		WHEN (SELECT `org_id` FROM `users` WHERE `id` = NEW.`coach_user_id`) IS NOT NEW.`org_id`
 			THEN RAISE(ABORT, 'coach_assignments.org_id does not match users.org_id')
 	END;
 END;--> statement-breakpoint
@@ -115,9 +127,9 @@ BEFORE INSERT ON `athlete_memberships`
 FOR EACH ROW
 BEGIN
 	SELECT CASE
-		WHEN (SELECT `org_id` FROM `teams` WHERE `id` = NEW.`team_id`) <> NEW.`org_id`
+		WHEN (SELECT `org_id` FROM `teams` WHERE `id` = NEW.`team_id`) IS NOT NEW.`org_id`
 			THEN RAISE(ABORT, 'athlete_memberships.org_id does not match teams.org_id')
-		WHEN (SELECT `org_id` FROM `users` WHERE `id` = NEW.`athlete_user_id`) <> NEW.`org_id`
+		WHEN (SELECT `org_id` FROM `users` WHERE `id` = NEW.`athlete_user_id`) IS NOT NEW.`org_id`
 			THEN RAISE(ABORT, 'athlete_memberships.org_id does not match users.org_id')
 	END;
 END;--> statement-breakpoint
@@ -127,9 +139,9 @@ BEFORE UPDATE OF `org_id`, `team_id`, `athlete_user_id` ON `athlete_memberships`
 FOR EACH ROW
 BEGIN
 	SELECT CASE
-		WHEN (SELECT `org_id` FROM `teams` WHERE `id` = NEW.`team_id`) <> NEW.`org_id`
+		WHEN (SELECT `org_id` FROM `teams` WHERE `id` = NEW.`team_id`) IS NOT NEW.`org_id`
 			THEN RAISE(ABORT, 'athlete_memberships.org_id does not match teams.org_id')
-		WHEN (SELECT `org_id` FROM `users` WHERE `id` = NEW.`athlete_user_id`) <> NEW.`org_id`
+		WHEN (SELECT `org_id` FROM `users` WHERE `id` = NEW.`athlete_user_id`) IS NOT NEW.`org_id`
 			THEN RAISE(ABORT, 'athlete_memberships.org_id does not match users.org_id')
 	END;
 END;
