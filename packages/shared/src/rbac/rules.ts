@@ -1,11 +1,13 @@
 /**
- * RBAC rules table for `story-c-rbac-policy` (Story #327, Epic #7).
+ * RBAC rules table for `story-c-rbac-policy` (Story #327, Epic #7);
+ * extended for `story-rbac-extension` (Story #606, Epic #9).
  *
  * One row per `(role, resource, action)` triple. There are NO implicit
- * fallthroughs: every triple in `Role × Resource × Action` (80 entries)
- * appears in `RULES` with an explicit allow/deny. The `canPerform()`
- * policy function (see `./policy.ts`) looks up the row and returns
- * `false` for an unknown triple as a deny-by-default safeguard.
+ * fallthroughs: every triple in `Role × Resource × Action` (120 entries
+ * with the Epic #9 graph extensions) appears in `RULES` with an
+ * explicit allow/deny. The `canPerform()` policy function (see
+ * `./policy.ts`) looks up the row and returns `false` for an unknown
+ * triple as a deny-by-default safeguard.
  *
  * Design notes (Tech Spec #318 §D, §E):
  * - Scope/owner guards are factored as **named predicates** so the
@@ -307,6 +309,83 @@ export const RULES: ReadonlyArray<Rule> = [
   rule('member', 'invitation', 'update', deny),
   rule('member', 'invitation', 'delete', deny),
   rule('member', 'invitation', 'list', deny),
+
+  // ─── Epic #9: graph resources (Story #606) ────────────────────
+  // `coachAssignment` and `athleteMembership` join a user to a team
+  // within the actor's org. Tech Spec #596 mandates that the new
+  // triples reuse the existing `sameOrg` / `sameTeam` predicates —
+  // no new guards are introduced. The role-by-role envelope is:
+  //   - dev_admin   → allow-all (platform root, same as elsewhere)
+  //   - org_admin   → `sameOrg` for every action (owns the org
+  //                   graph end-to-end; cross-org assignments are
+  //                   refused at the persistence layer too).
+  //   - team_admin  → `sameTeam` for every action (manages the
+  //                   roster of their own team; cross-team within
+  //                   the same org is still refused).
+  //   - member      → `sameTeam` for `read` / `list` only (athletes
+  //                   can see their own team's coaches and
+  //                   teammates); every mutation denies.
+
+  // ─── dev_admin × graph resources ─────────────────────────────
+  rule('dev_admin', 'coachAssignment', 'create', allow),
+  rule('dev_admin', 'coachAssignment', 'read', allow),
+  rule('dev_admin', 'coachAssignment', 'update', allow),
+  rule('dev_admin', 'coachAssignment', 'delete', allow),
+  rule('dev_admin', 'coachAssignment', 'list', allow),
+  rule('dev_admin', 'athleteMembership', 'create', allow),
+  rule('dev_admin', 'athleteMembership', 'read', allow),
+  rule('dev_admin', 'athleteMembership', 'update', allow),
+  rule('dev_admin', 'athleteMembership', 'delete', allow),
+  rule('dev_admin', 'athleteMembership', 'list', allow),
+
+  // ─── org_admin × graph resources ─────────────────────────────
+  rule('org_admin', 'coachAssignment', 'create', sameOrg),
+  rule('org_admin', 'coachAssignment', 'read', sameOrg),
+  rule('org_admin', 'coachAssignment', 'update', sameOrg),
+  rule('org_admin', 'coachAssignment', 'delete', sameOrg),
+  rule('org_admin', 'coachAssignment', 'list', sameOrg),
+  rule('org_admin', 'athleteMembership', 'create', sameOrg),
+  rule('org_admin', 'athleteMembership', 'read', sameOrg),
+  rule('org_admin', 'athleteMembership', 'update', sameOrg),
+  rule('org_admin', 'athleteMembership', 'delete', sameOrg),
+  rule('org_admin', 'athleteMembership', 'list', sameOrg),
+
+  // ─── team_admin × graph resources ────────────────────────────
+  rule('team_admin', 'coachAssignment', 'create', sameTeam),
+  rule('team_admin', 'coachAssignment', 'read', sameTeam),
+  rule('team_admin', 'coachAssignment', 'update', sameTeam),
+  rule('team_admin', 'coachAssignment', 'delete', sameTeam),
+  rule('team_admin', 'coachAssignment', 'list', sameTeam),
+  rule('team_admin', 'athleteMembership', 'create', sameTeam),
+  rule('team_admin', 'athleteMembership', 'read', sameTeam),
+  rule('team_admin', 'athleteMembership', 'update', sameTeam),
+  rule('team_admin', 'athleteMembership', 'delete', sameTeam),
+  rule('team_admin', 'athleteMembership', 'list', sameTeam),
+
+  // ─── member × graph resources ────────────────────────────────
+  // Athletes read their team's roster; never mutate it.
+  rule('member', 'coachAssignment', 'create', deny),
+  rule('member', 'coachAssignment', 'read', sameTeam, 'athletes see who coaches their own team'),
+  rule('member', 'coachAssignment', 'update', deny),
+  rule('member', 'coachAssignment', 'delete', deny),
+  rule('member', 'coachAssignment', 'list', sameTeam, 'athletes list their own team’s coaches'),
+  rule('member', 'athleteMembership', 'create', deny),
+  rule(
+    'member',
+    'athleteMembership',
+    'read',
+    sameTeam,
+    'athletes see their teammates on the same team',
+  ),
+  rule('member', 'athleteMembership', 'update', deny),
+  rule('member', 'athleteMembership', 'delete', deny),
+  rule(
+    'member',
+    'athleteMembership',
+    'list',
+    sameTeam,
+    'athletes list their own team’s membership',
+  ),
 ] as const;
 
 /**

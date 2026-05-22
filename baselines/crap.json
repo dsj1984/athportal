@@ -1,7 +1,7 @@
 {
   "$schema": ".agents/schemas/baselines/crap.schema.json",
   "kernelVersion": "0.1.0",
-  "generatedAt": "2026-05-22T10:51:19.345Z",
+  "generatedAt": "2026-05-22T11:22:05.321Z",
   "rollup": {
     "*": {
       "p50": 2,
@@ -1666,66 +1666,6 @@
       "method": "canPerform",
       "path": "packages/shared/src/rbac/policy.ts",
       "startLine": 40
-    },
-    {
-      "crap": 2,
-      "method": "<anon method-1>",
-      "path": "packages/shared/src/rbac/rules.ts",
-      "startLine": 46
-    },
-    {
-      "crap": 2,
-      "method": "<anon method-2>",
-      "path": "packages/shared/src/rbac/rules.ts",
-      "startLine": 47
-    },
-    {
-      "crap": 12,
-      "method": "<anon method-3>",
-      "path": "packages/shared/src/rbac/rules.ts",
-      "startLine": 57
-    },
-    {
-      "crap": 20,
-      "method": "<anon method-4>",
-      "path": "packages/shared/src/rbac/rules.ts",
-      "startLine": 68
-    },
-    {
-      "crap": 12,
-      "method": "<anon method-5>",
-      "path": "packages/shared/src/rbac/rules.ts",
-      "startLine": 80
-    },
-    {
-      "crap": 6,
-      "method": "<anon method-6>",
-      "path": "packages/shared/src/rbac/rules.ts",
-      "startLine": 93
-    },
-    {
-      "crap": 6,
-      "method": "<anon method-7>",
-      "path": "packages/shared/src/rbac/rules.ts",
-      "startLine": 100
-    },
-    {
-      "crap": 2,
-      "method": "rule",
-      "path": "packages/shared/src/rbac/rules.ts",
-      "startLine": 125
-    },
-    {
-      "crap": 6,
-      "method": "buildRuleIndex",
-      "path": "packages/shared/src/rbac/rules.ts",
-      "startLine": 322
-    },
-    {
-      "crap": 2,
-      "method": "findRule",
-      "path": "packages/shared/src/rbac/rules.ts",
-      "startLine": 348
     },
     {
       "crap": 6,
