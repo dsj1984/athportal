@@ -8,7 +8,7 @@
 //
 // Story #715 / Task #722 — Epic #702 design-system foundation.
 
-import { cva, type VariantProps } from 'class-variance-authority';
+import { type VariantProps, cva } from 'class-variance-authority';
 
 /**
  * The four canonical button kinds.
@@ -59,8 +59,7 @@ export const btnVariants = cva(
     variants: {
       kind: {
         primary: 'bg-brand text-white hover:bg-brand-hover',
-        ghost:
-          'bg-transparent text-text-primary border border-border hover:bg-surface-hover',
+        ghost: 'bg-transparent text-text-primary border border-border hover:bg-surface-hover',
         subtle: 'bg-transparent text-text-primary hover:bg-surface-hover',
         coral: 'bg-action-coral text-white hover:bg-action-coral/90',
       } satisfies Record<BtnKind, string>,

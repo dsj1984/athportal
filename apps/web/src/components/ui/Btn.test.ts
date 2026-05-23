@@ -9,7 +9,7 @@
 // Story #715 / Task #722.
 
 import { describe, expect, it } from 'vitest';
-import { btnVariants, type BtnKind, type BtnSize } from './_lib/btn';
+import { type BtnKind, type BtnSize, btnVariants } from './_lib/btn';
 
 const KINDS: readonly BtnKind[] = ['primary', 'ghost', 'subtle', 'coral'];
 const SIZES: readonly BtnSize[] = ['sm', 'default', 'lg'];
