@@ -1,0 +1,81 @@
+---
+// apps/web/src/pages/_internal/styleguide.astro
+//
+// `/_internal/styleguide` — internal-only design-system reference
+// page (Epic #702 / Story #723 / Task #733). Renders four reference
+// sections covering every primitive shipped by the Wave 1 primitive
+// library:
+//
+//   1. Foundations — colour / radius / shadow tokens + type ramp.
+//   2. Interactive atoms — Btn matrix, form-control intents, toast
+//      triggers wired through the canonical `_lib/toast` helper.
+//   3. Display atoms — Badge / Avatar / Ring / Stat / Card / CardSoft /
+//      Logo / VerifiedTick / Ph.
+//   4. Composites — EventChip (every event_type × conflict) and a
+//      Shell preview for each SidebarPersona.
+//
+// Sibling Task #734 layers the Clerk + dev_admin gate and the
+// `X-Robots-Tag: noindex, nofollow` response header on top of this
+// scaffold. Until that lands the page renders the section content
+// for any caller that reaches the route — and the route lives under
+// `_internal/` so it stays out of the marketing surface.
+
+import RootLayout from '../../layouts/RootLayout.astro';
+import Foundations from '../../components/styleguide/Foundations.astro';
+import InteractiveAtoms from '../../components/styleguide/InteractiveAtoms.astro';
+import DisplayAtoms from '../../components/styleguide/DisplayAtoms.astro';
+import Composites from '../../components/styleguide/Composites.astro';
+---
+
+<RootLayout title="Internal styleguide">
+  <main class="styleguide">
+    <header class="styleguide__header">
+      <h1 class="styleguide__heading">Internal styleguide</h1>
+      <p class="styleguide__intro">
+        Living reference for the Epic #702 design-system primitives.
+        Every primitive shipped to <code>apps/web/src/components/ui/</code>
+        appears below with its full props matrix. Update this page in
+        lockstep with the primitive library so the visual contract stays
+        the source of truth.
+      </p>
+    </header>
+
+    <Foundations />
+    <InteractiveAtoms />
+    <DisplayAtoms />
+    <Composites />
+  </main>
+</RootLayout>
+
+<style>
+  .styleguide {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 32px 24px 64px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .styleguide__header {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .styleguide__heading {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--color-text-primary);
+    margin: 0;
+  }
+  .styleguide__intro {
+    color: var(--color-text-secondary);
+    margin: 0;
+  }
+  .styleguide__intro code {
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+  }
+</style>

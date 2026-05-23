@@ -1,0 +1,185 @@
+---
+// apps/web/src/components/styleguide/InteractiveAtoms.astro
+//
+// Section 2 of the internal styleguide. Renders the interactive
+// atoms shipped by Epic #702 Wave 1:
+//
+//   - Btn — every BtnKind × BtnSize combination from _lib/btn.ts.
+//   - Input / Textarea / Select — default + invalid intents. The
+//     three form controls are React islands; the styleguide renders
+//     plain native controls dressed in the shared
+//     `formControlVariants` cva matrix (the SAME class string each
+//     React island composes) so the visual demo stays a thin
+//     server-render without forcing React hydration for inert
+//     showcases.
+//   - Toast triggers — three buttons firing toast.success /
+//     toast.error / toast.info via the canonical _lib/toast helper.
+//     The inline script imports the helper at runtime via the
+//     standard Astro <script> hoist so the toast surface stays
+//     wired through the singleton ToastHost mounted by RootLayout.
+//
+// Story #723 / Task #733.
+
+import Btn from '../ui/Btn.astro';
+import { type BtnKind, type BtnSize } from '../ui/_lib/btn.ts';
+import { formControlVariants } from '../ui/_lib/form.ts';
+
+const BTN_KINDS: readonly BtnKind[] = ['primary', 'ghost', 'subtle', 'coral'];
+const BTN_SIZES: readonly BtnSize[] = ['sm', 'default', 'lg'];
+
+const inputDefaultClass = formControlVariants({ intent: 'default' });
+const inputInvalidClass = formControlVariants({ intent: 'invalid' });
+---
+
+<section class="styleguide-section">
+  <h2 class="styleguide-section__title">2. Interactive atoms</h2>
+
+  <h3 class="styleguide-subsection__title">Btn — kind × size matrix</h3>
+  <div class="styleguide-btn-matrix">
+    {BTN_KINDS.map((kind) => (
+      <div class="styleguide-btn-row">
+        <span class="styleguide-btn-row__label">{kind}</span>
+        {BTN_SIZES.map((size) => (
+          <Btn kind={kind} size={size}>
+            {kind} / {size}
+          </Btn>
+        ))}
+      </div>
+    ))}
+  </div>
+
+  <h3 class="styleguide-subsection__title">Form controls — default + invalid intents</h3>
+  <p class="styleguide-help">
+    The dressed controls below use the same <code>formControlVariants</code>
+    cva matrix the React islands (<code>Input</code>, <code>Textarea</code>,
+    <code>Select</code>) compose; the styleguide renders native elements
+    directly so the visual demo stays inert.
+  </p>
+  <div class="styleguide-form-grid">
+    <div class="styleguide-form-cell">
+      <label class="styleguide-form-cell__label">Input — default</label>
+      <input type="text" class={inputDefaultClass} placeholder="e.g. Ada Lovelace" />
+    </div>
+    <div class="styleguide-form-cell">
+      <label class="styleguide-form-cell__label">Input — invalid</label>
+      <input type="text" class={inputInvalidClass} aria-invalid="true" placeholder="Required field" />
+    </div>
+
+    <div class="styleguide-form-cell">
+      <label class="styleguide-form-cell__label">Textarea — default</label>
+      <textarea class={inputDefaultClass} placeholder="Add a note…" rows={3}></textarea>
+    </div>
+    <div class="styleguide-form-cell">
+      <label class="styleguide-form-cell__label">Textarea — invalid</label>
+      <textarea class={inputInvalidClass} aria-invalid="true" placeholder="Required field" rows={3}></textarea>
+    </div>
+
+    <div class="styleguide-form-cell">
+      <label class="styleguide-form-cell__label">Select — default</label>
+      <select class={inputDefaultClass}>
+        <option value="home">Home</option>
+        <option value="away">Away</option>
+        <option value="neutral">Neutral</option>
+      </select>
+    </div>
+    <div class="styleguide-form-cell">
+      <label class="styleguide-form-cell__label">Select — invalid</label>
+      <select class={inputInvalidClass} aria-invalid="true">
+        <option value="home">Home</option>
+        <option value="away">Away</option>
+        <option value="neutral">Neutral</option>
+      </select>
+    </div>
+  </div>
+
+  <h3 class="styleguide-subsection__title">Toast triggers</h3>
+  <p class="styleguide-help">
+    Each button fires the matching <code>toast.*</code> helper through the
+    canonical <code>_lib/toast</code> re-export so the surface stays wired to
+    the singleton <code>ToastHost</code> mounted by <code>RootLayout</code>.
+  </p>
+  <div class="styleguide-toast-row">
+    <Btn kind="primary" id="styleguide-toast-success">Show success toast</Btn>
+    <Btn kind="ghost" id="styleguide-toast-info">Show info toast</Btn>
+    <Btn kind="coral" id="styleguide-toast-error">Show error toast</Btn>
+  </div>
+</section>
+
+<script>
+  import { toast } from '../ui/_lib/toast';
+
+  const wireTrigger = (id: string, fire: () => void) => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('click', fire);
+  };
+
+  wireTrigger('styleguide-toast-success', () => toast.success('Saved successfully'));
+  wireTrigger('styleguide-toast-info', () => toast.info('Heads up — your roster has 3 unverified athletes'));
+  wireTrigger('styleguide-toast-error', () => toast.error('Could not reach the server'));
+</script>
+
+<style>
+  .styleguide-section {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 24px 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .styleguide-section__title {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+  .styleguide-subsection__title {
+    font-family: var(--font-display);
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-top: 8px;
+  }
+  .styleguide-btn-matrix {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .styleguide-btn-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .styleguide-btn-row__label {
+    width: 80px;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+  }
+  .styleguide-form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+  .styleguide-form-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .styleguide-form-cell__label {
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+    font-family: var(--font-mono);
+  }
+  .styleguide-help {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+  }
+  .styleguide-help code {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+  }
+  .styleguide-toast-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+</style>

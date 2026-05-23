@@ -1,0 +1,172 @@
+---
+// apps/web/src/components/styleguide/Composites.astro
+//
+// Section 4 of the internal styleguide. Renders the composite
+// primitives shipped by Epic #702 Wave 1:
+//
+//   - EventChip — every event_type from EVENT_COLORS, in both
+//     `conflict={false}` and `conflict={true}` variants so the
+//     conflict-dot path is visually pinned.
+//   - Shell — preview for all three SidebarPersona values (athlete /
+//     coach / org). Each Shell is rendered inside a constrained
+//     container so the 232px sidebar + 1fr content grid is visible
+//     without taking over the page.
+//
+// Story #723 / Task #733.
+
+import EventChip from '../ui/EventChip.astro';
+import Shell from '../ui/Shell.astro';
+import { EVENT_COLORS, type EventType } from '../ui/_lib/eventColors.ts';
+import type { SidebarPersona } from '../ui/_lib/sidebarNav.ts';
+
+const EVENT_TYPES: readonly EventType[] = Object.keys(EVENT_COLORS) as readonly EventType[];
+const PERSONAS: readonly SidebarPersona[] = ['athlete', 'coach', 'org'];
+
+// Per-persona sample copy so each Shell preview reads as a
+// recognisable surface rather than a blank rectangle.
+const PERSONA_CONTENT: Readonly<Record<SidebarPersona, { title: string; body: string; active: string }>> = {
+  athlete: {
+    title: 'Athlete dashboard',
+    body: 'Today’s training plan, upcoming games, and verified stat highlights.',
+    active: '/',
+  },
+  coach: {
+    title: 'Coach dashboard',
+    body: 'Roster overview, today’s practice, and unverified athlete stats awaiting review.',
+    active: '/roster',
+  },
+  org: {
+    title: 'Org overview',
+    body: 'Cross-team headcount, recent invitations, and reporting health.',
+    active: '/',
+  },
+};
+---
+
+<section class="styleguide-section">
+  <h2 class="styleguide-section__title">4. Composites</h2>
+
+  <h3 class="styleguide-subsection__title">EventChip — every event_type × conflict</h3>
+  <div class="styleguide-event-grid">
+    {EVENT_TYPES.map((type) => (
+      <div class="styleguide-event-row">
+        <span class="styleguide-event-row__label">{type}</span>
+        <EventChip type={type} title={`${type} — sample`} time="4:00 PM" team="Varsity" />
+        <EventChip type={type} title={`${type} — conflict`} time="4:00 PM" team="Varsity" conflict />
+      </div>
+    ))}
+  </div>
+
+  <h3 class="styleguide-subsection__title">Shell — persona previews</h3>
+  <p class="styleguide-help">
+    Each preview hosts a real <code>Shell</code> with the persona-keyed
+    sidebar nav (<code>SIDEBAR_NAV</code> in <code>_lib/sidebarNav.ts</code>)
+    and the canonical topbar. Previews are scoped to a fixed-height frame so
+    they do not take over the page.
+  </p>
+  <div class="styleguide-shell-grid">
+    {PERSONAS.map((persona) => {
+      const content = PERSONA_CONTENT[persona];
+      return (
+        <div class="styleguide-shell-frame">
+          <div class="styleguide-shell-frame__label">
+            <code>persona="{persona}"</code>
+          </div>
+          <div class="styleguide-shell-frame__viewport">
+            <Shell persona={persona} active={content.active}>
+              <h2 class="styleguide-shell-preview__title">{content.title}</h2>
+              <p class="styleguide-shell-preview__body">{content.body}</p>
+            </Shell>
+          </div>
+        </div>
+      );
+    })}
+  </div>
+</section>
+
+<style>
+  .styleguide-section {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 24px 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .styleguide-section__title {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+  .styleguide-subsection__title {
+    font-family: var(--font-display);
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-top: 8px;
+  }
+  .styleguide-help {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+  }
+  .styleguide-help code {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+  }
+  .styleguide-event-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .styleguide-event-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .styleguide-event-row__label {
+    width: 100px;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+  }
+  .styleguide-shell-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+  .styleguide-shell-frame {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .styleguide-shell-frame__label {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+  }
+  /*
+   * Constrain the Shell preview to a fixed-height viewport so the
+   * sidebar grid is visible without the Shell's `min-height: 100vh`
+   * blowing past the section. The Shell sees the same persona /
+   * active props production code would pass.
+   */
+  .styleguide-shell-frame__viewport {
+    height: 420px;
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+  }
+  .styleguide-shell-frame__viewport :global(.shell) {
+    min-height: 100%;
+    height: 100%;
+  }
+  .styleguide-shell-preview__title {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0 0 8px 0;
+  }
+  .styleguide-shell-preview__body {
+    margin: 0;
+    color: var(--color-text-secondary);
+  }
+</style>
