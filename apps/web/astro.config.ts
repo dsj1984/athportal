@@ -15,6 +15,7 @@
 
 import node from '@astrojs/node';
 import react from '@astrojs/react';
+import clerk from '@clerk/astro';
 import sentry from '@sentry/astro';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'astro/config';
@@ -23,6 +24,10 @@ const dsn = import.meta.env.SENTRY_DSN_WEB ?? process.env.SENTRY_DSN_WEB;
 const release = process.env.RELEASE_SHA;
 
 const integrations = [
+  // Clerk integration must be registered explicitly so the SSR build
+  // can resolve `virtual:@clerk/astro/config` from `@clerk/astro/components`.
+  // Story #753 / Epic #741.
+  clerk(),
   react(),
   ...(dsn
     ? [
