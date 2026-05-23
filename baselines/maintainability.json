@@ -1,41 +1,11 @@
 {
   "$schema": ".agents/schemas/baselines/maintainability.schema.json",
-  "generatedAt": "2026-05-22T23:19:34.139Z",
-  "kernelVersion": "1.0.0",
+  "kernelVersion": "0.1.0",
+  "generatedAt": "2026-05-23T01:21:37.247Z",
   "rollup": {
     "*": {
       "min": 70.515,
       "p50": 106.74,
-      "p95": 171
-    },
-    "apps/api": {
-      "min": 78.354,
-      "p50": 107.516,
-      "p95": 171
-    },
-    "apps/mobile": {
-      "min": 96.11,
-      "p50": 96.11,
-      "p95": 121.195
-    },
-    "apps/web": {
-      "min": 80.074,
-      "p50": 108.206,
-      "p95": 147.989
-    },
-    "packages/baselines": {
-      "min": 98.311,
-      "p50": 104.945,
-      "p95": 171
-    },
-    "packages/config": {
-      "min": 104.952,
-      "p50": 104.952,
-      "p95": 115.627
-    },
-    "packages/shared": {
-      "min": 70.515,
-      "p50": 99.315,
       "p95": 171
     }
   },
@@ -167,10 +137,6 @@
     {
       "mi": 121.195,
       "path": "apps/mobile/src/sentry.ts"
-    },
-    {
-      "mi": 111.698,
-      "path": "apps/web/astro.config.ts"
     },
     {
       "mi": 133.574,
