@@ -1,11 +1,15 @@
 ---
-// apps/web/src/pages/sign-up/[[...index]].astro
+// apps/web/src/pages/sign-up/[...rest].astro
 //
 // Clerk-hosted sign-up surface. Renders the `<SignUp />` component from
 // `@clerk/astro/components` so US-1 (email + password) and US-2 (magic
 // link) flows can complete account creation end-to-end.
 //
 // Story #328 (Task #334) — Clerk SDK wiring for the web runtime.
+// Story #745 (Task #747) — renamed from optional catch-all
+// `[[...index]].astro` (rejected by Astro 5) to mandatory catch-all
+// `[...rest].astro`. Bare `/sign-up` is served by the sibling
+// `index.astro` re-export.
 
 import { SignUp } from '@clerk/astro/components';
 ---
