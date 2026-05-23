@@ -1,7 +1,7 @@
 {
   "$schema": ".agents/schemas/baselines/maintainability.schema.json",
   "kernelVersion": "0.1.0",
-  "generatedAt": "2026-05-23T01:21:37.247Z",
+  "generatedAt": "2026-05-23T01:39:54.860Z",
   "rollup": {
     "*": {
       "min": 70.515,
@@ -139,6 +139,10 @@
       "path": "apps/mobile/src/sentry.ts"
     },
     {
+      "mi": 103.28,
+      "path": "apps/web/astro.config.ts"
+    },
+    {
       "mi": 133.574,
       "path": "apps/web/e2e/fixtures/email-inbox.ts"
     },
@@ -257,6 +261,10 @@
     {
       "mi": 106.74,
       "path": "apps/web/src/components/onboarding/ProfilePhotoUploader.ts"
+    },
+    {
+      "mi": 147.376,
+      "path": "apps/web/src/components/ui/_lib/cn.ts"
     },
     {
       "mi": 107.592,

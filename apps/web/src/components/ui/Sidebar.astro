@@ -1,0 +1,78 @@
+---
+// apps/web/src/components/ui/Sidebar.astro
+//
+// Persona-aware sidebar nav. Resolves the nav list through the pure
+// `buildSidebarView` builder and renders each row with the matching
+// `lucide-react` glyph. The Astro template stays a thin renderer —
+// every decision (which icons, which row is active, what colour the
+// active row uses) lives in `Sidebar.ts` / `_lib/sidebarNav.ts` so the
+// unit tier can exercise it under node Vitest.
+//
+// Story #712 / Task #729.
+
+import { buildSidebarView, type SidebarProps } from './Sidebar.ts';
+import * as LucideIcons from 'lucide-react';
+
+type Props = SidebarProps;
+const view = buildSidebarView(Astro.props);
+
+type IconComponent = (typeof LucideIcons)[keyof typeof LucideIcons];
+const iconRegistry = LucideIcons as unknown as Record<string, IconComponent>;
+---
+
+<nav class="sidebar" data-testid={view.testId} data-persona={view.persona}>
+  <ul class="sidebar__list">
+    {view.rows.map((row) => {
+      const Icon = iconRegistry[row.icon];
+      return (
+        <li class="sidebar__row" data-active={row.active ? 'true' : 'false'}>
+          <a
+            class="sidebar__link"
+            href={row.href}
+            data-testid={row.testId}
+            style={row.activeStyle ?? undefined}
+          >
+            {Icon ? <Icon size={18} aria-hidden="true" /> : null}
+            <span class="sidebar__label">{row.label}</span>
+          </a>
+        </li>
+      );
+    })}
+  </ul>
+</nav>
+
+<style>
+  .sidebar {
+    background-color: var(--color-surface-card);
+    border-right: 1px solid var(--color-border);
+    height: 100%;
+    padding: 16px 12px;
+  }
+  .sidebar__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .sidebar__link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    border-radius: var(--radius-md);
+    color: var(--color-text-secondary);
+    text-decoration: none;
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+  }
+  .sidebar__link:hover {
+    background-color: var(--color-surface-hover);
+    color: var(--color-text-primary);
+  }
+  .sidebar__row[data-active="true"] .sidebar__link {
+    color: var(--color-brand);
+    font-weight: 600;
+  }
+</style>

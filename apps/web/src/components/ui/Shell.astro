@@ -1,0 +1,62 @@
+---
+// apps/web/src/components/ui/Shell.astro
+//
+// Signed-in app shell. Lays out a 232px sidebar column + 1fr content
+// column on a surface-bg page background. The sidebar persona is
+// forwarded to the Sidebar composite; the topbar lives above the
+// content column; the default slot accepts the page body. An
+// `actions` slot forwards through to Topbar's actions slot for
+// per-page user-menu / notifications surfaces.
+//
+// Story #712 / Task #729.
+
+import Sidebar from './Sidebar.astro';
+import Topbar from './Topbar.astro';
+import { SHELL_CONTENT_TEST_ID, SHELL_TEST_ID, shellGridTemplateColumns, type ShellProps } from './Shell.ts';
+
+type Props = ShellProps;
+const { persona, active } = Astro.props;
+const gridTemplateColumns = shellGridTemplateColumns();
+---
+
+<div
+  class="shell"
+  data-testid={SHELL_TEST_ID}
+  style={`grid-template-columns:${gridTemplateColumns}`}
+>
+  <aside class="shell__sidebar">
+    <Sidebar persona={persona} active={active} />
+  </aside>
+  <div class="shell__main">
+    <Topbar>
+      <slot name="actions" slot="actions" />
+    </Topbar>
+    <main class="shell__content" data-testid={SHELL_CONTENT_TEST_ID}>
+      <slot />
+    </main>
+  </div>
+</div>
+
+<style>
+  .shell {
+    display: grid;
+    min-height: 100vh;
+    background-color: var(--color-surface-bg);
+  }
+  .shell__sidebar {
+    grid-row: 1;
+    grid-column: 1;
+  }
+  .shell__main {
+    grid-row: 1;
+    grid-column: 2;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .shell__content {
+    flex: 1;
+    padding: 24px;
+    min-width: 0;
+  }
+</style>
