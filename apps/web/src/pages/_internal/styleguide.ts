@@ -12,9 +12,15 @@
 // so even the redirect response and any future bypass branch stays
 // out of search indexes.
 //
-// Story #723 / Task #734. Tech Spec #704. PRD #703.
+// Story #723 / Task #734 introduced the gate. Story #749 / Task #752
+// landed the real `productionRoleLookup` body — the placeholder that
+// returned `null` for every subject is replaced with a Drizzle
+// SELECT against `users.clerk_subject_id`.
 
+import { users } from '@repo/shared/db/schema';
 import type { Role } from '@repo/shared/rbac';
+import { eq } from 'drizzle-orm';
+import { getDb } from '../../lib/db';
 
 /**
  * Outcome of the gate decision. `redirect` short-circuits with a 302
@@ -69,14 +75,66 @@ export function decideStyleguideAccess(input: StyleguideGateInput): StyleguideGa
 export const STYLEGUIDE_ROBOTS_HEADER = 'noindex, nofollow';
 
 /**
- * Production role lookup. The web runtime does not yet carry a DB
- * handle — Tech Spec #704 §Architecture lands the production binding
- * alongside the matching cutover in a later Wave. Until that binding
- * exists this placeholder returns `null` for every subject, which the
- * gate treats as the safe default "not dev_admin → 302 to /". This
- * preserves the PRD invariant that an internal-only page never leaks
- * to a non-dev_admin caller, even before the DB binding lands.
- *
- * Tests inject a deterministic stub instead.
+ * Structural shape of the Drizzle select chain we exercise. Accepting
+ * `unknown` at the call site and narrowing here keeps the accessor
+ * portable across SQLite drivers (better-sqlite3 today, libSQL once
+ * Epic #27 swaps the adapter) and mirrors the inline narrowing pattern
+ * `apps/api/src/middleware/auth.ts#lookupBySubject` uses.
  */
-export const productionRoleLookup: (subjectId: string) => Role | null = () => null;
+interface SelectRoleDb {
+  select: (projection: { role: typeof users.role }) => {
+    from: (table: typeof users) => {
+      where: (predicate: unknown) => {
+        limit: (n: number) => { all: () => ReadonlyArray<{ role: string }> };
+      };
+    };
+  };
+}
+
+/**
+ * Resolve the internal user's role for a Clerk subject id.
+ *
+ * Mirrors the SELECT path of `requireInternalUser` in
+ * `apps/api/src/middleware/auth.ts` — a single-row primary-key-equivalent
+ * lookup on the UNIQUE `users.clerk_subject_id` index. Returns the role
+ * verbatim from the row (so the caller can branch on `'dev_admin'` vs
+ * any other role) or `null` when no row matches.
+ *
+ * Does NOT JIT-insert. The /_internal/styleguide gate is intentionally
+ * deny-by-default for un-provisioned subjects; the JIT path lives in
+ * the API middleware and runs on the first `/api/v1/*` request, not
+ * here.
+ *
+ * The DB handle is typed structurally so the unit test passes a mock
+ * chain without dragging the Drizzle driver union into the test.
+ */
+export function lookupRoleBySubject(db: unknown, subjectId: string): Role | null {
+  const handle = db as SelectRoleDb;
+  const rows = handle
+    .select({ role: users.role })
+    .from(users)
+    .where(eq(users.clerkSubjectId, subjectId))
+    .limit(1)
+    .all();
+  const row = rows[0];
+  if (!row) return null;
+  return row.role as Role;
+}
+
+/**
+ * Production role lookup. Resolves the Clerk subject id to the internal
+ * user's role via the lazy Drizzle handle in `apps/web/src/lib/db.ts`
+ * (better-sqlite3 against `TURSO_URL` until Epic #27 swaps to libSQL).
+ *
+ * Returns `null` when no internal row matches — `decideStyleguideAccess`
+ * treats that as a deny, preserving the PRD invariant that this
+ * internal-only page never leaks to a non-dev_admin caller (PRD #742
+ * AC-10).
+ *
+ * The function is intentionally side-effect-free at the gate level: it
+ * does NOT JIT-insert. The operator's local user becomes `dev_admin`
+ * via `scripts/seed-dev-admin.mjs` (Task #751), not by visiting this
+ * page.
+ */
+export const productionRoleLookup: (subjectId: string) => Role | null = (subjectId) =>
+  lookupRoleBySubject(getDb(), subjectId);

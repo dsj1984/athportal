@@ -1,7 +1,7 @@
 {
   "$schema": ".agents/schemas/baselines/crap.schema.json",
   "kernelVersion": "0.1.0",
-  "generatedAt": "2026-05-23T12:15:03.953Z",
+  "generatedAt": "2026-05-23T12:40:18.697Z",
   "rollup": {
     "*": {
       "p50": 2,
@@ -2524,18 +2524,6 @@
       "method": "<anon method-2>",
       "path": "apps/web/src/middleware.ts",
       "startLine": 191
-    },
-    {
-      "crap": 12,
-      "method": "decideStyleguideAccess",
-      "path": "apps/web/src/pages/_internal/styleguide.ts",
-      "startLine": 53
-    },
-    {
-      "crap": 2,
-      "method": "<anon method-1>",
-      "path": "apps/web/src/pages/_internal/styleguide.ts",
-      "startLine": 82
     },
     {
       "crap": 6,
