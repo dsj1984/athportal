@@ -29,6 +29,10 @@ const config: KnipConfig = {
         '@commitlint/cli',
         'lint-staged',
         '@secretlint/secretlint-rule-preset-recommend',
+        // minimatch — consumed by `.agents/scripts/lib/baselines/components.js`
+        // (framework submodule, ignored by knip's project scan). Surfaced
+        // by Epic #702 design-system close-validation.
+        'minimatch',
       ],
     },
     'apps/api': {
@@ -58,11 +62,31 @@ const config: KnipConfig = {
         // #328 / Task #333) are not; declared here so knip follows the
         // surface.
         'src/pages/**/*.{ts,astro}',
+        // Shared shell — RootLayout.astro is the canonical insertion point
+        // for the global stylesheet and the ToastHost mount (Epic #702
+        // Story #711 / Task #720; Story #714 / Task #731). Knip's Astro
+        // plugin does not chase `.astro → .astro` imports reliably, so the
+        // layout is named explicitly to keep `src/styles/global.css` and
+        // the transitively-imported primitives reachable.
+        'src/layouts/**/*.astro',
+        // global.css — imported by RootLayout.astro via a CSS side-effect
+        // import in the Astro front-matter; knip's Astro plugin does not
+        // track CSS module imports from `.astro` files. Declaring it as a
+        // first-class entry so the design-system token catalogue stays
+        // reachable.
+        'src/styles/global.css',
         'astro.config.ts',
         'playwright.config.ts',
         'vitest.config.ts',
         'e2e/**/*.{ts,mjs}',
       ],
+      // Knip's Astro plugin does not follow imports out of `.astro` files
+      // into the `ui/` primitive directory shipped by Epic #702. The two
+      // dependencies below are consumed transitively from there:
+      //   - tailwindcss is loaded by `@import "tailwindcss"` in
+      //     `apps/web/src/styles/global.css`.
+      //   - lucide-react is imported by `apps/web/src/components/ui/Sidebar.astro`.
+      ignoreDependencies: ['lucide-react', 'tailwindcss'],
     },
     'apps/mobile': {
       entry: ['src/sentry.ts', 'app.config.ts'],
