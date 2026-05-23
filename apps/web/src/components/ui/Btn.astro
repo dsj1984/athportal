@@ -1,0 +1,40 @@
+---
+// apps/web/src/components/ui/Btn.astro
+//
+// Canonical button primitive. Reads kind/size from props, composes the
+// final class string via the cva matrix in `_lib/btn.ts`, and forwards
+// every other native <button> attribute through Astro's `...rest`. When
+// `disabled` is truthy, the rendered <button> carries both the native
+// `disabled` attribute and `aria-disabled="true"` so assistive tech sees
+// the disabled state even when the consumer overrides interaction with
+// pointer-events utilities.
+//
+// Story #715 / Task #722 — Epic #702 design-system foundation.
+
+import type { HTMLAttributes } from 'astro/types';
+import { btnVariants, type BtnKind, type BtnSize } from './_lib/btn.ts';
+import { cn } from './_lib/cn.ts';
+
+export interface Props extends Omit<HTMLAttributes<'button'>, 'class'> {
+  /** Visual variant. Defaults to `primary`. */
+  kind?: BtnKind;
+  /** Size variant. Defaults to `default`. */
+  size?: BtnSize;
+  /** Optional extra class names merged via `cn`. */
+  class?: string;
+}
+
+const { kind = 'primary', size = 'default', class: className, disabled, type = 'button', ...rest } = Astro.props;
+
+const classes = cn(btnVariants({ kind, size }), className);
+---
+
+<button
+  type={type}
+  class={classes}
+  disabled={disabled}
+  aria-disabled={disabled ? 'true' : undefined}
+  {...rest}
+>
+  <slot />
+</button>
