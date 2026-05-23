@@ -1,0 +1,20 @@
+---
+// apps/web/src/components/ui/Badge.astro
+//
+// Soft-translucent pill primitive (docs/style-guide.md §3.4). Accepts
+// a tone (brand / cyan / lime / amber / coral / slate) and an optional
+// `dot` indicator. Body content is supplied via the default slot so
+// the same primitive can carry any label.
+//
+// Story #713 / Task #724 — Epic #702 design system.
+
+import { type BadgeProps, buildBadgeView } from './_lib/badge.ts';
+
+type Props = BadgeProps;
+const view = buildBadgeView(Astro.props);
+---
+
+<span class={view.rootClass} data-tone={view.tone}>
+  {view.showDot && <span class={view.dotClass} aria-hidden="true" />}
+  <slot />
+</span>
