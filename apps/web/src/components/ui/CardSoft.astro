@@ -1,0 +1,15 @@
+---
+// apps/web/src/components/ui/CardSoft.astro
+//
+// Convenience wrapper around Card.astro that sets `soft={true}` so
+// callers can pick the shadowed shape ergonomically without
+// remembering the boolean prop. Equivalent to `<Card soft>...`.
+//
+// Story #713 / Task #725 — Epic #702 design system.
+
+import Card from './Card.astro';
+---
+
+<Card soft>
+  <slot />
+</Card>

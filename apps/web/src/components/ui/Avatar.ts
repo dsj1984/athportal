@@ -2,14 +2,23 @@
 //
 // Pure-TS view-shape builder for the Avatar primitive. Renders an
 // uploaded photo when `src` is provided, otherwise renders the user's
-// uppercase initials. Used post-onboarding on the dashboard header
-// (when no profile photo was uploaded) and on the form's photo
-// preview pane.
+// uppercase initials over an OKLCH gradient fallback keyed off the
+// `hue` prop (Story #713 / Task #721 — Epic #702 design-system, per
+// docs/style-guide.md §3.1 brand-gradient pattern).
 //
-// Story #574 / Task #585. Tech Spec #490. PRD #489.
+// Pre-existing call sites (dashboard avatar surface, onboarding photo
+// preview pane) continue to work unchanged — the new `hue` and `size`
+// props default to the same visual the prior implementation produced
+// for the initials branch. PRD #703 / Tech Spec #704.
 
 /** Canonical data-testid exposed by the dashboard's avatar surface. */
 export const DASHBOARD_AVATAR_TEST_ID = 'dashboard-avatar';
+
+/** Default hue (degrees in OKLCH colour space) — brand-violet. */
+export const DEFAULT_AVATAR_HUE = 270;
+
+/** Default rendered size (pixels) when no `size` prop is provided. */
+export const DEFAULT_AVATAR_SIZE = 40;
 
 /** Public props for the Avatar primitive. */
 export interface AvatarProps {
@@ -19,6 +28,17 @@ export interface AvatarProps {
   readonly src?: string | null;
   /** Optional data-testid override (defaults to the canonical id). */
   readonly testId?: string;
+  /**
+   * Optional OKLCH hue (in degrees, 0–360) used for the gradient
+   * fallback when no photo is provided. Defaults to 270 (brand-violet)
+   * so unbranded surfaces inherit the platform's primary identity.
+   */
+  readonly hue?: number;
+  /**
+   * Optional pixel size for the rendered avatar. Drives both width and
+   * height so the avatar is always square. Defaults to 40px.
+   */
+  readonly size?: number;
 }
 
 /** Render-time view shape consumed by the `.astro` sibling. */
@@ -31,6 +51,18 @@ export interface AvatarView {
   readonly initials: string;
   /** data-testid for the rendered root. */
   readonly testId: string;
+  /** Resolved hue in degrees — always inside [0, 360). */
+  readonly hue: number;
+  /** Resolved pixel size — always a positive integer. */
+  readonly size: number;
+  /**
+   * Inline CSS string for the initials-branch root. Encodes the OKLCH
+   * gradient + the resolved width / height so the `.astro` renderer
+   * does not need to know about the colour-space details.
+   */
+  readonly fallbackStyle: string;
+  /** Inline CSS string for the photo-branch root (width / height only). */
+  readonly imageStyle: string;
 }
 
 /**
@@ -49,7 +81,11 @@ export function buildAvatarView(props: AvatarProps): AvatarView {
   const trimmedSrc = props.src?.trim();
   const src = typeof trimmedSrc === 'string' && trimmedSrc.length > 0 ? trimmedSrc : null;
   const testId = props.testId?.trim() || DASHBOARD_AVATAR_TEST_ID;
-  return { src, name, initials, testId };
+  const hue = resolveHue(props.hue);
+  const size = resolveSize(props.size);
+  const fallbackStyle = buildFallbackStyle(hue, size);
+  const imageStyle = buildImageStyle(size);
+  return { src, name, initials, testId, hue, size, fallbackStyle, imageStyle };
 }
 
 /**
@@ -57,12 +93,6 @@ export function buildAvatarView(props: AvatarProps): AvatarView {
  * grapheme of the first and last whitespace-separated tokens. Single-
  * token names yield a single character; tokens with non-Latin
  * leading characters (e.g. emoji) yield the codepoint itself.
- *
- * Examples:
- *   "Ada Lovelace"        → "AL"
- *   "ada"                  → "A"
- *   "  Ada    Lovelace  "  → "AL"
- *   "Ada Augusta Lovelace" → "AL"  (first + last; middle ignored)
  */
 export function computeInitials(name: string): string {
   const tokens = name
@@ -77,7 +107,33 @@ export function computeInitials(name: string): string {
 }
 
 function firstChar(token: string): string {
-  // Use Array.from to respect surrogate-pair characters so "🦄ame"
-  // returns "🦄" rather than the leading half-codepoint.
   return Array.from(token)[0] ?? '';
+}
+
+function resolveHue(hue: number | undefined): number {
+  if (typeof hue !== 'number' || !Number.isFinite(hue)) return DEFAULT_AVATAR_HUE;
+  // Normalise into [0, 360) so consumers can pass any integer or
+  // negative offset without the renderer producing invalid CSS.
+  const mod = ((hue % 360) + 360) % 360;
+  return mod;
+}
+
+function resolveSize(size: number | undefined): number {
+  if (typeof size !== 'number' || !Number.isFinite(size) || size <= 0) {
+    return DEFAULT_AVATAR_SIZE;
+  }
+  return Math.round(size);
+}
+
+function buildFallbackStyle(hue: number, size: number): string {
+  // Brand gradient per docs/style-guide.md §3.1: a saturated OKLCH
+  // gradient keyed off the resolved hue so each name renders a
+  // distinct but on-brand surface.
+  const start = `oklch(0.72 0.18 ${hue})`;
+  const end = `oklch(0.55 0.20 ${(hue + 35) % 360})`;
+  return `width:${size}px;height:${size}px;background:linear-gradient(135deg, ${start}, ${end});`;
+}
+
+function buildImageStyle(size: number): string {
+  return `width:${size}px;height:${size}px;`;
 }

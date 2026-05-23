@@ -1,0 +1,19 @@
+---
+// apps/web/src/components/ui/Card.astro
+//
+// Bordered-surface primitive (docs/style-guide.md §4.3). Pass `soft`
+// to layer the small drop shadow (--shadow-sm). The companion
+// CardSoft.astro export sets `soft={true}` so callers can pick the
+// shape ergonomically.
+//
+// Story #713 / Task #725 — Epic #702 design system.
+
+import { type CardProps, buildCardView } from './Card.ts';
+
+type Props = CardProps;
+const view = buildCardView(Astro.props);
+---
+
+<div class={view.rootClass}>
+  <slot />
+</div>
