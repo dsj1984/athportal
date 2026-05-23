@@ -9,7 +9,11 @@
     "test": "pnpm exec vitest run",
     "test:e2e": "pnpm exec bddgen && pnpm exec playwright test",
     "test:e2e:smoke": "pnpm exec bddgen && pnpm exec playwright test --grep @smoke",
-    "build": "exit 0"
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check",
+    "astro": "astro"
   },
   "devDependencies": {
     "@clerk/testing": "^2.0.31",
@@ -28,6 +32,7 @@
     "@clerk/astro": "^3.2.4",
     "@sentry/astro": "^10.53.1",
     "@tailwindcss/vite": "^4.3.0",
+    "astro": "^5",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.16.0",

@@ -1,41 +1,11 @@
 {
   "$schema": ".agents/schemas/baselines/maintainability.schema.json",
-  "generatedAt": "2026-05-23T02:31:50.231Z",
-  "kernelVersion": "1.0.0",
+  "kernelVersion": "0.1.0",
+  "generatedAt": "2026-05-23T11:32:51.151Z",
   "rollup": {
     "*": {
       "min": 70.515,
       "p50": 107.499,
-      "p95": 171
-    },
-    "apps/api": {
-      "min": 78.354,
-      "p50": 107.516,
-      "p95": 171
-    },
-    "apps/mobile": {
-      "min": 96.11,
-      "p50": 96.11,
-      "p95": 121.195
-    },
-    "apps/web": {
-      "min": 80.074,
-      "p50": 109.991,
-      "p95": 163.185
-    },
-    "packages/baselines": {
-      "min": 98.311,
-      "p50": 104.945,
-      "p95": 171
-    },
-    "packages/config": {
-      "min": 104.952,
-      "p50": 104.952,
-      "p95": 115.627
-    },
-    "packages/shared": {
-      "min": 70.515,
-      "p50": 99.315,
       "p95": 171
     }
   },
@@ -293,6 +263,34 @@
       "path": "apps/web/src/components/onboarding/ProfilePhotoUploader.ts"
     },
     {
+      "mi": 96.375,
+      "path": "apps/web/src/components/ui/_lib/badge.ts"
+    },
+    {
+      "mi": 99.377,
+      "path": "apps/web/src/components/ui/_lib/btn.ts"
+    },
+    {
+      "mi": 147.376,
+      "path": "apps/web/src/components/ui/_lib/cn.ts"
+    },
+    {
+      "mi": 94.178,
+      "path": "apps/web/src/components/ui/_lib/eventColors.ts"
+    },
+    {
+      "mi": 109.991,
+      "path": "apps/web/src/components/ui/_lib/form.ts"
+    },
+    {
+      "mi": 81.443,
+      "path": "apps/web/src/components/ui/_lib/sidebarNav.ts"
+    },
+    {
+      "mi": 171,
+      "path": "apps/web/src/components/ui/_lib/toast.ts"
+    },
+    {
       "mi": 105.724,
       "path": "apps/web/src/components/ui/Avatar.ts"
     },
@@ -351,34 +349,6 @@
     {
       "mi": 119.789,
       "path": "apps/web/src/components/ui/VerifiedTick.ts"
-    },
-    {
-      "mi": 96.375,
-      "path": "apps/web/src/components/ui/_lib/badge.ts"
-    },
-    {
-      "mi": 99.377,
-      "path": "apps/web/src/components/ui/_lib/btn.ts"
-    },
-    {
-      "mi": 147.376,
-      "path": "apps/web/src/components/ui/_lib/cn.ts"
-    },
-    {
-      "mi": 94.178,
-      "path": "apps/web/src/components/ui/_lib/eventColors.ts"
-    },
-    {
-      "mi": 109.991,
-      "path": "apps/web/src/components/ui/_lib/form.ts"
-    },
-    {
-      "mi": 81.443,
-      "path": "apps/web/src/components/ui/_lib/sidebarNav.ts"
-    },
-    {
-      "mi": 171,
-      "path": "apps/web/src/components/ui/_lib/toast.ts"
     },
     {
       "mi": 171,

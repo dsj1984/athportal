@@ -219,6 +219,29 @@ jobs:
       - name: Lint dependencies
         run: pnpm run lint:deps
 
+  astro-build:
+    # Story #745 (Task #746) — dedicated Astro build gate for @repo/web.
+    # The umbrella `build` job runs `pnpm run build` which fans out via
+    # turbo; this job pins the web workspace's `astro build` so toolchain
+    # regressions (Astro config drift, route-syntax errors, script-block
+    # TS parsing) surface as their own required check. Promote to
+    # required-checks via repo settings.
+    name: Astro build (@repo/web)
+    needs: [lint, typecheck]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - name: Set up toolchain (checkout + pnpm + node + install)
+        uses: ./.github/actions/setup-toolchain
+
+      - name: Astro build
+        run: pnpm --filter @repo/web build
+
   supply-chain-security:
     # ADR-011 — supply-chain CVE gate. Runs `pnpm run audit:check` which
     # invokes `pnpm audit --json --prod` and fails on any unsuppressed
