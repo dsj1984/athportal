@@ -12,6 +12,11 @@
 //
 // Story #255 — Sentry baseline init across all three runtimes.
 // Story #711 — Tailwind v4 + React island foundation.
+// Story #753 — SSR migration (`@astrojs/node` standalone). Task #756 verified
+// `pnpm --filter @repo/web build` exits 0 with `SENTRY_DSN_WEB` both unset
+// and set to a dummy value — Sentry's conditional registration is preserved
+// verbatim from the pre-SSR config. The adapter choice is locked for the
+// MVP; the Cloudflare adapter swap is deferred to Epic #27 (Tech Spec #743).
 
 import node from '@astrojs/node';
 import react from '@astrojs/react';
