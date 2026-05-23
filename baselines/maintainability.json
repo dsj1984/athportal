@@ -1,7 +1,7 @@
 {
   "$schema": ".agents/schemas/baselines/maintainability.schema.json",
   "kernelVersion": "0.1.0",
-  "generatedAt": "2026-05-23T11:32:51.151Z",
+  "generatedAt": "2026-05-23T12:15:03.606Z",
   "rollup": {
     "*": {
       "min": 70.515,
@@ -137,10 +137,6 @@
     {
       "mi": 121.195,
       "path": "apps/mobile/src/sentry.ts"
-    },
-    {
-      "mi": 103.28,
-      "path": "apps/web/astro.config.ts"
     },
     {
       "mi": 133.574,

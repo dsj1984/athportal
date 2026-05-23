@@ -28,6 +28,7 @@
     "vitest": "^4.1.6"
   },
   "dependencies": {
+    "@astrojs/node": "^9",
     "@astrojs/react": "^5.0.5",
     "@clerk/astro": "^3.2.4",
     "@sentry/astro": "^10.53.1",
