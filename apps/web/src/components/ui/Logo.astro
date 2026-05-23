@@ -1,0 +1,42 @@
+---
+// apps/web/src/components/ui/Logo.astro
+//
+// Abstract geometric brand mark — chevron (upward motion) + dot
+// (connectivity), drawn in a brand → action-cyan gradient. Per
+// docs/style-guide.md §1 (anti-cliché): no clip-art glyphs.
+//
+// Story #713 / Task #728 — Epic #702 design system.
+
+import { type LogoProps, buildLogoView } from './Logo.ts';
+
+type Props = LogoProps;
+const view = buildLogoView(Astro.props);
+---
+
+<svg
+  width={view.size}
+  height={view.size}
+  viewBox="0 0 32 32"
+  role="img"
+  aria-label={view.title}
+  data-testid="logo"
+>
+  <title>{view.title}</title>
+  <defs>
+    <linearGradient id={view.gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color={view.gradientStart} />
+      <stop offset="100%" stop-color={view.gradientEnd} />
+    </linearGradient>
+  </defs>
+  {/* Chevron mark — upward V drawn with rounded joins. */}
+  <path
+    d="M 6 22 L 16 8 L 26 22"
+    fill="none"
+    stroke={`url(#${view.gradientId})`}
+    stroke-width="4"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  {/* Connectivity dot — solid fill in the gradient end stop colour. */}
+  <circle cx="16" cy="26" r="2.5" fill={view.gradientEnd} />
+</svg>
