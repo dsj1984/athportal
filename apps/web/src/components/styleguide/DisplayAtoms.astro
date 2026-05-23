@@ -1,0 +1,178 @@
+---
+// apps/web/src/components/styleguide/DisplayAtoms.astro
+//
+// Section 3 of the internal styleguide. Renders the display atoms
+// shipped by Epic #702 Wave 1:
+//
+//   - Badge — every tone × dot variant (BADGE_TONES from
+//     _lib/badge.ts).
+//   - Avatar — image (real src) and initials-fallback branches.
+//   - Ring — multiple progress values (0 / 33 / 66 / 100).
+//   - Stat — label / value / unit / trend / verified / hint variants.
+//   - Card / CardSoft — bordered surface, with and without shadow.
+//   - Logo — the brand mark at a couple of sizes.
+//   - VerifiedTick — the action-lime tick atom.
+//   - Ph — striped placeholder rectangle (system mono label).
+//
+// Story #723 / Task #733.
+
+import Badge from '../ui/Badge.astro';
+import Avatar from '../ui/Avatar.astro';
+import Ring from '../ui/Ring.astro';
+import Stat from '../ui/Stat.astro';
+import Card from '../ui/Card.astro';
+import CardSoft from '../ui/CardSoft.astro';
+import Logo from '../ui/Logo.astro';
+import VerifiedTick from '../ui/VerifiedTick.astro';
+import Ph from '../ui/Ph.astro';
+import { BADGE_TONES, type BadgeTone } from '../ui/_lib/badge.ts';
+
+const TONES: readonly BadgeTone[] = BADGE_TONES;
+
+const RING_VALUES: readonly number[] = [0, 33, 66, 100];
+---
+
+<section class="styleguide-section">
+  <h2 class="styleguide-section__title">3. Display atoms</h2>
+
+  <h3 class="styleguide-subsection__title">Badge — every tone × dot</h3>
+  <div class="styleguide-badge-grid">
+    {TONES.map((tone) => (
+      <div class="styleguide-badge-row">
+        <Badge tone={tone}>{tone}</Badge>
+        <Badge tone={tone} dot>{tone} · dot</Badge>
+      </div>
+    ))}
+  </div>
+
+  <h3 class="styleguide-subsection__title">Avatar — image + initials</h3>
+  <div class="styleguide-row">
+    <Avatar name="Ada Lovelace" src="https://i.pravatar.cc/80?img=47" size={56} />
+    <Avatar name="Ada Lovelace" size={56} />
+    <Avatar name="Grace Hopper" size={56} hue={150} />
+    <Avatar name="Katherine Johnson" size={56} hue={30} />
+  </div>
+
+  <h3 class="styleguide-subsection__title">Ring — multiple values</h3>
+  <div class="styleguide-row">
+    {RING_VALUES.map((value) => (
+      <div class="styleguide-ring-cell">
+        <Ring value={value} size={64} stroke={6} label={`${value}%`} />
+        <span class="styleguide-form-cell__label">{value}%</span>
+      </div>
+    ))}
+  </div>
+
+  <h3 class="styleguide-subsection__title">Stat — label / value / unit / trend / verified / hint</h3>
+  <div class="styleguide-stat-grid">
+    <Card>
+      <Stat label="Win rate" value={72} unit="%" trend="up" hint="Last 10 games" />
+    </Card>
+    <Card>
+      <Stat label="Goals / game" value="1.8" trend="flat" />
+    </Card>
+    <Card>
+      <Stat label="Recovery" value={84} unit="%" trend="down" verified hint="Hudl-verified" />
+    </Card>
+    <Card>
+      <Stat label="Minutes" value={1240} unit="min" />
+    </Card>
+  </div>
+
+  <h3 class="styleguide-subsection__title">Card / CardSoft</h3>
+  <div class="styleguide-card-grid">
+    <Card>
+      <p class="styleguide-card-body">
+        <strong>Card</strong> — bordered surface, no shadow.
+      </p>
+    </Card>
+    <CardSoft>
+      <p class="styleguide-card-body">
+        <strong>CardSoft</strong> — bordered surface with shadow-sm.
+      </p>
+    </CardSoft>
+  </div>
+
+  <h3 class="styleguide-subsection__title">Logo</h3>
+  <div class="styleguide-row">
+    <Logo size={32} />
+    <Logo size={48} />
+    <Logo size={64} />
+  </div>
+
+  <h3 class="styleguide-subsection__title">VerifiedTick</h3>
+  <div class="styleguide-row">
+    <VerifiedTick size={16} />
+    <VerifiedTick size={24} />
+    <VerifiedTick size={32} />
+  </div>
+
+  <h3 class="styleguide-subsection__title">Ph — placeholder</h3>
+  <div class="styleguide-row">
+    <Ph label="hero" width={240} height={120} />
+    <Ph label="avatar" size={80} />
+    <Ph width={160} height={80} />
+  </div>
+</section>
+
+<style>
+  .styleguide-section {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 24px 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .styleguide-section__title {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+  .styleguide-subsection__title {
+    font-family: var(--font-display);
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-top: 8px;
+  }
+  .styleguide-badge-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 12px;
+  }
+  .styleguide-badge-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+  .styleguide-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px;
+  }
+  .styleguide-ring-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  .styleguide-stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+  }
+  .styleguide-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+  }
+  .styleguide-card-body {
+    margin: 0;
+    color: var(--color-text-primary);
+  }
+  .styleguide-form-cell__label {
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+    font-family: var(--font-mono);
+  }
+</style>

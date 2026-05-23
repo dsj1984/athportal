@@ -1,0 +1,88 @@
+---
+// apps/web/src/components/ui/Topbar.astro
+//
+// Signed-in topbar chrome — provides a search box with the ⌘K
+// keyboard affordance and an `actions` slot for user-menu / notifications
+// / other surfaces. The topbar is intentionally chrome-only: it owns
+// no domain logic, so a pure-TS builder isn't required (no behaviour
+// to test that the template doesn't already encode).
+//
+// Story #712 / Task #729.
+
+interface Props {
+  /** Optional placeholder text for the search input. */
+  searchPlaceholder?: string;
+  /** Optional data-testid override for the topbar root. */
+  testId?: string;
+}
+
+const { searchPlaceholder = 'Search…', testId = 'topbar' } = Astro.props;
+---
+
+<header class="topbar" data-testid={testId}>
+  <label class="topbar__search">
+    <input
+      class="topbar__search-input"
+      type="search"
+      placeholder={searchPlaceholder}
+      data-testid="topbar-search"
+    />
+    <kbd class="topbar__search-kbd" aria-hidden="true">⌘K</kbd>
+  </label>
+  <div class="topbar__actions" data-testid="topbar-actions">
+    <slot name="actions" />
+  </div>
+</header>
+
+<style>
+  .topbar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    height: 56px;
+    padding: 0 20px;
+    background-color: var(--color-surface-card);
+    border-bottom: 1px solid var(--color-border);
+  }
+  .topbar__search {
+    position: relative;
+    flex: 1;
+    max-width: 480px;
+    display: flex;
+    align-items: center;
+  }
+  .topbar__search-input {
+    width: 100%;
+    height: 36px;
+    padding: 0 56px 0 12px;
+    background-color: var(--color-surface-hover);
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    color: var(--color-text-primary);
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+  }
+  .topbar__search-input:focus {
+    outline: none;
+    border-color: var(--color-border-strong);
+    background-color: var(--color-surface-card);
+  }
+  .topbar__search-kbd {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    background-color: var(--color-surface-active);
+    color: var(--color-text-tertiary);
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    line-height: 1;
+  }
+  .topbar__actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+</style>

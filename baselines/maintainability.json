@@ -1,11 +1,11 @@
 {
   "$schema": ".agents/schemas/baselines/maintainability.schema.json",
-  "generatedAt": "2026-05-22T23:19:34.139Z",
+  "generatedAt": "2026-05-23T02:31:50.231Z",
   "kernelVersion": "1.0.0",
   "rollup": {
     "*": {
       "min": 70.515,
-      "p50": 106.74,
+      "p50": 107.499,
       "p95": 171
     },
     "apps/api": {
@@ -20,8 +20,8 @@
     },
     "apps/web": {
       "min": 80.074,
-      "p50": 108.206,
-      "p95": 147.989
+      "p50": 109.991,
+      "p95": 163.185
     },
     "packages/baselines": {
       "min": 98.311,
@@ -169,7 +169,7 @@
       "path": "apps/mobile/src/sentry.ts"
     },
     {
-      "mi": 111.698,
+      "mi": 103.28,
       "path": "apps/web/astro.config.ts"
     },
     {
@@ -293,12 +293,92 @@
       "path": "apps/web/src/components/onboarding/ProfilePhotoUploader.ts"
     },
     {
-      "mi": 107.592,
+      "mi": 105.724,
       "path": "apps/web/src/components/ui/Avatar.ts"
+    },
+    {
+      "mi": 127.412,
+      "path": "apps/web/src/components/ui/Card.ts"
     },
     {
       "mi": 99.6,
       "path": "apps/web/src/components/ui/EmptyState.ts"
+    },
+    {
+      "mi": 97.51,
+      "path": "apps/web/src/components/ui/EventChip.ts"
+    },
+    {
+      "mi": 124.358,
+      "path": "apps/web/src/components/ui/Input.tsx"
+    },
+    {
+      "mi": 117.31,
+      "path": "apps/web/src/components/ui/Logo.ts"
+    },
+    {
+      "mi": 103.854,
+      "path": "apps/web/src/components/ui/Ph.ts"
+    },
+    {
+      "mi": 101.785,
+      "path": "apps/web/src/components/ui/Ring.ts"
+    },
+    {
+      "mi": 124.464,
+      "path": "apps/web/src/components/ui/Select.tsx"
+    },
+    {
+      "mi": 138.889,
+      "path": "apps/web/src/components/ui/Shell.ts"
+    },
+    {
+      "mi": 111.895,
+      "path": "apps/web/src/components/ui/Sidebar.ts"
+    },
+    {
+      "mi": 98.571,
+      "path": "apps/web/src/components/ui/Stat.ts"
+    },
+    {
+      "mi": 124.674,
+      "path": "apps/web/src/components/ui/Textarea.tsx"
+    },
+    {
+      "mi": 163.185,
+      "path": "apps/web/src/components/ui/ToastHost.tsx"
+    },
+    {
+      "mi": 119.789,
+      "path": "apps/web/src/components/ui/VerifiedTick.ts"
+    },
+    {
+      "mi": 96.375,
+      "path": "apps/web/src/components/ui/_lib/badge.ts"
+    },
+    {
+      "mi": 99.377,
+      "path": "apps/web/src/components/ui/_lib/btn.ts"
+    },
+    {
+      "mi": 147.376,
+      "path": "apps/web/src/components/ui/_lib/cn.ts"
+    },
+    {
+      "mi": 94.178,
+      "path": "apps/web/src/components/ui/_lib/eventColors.ts"
+    },
+    {
+      "mi": 109.991,
+      "path": "apps/web/src/components/ui/_lib/form.ts"
+    },
+    {
+      "mi": 81.443,
+      "path": "apps/web/src/components/ui/_lib/sidebarNav.ts"
+    },
+    {
+      "mi": 171,
+      "path": "apps/web/src/components/ui/_lib/toast.ts"
     },
     {
       "mi": 171,
@@ -307,6 +387,10 @@
     {
       "mi": 107.91,
       "path": "apps/web/src/middleware.ts"
+    },
+    {
+      "mi": 115.098,
+      "path": "apps/web/src/pages/_internal/styleguide.ts"
     },
     {
       "mi": 131.444,

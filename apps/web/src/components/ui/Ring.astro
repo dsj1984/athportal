@@ -1,0 +1,44 @@
+---
+// apps/web/src/components/ui/Ring.astro
+//
+// SVG progress-ring primitive. Stroked in the brand colour, sized
+// via the `size` and `stroke` props.
+//
+// Story #713 / Task #725 — Epic #702 design system.
+
+import { type RingProps, buildRingView } from './Ring.ts';
+
+type Props = RingProps;
+const view = buildRingView(Astro.props);
+const cx = view.size / 2;
+---
+
+<svg
+  width={view.size}
+  height={view.size}
+  viewBox={`0 0 ${view.size} ${view.size}`}
+  role="img"
+  aria-label={view.label ?? `${view.value}%`}
+  data-value={view.value}
+>
+  <circle
+    cx={cx}
+    cy={cx}
+    r={view.radius}
+    fill="none"
+    stroke={view.trackColor}
+    stroke-width={view.stroke}
+  />
+  <circle
+    cx={cx}
+    cy={cx}
+    r={view.radius}
+    fill="none"
+    stroke={view.strokeColor}
+    stroke-width={view.stroke}
+    stroke-linecap="round"
+    stroke-dasharray={view.dashArray}
+    stroke-dashoffset={view.dashOffset}
+    transform={`rotate(-90 ${cx} ${cx})`}
+  />
+</svg>

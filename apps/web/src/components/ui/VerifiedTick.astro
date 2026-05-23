@@ -1,0 +1,33 @@
+---
+// apps/web/src/components/ui/VerifiedTick.astro
+//
+// Action-lime filled circle with a white check inside. Used by Stat
+// and any other surface that needs to mark a value as verified.
+//
+// Story #713 / Task #728 — Epic #702 design system.
+
+import { type VerifiedTickProps, buildVerifiedTickView } from './VerifiedTick.ts';
+
+type Props = VerifiedTickProps;
+const view = buildVerifiedTickView(Astro.props);
+---
+
+<svg
+  width={view.size}
+  height={view.size}
+  viewBox="0 0 16 16"
+  role="img"
+  aria-label={view.title}
+  data-testid="verified-tick"
+>
+  <title>{view.title}</title>
+  <circle cx="8" cy="8" r="8" fill={view.fillColor} />
+  <path
+    d="M 4.5 8.2 L 7 10.5 L 11.5 5.5"
+    fill="none"
+    stroke="white"
+    stroke-width="1.75"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</svg>

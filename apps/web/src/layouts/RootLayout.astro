@@ -1,0 +1,38 @@
+---
+// apps/web/src/layouts/RootLayout.astro
+//
+// The shared HTML shell every page renders inside. Owns the single
+// import of the design-system stylesheet (apps/web/src/styles/global.css)
+// so every route inherits the @theme token catalogue without each page
+// re-importing it, and mounts the singleton ToastHost React island
+// (Task #731) so every page hydrates exactly one Sonner toaster at the
+// document root — no per-page wiring required.
+//
+// Story #711 / Task #720 — Epic #702 design-system foundation. Tech
+// Spec #704 §Architecture pins this layout as the canonical insertion
+// point for global.css. Story #714 / Task #731 pins this layout as the
+// single ToastHost mount.
+
+import '../styles/global.css';
+import { ToastHost } from '../components/ui/ToastHost';
+
+interface Props {
+  title: string;
+  lang?: string;
+}
+
+const { title, lang = 'en' } = Astro.props;
+---
+
+<html lang={lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <slot name="head" />
+  </head>
+  <body>
+    <slot />
+    <ToastHost client:load />
+  </body>
+</html>

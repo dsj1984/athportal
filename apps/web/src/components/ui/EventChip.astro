@@ -1,0 +1,61 @@
+---
+// apps/web/src/components/ui/EventChip.astro
+//
+// EventChip composite primitive — renders a single event on the
+// calendar / agenda surface. The chip uses the soft translucent pill
+// pattern (docs/style-guide.md §4.6) with an inset 3px stripe keyed to
+// the event's type colour, and an optional 6px action-coral conflict
+// dot anchored to the top-right corner.
+//
+// All rendering decisions (colours, conflict-dot gating, inline-style
+// composition) live in the pure-TS sibling so the unit tier can
+// exercise them in a node Vitest project without an Astro renderer.
+//
+// Story #712 / Task #726.
+
+import { buildEventChipView, type EventChipProps } from './EventChip.ts';
+
+type Props = EventChipProps;
+const view = buildEventChipView(Astro.props);
+---
+
+<span
+  class="event-chip"
+  style={view.rootStyle}
+  data-testid={view.testIds.root}
+  data-event-type={view.type}
+>
+  <span class="event-chip__title">{view.title}</span>
+  {view.time && <span class="event-chip__time"> · {view.time}</span>}
+  {view.team && <span class="event-chip__team"> · {view.team}</span>}
+  {view.conflictDotStyle && (
+    <span
+      class="event-chip__conflict-dot"
+      style={view.conflictDotStyle}
+      data-testid={view.testIds.conflictDot}
+      aria-label="Scheduling conflict"
+      role="img"
+    />
+  )}
+</span>
+
+<style>
+  .event-chip {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 4px 10px 4px 14px;
+    border-radius: var(--radius-md);
+    font-size: 0.8125rem;
+    line-height: 1.25;
+    font-family: var(--font-body);
+  }
+  .event-chip__title {
+    font-weight: 600;
+  }
+  .event-chip__time,
+  .event-chip__team {
+    opacity: 0.85;
+  }
+</style>
