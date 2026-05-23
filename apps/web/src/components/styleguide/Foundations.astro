@@ -1,0 +1,253 @@
+---
+// apps/web/src/components/styleguide/Foundations.astro
+//
+// Section 1 of the internal styleguide. Surfaces the design-token
+// catalogue defined in apps/web/src/styles/global.css §@theme:
+//
+//   - Every --color-* swatch (brand + functional + surface + text +
+//     border).
+//   - The --radius-* scale (sm → 2xl).
+//   - The --shadow-* scale (xs → lg).
+//   - The type ramp keyed off --font-display / --font-body /
+//     --font-mono.
+//
+// The token list is hard-coded inline here rather than parsed from
+// global.css so the styleguide remains the documented audit trail —
+// adding a new token requires updating both files in lockstep, which
+// is the desired authoring contract (Tech Spec #704). Story #723 /
+// Task #733.
+
+interface ColorToken {
+  readonly name: string;
+  readonly cssVar: string;
+  readonly hex: string;
+}
+
+interface RadiusToken {
+  readonly name: string;
+  readonly cssVar: string;
+  readonly px: string;
+}
+
+interface ShadowToken {
+  readonly name: string;
+  readonly cssVar: string;
+}
+
+interface TypeRampEntry {
+  readonly label: string;
+  readonly className: string;
+  readonly sample: string;
+}
+
+const COLOR_TOKENS: readonly ColorToken[] = [
+  { name: 'brand', cssVar: '--color-brand', hex: '#9333ea' },
+  { name: 'brand-dark', cssVar: '--color-brand-dark', hex: '#6b21a8' },
+  { name: 'brand-hover', cssVar: '--color-brand-hover', hex: '#7c22d0' },
+  { name: 'action-cyan', cssVar: '--color-action-cyan', hex: '#06b6d4' },
+  { name: 'action-lime', cssVar: '--color-action-lime', hex: '#10b981' },
+  { name: 'action-amber', cssVar: '--color-action-amber', hex: '#f59e0b' },
+  { name: 'action-coral', cssVar: '--color-action-coral', hex: '#f43f5e' },
+  { name: 'surface-bg', cssVar: '--color-surface-bg', hex: '#f8fafc' },
+  { name: 'surface-card', cssVar: '--color-surface-card', hex: '#ffffff' },
+  { name: 'surface-hover', cssVar: '--color-surface-hover', hex: '#f1f5f9' },
+  { name: 'surface-active', cssVar: '--color-surface-active', hex: '#e2e8f0' },
+  { name: 'text-primary', cssVar: '--color-text-primary', hex: '#0f1115' },
+  { name: 'text-secondary', cssVar: '--color-text-secondary', hex: '#475569' },
+  { name: 'text-tertiary', cssVar: '--color-text-tertiary', hex: '#64748b' },
+  { name: 'border', cssVar: '--color-border', hex: '#e2e8f0' },
+  { name: 'border-strong', cssVar: '--color-border-strong', hex: '#cbd5e1' },
+];
+
+const RADIUS_TOKENS: readonly RadiusToken[] = [
+  { name: 'sm', cssVar: '--radius-sm', px: '6px' },
+  { name: 'md', cssVar: '--radius-md', px: '10px' },
+  { name: 'lg', cssVar: '--radius-lg', px: '14px' },
+  { name: 'xl', cssVar: '--radius-xl', px: '18px' },
+  { name: '2xl', cssVar: '--radius-2xl', px: '24px' },
+];
+
+const SHADOW_TOKENS: readonly ShadowToken[] = [
+  { name: 'xs', cssVar: '--shadow-xs' },
+  { name: 'sm', cssVar: '--shadow-sm' },
+  { name: 'md', cssVar: '--shadow-md' },
+  { name: 'lg', cssVar: '--shadow-lg' },
+];
+
+const TYPE_RAMP: readonly TypeRampEntry[] = [
+  { label: 'Display / H1', className: 'font-display text-4xl font-semibold', sample: 'Hyper-Violet — display heading' },
+  { label: 'Display / H2', className: 'font-display text-3xl font-semibold', sample: 'Section heading' },
+  { label: 'Display / H3', className: 'font-display text-2xl font-semibold', sample: 'Sub-section heading' },
+  { label: 'Body / lg', className: 'text-lg', sample: 'The quick brown fox jumps over the lazy dog.' },
+  { label: 'Body / base', className: 'text-base', sample: 'The quick brown fox jumps over the lazy dog.' },
+  { label: 'Body / sm', className: 'text-sm', sample: 'The quick brown fox jumps over the lazy dog.' },
+  { label: 'Body / xs', className: 'text-xs', sample: 'The quick brown fox jumps over the lazy dog.' },
+  { label: 'Mono', className: 'font-mono text-sm', sample: 'const styleguide = "/_internal/styleguide";' },
+];
+---
+
+<section class="styleguide-section">
+  <h2 class="styleguide-section__title">1. Foundations</h2>
+
+  <h3 class="styleguide-subsection__title">Colour tokens</h3>
+  <div class="styleguide-swatch-grid">
+    {COLOR_TOKENS.map((token) => (
+      <div class="styleguide-swatch">
+        <div class="styleguide-swatch__sample" style={`background-color: var(${token.cssVar})`} />
+        <div class="styleguide-swatch__meta">
+          <code class="styleguide-swatch__name">{token.cssVar}</code>
+          <span class="styleguide-swatch__hex">{token.hex}</span>
+        </div>
+      </div>
+    ))}
+  </div>
+
+  <h3 class="styleguide-subsection__title">Radius scale</h3>
+  <div class="styleguide-radius-grid">
+    {RADIUS_TOKENS.map((token) => (
+      <div class="styleguide-radius">
+        <div
+          class="styleguide-radius__sample"
+          style={`border-radius: var(${token.cssVar})`}
+        />
+        <div class="styleguide-swatch__meta">
+          <code class="styleguide-swatch__name">{token.cssVar}</code>
+          <span class="styleguide-swatch__hex">{token.px}</span>
+        </div>
+      </div>
+    ))}
+  </div>
+
+  <h3 class="styleguide-subsection__title">Shadow scale</h3>
+  <div class="styleguide-shadow-grid">
+    {SHADOW_TOKENS.map((token) => (
+      <div class="styleguide-shadow">
+        <div
+          class="styleguide-shadow__sample"
+          style={`box-shadow: var(${token.cssVar})`}
+        />
+        <code class="styleguide-swatch__name">{token.cssVar}</code>
+      </div>
+    ))}
+  </div>
+
+  <h3 class="styleguide-subsection__title">Type ramp</h3>
+  <div class="styleguide-type-ramp">
+    {TYPE_RAMP.map((row) => (
+      <div class="styleguide-type-row">
+        <span class="styleguide-type-row__label">{row.label}</span>
+        <span class={row.className}>{row.sample}</span>
+      </div>
+    ))}
+  </div>
+</section>
+
+<style>
+  .styleguide-section {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding: 24px 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .styleguide-section__title {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+  .styleguide-subsection__title {
+    font-family: var(--font-display);
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-top: 8px;
+  }
+  .styleguide-swatch-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+  }
+  .styleguide-swatch {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background-color: var(--color-surface-card);
+  }
+  .styleguide-swatch__sample {
+    height: 56px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-border);
+  }
+  .styleguide-swatch__meta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .styleguide-swatch__name {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--color-text-primary);
+  }
+  .styleguide-swatch__hex {
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+  }
+  .styleguide-radius-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+  }
+  .styleguide-radius {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background-color: var(--color-surface-card);
+  }
+  .styleguide-radius__sample {
+    height: 64px;
+    background-color: var(--color-brand);
+    border: 1px solid var(--color-border);
+  }
+  .styleguide-shadow-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 16px;
+  }
+  .styleguide-shadow {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 8px;
+    align-items: center;
+  }
+  .styleguide-shadow__sample {
+    width: 100%;
+    height: 64px;
+    border-radius: var(--radius-md);
+    background-color: var(--color-surface-card);
+    border: 1px solid var(--color-border);
+  }
+  .styleguide-type-ramp {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .styleguide-type-row {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    align-items: baseline;
+    gap: 16px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .styleguide-type-row__label {
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+    font-family: var(--font-mono);
+  }
+</style>

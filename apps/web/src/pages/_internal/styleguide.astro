@@ -1,0 +1,106 @@
+---
+// apps/web/src/pages/_internal/styleguide.astro
+//
+// `/_internal/styleguide` — internal-only design-system reference
+// page (Epic #702 / Story #723). Two responsibilities live in the
+// front-matter:
+//
+//   1. **Auth gate (Task #734).** Resolves the Clerk session via
+//      `Astro.locals.auth()` (populated by `clerkMiddleware` in
+//      `apps/web/src/middleware.ts`), then defers the decision to the
+//      pure `decideStyleguideAccess` function in the sibling
+//      `styleguide.ts`. Only a signed-in dev_admin proceeds; every
+//      other caller is bounced with a 302 to `/`. Until the web
+//      runtime carries a DB handle the role lookup is the
+//      `productionRoleLookup` placeholder (returns `null` for every
+//      subject), so the gate denies by default — preserving the PRD
+//      invariant that this internal-only page never leaks to a non-
+//      dev_admin caller before the DB binding lands.
+//
+//   2. **noindex/nofollow header (Task #734).** Set unconditionally on
+//      every response (allow OR redirect) so this surface stays out of
+//      search indexes regardless of which branch fires.
+//
+// Section content (Task #733) is composed from
+// `components/styleguide/*` — the four reference sections cover every
+// primitive shipped by Wave 1.
+
+import RootLayout from '../../layouts/RootLayout.astro';
+import Foundations from '../../components/styleguide/Foundations.astro';
+import InteractiveAtoms from '../../components/styleguide/InteractiveAtoms.astro';
+import DisplayAtoms from '../../components/styleguide/DisplayAtoms.astro';
+import Composites from '../../components/styleguide/Composites.astro';
+import {
+  STYLEGUIDE_ROBOTS_HEADER,
+  decideStyleguideAccess,
+  productionRoleLookup,
+} from './styleguide.ts';
+
+// Emit the noindex/nofollow header on every branch (allow, redirect,
+// or any future error path). Astro lets us set headers before any
+// `Astro.redirect(...)` call resolves the response.
+Astro.response.headers.set('X-Robots-Tag', STYLEGUIDE_ROBOTS_HEADER);
+
+const auth = Astro.locals.auth();
+const decision = decideStyleguideAccess({
+  subjectId: auth.userId ?? null,
+  roleLookup: productionRoleLookup,
+});
+
+if (decision.kind === 'redirect') {
+  return Astro.redirect(decision.to, decision.status);
+}
+---
+
+<RootLayout title="Internal styleguide">
+  <main class="styleguide">
+    <header class="styleguide__header">
+      <h1 class="styleguide__heading">Internal styleguide</h1>
+      <p class="styleguide__intro">
+        Living reference for the Epic #702 design-system primitives.
+        Every primitive shipped to <code>apps/web/src/components/ui/</code>
+        appears below with its full props matrix. Update this page in
+        lockstep with the primitive library so the visual contract stays
+        the source of truth.
+      </p>
+    </header>
+
+    <Foundations />
+    <InteractiveAtoms />
+    <DisplayAtoms />
+    <Composites />
+  </main>
+</RootLayout>
+
+<style>
+  .styleguide {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 32px 24px 64px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .styleguide__header {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .styleguide__heading {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--color-text-primary);
+    margin: 0;
+  }
+  .styleguide__intro {
+    color: var(--color-text-secondary);
+    margin: 0;
+  }
+  .styleguide__intro code {
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+  }
+</style>
