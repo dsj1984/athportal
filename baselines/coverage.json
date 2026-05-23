@@ -1,17 +1,17 @@
 {
   "$schema": ".agents/schemas/baselines/coverage.schema.json",
-  "generatedAt": "2026-05-23T12:12:52.809Z",
+  "generatedAt": "2026-05-23T02:53:01.270Z",
   "kernelVersion": "1.0.0",
   "rollup": {
     "*": {
-      "branches": 0,
-      "functions": 0,
-      "lines": 0
+      "branches": 90.46,
+      "functions": 84.77,
+      "lines": 83.91
     },
     "apps/api": {
-      "branches": 0,
-      "functions": 0,
-      "lines": 0
+      "branches": 85.2,
+      "functions": 88.19,
+      "lines": 87.28
     },
     "apps/mobile": {
       "branches": 0,
@@ -19,14 +19,14 @@
       "lines": 0
     },
     "apps/web": {
-      "branches": 0,
-      "functions": 0,
-      "lines": 0
+      "branches": 86.19,
+      "functions": 89.39,
+      "lines": 82.85
     },
     "packages/baselines": {
-      "branches": 0,
-      "functions": 0,
-      "lines": 0
+      "branches": 92.52,
+      "functions": 100,
+      "lines": 97.49
     },
     "packages/config": {
       "branches": 0,
@@ -34,10 +34,641 @@
       "lines": 0
     },
     "packages/shared": {
-      "branches": 0,
-      "functions": 0,
-      "lines": 0
+      "branches": 97.47,
+      "functions": 79.93,
+      "lines": 82.05
     }
   },
-  "rows": []
+  "rows": [
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/api/src/env.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 50,
+      "lines": 93.75,
+      "path": "apps/api/src/index.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 50,
+      "lines": 66.67,
+      "path": "apps/api/src/lib/clerk-invitations.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/api/src/lib/r2.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 0,
+      "lines": 0,
+      "path": "apps/api/src/middleware/__testing__/auth-test.ts"
+    },
+    {
+      "branches": 76.19,
+      "functions": 100,
+      "lines": 85.07,
+      "path": "apps/api/src/middleware/auth.ts"
+    },
+    {
+      "branches": 61.54,
+      "functions": 83.33,
+      "lines": 70.97,
+      "path": "apps/api/src/middleware/request-logger.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/api/src/middleware/requireOnboarded.ts"
+    },
+    {
+      "branches": 80,
+      "functions": 100,
+      "lines": 94.12,
+      "path": "apps/api/src/middleware/requireRole.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/api/src/routes/debug/synthetic-failure.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/api/src/routes/v1/admin/csv-import/index.ts"
+    },
+    {
+      "branches": 58.82,
+      "functions": 92.31,
+      "lines": 82.26,
+      "path": "apps/api/src/routes/v1/admin/csv-import/router.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/api/src/routes/v1/admin/index.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/api/src/routes/v1/admin/invitations/index.ts"
+    },
+    {
+      "branches": 61.54,
+      "functions": 81.82,
+      "lines": 81.74,
+      "path": "apps/api/src/routes/v1/admin/invitations/router.ts"
+    },
+    {
+      "branches": 74.42,
+      "functions": 80,
+      "lines": 82.76,
+      "path": "apps/api/src/routes/v1/admin/org.ts"
+    },
+    {
+      "branches": 78.57,
+      "functions": 100,
+      "lines": 93.94,
+      "path": "apps/api/src/routes/v1/admin/reports.ts"
+    },
+    {
+      "branches": 53.33,
+      "functions": 86.67,
+      "lines": 82.86,
+      "path": "apps/api/src/routes/v1/admin/rollover.ts"
+    },
+    {
+      "branches": 63.89,
+      "functions": 100,
+      "lines": 86,
+      "path": "apps/api/src/routes/v1/admin/roster.ts"
+    },
+    {
+      "branches": 71.15,
+      "functions": 83.33,
+      "lines": 86.14,
+      "path": "apps/api/src/routes/v1/admin/teams.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/api/src/routes/v1/auth/index.ts"
+    },
+    {
+      "branches": 74.14,
+      "functions": 100,
+      "lines": 89.8,
+      "path": "apps/api/src/routes/v1/auth/onboard.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/api/src/routes/v1/me.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/api/src/routes/v1/sign-out.ts"
+    },
+    {
+      "branches": 68.75,
+      "functions": 83.33,
+      "lines": 77.94,
+      "path": "apps/api/src/routes/v1/users/role.ts"
+    },
+    {
+      "branches": 71.43,
+      "functions": 66.67,
+      "lines": 84.21,
+      "path": "apps/api/src/routes/webhooks/clerk-invitation-accepted.ts"
+    },
+    {
+      "branches": 83.33,
+      "functions": 100,
+      "lines": 77.78,
+      "path": "apps/api/src/routes/webhooks/clerk-invitation-shared.ts"
+    },
+    {
+      "branches": 93.75,
+      "functions": 100,
+      "lines": 95.24,
+      "path": "apps/api/src/sentry.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/api/src/types/drizzle-structural.ts"
+    },
+    {
+      "branches": 0,
+      "functions": 0,
+      "lines": 0,
+      "path": "apps/mobile/src/sentry.ts"
+    },
+    {
+      "branches": 88.89,
+      "functions": 83.33,
+      "lines": 56.52,
+      "path": "apps/web/src/components/admin/CsvMappingTool.ts"
+    },
+    {
+      "branches": 68.42,
+      "functions": 83.33,
+      "lines": 78.57,
+      "path": "apps/web/src/components/admin/OrgConfigForm.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 96.3,
+      "path": "apps/web/src/components/admin/reports/VerifiedAchievementReport.ts"
+    },
+    {
+      "branches": 75,
+      "functions": 100,
+      "lines": 97.7,
+      "path": "apps/web/src/components/admin/rollover/RolloverPreview.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/web/src/components/admin/roster/RosterTable.ts"
+    },
+    {
+      "branches": 85,
+      "functions": 100,
+      "lines": 93.1,
+      "path": "apps/web/src/components/admin/teams/TeamForm.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/web/src/components/onboarding/AgeAttestation.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/web/src/components/onboarding/ClerkVerifyEmailIsland.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/web/src/components/onboarding/LegalAcceptanceCheckboxes.ts"
+    },
+    {
+      "branches": 95.45,
+      "functions": 100,
+      "lines": 97.92,
+      "path": "apps/web/src/components/onboarding/OnboardingForm.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/web/src/components/onboarding/ProfilePhotoUploader.ts"
+    },
+    {
+      "branches": 83.33,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/web/src/components/ui/Avatar.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/web/src/components/ui/EmptyState.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/web/src/env.d.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/web/src/index.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 60,
+      "lines": 89.29,
+      "path": "apps/web/src/middleware.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/web/src/pages/admin/teams/index.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/web/src/pages/dashboard.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/web/src/pages/onboarding.ts"
+    },
+    {
+      "branches": 0,
+      "functions": 0,
+      "lines": 0,
+      "path": "apps/web/src/pages/sign-out.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 0,
+      "path": "apps/web/src/sentry.ts"
+    },
+    {
+      "branches": 0,
+      "functions": 40,
+      "lines": 13.33,
+      "path": "apps/web/src/testing/astro-middleware-shim.ts"
+    },
+    {
+      "branches": 92.73,
+      "functions": 100,
+      "lines": 98.08,
+      "path": "packages/baselines/src/compare.ts"
+    },
+    {
+      "branches": 86.67,
+      "functions": 100,
+      "lines": 96,
+      "path": "packages/baselines/src/format.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "packages/baselines/src/index.ts"
+    },
+    {
+      "branches": 80,
+      "functions": 100,
+      "lines": 94.74,
+      "path": "packages/baselines/src/io.ts"
+    },
+    {
+      "branches": 88.24,
+      "functions": 100,
+      "lines": 93.62,
+      "path": "packages/baselines/src/schema.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "packages/baselines/src/serialise.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "packages/baselines/src/types.ts"
+    },
+    {
+      "branches": 88.1,
+      "functions": 100,
+      "lines": 96.51,
+      "path": "packages/shared/src/csv/parse.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 0,
+      "lines": 0,
+      "path": "packages/shared/src/db/queries/__tests__/graphDb.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "packages/shared/src/db/queries/__tests__/onboardingDb.ts"
+    },
+    {
+      "branches": 85.71,
+      "functions": 100,
+      "lines": 92.31,
+      "path": "packages/shared/src/db/queries/legalDocuments.ts"
+    },
+    {
+      "branches": 85.71,
+      "functions": 100,
+      "lines": 86.67,
+      "path": "packages/shared/src/db/queries/parentAthleteLinks.ts"
+    },
+    {
+      "branches": 91.67,
+      "functions": 100,
+      "lines": 98.57,
+      "path": "packages/shared/src/db/queries/scopedDb.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "packages/shared/src/db/queries/users.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 0,
+      "lines": 0,
+      "path": "packages/shared/src/db/schema/__tests__/freshSchemaDb.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 0,
+      "lines": 25,
+      "path": "packages/shared/src/db/schema/athleteMemberships.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 0,
+      "lines": 25,
+      "path": "packages/shared/src/db/schema/coachAssignments.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 33.33,
+      "lines": 50,
+      "path": "packages/shared/src/db/schema/csvImportBatches.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "packages/shared/src/db/schema/index.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 33.33,
+      "lines": 66.67,
+      "path": "packages/shared/src/db/schema/invitations.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "packages/shared/src/db/schema/legalDocuments.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "packages/shared/src/db/schema/organizations.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 33.33,
+      "lines": 50,
+      "path": "packages/shared/src/db/schema/parentAthleteLinks.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 0,
+      "lines": 50,
+      "path": "packages/shared/src/db/schema/teams.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 33.33,
+      "lines": 50,
+      "path": "packages/shared/src/db/schema/userLegalAgreements.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 33.33,
+      "lines": 50,
+      "path": "packages/shared/src/db/schema/users.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "packages/shared/src/db/seed.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "packages/shared/src/index.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "packages/shared/src/observability/log-event.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "packages/shared/src/observability/redaction.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "packages/shared/src/rbac/index.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "packages/shared/src/rbac/policy.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "packages/shared/src/rbac/rules.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "packages/shared/src/rbac/types.ts"
+    },
+    {
+      "branches": 77.78,
+      "functions": 100,
+      "lines": 96.55,
+      "path": "packages/shared/src/rollover/buildPlan.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "packages/shared/src/schemas/admin/csvImport.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "packages/shared/src/schemas/admin/invitations.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "packages/shared/src/schemas/admin/org.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "packages/shared/src/schemas/admin/reports.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "packages/shared/src/schemas/admin/rollover.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "packages/shared/src/schemas/admin/roster.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "packages/shared/src/schemas/admin/teams.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "packages/shared/src/schemas/auth.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 0,
+      "path": "packages/shared/src/testing/__tests__/fixtures/echo-schema.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "packages/shared/src/testing/app.ts"
+    },
+    {
+      "branches": 75,
+      "functions": 80,
+      "lines": 70.83,
+      "path": "packages/shared/src/testing/auth.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 80,
+      "lines": 96.15,
+      "path": "packages/shared/src/testing/db.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "packages/shared/src/testing/examples/Greeting.tsx"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "packages/shared/src/testing/examples/sum.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "packages/shared/src/testing/index.ts"
+    },
+    {
+      "branches": 91.3,
+      "functions": 100,
+      "lines": 100,
+      "path": "packages/shared/src/testing/safety.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 50,
+      "lines": 80,
+      "path": "packages/shared/src/testing/schema.ts"
+    },
+    {
+      "branches": 88.24,
+      "functions": 100,
+      "lines": 90,
+      "path": "packages/shared/src/testing/seeds.ts"
+    }
+  ]
 }
