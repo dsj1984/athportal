@@ -3,10 +3,9 @@
 //
 // Shared Avatar primitive. Renders the user's uploaded photo when
 // `src` is provided, otherwise renders the uppercase-initials
-// fallback the dashboard uses for freshly-onboarded users who skipped
-// the optional photo upload (PRD #489 §Avatar initials).
-//
-// Story #574 / Task #585. Tech Spec #490.
+// fallback over an OKLCH brand gradient keyed off `hue`. PRD #703 /
+// Tech Spec #704; refactored under Story #713 / Task #721 from the
+// prior Story #574 / Task #585 implementation.
 
 import { type AvatarProps, buildAvatarView } from './Avatar.ts';
 
@@ -20,6 +19,7 @@ const view = buildAvatarView(Astro.props);
     src={view.src}
     alt={view.name}
     data-testid={view.testId}
+    style={view.imageStyle}
   />
 ) : (
   <span
@@ -27,6 +27,7 @@ const view = buildAvatarView(Astro.props);
     role="img"
     aria-label={view.name}
     data-testid={view.testId}
+    style={view.fallbackStyle}
   >
     {view.initials}
   </span>
