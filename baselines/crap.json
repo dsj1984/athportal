@@ -1,11 +1,11 @@
 {
   "$schema": ".agents/schemas/baselines/crap.schema.json",
-  "generatedAt": "2026-05-22T23:18:43.212Z",
+  "generatedAt": "2026-05-23T02:53:00.078Z",
   "kernelVersion": "1.0.0",
   "rollup": {
     "*": {
       "max": 506,
-      "methodsAbove20": 55,
+      "methodsAbove20": 57,
       "p50": 2,
       "p95": 42
     }
@@ -2271,25 +2271,55 @@
       "crap": 30,
       "method": "buildAvatarView",
       "path": "apps/web/src/components/ui/Avatar.ts",
-      "startLine": 43
+      "startLine": 75
     },
     {
       "crap": 12,
       "method": "computeInitials",
       "path": "apps/web/src/components/ui/Avatar.ts",
-      "startLine": 67
+      "startLine": 97
     },
     {
       "crap": 2,
       "method": "<anon method-1>",
       "path": "apps/web/src/components/ui/Avatar.ts",
-      "startLine": 71
+      "startLine": 101
     },
     {
       "crap": 2,
       "method": "firstChar",
       "path": "apps/web/src/components/ui/Avatar.ts",
-      "startLine": 79
+      "startLine": 109
+    },
+    {
+      "crap": 12,
+      "method": "resolveHue",
+      "path": "apps/web/src/components/ui/Avatar.ts",
+      "startLine": 113
+    },
+    {
+      "crap": 20,
+      "method": "resolveSize",
+      "path": "apps/web/src/components/ui/Avatar.ts",
+      "startLine": 121
+    },
+    {
+      "crap": 2,
+      "method": "buildFallbackStyle",
+      "path": "apps/web/src/components/ui/Avatar.ts",
+      "startLine": 128
+    },
+    {
+      "crap": 2,
+      "method": "buildImageStyle",
+      "path": "apps/web/src/components/ui/Avatar.ts",
+      "startLine": 137
+    },
+    {
+      "crap": 6,
+      "method": "buildCardView",
+      "path": "apps/web/src/components/ui/Card.ts",
+      "startLine": 25
     },
     {
       "crap": 20,
@@ -2302,6 +2332,168 @@
       "method": "normalizeAction",
       "path": "apps/web/src/components/ui/EmptyState.ts",
       "startLine": 93
+    },
+    {
+      "crap": 20,
+      "method": "buildEventChipView",
+      "path": "apps/web/src/components/ui/EventChip.ts",
+      "startLine": 77
+    },
+    {
+      "crap": 12,
+      "method": "normaliseOptional",
+      "path": "apps/web/src/components/ui/EventChip.ts",
+      "startLine": 127
+    },
+    {
+      "crap": 6,
+      "method": "<anon method-1>",
+      "path": "apps/web/src/components/ui/Input.tsx",
+      "startLine": 23
+    },
+    {
+      "crap": 6,
+      "method": "buildLogoView",
+      "path": "apps/web/src/components/ui/Logo.ts",
+      "startLine": 28
+    },
+    {
+      "crap": 20,
+      "method": "resolvePositive",
+      "path": "apps/web/src/components/ui/Logo.ts",
+      "startLine": 41
+    },
+    {
+      "crap": 6,
+      "method": "buildPhView",
+      "path": "apps/web/src/components/ui/Ph.ts",
+      "startLine": 41
+    },
+    {
+      "crap": 72,
+      "method": "buildDimensionStyle",
+      "path": "apps/web/src/components/ui/Ph.ts",
+      "startLine": 61
+    },
+    {
+      "crap": 6,
+      "method": "buildRingView",
+      "path": "apps/web/src/components/ui/Ring.ts",
+      "startLine": 42
+    },
+    {
+      "crap": 20,
+      "method": "clamp",
+      "path": "apps/web/src/components/ui/Ring.ts",
+      "startLine": 70
+    },
+    {
+      "crap": 20,
+      "method": "resolvePositive",
+      "path": "apps/web/src/components/ui/Ring.ts",
+      "startLine": 77
+    },
+    {
+      "crap": 6,
+      "method": "<anon method-1>",
+      "path": "apps/web/src/components/ui/Select.tsx",
+      "startLine": 23
+    },
+    {
+      "crap": 2,
+      "method": "shellGridTemplateColumns",
+      "path": "apps/web/src/components/ui/Shell.ts",
+      "startLine": 31
+    },
+    {
+      "crap": 6,
+      "method": "buildSidebarView",
+      "path": "apps/web/src/components/ui/Sidebar.ts",
+      "startLine": 58
+    },
+    {
+      "crap": 12,
+      "method": "<anon method-1>",
+      "path": "apps/web/src/components/ui/Sidebar.ts",
+      "startLine": 61
+    },
+    {
+      "crap": 2,
+      "method": "slug",
+      "path": "apps/web/src/components/ui/Sidebar.ts",
+      "startLine": 77
+    },
+    {
+      "crap": 42,
+      "method": "buildStatView",
+      "path": "apps/web/src/components/ui/Stat.ts",
+      "startLine": 50
+    },
+    {
+      "crap": 12,
+      "method": "resolveTrend",
+      "path": "apps/web/src/components/ui/Stat.ts",
+      "startLine": 83
+    },
+    {
+      "crap": 20,
+      "method": "trendColour",
+      "path": "apps/web/src/components/ui/Stat.ts",
+      "startLine": 90
+    },
+    {
+      "crap": 6,
+      "method": "<anon method-1>",
+      "path": "apps/web/src/components/ui/Textarea.tsx",
+      "startLine": 22
+    },
+    {
+      "crap": 2,
+      "method": "ToastHost",
+      "path": "apps/web/src/components/ui/ToastHost.tsx",
+      "startLine": 15
+    },
+    {
+      "crap": 6,
+      "method": "buildVerifiedTickView",
+      "path": "apps/web/src/components/ui/VerifiedTick.ts",
+      "startLine": 26
+    },
+    {
+      "crap": 20,
+      "method": "resolvePositive",
+      "path": "apps/web/src/components/ui/VerifiedTick.ts",
+      "startLine": 36
+    },
+    {
+      "crap": 2,
+      "method": "buildBadgeView",
+      "path": "apps/web/src/components/ui/_lib/badge.ts",
+      "startLine": 83
+    },
+    {
+      "crap": 12,
+      "method": "resolveTone",
+      "path": "apps/web/src/components/ui/_lib/badge.ts",
+      "startLine": 97
+    },
+    {
+      "crap": 2,
+      "method": "cn",
+      "path": "apps/web/src/components/ui/_lib/cn.ts",
+      "startLine": 14
+    },
+    {
+      "crap": 6,
+      "method": "resolveEventColor",
+      "path": "apps/web/src/components/ui/_lib/eventColors.ts",
+      "startLine": 113
+    },
+    {
+      "crap": 6,
+      "method": "resolveSidebarNav",
+      "path": "apps/web/src/components/ui/_lib/sidebarNav.ts",
+      "startLine": 67
     },
     {
       "crap": 20,
@@ -2332,6 +2524,18 @@
       "method": "<anon method-2>",
       "path": "apps/web/src/middleware.ts",
       "startLine": 191
+    },
+    {
+      "crap": 12,
+      "method": "decideStyleguideAccess",
+      "path": "apps/web/src/pages/_internal/styleguide.ts",
+      "startLine": 53
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "apps/web/src/pages/_internal/styleguide.ts",
+      "startLine": 82
     },
     {
       "crap": 6,
