@@ -7,11 +7,7 @@
 //
 // Story #712 / Task #729.
 
-import {
-  type SidebarNavItem,
-  type SidebarPersona,
-  resolveSidebarNav,
-} from './_lib/sidebarNav';
+import { type SidebarNavItem, type SidebarPersona, resolveSidebarNav } from './_lib/sidebarNav';
 
 export const SIDEBAR_TEST_ID = 'sidebar';
 export const SIDEBAR_ITEM_TEST_ID_PREFIX = 'sidebar-item-';
@@ -52,8 +48,7 @@ export interface SidebarView {
  * still reads as the current location. Surfaced as a single token so
  * the value never duplicates between view-builder and renderer.
  */
-export const SIDEBAR_ACTIVE_BG =
-  'color-mix(in srgb, var(--color-brand) 10%, transparent)';
+export const SIDEBAR_ACTIVE_BG = 'color-mix(in srgb, var(--color-brand) 10%, transparent)';
 
 /**
  * Project a Sidebar's props into the render-ready view. Resolves the

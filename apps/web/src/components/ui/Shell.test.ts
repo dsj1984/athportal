@@ -136,7 +136,7 @@ describe('Sidebar — testIds', () => {
     expect(view.testId).toBe('app-sidebar');
   });
 
-  it("exposes a slug-derived testId per row (sidebar-item-<slug>)", () => {
+  it('exposes a slug-derived testId per row (sidebar-item-<slug>)', () => {
     const view = buildSidebarView({ persona: 'athlete' });
     expect(view.rows[0]?.testId).toBe(`${SIDEBAR_ITEM_TEST_ID_PREFIX}home`);
     const statsRow = view.rows.find((r) => r.label === 'Stats & awards');
