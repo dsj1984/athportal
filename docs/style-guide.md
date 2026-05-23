@@ -4,6 +4,30 @@ This document outlines the visual identity, brand guidelines, and technical
 configurations for the platform. It is the definitive reference for designing,
 developing, and styling all user interfaces.
 
+## Live reference: `/_internal/styleguide`
+
+The canonical **live** reference for every primitive shipped by Epic
+702 (Design system) lives at
+[`/_internal/styleguide`](../apps/web/src/pages/_internal/styleguide.astro).
+That page renders the actual `apps/web/src/components/ui/*` primitives
+against the actual `global.css` token catalogue — when this document
+and the live page disagree, the live page wins; raise a docs PR to
+re-sync.
+
+* **Auth gate.** The route is `dev_admin`-gated via
+  `decideStyleguideAccess` (Story #723 / Task #734). Non-`dev_admin`
+  callers receive a 302 to `/` and the response always carries an
+  `X-Robots-Tag: noindex, nofollow` header.
+* **What it documents.** Four reference sections — Foundations
+  (tokens, typography, palette), Interactive atoms (`Btn`, `Input`,
+  `Select`, `Textarea`), Display atoms (`Badge`, `Stat`, `Ring`,
+  `Avatar`, `VerifiedTick`, `Ph`), and Composites (`Card`, `Shell`,
+  `Topbar`, `Sidebar`, `EmptyState`, `EventChip`, `ToastHost`).
+* **Code rule.** Consumers import primitives from
+  `apps/web/src/components/ui/*` — see
+  [`docs/patterns.md` § *Primitive library*](patterns.md#primitive-library)
+  for the import-this-not-Tailwind contributor rule.
+
 ## 1. Core Design Philosophy
 
 The platform is a dual-sided marketplace targeting a younger demographic (< 24)
@@ -70,6 +94,7 @@ design decision:
 | Emerald       | `#10B981` | Success states, positive progression markers     |
 | Amber         | `#F59E0B` | Warning states, pending requirements             |
 | Alert Coral   | `#F43F5E` | Destructive actions, errors, compliance alerts   |
+| Action Amber  | `#F59E0B` | Soft warning chips & inline cautions (`--color-action-amber`, Epic #702) |
 
 ### 3.3 Surface & Text Tokens
 
@@ -81,7 +106,9 @@ design decision:
 | Surface Active    | `#E2E8F0` | Pressed / active state   |
 | Text Primary      | `#0F1115` | Body and heading text    |
 | Text Secondary    | `#475569` | Captions, metadata       |
+| Text Tertiary     | `#64748B` | Disabled labels, low-emphasis hints (`--color-text-tertiary`, Epic #702) |
 | Border            | `#E2E8F0` | Card edges, dividers     |
+| Border Strong     | `#CBD5E1` | Emphasized dividers, focus rims (`--color-border-strong`, Epic #702) |
 
 ### 3.4 Component Styling: Translucent "Soft" Badges
 
@@ -103,6 +130,44 @@ solid chips.
 <!-- Incorrect — do not use solid dark backgrounds -->
 <span class="bg-cyan-900 text-cyan-100 ...">VERIFIED</span>
 ```
+
+### 3.5 Radii & Elevation (Epic #702)
+
+Epic #702 codified two scales the primitive library composes against.
+Pull radii and shadow values from the tokens below — never inline a
+custom `border-radius` or `box-shadow` in a consuming Epic.
+
+#### Radii scale
+
+| Token         | Value | Usage                                            |
+| :------------ | :---- | :----------------------------------------------- |
+| `--radius-sm` | 6 px  | Inline chips, micro-pills, EventChip stripe rail |
+| `--radius-md` | 10 px | Buttons, inputs, EventChip background            |
+| `--radius-lg` | 14 px | Cards, hero callouts, modal surfaces             |
+| `--radius-xl` | 18 px | Top-level shells, marketing hero blocks          |
+| `--radius-2xl`| 24 px | Full-bleed media frames, oversized illustration tiles |
+
+#### Shadow scale
+
+| Token         | Usage                                                          |
+| :------------ | :------------------------------------------------------------- |
+| `--shadow-xs` | Hairline lift on chips and inline pills                        |
+| `--shadow-sm` | Default card resting state                                     |
+| `--shadow-md` | Hover / focus lift on interactive cards and dropdowns          |
+| `--shadow-lg` | Modal overlays, popovers, focus-trapped sheets                 |
+
+The shadows are tuned for the light surface; do **not** override
+opacity or colour values per-Epic — extend the scale here if a new
+elevation is genuinely needed.
+
+### 3.6 Monospace surface (Epic #702)
+
+`--font-mono` resolves to the **system monospace stack** —
+`ui-monospace, SFMono-Regular, Menlo, monospace`. No third-party
+mono font is loaded over the network (Tech Spec #704 explicitly
+forbids it). Use this token whenever a surface needs tabular
+numerics, raw IDs, or code excerpts (e.g. operator panels, the
+internal styleguide, the support-ticket detail view).
 
 ---
 
@@ -127,6 +192,7 @@ values there**.
   /* ── Functional Accents ─────────────────────── */
   --color-action-cyan:  #06b6d4;
   --color-action-lime:  #10b981;
+  --color-action-amber: #f59e0b;  /* Epic #702 — soft warning chips */
   --color-action-coral: #f43f5e;
 
   /* ── Surfaces ───────────────────────────────── */
@@ -138,13 +204,29 @@ values there**.
   /* ── Text ───────────────────────────────────── */
   --color-text-primary:   #0f1115;
   --color-text-secondary: #475569;
+  --color-text-tertiary:  #64748b;  /* Epic #702 — disabled labels, hints */
 
   /* ── Borders ────────────────────────────────── */
-  --color-border: #e2e8f0;
+  --color-border:        #e2e8f0;
+  --color-border-strong: #cbd5e1;  /* Epic #702 — emphasized dividers */
 
   /* ── Typography ─────────────────────────────── */
   --font-display: "Space Grotesk", system-ui, sans-serif;
   --font-body:    "Inter", system-ui, sans-serif;
+  --font-mono:    ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* ── Radii (Epic #702) ──────────────────────── */
+  --radius-sm:  6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --radius-2xl: 24px;
+
+  /* ── Shadows (light, airy — Epic #702) ──────── */
+  --shadow-xs: 0 1px 2px rgba(15,17,21,0.04);
+  --shadow-sm: 0 1px 2px rgba(15,17,21,0.06), 0 1px 1px rgba(15,17,21,0.04);
+  --shadow-md: 0 4px 16px rgba(15,17,21,0.06), 0 1px 2px rgba(15,17,21,0.04);
+  --shadow-lg: 0 12px 40px rgba(15,17,21,0.08), 0 2px 6px rgba(15,17,21,0.04);
 }
 ```
 
@@ -340,6 +422,46 @@ Conflict indicators (the org-calendar overlay badge and the per-event conflict
 list) use the Alert Coral token: `bg-alert-coral/15 text-alert-coral`.
 Conflict counts use the same soft-badge pattern as RSVP counts so the two
 indicator systems read as one visual family.
+
+### EventChip composite — Epic #702 extension
+
+The `EventChip` composite at
+[`apps/web/src/components/ui/EventChip.astro`](../apps/web/src/components/ui/EventChip.astro)
+is the canonical surface for rendering a single event on the calendar
+or agenda. The colour decisions for every event_type live in the
+canonical map at
+[`apps/web/src/components/ui/_lib/eventColors.ts`](../apps/web/src/components/ui/_lib/eventColors.ts)
+(`EVENT_COLORS`), exported as a frozen record so consumers cannot
+re-derive the palette per call-site.
+
+**Canonical `event_type` set.** The base set above (`game`, `practice`,
+`training`, `academic`, `meeting`, `other`) is extended by Epic #702
+with one new type:
+
+| `event_type` | Colour family | Notes |
+| :----------- | :------------ | :---- |
+| `tournament` | Violet (rgb(139 92 246)) | Multi-day brackets, league championship surfaces |
+
+`tournament` reuses the soft-pill formula (20 % opacity fill,
+200-shade text, 40 % opacity border). Adding a new `event_type`
+requires extending **both** the `EventType` union and the
+`EVENT_COLORS` record in the same PR — `resolveEventColor` throws
+`TypeError` on an unmapped value so an unmapped chip is a loud
+authoring error rather than a silently misrendered one.
+
+**Inset 3 px ring stripe.** Every chip carries an inset 3 px stripe
+along its leading edge, keyed to the same colour as the chip text.
+This is composed via an inline `box-shadow: inset 3px 0 0 <color>` —
+it is intentionally inset (not a border) so the chip's outer radius
+stays flush with the calendar grid. Do not replace the stripe with a
+left border in a consuming Epic.
+
+**6 px conflict dot.** When a chip has scheduling conflicts it renders
+a 6 px Alert-Coral dot anchored to its top-right corner. The colour is
+sourced from `CONFLICT_DOT_COLOR` (`var(--color-action-coral)`) so the
+dot reads as part of the same indicator system as the calendar's
+conflict overlay badge. The dot carries `role="img"` +
+`aria-label="Scheduling conflict"` so screen readers surface it.
 
 ## Vanity profile branding color
 

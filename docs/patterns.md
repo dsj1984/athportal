@@ -4,6 +4,161 @@ This file is the project's living catalogue of cross-cutting engineering
 patterns. Sections below cover only what the current scaffolding requires;
 new patterns land here as Stories add them.
 
+## Primitive library — import this, not Tailwind classes {#primitive-library}
+
+> **Rule.** Every consumer surface under `apps/web/` composes against
+> the design-system primitives at `apps/web/src/components/ui/*`. Do
+> not author bespoke buttons, cards, badges, inputs, or event chips in
+> a consuming Epic — extend the primitive (or its `_lib` sibling)
+> instead, in a PR scoped to that primitive.
+
+Epic #702 codified the canonical primitive library. The companion
+[`docs/style-guide.md`](style-guide.md) carries the design rules; this
+section carries the **engineering** rules. The live, gated reference
+page lives at `/_internal/styleguide`
+([source](../apps/web/src/pages/_internal/styleguide.astro)).
+
+### Import path
+
+All primitives live under a single root and import via the workspace
+alias:
+
+```ts
+// ✅ Correct — import the primitive
+import Btn from '@/components/ui/Btn.astro';
+import Card from '@/components/ui/Card.astro';
+import { toast } from '@/components/ui/_lib/toast';
+
+// ❌ Wrong — bespoke Tailwind on a one-off
+// <button class="rounded-md bg-brand px-4 py-2 text-white ...">
+```
+
+The `_lib/` subfolder under `apps/web/src/components/ui/` holds the
+pure-TS helpers each primitive composes against (colour maps, class
+builders, registries). Import from `_lib/<helper>` when you need the
+helper itself (e.g. a screenshot fixture seeding the same colour
+palette); never reach past `_lib/` for an "internal" symbol that
+wasn't exported.
+
+### Available primitives (Epic #702 — Waves 0–2)
+
+The catalogue below mirrors what `/_internal/styleguide` renders. Each
+primitive is the **only** sanctioned surface for its concept — author a
+new atom inside `_lib/` if you need an option that isn't there yet.
+
+| Category | Primitive | Import |
+| :------- | :-------- | :----- |
+| Interactive atom | `Btn`          | `@/components/ui/Btn.astro` |
+| Interactive atom | `Input`        | `@/components/ui/Input.tsx` |
+| Interactive atom | `Select`       | `@/components/ui/Select.tsx` |
+| Interactive atom | `Textarea`     | `@/components/ui/Textarea.tsx` |
+| Display atom     | `Badge`        | `@/components/ui/Badge.astro` |
+| Display atom     | `Stat`         | `@/components/ui/Stat.astro` |
+| Display atom     | `Ring`         | `@/components/ui/Ring.astro` |
+| Display atom     | `Avatar`       | `@/components/ui/Avatar.astro` |
+| Display atom     | `VerifiedTick` | `@/components/ui/VerifiedTick.astro` |
+| Display atom     | `Ph`           | `@/components/ui/Ph.astro` |
+| Display atom     | `Logo`         | `@/components/ui/Logo.astro` |
+| Composite        | `Card`         | `@/components/ui/Card.astro` |
+| Composite        | `CardSoft`     | `@/components/ui/CardSoft.astro` |
+| Composite        | `Shell`        | `@/components/ui/Shell.astro` |
+| Composite        | `Topbar`       | `@/components/ui/Topbar.astro` |
+| Composite        | `Sidebar`      | `@/components/ui/Sidebar.astro` |
+| Composite        | `EmptyState`   | `@/components/ui/EmptyState.astro` |
+| Composite        | `EventChip`    | `@/components/ui/EventChip.astro` |
+| Composite        | `ToastHost`    | `@/components/ui/ToastHost.tsx` |
+
+### No restyling per Epic
+
+A consuming Epic **must not** re-style a primitive at its call site.
+The acceptable extension paths are:
+
+1. **Add a prop** to the primitive in a PR scoped to that primitive
+   (and add the corresponding line to `/_internal/styleguide`).
+2. **Extend the `_lib/` registry** (e.g. add a new event_type to
+   [`_lib/eventColors.ts`](../apps/web/src/components/ui/_lib/eventColors.ts)
+   in the same PR that extends the `EventType` union).
+3. **Add a new primitive** when none of the existing ones cover the
+   concept. The new file lives under `apps/web/src/components/ui/`
+   alongside its sibling `*.ts` view-builder and `*.test.ts` unit
+   test; the live page picks it up automatically.
+
+What you **must not** do: override token values in a page-level CSS
+file, inline a custom `border-radius` or `box-shadow` to bypass the
+scales in [`docs/style-guide.md` § 3.5](style-guide.md#3-5-radii--elevation-epic-702),
+or copy-paste primitive markup into a one-off component. The
+[`docs/style-guide.md` § 3.4 soft-badge rule](style-guide.md#3-4-component-styling-translucent-soft-badges)
+and the [§ 4.6 EventChip rules](style-guide.md#4-6-calendar--event-chip-styling-epic-466)
+are the canonical references the primitives compose against; they are
+not advisory.
+
+### Toast helper
+
+Toasts go through a single seam so the toast surface can be swapped
+(or wrapped with telemetry) in one file:
+
+```ts
+import { toast } from '@/components/ui/_lib/toast';
+
+toast.success('Saved');
+```
+
+Source:
+[`apps/web/src/components/ui/_lib/toast.ts`](../apps/web/src/components/ui/_lib/toast.ts).
+Do not import directly from `sonner` (or any other toast library) in
+a consumer — every toast call site reads from `_lib/toast`.
+
+### lucide-react icon catalogue
+
+Icons across the platform come from
+[`lucide-react`](https://lucide.dev/). The platform follows the
+[`docs/style-guide.md` § 1 anti-cliché rule](style-guide.md#1-core-design-philosophy)
+— prefer abstract, geometric glyphs over literal sports clip-art.
+
+`Sidebar.astro` resolves icons dynamically by name from the
+`SIDEBAR_NAV` registry at
+[`apps/web/src/components/ui/_lib/sidebarNav.ts`](../apps/web/src/components/ui/_lib/sidebarNav.ts).
+The canonical persona → nav-set mapping uses the following icons (each
+name resolves to the same-named `lucide-react` export):
+
+| Persona | Nav row | `lucide-react` icon |
+| :------ | :------ | :------------------ |
+| athlete | Home            | `Home` |
+| athlete | My profile      | `User` |
+| athlete | My teams        | `Users` |
+| athlete | Calendar        | `Calendar` |
+| athlete | Team feed       | `MessageSquare` |
+| athlete | Stats & awards  | `Trophy` |
+| coach   | Home            | `Home` |
+| coach   | Roster          | `Users` |
+| coach   | Verify stats    | `CheckSquare` |
+| coach   | Calendar        | `Calendar` |
+| coach   | Team feed       | `MessageSquare` |
+| coach   | Announcements   | `Megaphone` |
+| org     | Overview        | `LayoutDashboard` |
+| org     | Teams           | `Users` |
+| org     | Coaches         | `UserCheck` |
+| org     | Athletes        | `GraduationCap` |
+| org     | Events          | `Calendar` |
+| org     | Reports         | `BarChart3` |
+
+When adding a new nav row (or a new persona) extend `SIDEBAR_NAV` in
+the same PR — `resolveSidebarNav` throws `TypeError` on an unknown
+persona, so an upstream typo fails loudly at boot. Add the row to the
+table above in the same PR so the docs stay aligned with the live
+registry.
+
+For icons outside the sidebar (inline status indicators, action
+buttons), import the lucide component directly:
+
+```tsx
+import { CheckCircle2, AlertTriangle } from 'lucide-react';
+```
+
+Stick to glyphs that read as connectivity, verification, or data flow.
+Never introduce literal whistles, soccer balls, or distressed-block
+sports glyphs — see [`docs/style-guide.md` § 1](style-guide.md#1-core-design-philosophy).
+
 ## Linting: Biome ↔ ESLint scope boundary
 
 The repo uses **two linters with non-overlapping concerns** so each tool
