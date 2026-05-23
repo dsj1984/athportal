@@ -1,11 +1,41 @@
 {
   "$schema": ".agents/schemas/baselines/maintainability.schema.json",
-  "kernelVersion": "0.1.0",
-  "generatedAt": "2026-05-23T01:21:37.247Z",
+  "generatedAt": "2026-05-23T01:39:52.725Z",
+  "kernelVersion": "1.0.0",
   "rollup": {
     "*": {
       "min": 70.515,
-      "p50": 106.74,
+      "p50": 107.499,
+      "p95": 171
+    },
+    "apps/api": {
+      "min": 78.354,
+      "p50": 107.516,
+      "p95": 171
+    },
+    "apps/mobile": {
+      "min": 96.11,
+      "p50": 96.11,
+      "p95": 121.195
+    },
+    "apps/web": {
+      "min": 80.074,
+      "p50": 109.435,
+      "p95": 147.989
+    },
+    "packages/baselines": {
+      "min": 98.311,
+      "p50": 104.945,
+      "p95": 171
+    },
+    "packages/config": {
+      "min": 104.952,
+      "p50": 104.952,
+      "p95": 115.627
+    },
+    "packages/shared": {
+      "min": 70.515,
+      "p50": 99.315,
       "p95": 171
     }
   },
@@ -139,6 +169,10 @@
       "path": "apps/mobile/src/sentry.ts"
     },
     {
+      "mi": 103.28,
+      "path": "apps/web/astro.config.ts"
+    },
+    {
       "mi": 133.574,
       "path": "apps/web/e2e/fixtures/email-inbox.ts"
     },
@@ -265,6 +299,30 @@
     {
       "mi": 99.6,
       "path": "apps/web/src/components/ui/EmptyState.ts"
+    },
+    {
+      "mi": 124.358,
+      "path": "apps/web/src/components/ui/Input.tsx"
+    },
+    {
+      "mi": 124.464,
+      "path": "apps/web/src/components/ui/Select.tsx"
+    },
+    {
+      "mi": 124.674,
+      "path": "apps/web/src/components/ui/Textarea.tsx"
+    },
+    {
+      "mi": 99.377,
+      "path": "apps/web/src/components/ui/_lib/btn.ts"
+    },
+    {
+      "mi": 147.376,
+      "path": "apps/web/src/components/ui/_lib/cn.ts"
+    },
+    {
+      "mi": 109.991,
+      "path": "apps/web/src/components/ui/_lib/form.ts"
     },
     {
       "mi": 171,
