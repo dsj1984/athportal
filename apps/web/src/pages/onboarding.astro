@@ -38,6 +38,7 @@ import {
   SEED_TOS_VERSION,
 } from '@repo/shared/db/seed';
 import OnboardingForm from '../components/onboarding/OnboardingForm.astro';
+import RootLayout from '../layouts/RootLayout.astro';
 
 /**
  * Injectable accessor. Production wires the real DB-backed reader
@@ -78,22 +79,15 @@ const inviteToken =
   typeof rawInviteToken === 'string' && rawInviteToken.length > 0 ? rawInviteToken : null;
 ---
 
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{view.title}</title>
-  </head>
-  <body>
-    <main class="onboarding">
-      <h1 class="onboarding__heading">{view.heading}</h1>
-      <p class="onboarding__intro">{view.intro}</p>
+<RootLayout title={view.title}>
+  <main class="onboarding">
+    <h1 class="onboarding__heading">{view.heading}</h1>
+    <p class="onboarding__intro">{view.intro}</p>
 
-      <OnboardingForm
-        termsOfServiceVersion={view.legalAcceptances.termsOfServiceVersion}
-        privacyPolicyVersion={view.legalAcceptances.privacyPolicyVersion}
-        inviteToken={inviteToken}
-      />
-    </main>
-  </body>
-</html>
+    <OnboardingForm
+      termsOfServiceVersion={view.legalAcceptances.termsOfServiceVersion}
+      privacyPolicyVersion={view.legalAcceptances.privacyPolicyVersion}
+      inviteToken={inviteToken}
+    />
+  </main>
+</RootLayout>

@@ -1,0 +1,35 @@
+---
+// apps/web/src/layouts/RootLayout.astro
+//
+// The shared HTML shell every page renders inside. Owns the single
+// import of the design-system stylesheet (apps/web/src/styles/global.css)
+// so every route inherits the @theme token catalogue without each page
+// re-importing it. Pages pass <title> via the `title` prop and inject
+// page content through the default slot; additional <head> content
+// (meta tags, preloads, scripts) goes through the `head` named slot.
+//
+// Story #711 / Task #720 — Epic #702 design-system foundation. Tech
+// Spec #704 §Architecture pins this layout as the canonical insertion
+// point for global.css.
+
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  lang?: string;
+}
+
+const { title, lang = 'en' } = Astro.props;
+---
+
+<html lang={lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <slot name="head" />
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>
