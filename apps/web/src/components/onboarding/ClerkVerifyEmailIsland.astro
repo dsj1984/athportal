@@ -49,7 +49,7 @@ const view = buildClerkVerifyEmailView({ isVerified: false });
   </button>
 </section>
 
-<script>
+<script lang="ts">
   // Hydrate the island against the real Clerk SDK state. The script
   // waits for `window.Clerk` to become ready, reads the primary
   // email's verification status, mirrors it onto the surface, and
