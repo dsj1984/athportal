@@ -1,0 +1,26 @@
+---
+// apps/web/src/components/ui/Stat.astro
+//
+// Label/value/unit/trend/verified/hint primitive for dashboard
+// surfaces. Imports the VerifiedTick atom (Task #728) when the
+// `verified` flag is on.
+//
+// Story #713 / Task #725 — Epic #702 design system.
+
+import { type StatProps, buildStatView } from './Stat.ts';
+import VerifiedTick from './VerifiedTick.astro';
+
+type Props = StatProps;
+const view = buildStatView(Astro.props);
+---
+
+<div class={view.rootClass}>
+  <span class={view.labelClass}>{view.label}</span>
+  <div class="flex items-baseline gap-1">
+    <span class={view.valueClass}>{view.value}</span>
+    {view.unit && <span class="text-sm font-medium text-text-secondary">{view.unit}</span>}
+    {view.showVerified && <VerifiedTick size={16} />}
+  </div>
+  {view.trend && <span class={view.trendClass} data-trend={view.trend}>{view.trend}</span>}
+  {view.hint && <span class="text-xs text-text-secondary">{view.hint}</span>}
+</div>
