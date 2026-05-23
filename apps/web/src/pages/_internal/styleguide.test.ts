@@ -6,8 +6,8 @@
 //
 // Story #723 / Task #734.
 
-import { describe, expect, it } from 'vitest';
 import type { Role } from '@repo/shared/rbac';
+import { describe, expect, it } from 'vitest';
 import {
   STYLEGUIDE_ROBOTS_HEADER,
   decideStyleguideAccess,
