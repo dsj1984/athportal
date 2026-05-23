@@ -1,13 +1,13 @@
 {
   "$schema": ".agents/schemas/baselines/crap.schema.json",
-  "kernelVersion": "0.1.0",
-  "generatedAt": "2026-05-23T12:15:03.953Z",
+  "generatedAt": "2026-05-23T12:39:24.181Z",
+  "kernelVersion": "1.0.0",
   "rollup": {
     "*": {
-      "p50": 2,
-      "p95": 42,
       "max": 506,
-      "methodsAbove20": 57
+      "methodsAbove20": 58,
+      "p50": 2,
+      "p95": 42
     }
   },
   "rows": [
@@ -2268,36 +2268,6 @@
       "startLine": 57
     },
     {
-      "crap": 2,
-      "method": "buildBadgeView",
-      "path": "apps/web/src/components/ui/_lib/badge.ts",
-      "startLine": 83
-    },
-    {
-      "crap": 12,
-      "method": "resolveTone",
-      "path": "apps/web/src/components/ui/_lib/badge.ts",
-      "startLine": 97
-    },
-    {
-      "crap": 2,
-      "method": "cn",
-      "path": "apps/web/src/components/ui/_lib/cn.ts",
-      "startLine": 14
-    },
-    {
-      "crap": 6,
-      "method": "resolveEventColor",
-      "path": "apps/web/src/components/ui/_lib/eventColors.ts",
-      "startLine": 113
-    },
-    {
-      "crap": 6,
-      "method": "resolveSidebarNav",
-      "path": "apps/web/src/components/ui/_lib/sidebarNav.ts",
-      "startLine": 67
-    },
-    {
       "crap": 30,
       "method": "buildAvatarView",
       "path": "apps/web/src/components/ui/Avatar.ts",
@@ -2496,6 +2466,54 @@
       "startLine": 36
     },
     {
+      "crap": 2,
+      "method": "buildBadgeView",
+      "path": "apps/web/src/components/ui/_lib/badge.ts",
+      "startLine": 83
+    },
+    {
+      "crap": 12,
+      "method": "resolveTone",
+      "path": "apps/web/src/components/ui/_lib/badge.ts",
+      "startLine": 97
+    },
+    {
+      "crap": 2,
+      "method": "cn",
+      "path": "apps/web/src/components/ui/_lib/cn.ts",
+      "startLine": 14
+    },
+    {
+      "crap": 6,
+      "method": "resolveEventColor",
+      "path": "apps/web/src/components/ui/_lib/eventColors.ts",
+      "startLine": 113
+    },
+    {
+      "crap": 6,
+      "method": "resolveSidebarNav",
+      "path": "apps/web/src/components/ui/_lib/sidebarNav.ts",
+      "startLine": 67
+    },
+    {
+      "crap": 30,
+      "method": "resolveDatabasePath",
+      "path": "apps/web/src/lib/db.ts",
+      "startLine": 34
+    },
+    {
+      "crap": 6,
+      "method": "getDb",
+      "path": "apps/web/src/lib/db.ts",
+      "startLine": 66
+    },
+    {
+      "crap": 2,
+      "method": "__resetDbForTests",
+      "path": "apps/web/src/lib/db.ts",
+      "startLine": 77
+    },
+    {
       "crap": 20,
       "method": "isAllowlisted",
       "path": "apps/web/src/middleware.ts",
@@ -2529,13 +2547,19 @@
       "crap": 12,
       "method": "decideStyleguideAccess",
       "path": "apps/web/src/pages/_internal/styleguide.ts",
-      "startLine": 53
+      "startLine": 59
+    },
+    {
+      "crap": 6,
+      "method": "lookupRoleBySubject",
+      "path": "apps/web/src/pages/_internal/styleguide.ts",
+      "startLine": 111
     },
     {
       "crap": 2,
       "method": "<anon method-1>",
       "path": "apps/web/src/pages/_internal/styleguide.ts",
-      "startLine": 82
+      "startLine": 139
     },
     {
       "crap": 6,
