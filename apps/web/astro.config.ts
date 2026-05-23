@@ -13,6 +13,7 @@
 // Story #255 — Sentry baseline init across all three runtimes.
 // Story #711 — Tailwind v4 + React island foundation.
 
+import node from '@astrojs/node';
 import react from '@astrojs/react';
 import sentry from '@sentry/astro';
 import tailwindcss from '@tailwindcss/vite';
@@ -33,7 +34,14 @@ const integrations = [
     : []),
 ];
 
+// Story #753 / Epic #741 — SSR migration. Clerk middleware requires a
+// server runtime; flip `output: 'server'` and adopt the @astrojs/node
+// standalone adapter. Per-page `export const prerender = true;` opts
+// static pages back into static prerender (see Task #755). The Cloudflare
+// adapter swap is deferred to Epic #27.
 export default defineConfig({
+  output: 'server',
+  adapter: node({ mode: 'standalone' }),
   integrations,
   vite: {
     plugins: [tailwindcss()],
