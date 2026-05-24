@@ -79,6 +79,15 @@ const PREFIX_ALLOWLIST: ReadonlyArray<string> = [
   // round-trips. Any future Clerk-mounted segment lands under one of
   // these prefixes.
   '/clerk',
+  // Internal dev-admin surfaces under `/internal/*` carry their own
+  // dev_admin role gate (e.g. `/internal/styleguide`) and noindex
+  // headers. They are intentionally accessible BEFORE a developer has
+  // completed user onboarding because the design-system reference is a
+  // build-time aid; the user-onboarding story (name + ToS + age
+  // attestation) is irrelevant to internal navigation. The leaf-page
+  // gate continues to enforce role-based access for non-dev_admin
+  // callers.
+  '/internal',
 ];
 
 /**

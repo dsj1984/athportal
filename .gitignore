@@ -24,6 +24,11 @@ worker-configuration.d.ts
 # Environment variables
 .env
 .env.local
+apps/web/.env
+
+# Local SQLite dev DB — created by drizzle migrations; never committed.
+# Schema lives at packages/shared/src/db/migrations/.
+packages/shared/data/
 
 # MCP config (contains secrets)
 .mcp.json

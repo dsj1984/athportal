@@ -3,7 +3,7 @@
 // Lazy-singleton Drizzle handle for the web runtime.
 //
 // Story #749 / Task #752 wires the first production DB binding for
-// `apps/web` so the `/_internal/styleguide` gate can resolve a Clerk
+// `apps/web` so the `/internal/styleguide` gate can resolve a Clerk
 // subject to an internal `users` row and read its `role` column.
 //
 // Driver — `better-sqlite3` against the local SQLite file pointed at by
@@ -32,7 +32,14 @@ import { type BetterSQLite3Database, drizzle } from 'drizzle-orm/better-sqlite3'
  * caller loudly rather than silently opening the wrong DB.
  */
 function resolveDatabasePath(): string {
-  const raw = process.env.TURSO_URL;
+  // Astro/Vite auto-loads .env into import.meta.env for the SSR runtime;
+  // process.env is only populated when the operator exports the var into
+  // the shell before launching. Prefer import.meta.env so the local-dev
+  // path "just works" with apps/web/.env, fall back to process.env for
+  // CI / explicit shell exports.
+  const importMetaEnv = (import.meta as unknown as { env?: Record<string, string | undefined> })
+    .env;
+  const raw = importMetaEnv?.TURSO_URL || process.env.TURSO_URL;
   if (!raw || raw.length === 0) {
     throw new Error(
       'TURSO_URL is not set. The web runtime requires a local SQLite path ' +

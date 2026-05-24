@@ -5,3 +5,6 @@
 test-results/
 playwright-output/
 playwright-report/
+
+# clerk configuration (can include secrets)
+/.clerk/

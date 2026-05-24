@@ -15,8 +15,8 @@ new patterns land here as Stories add them.
 Epic #702 codified the canonical primitive library. The companion
 [`docs/style-guide.md`](style-guide.md) carries the design rules; this
 section carries the **engineering** rules. The live, gated reference
-page lives at `/_internal/styleguide`
-([source](../apps/web/src/pages/_internal/styleguide.astro)).
+page lives at `/internal/styleguide`
+([source](../apps/web/src/pages/internal/styleguide.astro)).
 
 ### Import path
 
@@ -42,7 +42,7 @@ wasn't exported.
 
 ### Available primitives (Epic #702 — Waves 0–2)
 
-The catalogue below mirrors what `/_internal/styleguide` renders. Each
+The catalogue below mirrors what `/internal/styleguide` renders. Each
 primitive is the **only** sanctioned surface for its concept — author a
 new atom inside `_lib/` if you need an option that isn't there yet.
 
@@ -74,7 +74,7 @@ A consuming Epic **must not** re-style a primitive at its call site.
 The acceptable extension paths are:
 
 1. **Add a prop** to the primitive in a PR scoped to that primitive
-   (and add the corresponding line to `/_internal/styleguide`).
+   (and add the corresponding line to `/internal/styleguide`).
 2. **Extend the `_lib/` registry** (e.g. add a new event_type to
    [`_lib/eventColors.ts`](../apps/web/src/components/ui/_lib/eventColors.ts)
    in the same PR that extends the `EventType` union).

@@ -1,8 +1,8 @@
 # Runbook: Seed a `dev_admin` user (local dev)
 
-> **When to use this runbook.** You want to reach `/_internal/styleguide` — the internal design-system reference page — on your local dev machine. The route is gated on `users.role === 'dev_admin'`; this runbook walks the operator through marking their own Clerk-provisioned account with that role.
+> **When to use this runbook.** You want to reach `/internal/styleguide` — the internal design-system reference page — on your local dev machine. The route is gated on `users.role === 'dev_admin'`; this runbook walks the operator through marking their own Clerk-provisioned account with that role.
 >
-> Story #749 / Task #751 introduced both the script and this runbook. The matching production lookup body landed in Story #749 / Task #752 (`apps/web/src/pages/_internal/styleguide.ts`). The runbook reflects the MVP DB topology — a local SQLite file at `TURSO_URL` (default `file:packages/shared/data/local.db` per `.env.example`). The libSQL/Turso swap lands with Epic #27 and this runbook will be updated alongside it.
+> Story #749 / Task #751 introduced both the script and this runbook. The matching production lookup body landed in Story #749 / Task #752 (`apps/web/src/pages/internal/styleguide.ts`). The runbook reflects the MVP DB topology — a local SQLite file at `TURSO_URL` (default `file:packages/shared/data/local.db` per `.env.example`). The libSQL/Turso swap lands with Epic #27 and this runbook will be updated alongside it.
 
 ---
 
@@ -63,7 +63,7 @@ The script always closes the DB handle on the way out (success or failure) so a 
 After a successful run:
 
 1. Sign in to the local dev app with the same Clerk account.
-2. Navigate to `/_internal/styleguide`.
+2. Navigate to `/internal/styleguide`.
 3. Confirm the page renders (you should see the design-system reference content, not a redirect to `/`).
 
 If you still get redirected, double-check:
@@ -89,7 +89,7 @@ Production rollback is governed by [`docs/runbooks/rollback.md`](./rollback.md) 
 
 ## Related
 
-- `apps/web/src/pages/_internal/styleguide.ts` — the gate the role read powers.
+- `apps/web/src/pages/internal/styleguide.ts` — the gate the role read powers.
 - `apps/web/src/lib/db.ts` — the shared lazy Drizzle handle the gate uses.
 - `apps/api/src/middleware/auth.ts` — the JIT provisioner that creates the initial row Clerk's first sign-in needs.
 - PRD #742 / Tech Spec #743 — Foundation hardening Epic #741 context.

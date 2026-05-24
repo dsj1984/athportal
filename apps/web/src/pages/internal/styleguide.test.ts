@@ -1,6 +1,6 @@
-// apps/web/src/pages/_internal/styleguide.test.ts
+// apps/web/src/pages/internal/styleguide.test.ts
 //
-// Pure-function unit tests for the `/_internal/styleguide` gate. The
+// Pure-function unit tests for the `/internal/styleguide` gate. The
 // gate is the only piece of the page exercised under Vitest — the
 // `.astro` template wires the gate into Astro's request lifecycle.
 //
