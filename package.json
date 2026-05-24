@@ -66,6 +66,7 @@
     "@stryker-mutator/core": "^9.2.0",
     "@stryker-mutator/vitest-runner": "^9.2.0",
     "@vitest/coverage-v8": "^4.1.6",
+    "better-sqlite3": "^12.10.0",
     "dependency-cruiser": "^17.4.0",
     "eslint": "^9",
     "eslint-config-prettier": "^10.1.8",

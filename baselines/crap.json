@@ -1,11 +1,11 @@
 {
   "$schema": ".agents/schemas/baselines/crap.schema.json",
-  "generatedAt": "2026-05-23T02:53:00.078Z",
+  "generatedAt": "2026-05-24T22:02:25.488Z",
   "kernelVersion": "1.0.0",
   "rollup": {
     "*": {
       "max": 506,
-      "methodsAbove20": 57,
+      "methodsAbove20": 58,
       "p50": 2,
       "p95": 42
     }
@@ -2496,6 +2496,24 @@
       "startLine": 67
     },
     {
+      "crap": 30,
+      "method": "resolveDatabasePath",
+      "path": "apps/web/src/lib/db.ts",
+      "startLine": 34
+    },
+    {
+      "crap": 6,
+      "method": "getDb",
+      "path": "apps/web/src/lib/db.ts",
+      "startLine": 66
+    },
+    {
+      "crap": 2,
+      "method": "__resetDbForTests",
+      "path": "apps/web/src/lib/db.ts",
+      "startLine": 77
+    },
+    {
       "crap": 20,
       "method": "isAllowlisted",
       "path": "apps/web/src/middleware.ts",
@@ -2529,13 +2547,19 @@
       "crap": 12,
       "method": "decideStyleguideAccess",
       "path": "apps/web/src/pages/_internal/styleguide.ts",
-      "startLine": 53
+      "startLine": 59
+    },
+    {
+      "crap": 6,
+      "method": "lookupRoleBySubject",
+      "path": "apps/web/src/pages/_internal/styleguide.ts",
+      "startLine": 111
     },
     {
       "crap": 2,
       "method": "<anon method-1>",
       "path": "apps/web/src/pages/_internal/styleguide.ts",
-      "startLine": 82
+      "startLine": 139
     },
     {
       "crap": 6,

@@ -1,0 +1,15 @@
+---
+// apps/web/src/pages/sign-in/index.astro
+//
+// Serves the bare `/sign-in` path. The Clerk `<SignIn />` component
+// handles its own sub-paths (factor selection, MFA, etc.) via the
+// sibling mandatory catch-all `[...rest].astro`; this file exists so the
+// root URL remains routable after the rename from the optional
+// catch-all syntax that Astro 5 no longer accepts.
+//
+// Story #745 (Task #747).
+
+import { SignIn } from '@clerk/astro/components';
+---
+
+<SignIn />

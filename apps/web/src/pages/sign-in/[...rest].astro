@@ -1,5 +1,5 @@
 ---
-// apps/web/src/pages/sign-in/[[...index]].astro
+// apps/web/src/pages/sign-in/[...rest].astro
 //
 // Clerk-hosted sign-in surface. Renders the `<SignIn />` component from
 // `@clerk/astro/components` so the Tech Spec's US-1 (email + password)
@@ -7,6 +7,10 @@
 // at the Clerk instance level; no per-page wiring is required.
 //
 // Story #328 (Task #334) — Clerk SDK wiring for the web runtime.
+// Story #745 (Task #747) — renamed from optional catch-all
+// `[[...index]].astro` (rejected by Astro 5) to mandatory catch-all
+// `[...rest].astro`. Bare `/sign-in` is served by the sibling
+// `index.astro` re-export.
 
 import { SignIn } from '@clerk/astro/components';
 ---

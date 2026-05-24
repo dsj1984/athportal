@@ -1,0 +1,15 @@
+---
+// apps/web/src/pages/sign-up/index.astro
+//
+// Serves the bare `/sign-up` path. The Clerk `<SignUp />` component
+// handles its own sub-paths via the sibling mandatory catch-all
+// `[...rest].astro`; this file exists so the root URL remains routable
+// after the rename from the optional catch-all syntax that Astro 5 no
+// longer accepts.
+//
+// Story #745 (Task #747).
+
+import { SignUp } from '@clerk/astro/components';
+---
+
+<SignUp />

@@ -24,6 +24,7 @@ const ignores = {
   ignores: [
     '**/dist/**',
     '**/.turbo/**',
+    '**/.astro/**',
     '**/.bdd-gen/**',
     '**/test-results/**',
     '**/node_modules/**',

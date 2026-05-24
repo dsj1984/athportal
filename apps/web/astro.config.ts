@@ -12,8 +12,15 @@
 //
 // Story #255 — Sentry baseline init across all three runtimes.
 // Story #711 — Tailwind v4 + React island foundation.
+// Story #753 — SSR migration (`@astrojs/node` standalone). Task #756 verified
+// `pnpm --filter @repo/web build` exits 0 with `SENTRY_DSN_WEB` both unset
+// and set to a dummy value — Sentry's conditional registration is preserved
+// verbatim from the pre-SSR config. The adapter choice is locked for the
+// MVP; the Cloudflare adapter swap is deferred to Epic #27 (Tech Spec #743).
 
+import node from '@astrojs/node';
 import react from '@astrojs/react';
+import clerk from '@clerk/astro';
 import sentry from '@sentry/astro';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'astro/config';
@@ -22,6 +29,10 @@ const dsn = import.meta.env.SENTRY_DSN_WEB ?? process.env.SENTRY_DSN_WEB;
 const release = process.env.RELEASE_SHA;
 
 const integrations = [
+  // Clerk integration must be registered explicitly so the SSR build
+  // can resolve `virtual:@clerk/astro/config` from `@clerk/astro/components`.
+  // Story #753 / Epic #741.
+  clerk(),
   react(),
   ...(dsn
     ? [
@@ -33,7 +44,14 @@ const integrations = [
     : []),
 ];
 
+// Story #753 / Epic #741 — SSR migration. Clerk middleware requires a
+// server runtime; flip `output: 'server'` and adopt the @astrojs/node
+// standalone adapter. Per-page `export const prerender = true;` opts
+// static pages back into static prerender (see Task #755). The Cloudflare
+// adapter swap is deferred to Epic #27.
 export default defineConfig({
+  output: 'server',
+  adapter: node({ mode: 'standalone' }),
   integrations,
   vite: {
     plugins: [tailwindcss()],

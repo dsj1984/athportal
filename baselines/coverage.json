@@ -1,6 +1,6 @@
 {
   "$schema": ".agents/schemas/baselines/coverage.schema.json",
-  "generatedAt": "2026-05-23T02:53:01.270Z",
+  "generatedAt": "2026-05-24T22:02:26.940Z",
   "kernelVersion": "1.0.0",
   "rollup": {
     "*": {

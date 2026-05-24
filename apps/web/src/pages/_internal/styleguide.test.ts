@@ -4,13 +4,39 @@
 // gate is the only piece of the page exercised under Vitest — the
 // `.astro` template wires the gate into Astro's request lifecycle.
 //
-// Story #723 / Task #734.
+// Story #723 / Task #734 — gate decision tests.
+// Story #749 / Task #752 — `productionRoleLookup` real-DB read tests.
+// PRD #742 AC-10: missing session → null, no internal user → null,
+// role != dev_admin → that role, role == dev_admin → 'dev_admin'.
 
 import type { Role } from '@repo/shared/rbac';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+/**
+ * Hoist the row buffer so `vi.mock`'s factory (which Vitest hoists to
+ * the top of the file) can close over a stable reference. Each test
+ * mutates `mockRows` before invoking `productionRoleLookup`.
+ */
+const { mockRows } = vi.hoisted(() => ({
+  mockRows: { value: [] as ReadonlyArray<{ role: string }> },
+}));
+
+vi.mock('../../lib/db', () => ({
+  getDb: () => ({
+    select: () => ({
+      from: () => ({
+        where: () => ({
+          limit: () => ({ all: () => mockRows.value }),
+        }),
+      }),
+    }),
+  }),
+}));
+
 import {
   STYLEGUIDE_ROBOTS_HEADER,
   decideStyleguideAccess,
+  lookupRoleBySubject,
   productionRoleLookup,
 } from './styleguide';
 
@@ -68,10 +94,71 @@ describe('decideStyleguideAccess', () => {
   });
 });
 
+/**
+ * Mock Drizzle handle. Mirrors the fluent select chain
+ * `lookupRoleBySubject` exercises:
+ *   `.select({ role }).from(users).where(...).limit(1).all()`
+ * The terminal `.all()` returns the rows the test wires.
+ */
+function mockDbReturning(rows: ReadonlyArray<{ role: string }>): unknown {
+  return {
+    select: () => ({
+      from: () => ({
+        where: () => ({
+          limit: () => ({ all: () => rows }),
+        }),
+      }),
+    }),
+  };
+}
+
+describe('lookupRoleBySubject', () => {
+  it('returns null when no internal user row matches the subject id (PRD #742 AC-10: no internal user → null)', () => {
+    const db = mockDbReturning([]);
+    expect(lookupRoleBySubject(db, 'user_no_row')).toBeNull();
+  });
+
+  it.each<Role>(['member', 'team_admin', 'org_admin'])(
+    "returns the user's role verbatim when role != dev_admin (PRD #742 AC-10: role=%s)",
+    (role) => {
+      const db = mockDbReturning([{ role }]);
+      expect(lookupRoleBySubject(db, 'user_x')).toBe(role);
+    },
+  );
+
+  it("returns 'dev_admin' when the user's role is dev_admin (PRD #742 AC-10)", () => {
+    const db = mockDbReturning([{ role: 'dev_admin' }]);
+    expect(lookupRoleBySubject(db, 'user_dev_admin')).toBe('dev_admin');
+  });
+});
+
+/**
+ * `productionRoleLookup` is the production wiring of `lookupRoleBySubject`
+ * — it pulls the lazy Drizzle handle from `../../lib/db#getDb`. The
+ * tests mock `../../lib/db` so the unit suite never touches a real
+ * SQLite file. PRD #742 AC-10's "missing session → null" branch lives
+ * in `decideStyleguideAccess` (covered above); the lookup itself only
+ * sees a non-null subject because the .astro page guards on
+ * `Astro.locals.auth().userId` before calling.
+ */
 describe('productionRoleLookup', () => {
-  it('returns null for every subject until the DB binding lands', () => {
-    expect(productionRoleLookup('user_anything')).toBeNull();
-    expect(productionRoleLookup('user_other')).toBeNull();
+  beforeEach(() => {
+    mockRows.value = [];
+  });
+
+  it('returns null when the DB has no row for the subject (PRD #742 AC-10: no internal user → null)', () => {
+    mockRows.value = [];
+    expect(productionRoleLookup('user_unprovisioned')).toBeNull();
+  });
+
+  it("returns 'dev_admin' when the DB row's role is dev_admin (PRD #742 AC-10)", () => {
+    mockRows.value = [{ role: 'dev_admin' }];
+    expect(productionRoleLookup('user_seeded_dev_admin')).toBe('dev_admin');
+  });
+
+  it("returns the user's role verbatim when role != dev_admin (PRD #742 AC-10: role != dev_admin → that role)", () => {
+    mockRows.value = [{ role: 'member' }];
+    expect(productionRoleLookup('user_member')).toBe('member');
   });
 });
 
