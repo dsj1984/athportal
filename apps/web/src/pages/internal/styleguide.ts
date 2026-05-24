@@ -1,6 +1,6 @@
-// apps/web/src/pages/_internal/styleguide.ts
+// apps/web/src/pages/internal/styleguide.ts
 //
-// Pure-TS gate decision for the `/_internal/styleguide` page. The
+// Pure-TS gate decision for the `/internal/styleguide` page. The
 // `.astro` sibling consumes `decideStyleguideAccess` so the gate
 // logic is exercisable in node Vitest without an Astro renderer.
 //
@@ -100,7 +100,7 @@ interface SelectRoleDb {
  * verbatim from the row (so the caller can branch on `'dev_admin'` vs
  * any other role) or `null` when no row matches.
  *
- * Does NOT JIT-insert. The /_internal/styleguide gate is intentionally
+ * Does NOT JIT-insert. The /internal/styleguide gate is intentionally
  * deny-by-default for un-provisioned subjects; the JIT path lives in
  * the API middleware and runs on the first `/api/v1/*` request, not
  * here.

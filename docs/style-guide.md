@@ -4,11 +4,11 @@ This document outlines the visual identity, brand guidelines, and technical
 configurations for the platform. It is the definitive reference for designing,
 developing, and styling all user interfaces.
 
-## Live reference: `/_internal/styleguide`
+## Live reference: `/internal/styleguide`
 
 The canonical **live** reference for every primitive shipped by Epic
 702 (Design system) lives at
-[`/_internal/styleguide`](../apps/web/src/pages/_internal/styleguide.astro).
+[`/internal/styleguide`](../apps/web/src/pages/internal/styleguide.astro).
 That page renders the actual `apps/web/src/components/ui/*` primitives
 against the actual `global.css` token catalogue — when this document
 and the live page disagree, the live page wins; raise a docs PR to

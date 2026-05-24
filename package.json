@@ -10,7 +10,7 @@
   "scripts": {
     "lint": "pnpm -w run --parallel \"/^lint:(js|md)$/\"",
     "lint:js": "turbo run lint",
-    "lint:md": "markdownlint-cli2 \"**/*.md\" \"#**/node_modules/**\" \"#.agents/**\" \"#.claude/**\" \"#.worktrees/**\" \"#temp/**\" \"#**/dist/**\" \"#coverage/**\" \"#**/.bdd-gen/**\" \"#scripts/__fixtures__/**\"",
+    "lint:md": "markdownlint-cli2 \"**/*.md\" \"#**/node_modules/**\" \"#.agents/**\" \"#.claude/**\" \"#.worktrees/**\" \"#temp/**\" \"#**/dist/**\" \"#coverage/**\" \"#**/.bdd-gen/**\" \"#scripts/__fixtures__/**\" \"#**/.clerk/**\"",
     "lint:secrets": "secretlint --secretlintignore .gitignore --secretlintignore .secretlintignore \"**/*\"",
     "lint:biome": "biome check .",
     "lint:fix": "biome check --write .",

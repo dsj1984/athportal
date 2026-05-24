@@ -1,6 +1,6 @@
 {
   "$schema": ".agents/schemas/baselines/crap.schema.json",
-  "generatedAt": "2026-05-24T22:02:25.488Z",
+  "generatedAt": "2026-05-24T23:21:10.507Z",
   "kernelVersion": "1.0.0",
   "rollup": {
     "*": {
@@ -2496,7 +2496,7 @@
       "startLine": 67
     },
     {
-      "crap": 30,
+      "crap": 42,
       "method": "resolveDatabasePath",
       "path": "apps/web/src/lib/db.ts",
       "startLine": 34
@@ -2505,61 +2505,43 @@
       "crap": 6,
       "method": "getDb",
       "path": "apps/web/src/lib/db.ts",
-      "startLine": 66
+      "startLine": 73
     },
     {
       "crap": 2,
       "method": "__resetDbForTests",
       "path": "apps/web/src/lib/db.ts",
-      "startLine": 77
+      "startLine": 84
     },
     {
       "crap": 20,
       "method": "isAllowlisted",
       "path": "apps/web/src/middleware.ts",
-      "startLine": 88
+      "startLine": 97
     },
     {
       "crap": 2,
       "method": "createOnboardingGate",
       "path": "apps/web/src/middleware.ts",
-      "startLine": 131
+      "startLine": 140
     },
     {
       "crap": 42,
       "method": "onboardingGate",
       "path": "apps/web/src/middleware.ts",
-      "startLine": 134
+      "startLine": 143
     },
     {
       "crap": 2,
       "method": "<anon method-1>",
       "path": "apps/web/src/middleware.ts",
-      "startLine": 178
+      "startLine": 187
     },
     {
       "crap": 2,
       "method": "<anon method-2>",
       "path": "apps/web/src/middleware.ts",
-      "startLine": 191
-    },
-    {
-      "crap": 12,
-      "method": "decideStyleguideAccess",
-      "path": "apps/web/src/pages/_internal/styleguide.ts",
-      "startLine": 59
-    },
-    {
-      "crap": 6,
-      "method": "lookupRoleBySubject",
-      "path": "apps/web/src/pages/_internal/styleguide.ts",
-      "startLine": 111
-    },
-    {
-      "crap": 2,
-      "method": "<anon method-1>",
-      "path": "apps/web/src/pages/_internal/styleguide.ts",
-      "startLine": 139
+      "startLine": 200
     },
     {
       "crap": 6,
@@ -2578,6 +2560,24 @@
       "method": "<anon method-1>",
       "path": "apps/web/src/pages/dashboard.ts",
       "startLine": 96
+    },
+    {
+      "crap": 12,
+      "method": "decideStyleguideAccess",
+      "path": "apps/web/src/pages/internal/styleguide.ts",
+      "startLine": 59
+    },
+    {
+      "crap": 6,
+      "method": "lookupRoleBySubject",
+      "path": "apps/web/src/pages/internal/styleguide.ts",
+      "startLine": 111
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "apps/web/src/pages/internal/styleguide.ts",
+      "startLine": 139
     },
     {
       "crap": 30,
