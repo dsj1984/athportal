@@ -12,6 +12,112 @@
     "time_box_minutes": 30
   },
   {
+    "id": "tp-identity-jit-provisioning",
+    "path": "tests/plans/identity/tp-identity-jit-provisioning.plan.md",
+    "type": "plan",
+    "domain": "identity",
+    "persona": "athlete",
+    "surface": "web",
+    "route_prefixes": [
+      "/sign-up",
+      "/onboarding"
+    ],
+    "est_minutes": 8
+  },
+  {
+    "id": "tp-identity-onboarding-gate",
+    "path": "tests/plans/identity/tp-identity-onboarding-gate.plan.md",
+    "type": "plan",
+    "domain": "identity",
+    "persona": "athlete",
+    "surface": "web",
+    "route_prefixes": [
+      "/onboarding",
+      "/dashboard",
+      "/sign-up"
+    ],
+    "est_minutes": 7
+  },
+  {
+    "id": "tp-identity-role-assignment",
+    "path": "tests/plans/identity/tp-identity-role-assignment.plan.md",
+    "type": "plan",
+    "domain": "identity",
+    "persona": "athlete",
+    "surface": "web",
+    "route_prefixes": [
+      "/sign-up",
+      "/onboarding",
+      "/dashboard"
+    ],
+    "est_minutes": 12
+  },
+  {
+    "id": "tp-identity-signin-bad-password",
+    "path": "tests/plans/identity/tp-identity-signin-bad-password.plan.md",
+    "type": "plan",
+    "domain": "identity",
+    "persona": "athlete",
+    "surface": "web",
+    "route_prefixes": [
+      "/sign-in"
+    ],
+    "est_minutes": 5
+  },
+  {
+    "id": "tp-identity-signin-email-not-verified",
+    "path": "tests/plans/identity/tp-identity-signin-email-not-verified.plan.md",
+    "type": "plan",
+    "domain": "identity",
+    "persona": "athlete",
+    "surface": "web",
+    "route_prefixes": [
+      "/sign-up",
+      "/sign-in"
+    ],
+    "est_minutes": 7
+  },
+  {
+    "id": "tp-identity-signin-happy",
+    "path": "tests/plans/identity/tp-identity-signin-happy.plan.md",
+    "type": "plan",
+    "domain": "identity",
+    "persona": "athlete",
+    "surface": "web",
+    "route_prefixes": [
+      "/sign-in",
+      "/dashboard"
+    ],
+    "est_minutes": 5
+  },
+  {
+    "id": "tp-identity-signout",
+    "path": "tests/plans/identity/tp-identity-signout.plan.md",
+    "type": "plan",
+    "domain": "identity",
+    "persona": "athlete",
+    "surface": "web",
+    "route_prefixes": [
+      "/sign-out",
+      "/dashboard",
+      "/sign-in"
+    ],
+    "est_minutes": 6
+  },
+  {
+    "id": "tp-identity-signup-coach",
+    "path": "tests/plans/identity/tp-identity-signup-coach.plan.md",
+    "type": "plan",
+    "domain": "identity",
+    "persona": "coach",
+    "surface": "web",
+    "route_prefixes": [
+      "/sign-up",
+      "/onboarding"
+    ],
+    "est_minutes": 9
+  },
+  {
     "id": "tp-identity-signup-happy-path",
     "path": "tests/plans/identity/tp-identity-signup-happy-path.plan.md",
     "type": "plan",
@@ -23,5 +129,18 @@
       "/onboarding"
     ],
     "est_minutes": 8
+  },
+  {
+    "id": "tp-identity-signup-org-admin",
+    "path": "tests/plans/identity/tp-identity-signup-org-admin.plan.md",
+    "type": "plan",
+    "domain": "identity",
+    "persona": "org-admin",
+    "surface": "web",
+    "route_prefixes": [
+      "/sign-up",
+      "/onboarding"
+    ],
+    "est_minutes": 10
   }
 ]
