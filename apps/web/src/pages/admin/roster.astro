@@ -2,7 +2,8 @@
 // apps/web/src/pages/admin/roster.astro
 //
 // `/admin/roster` — org-admin landing surface for the org-wide
-// athlete roster (Epic #10 / Story #661 / Task #693).
+// athlete roster (Epic #10 / Story #661 / Task #693; restyled under
+// Epic #828 / Story #843 / Task #856).
 //
 // Renders an empty shell server-side; the inline script fetches
 // `/api/v1/admin/roster` (plus optional `?teamId=` and `?sport=`
@@ -10,12 +11,23 @@
 // renders the resulting rows into the table via
 // `renderRosterRows` from the sibling `RosterTable.ts` module.
 //
+// Styling follows the Tailwind-utility-first convention codified by
+// ADR-0007 (docs/decisions/0007-ui-styling-convention.md). Page chrome
+// is composed via the shared `PageHeader` primitive and the table
+// chrome via the shared `DataTable` primitive — no orphan BEM hooks.
+// Every `data-testid` on the surface is preserved verbatim because
+// the roster contract tests (`RosterTable.test.ts`) and the admin
+// acceptance scenarios target those selectors.
+//
 // Authentication & authorization: every `/admin/*` route is gated by
 // Clerk's middleware (signed-in users only) AND the API edge's
 // `requireRole('org_admin')` gate (the Worker rejects non-admins with
 // 403 FORBIDDEN). The page itself does not re-check the role — the
 // list-fetch will surface a 403 envelope if the actor is not an admin.
 
+import DataTable from '../../components/ui/DataTable.astro';
+import FormField from '../../components/ui/FormField.astro';
+import PageHeader from '../../components/ui/PageHeader.astro';
 import { ROSTER_TEST_IDS } from '../../components/admin/roster/RosterTable.ts';
 ---
 
@@ -26,68 +38,72 @@ import { ROSTER_TEST_IDS } from '../../components/admin/roster/RosterTable.ts';
     <meta name="robots" content="noindex, nofollow" />
     <title>Roster · Admin</title>
   </head>
-  <body>
-    <main class="admin-roster">
-      <header class="admin-roster__header">
-        <h1 class="admin-roster__heading" data-testid="admin-roster-heading">
-          Roster
-        </h1>
-      </header>
+  <body class="bg-surface-page text-text-primary">
+    <main class="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
+      <PageHeader title="Roster" />
+      <span class="sr-only" data-testid="admin-roster-heading">Roster</span>
 
-      <section class="admin-roster__filters" aria-label="Roster filters">
-        <label class="admin-roster__filter">
-          Team
+      <section
+        class="grid grid-cols-1 gap-4 sm:grid-cols-2"
+        aria-label="Roster filters"
+      >
+        <FormField label="Team" htmlFor="roster-filter-team">
           <input
+            id="roster-filter-team"
             type="text"
+            class="block w-full rounded-md border border-border bg-surface-card px-3 py-2 text-sm text-text-primary placeholder:text-text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
             data-testid={ROSTER_TEST_IDS.filterTeam}
             placeholder="Team id"
           />
-        </label>
-        <label class="admin-roster__filter">
-          Sport
+        </FormField>
+        <FormField label="Sport" htmlFor="roster-filter-sport">
           <input
+            id="roster-filter-sport"
             type="text"
+            class="block w-full rounded-md border border-border bg-surface-card px-3 py-2 text-sm text-text-primary placeholder:text-text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
             data-testid={ROSTER_TEST_IDS.filterSport}
             placeholder="Sport (e.g. Volleyball)"
           />
-        </label>
+        </FormField>
       </section>
 
       <p
-        class="admin-roster__error"
+        class="hidden rounded-md border border-danger bg-danger-soft px-4 py-3 text-sm text-danger"
+        role="alert"
         data-testid={ROSTER_TEST_IDS.error}
         hidden
       ></p>
 
-      <table class="admin-roster__table" data-testid={ROSTER_TEST_IDS.table}>
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Team</th>
-            <th>Sport</th>
-            <th>Age group</th>
-            <th>Verified achievements</th>
-          </tr>
-        </thead>
-        <tbody data-testid={ROSTER_TEST_IDS.tbody}></tbody>
-      </table>
+      <DataTable
+        testId={ROSTER_TEST_IDS.table}
+        tbodyTestId={ROSTER_TEST_IDS.tbody}
+        columns={[
+          { key: 'name', label: 'Name' },
+          { key: 'team', label: 'Team' },
+          { key: 'sport', label: 'Sport' },
+          { key: 'age-group', label: 'Age group' },
+          { key: 'verified-achievements', label: 'Verified achievements', align: 'end' },
+        ]}
+      >
+        <div slot="pagination">
+          <button
+            type="button"
+            class="inline-flex items-center justify-center rounded-md border border-border bg-surface-card px-4 py-2 text-sm font-medium text-text-primary shadow-sm hover:bg-surface-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand disabled:cursor-not-allowed disabled:opacity-50"
+            data-testid={ROSTER_TEST_IDS.nextPage}
+            disabled
+          >
+            Next page
+          </button>
+        </div>
+      </DataTable>
 
       <p
-        class="admin-roster__empty"
+        class="hidden rounded-xl border border-border bg-surface-card px-6 py-10 text-center text-sm text-text-secondary"
         data-testid={ROSTER_TEST_IDS.emptyState}
         hidden
       >
         No athletes to show.
       </p>
-
-      <button
-        type="button"
-        class="admin-roster__next"
-        data-testid={ROSTER_TEST_IDS.nextPage}
-        disabled
-      >
-        Next page
-      </button>
     </main>
   </body>
 </html>

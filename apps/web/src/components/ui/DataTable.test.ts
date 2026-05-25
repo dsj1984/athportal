@@ -101,6 +101,19 @@ describe('buildDataTable — columns → header projection', () => {
     const view = buildDataTable({ columns: baseColumns, testId: 'admin-roster-table' });
     expect(view.testIds.root).toBe('admin-roster-table');
   });
+
+  it('defaults the tbody testid to null when no override is provided', () => {
+    const view = buildDataTable({ columns: baseColumns });
+    expect(view.testIds.tbody).toBeNull();
+  });
+
+  it('honors a caller-supplied tbodyTestId override', () => {
+    const view = buildDataTable({
+      columns: baseColumns,
+      tbodyTestId: 'admin-roster-tbody',
+    });
+    expect(view.testIds.tbody).toBe('admin-roster-tbody');
+  });
 });
 
 describe('buildDataTable — empty-state branch', () => {

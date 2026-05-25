@@ -38,6 +38,13 @@ export interface DataTableProps {
   readonly empty?: DataTableEmpty;
   /** Optional override for the root data-testid. */
   readonly testId?: string;
+  /**
+   * Optional override for the `<tbody>` data-testid. Surfaces a stable
+   * selector for client-side row renderers (the admin roster and the
+   * verified-achievement report each populate rows from a fetch and
+   * target a per-section tbody testid).
+   */
+  readonly tbodyTestId?: string;
   /** Optional extra classes for the outer wrapper, merged through `cn`. */
   readonly class?: string;
 }
@@ -78,6 +85,7 @@ export interface DataTableView {
     readonly root: string;
     readonly table: string;
     readonly header: string;
+    readonly tbody: string | null;
     readonly pagination: string;
   };
 }
@@ -159,6 +167,8 @@ export function buildDataTable(
   );
 
   const rootTestId = props.testId?.trim() || DATA_TABLE_TEST_IDS.root;
+  const tbodyTestIdRaw = props.tbodyTestId?.trim() ?? '';
+  const tbodyTestId = tbodyTestIdRaw.length > 0 ? tbodyTestIdRaw : null;
 
   return {
     headers,
@@ -175,6 +185,7 @@ export function buildDataTable(
       root: rootTestId,
       table: DATA_TABLE_TEST_IDS.table,
       header: DATA_TABLE_TEST_IDS.header,
+      tbody: tbodyTestId,
       pagination: DATA_TABLE_TEST_IDS.pagination,
     },
   };

@@ -25,6 +25,7 @@ interface Props {
   columns: Array<{ key: string; label: string; align?: 'start' | 'end' | 'center' }>;
   empty?: { title: string; body?: string };
   testId?: string;
+  tbodyTestId?: string;
   class?: string;
 }
 
@@ -52,7 +53,7 @@ const view = buildDataTable(props, { hasRows, hasPagination });
             ))}
           </tr>
         </thead>
-        <tbody class={view.tbodyClass}>
+        <tbody class={view.tbodyClass} data-testid={view.testIds.tbody ?? undefined}>
           <slot />
         </tbody>
       </table>

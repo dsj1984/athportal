@@ -66,19 +66,6 @@
       ]
     },
     {
-      "path": "apps/web/src/pages/admin/roster.astro",
-      "classes": [
-        "admin-roster__empty",
-        "admin-roster__error",
-        "admin-roster__filter",
-        "admin-roster__filters",
-        "admin-roster__header",
-        "admin-roster__heading",
-        "admin-roster__next",
-        "admin-roster__table"
-      ]
-    },
-    {
       "path": "apps/web/src/pages/admin/teams/[id]/edit.astro",
       "classes": [
         "admin-teams-edit__header",
