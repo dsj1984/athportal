@@ -2,30 +2,6 @@
   "$schema-comment": "Pre-existing orphan BEM hooks tolerated by Story #834. The codifying Story is scoped to the EmptyState primitive plus the lint infrastructure; refactoring the listed files into Tailwind utilities is owned by follow-on Stories. New entries require a paired Story reference in the PR body. See docs/decisions/0007-ui-styling-convention.md for the binding rule and scripts/lint-orphan-bem.mjs for the resolver set.",
   "entries": [
     {
-      "path": "apps/web/src/components/admin/InvitationList.astro",
-      "classes": [
-        "invitation-list__actions"
-      ]
-    },
-    {
-      "path": "apps/web/src/components/admin/invitations/AthleteInviteForm.astro",
-      "classes": [
-        "athlete-invite__field",
-        "athlete-invite__form",
-        "athlete-invite__status",
-        "athlete-invite__submit"
-      ]
-    },
-    {
-      "path": "apps/web/src/components/admin/invitations/CoachInviteForm.astro",
-      "classes": [
-        "coach-invite__field",
-        "coach-invite__form",
-        "coach-invite__status",
-        "coach-invite__submit"
-      ]
-    },
-    {
       "path": "apps/web/src/components/ui/Avatar.astro",
       "classes": [
         "avatar--image",

@@ -12,59 +12,66 @@
 // (no multi-team) — direct invites are scoped to one team by design
 // per Tech Spec #647.
 //
+// Styling follows the Tailwind-utility-first convention codified by
+// ADR-0007 (docs/decisions/0007-ui-styling-convention.md) — utility
+// classes resolve against the @theme tokens declared in
+// apps/web/src/styles/global.css; no orphan BEM hooks. Each labelled
+// field composes the FormField primitive. Restyled by Story #851 /
+// Task #859.
+//
 // `data-testid` invariance (locked by the Tech Spec — acceptance
 // scenario #682 pins these names):
 //
 //   - admin-athlete-invite-form
 //   - admin-athlete-invite-team-picker
 //   - admin-athlete-invite-status
-//
-// The script bundle is plain DOM rather than React for parity with
-// `InvitationList.astro` and `TeamForm.astro` — the surface is one
-// input + one select + one button, so pulling a React island in
-// would be over-engineering for the scope.
+
+import FormField from '../../ui/FormField.astro';
+
+const inputClass =
+  'rounded-md border border-border bg-surface-card px-3 py-2 text-sm text-text-primary shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand disabled:cursor-not-allowed disabled:opacity-60';
 ---
 
-<section class="athlete-invite">
-  <h2>Invite an athlete</h2>
+<section class="flex flex-col gap-4">
+  <h2 class="font-display text-lg font-semibold text-text-primary">Invite an athlete</h2>
   <form
-    class="athlete-invite__form"
+    class="flex flex-col gap-4"
     data-testid="admin-athlete-invite-form"
     novalidate
   >
-    <div class="athlete-invite__field">
-      <label for="athlete-invite-email">Athlete email</label>
+    <FormField label="Athlete email" htmlFor="athlete-invite-email" required>
       <input
         id="athlete-invite-email"
         name="email"
         type="email"
+        class={inputClass}
         required
         maxlength="254"
         autocomplete="off"
       />
-    </div>
+    </FormField>
 
-    <div class="athlete-invite__field">
-      <label for="athlete-invite-team">Team</label>
+    <FormField label="Team" htmlFor="athlete-invite-team" required>
       <select
         id="athlete-invite-team"
         name="teamId"
+        class={inputClass}
         data-testid="admin-athlete-invite-team-picker"
         required
       >
         <option value="">Loading teams…</option>
       </select>
-    </div>
+    </FormField>
 
     <button
       type="submit"
-      class="athlete-invite__submit"
+      class="inline-flex items-center justify-center rounded-md bg-brand px-4 py-2 text-sm font-medium text-text-on-brand shadow-sm hover:bg-brand-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand disabled:cursor-not-allowed disabled:opacity-60"
     >
       Send invitation
     </button>
 
     <p
-      class="athlete-invite__status"
+      class="text-sm text-text-secondary"
       data-testid="admin-athlete-invite-status"
       role="status"
       aria-live="polite"
