@@ -59,7 +59,7 @@
 
 ## Pyramid Sizing Today
 
-> _Last updated: 2026-05-25. Regenerate the counts with the commands in [§ How the sizing was counted](#how-the-sizing-was-counted) at the end of this document; update the table in the same PR that materially changes the corpus shape._
+> *Last updated: 2026-05-25. Regenerate the counts with the commands in [§ How the sizing was counted](#how-the-sizing-was-counted) at the end of this document; update the table in the same PR that materially changes the corpus shape.*
 
 | Tier | Files | Test cases |
 |---|---:|---:|
@@ -448,7 +448,7 @@ The pattern is **ratchet-only**: baselines can tighten (improve) but never loose
 
 - **What it measures.** Web-app performance / accessibility / best-practices / SEO scores from a Lighthouse run against built `apps/web`.
 - **Producer script.** [`scripts/lighthouse-baseline.mjs`](../scripts/lighthouse-baseline.mjs)
-- **Baseline file.** _Not yet committed._ The script exists but the baseline file (`baselines/lighthouse.json`) has not been seeded yet — a future Story will land the first Lighthouse run against the production-shaped Astro build, commit the baseline, and wire the check into nightly CI.
+- **Baseline file.** *Not yet committed.* The script exists but the baseline file (`baselines/lighthouse.json`) has not been seeded yet — a future Story will land the first Lighthouse run against the production-shaped Astro build, commit the baseline, and wire the check into nightly CI.
 - **Where it will run.** Nightly only, like mutation. Lighthouse is too slow and too environment-sensitive for PR gates.
 - **Tier scope.** Same framing as bundle-size — sits alongside the pyramid as a performance gate, not a correctness gate.
 

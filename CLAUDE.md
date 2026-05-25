@@ -29,4 +29,3 @@
   non-Claude hosts; the agentrc list is the host-agnostic single source
   of truth.
 -->
-
