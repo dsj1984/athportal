@@ -113,12 +113,13 @@ export function buildDataTable(
   props: DataTableProps,
   options: { hasRows?: boolean; hasPagination?: boolean } = {},
 ): DataTableView {
-  if (!Array.isArray(props.columns) || props.columns.length === 0) {
+  const columns: ReadonlyArray<DataTableColumn> = props.columns;
+  if (!Array.isArray(columns) || columns.length === 0) {
     throw new TypeError('DataTable: `columns` must be a non-empty array.');
   }
 
   const seenKeys = new Set<string>();
-  const headers: DataTableHeaderCell[] = props.columns.map((column, index) => {
+  const headers: DataTableHeaderCell[] = columns.map((column: DataTableColumn, index: number) => {
     const key = column.key?.trim() ?? '';
     if (key.length === 0) {
       throw new TypeError(
