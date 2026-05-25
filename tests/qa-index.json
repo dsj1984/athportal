@@ -23,5 +23,81 @@
       "/onboarding"
     ],
     "est_minutes": 8
+  },
+  {
+    "id": "tp-org-admin-csv-import-happy",
+    "path": "tests/plans/org-admin/tp-org-admin-csv-import-happy.plan.md",
+    "type": "plan",
+    "domain": "org-admin",
+    "persona": "org-admin",
+    "surface": "web",
+    "route_prefixes": [
+      "/admin/import"
+    ],
+    "est_minutes": 10
+  },
+  {
+    "id": "tp-org-admin-invite-athlete",
+    "path": "tests/plans/org-admin/tp-org-admin-invite-athlete.plan.md",
+    "type": "plan",
+    "domain": "org-admin",
+    "persona": "org-admin",
+    "surface": "web",
+    "route_prefixes": [
+      "/admin/invitations",
+      "/admin/invitations/athlete"
+    ],
+    "est_minutes": 12
+  },
+  {
+    "id": "tp-org-admin-invite-coach",
+    "path": "tests/plans/org-admin/tp-org-admin-invite-coach.plan.md",
+    "type": "plan",
+    "domain": "org-admin",
+    "persona": "org-admin",
+    "surface": "web",
+    "route_prefixes": [
+      "/admin/invitations",
+      "/admin/invitations/coach"
+    ],
+    "est_minutes": 12
+  },
+  {
+    "id": "tp-org-admin-reporting",
+    "path": "tests/plans/org-admin/tp-org-admin-reporting.plan.md",
+    "type": "plan",
+    "domain": "org-admin",
+    "persona": "org-admin",
+    "surface": "web",
+    "route_prefixes": [
+      "/admin/reports"
+    ],
+    "est_minutes": 8
+  },
+  {
+    "id": "tp-org-admin-season-rollover",
+    "path": "tests/plans/org-admin/tp-org-admin-season-rollover.plan.md",
+    "type": "plan",
+    "domain": "org-admin",
+    "persona": "org-admin",
+    "surface": "web",
+    "route_prefixes": [
+      "/admin/rollover"
+    ],
+    "est_minutes": 12
+  },
+  {
+    "id": "tp-org-admin-team-crud",
+    "path": "tests/plans/org-admin/tp-org-admin-team-crud.plan.md",
+    "type": "plan",
+    "domain": "org-admin",
+    "persona": "org-admin",
+    "surface": "web",
+    "route_prefixes": [
+      "/admin/teams",
+      "/admin/teams/new",
+      "/admin/teams/:id/edit"
+    ],
+    "est_minutes": 10
   }
 ]
