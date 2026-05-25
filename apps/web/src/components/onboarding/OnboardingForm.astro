@@ -20,6 +20,7 @@
 // Story #574 / Task #584. Tech Spec #490. PRD #489.
 
 import { ONBOARDING_FORM_TEST_IDS } from './OnboardingForm.ts';
+import FormField from '../ui/FormField.astro';
 
 interface Props {
   readonly termsOfServiceVersion: string;
@@ -41,7 +42,7 @@ import ProfilePhotoUploader from './ProfilePhotoUploader.astro';
 ---
 
 <form
-  class="onboarding-form"
+  class="flex flex-col gap-4"
   data-testid={ONBOARDING_FORM_TEST_IDS.form}
   data-tos-version={termsOfServiceVersion}
   data-privacy-version={privacyPolicyVersion}
@@ -49,52 +50,53 @@ import ProfilePhotoUploader from './ProfilePhotoUploader.astro';
   novalidate
 >
   <p
-    class="onboarding-form__form-error"
+    class="rounded-md border border-action-coral bg-surface-card p-3 text-sm text-action-coral"
     data-testid={ONBOARDING_FORM_TEST_IDS.formError}
+    role="alert"
     hidden
   ></p>
 
-  <div class="onboarding-form__field">
-    <label for="onboarding-first-name">First name</label>
+  <FormField label="First name" htmlFor="onboarding-first-name" required>
     <input
       id="onboarding-first-name"
       name="firstName"
       type="text"
+      class="rounded-md border border-border bg-surface-card px-3 py-2 text-sm text-text-primary shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
       data-testid={ONBOARDING_FORM_TEST_IDS.firstName}
       autocomplete="given-name"
       required
       maxlength="80"
     />
-    <p class="onboarding-form__field-error" data-field-error="profile.firstName" hidden></p>
-  </div>
+    <p class="text-xs text-action-coral" data-field-error="profile.firstName" hidden></p>
+  </FormField>
 
-  <div class="onboarding-form__field">
-    <label for="onboarding-last-name">Last name</label>
+  <FormField label="Last name" htmlFor="onboarding-last-name" required>
     <input
       id="onboarding-last-name"
       name="lastName"
       type="text"
+      class="rounded-md border border-border bg-surface-card px-3 py-2 text-sm text-text-primary shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
       data-testid={ONBOARDING_FORM_TEST_IDS.lastName}
       autocomplete="family-name"
       required
       maxlength="80"
     />
-    <p class="onboarding-form__field-error" data-field-error="profile.lastName" hidden></p>
-  </div>
+    <p class="text-xs text-action-coral" data-field-error="profile.lastName" hidden></p>
+  </FormField>
 
-  <div class="onboarding-form__field">
-    <label for="onboarding-display-name">Display name</label>
+  <FormField label="Display name" htmlFor="onboarding-display-name" required>
     <input
       id="onboarding-display-name"
       name="displayName"
       type="text"
+      class="rounded-md border border-border bg-surface-card px-3 py-2 text-sm text-text-primary shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
       data-testid={ONBOARDING_FORM_TEST_IDS.displayName}
       autocomplete="nickname"
       required
       maxlength="120"
     />
-    <p class="onboarding-form__field-error" data-field-error="profile.displayName" hidden></p>
-  </div>
+    <p class="text-xs text-action-coral" data-field-error="profile.displayName" hidden></p>
+  </FormField>
 
   <ClerkVerifyEmailIsland />
 
@@ -111,7 +113,7 @@ import ProfilePhotoUploader from './ProfilePhotoUploader.astro';
 
   <button
     type="submit"
-    class="onboarding-form__submit"
+    class="inline-flex w-fit items-center justify-center rounded-md bg-brand px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-brand-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand disabled:cursor-not-allowed disabled:opacity-50"
     data-testid={ONBOARDING_FORM_TEST_IDS.submit}
     disabled
   >

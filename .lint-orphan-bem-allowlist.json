@@ -58,15 +58,6 @@
       ]
     },
 {
-      "path": "apps/web/src/components/onboarding/OnboardingForm.astro",
-      "classes": [
-        "onboarding-form__field",
-        "onboarding-form__field-error",
-        "onboarding-form__form-error",
-        "onboarding-form__submit"
-      ]
-    },
-{
       "path": "apps/web/src/components/ui/Avatar.astro",
       "classes": [
         "avatar--image",
@@ -170,13 +161,6 @@
         "dashboard__widget-heading",
         "dashboard__widget-row",
         "dashboard__widget-rows"
-      ]
-    },
-    {
-      "path": "apps/web/src/pages/onboarding.astro",
-      "classes": [
-        "onboarding__heading",
-        "onboarding__intro"
       ]
     }
   ]
