@@ -8,8 +8,16 @@
 // `/admin/teams`; edit PATCHes to `/api/v1/admin/teams/:id` then
 // redirects back to the list.
 //
-// Story #657 / Task #676.
+// Styling follows the Tailwind-utility-first convention codified by
+// ADR-0007 (docs/decisions/0007-ui-styling-convention.md) — utility
+// classes resolve against the @theme tokens declared in
+// apps/web/src/styles/global.css; no orphan BEM hooks. Each labelled
+// field composes the FormField primitive (Story #837); the inline
+// `<script>` continues to drive submit + per-field error rendering.
+//
+// Story #657 / Task #676. Restyled by Story #851 / Task #858.
 
+import FormField from '../../ui/FormField.astro';
 import { TEAM_FORM_TEST_IDS } from './TeamForm.ts';
 
 interface Props {
@@ -28,10 +36,14 @@ const formTestId = mode === 'create' ? TEAM_FORM_TEST_IDS.createForm : TEAM_FORM
 const submitLabel = mode === 'create' ? 'Create team' : 'Save changes';
 const httpMethod = mode === 'create' ? 'POST' : 'PATCH';
 const safeInitial = initial ?? { name: '', sport: '', season: '', ageGroup: '' };
+
+const inputClass =
+  'rounded-md border border-border bg-surface-card px-3 py-2 text-sm text-text-primary shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand disabled:cursor-not-allowed disabled:opacity-60';
+const fieldErrorClass = 'text-xs text-action-coral';
 ---
 
 <form
-  class="team-form"
+  class="flex flex-col gap-4"
   data-testid={formTestId}
   data-mode={mode}
   data-action={action}
@@ -43,68 +55,73 @@ const safeInitial = initial ?? { name: '', sport: '', season: '', ageGroup: '' }
   novalidate
 >
   <p
-    class="team-form__form-error"
+    class="rounded-md border border-action-coral bg-surface-card p-3 text-sm text-action-coral"
     data-testid={TEAM_FORM_TEST_IDS.formError}
+    role="alert"
     hidden
   ></p>
 
-  <div class="team-form__field">
-    <label for="team-name">Team name</label>
+  <FormField label="Team name" htmlFor="team-name" required>
     <input
       id="team-name"
       name="name"
       type="text"
+      class={inputClass}
       data-testid={TEAM_FORM_TEST_IDS.nameInput}
       value={safeInitial.name}
       required
       maxlength="120"
     />
-    <p class="team-form__field-error" data-field-error="name" hidden></p>
-  </div>
+    <p class={fieldErrorClass} data-field-error="name" hidden></p>
+  </FormField>
 
-  <div class="team-form__field">
-    <label for="team-sport">Sport</label>
+  <FormField label="Sport" htmlFor="team-sport" required>
     <input
       id="team-sport"
       name="sport"
       type="text"
+      class={inputClass}
       data-testid={TEAM_FORM_TEST_IDS.sportInput}
       value={safeInitial.sport}
       required
       maxlength="120"
     />
-    <p class="team-form__field-error" data-field-error="sport" hidden></p>
-  </div>
+    <p class={fieldErrorClass} data-field-error="sport" hidden></p>
+  </FormField>
 
-  <div class="team-form__field">
-    <label for="team-season">Season</label>
+  <FormField label="Season" htmlFor="team-season" required>
     <input
       id="team-season"
       name="season"
       type="text"
+      class={inputClass}
       data-testid={TEAM_FORM_TEST_IDS.seasonInput}
       value={safeInitial.season}
       required
       maxlength="120"
     />
-    <p class="team-form__field-error" data-field-error="season" hidden></p>
-  </div>
+    <p class={fieldErrorClass} data-field-error="season" hidden></p>
+  </FormField>
 
-  <div class="team-form__field">
-    <label for="team-age-group">Age group</label>
+  <FormField label="Age group" htmlFor="team-age-group" required>
     <input
       id="team-age-group"
       name="ageGroup"
       type="text"
+      class={inputClass}
       data-testid={TEAM_FORM_TEST_IDS.ageGroupInput}
       value={safeInitial.ageGroup}
       required
       maxlength="120"
     />
-    <p class="team-form__field-error" data-field-error="ageGroup" hidden></p>
-  </div>
+    <p class={fieldErrorClass} data-field-error="ageGroup" hidden></p>
+  </FormField>
 
-  <button type="submit" class="team-form__submit" data-testid={TEAM_FORM_TEST_IDS.submit}>
+  <button
+    type="submit"
+    class="inline-flex items-center justify-center rounded-md bg-brand px-4 py-2 text-sm font-medium text-text-on-brand shadow-sm hover:bg-brand-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand disabled:cursor-not-allowed disabled:opacity-60"
+    data-testid={TEAM_FORM_TEST_IDS.submit}
+  >
     {submitLabel}
   </button>
 </form>

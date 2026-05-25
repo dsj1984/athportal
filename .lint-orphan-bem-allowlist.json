@@ -26,15 +26,6 @@
       ]
     },
     {
-      "path": "apps/web/src/components/admin/teams/TeamForm.astro",
-      "classes": [
-        "team-form__field",
-        "team-form__field-error",
-        "team-form__form-error",
-        "team-form__submit"
-      ]
-    },
-    {
       "path": "apps/web/src/components/ui/Avatar.astro",
       "classes": [
         "avatar--image",
@@ -51,31 +42,6 @@
       "path": "apps/web/src/components/ui/Sidebar.astro",
       "classes": [
         "sidebar__label"
-      ]
-    },
-    {
-      "path": "apps/web/src/pages/admin/teams/[id]/edit.astro",
-      "classes": [
-        "admin-teams-edit__header",
-        "admin-teams-edit__load-error"
-      ]
-    },
-    {
-      "path": "apps/web/src/pages/admin/teams/index.astro",
-      "classes": [
-        "admin-teams__create",
-        "admin-teams__empty",
-        "admin-teams__error",
-        "admin-teams__filter",
-        "admin-teams__header",
-        "admin-teams__heading",
-        "admin-teams__table"
-      ]
-    },
-    {
-      "path": "apps/web/src/pages/admin/teams/new.astro",
-      "classes": [
-        "admin-teams-new__header"
       ]
     },
     {

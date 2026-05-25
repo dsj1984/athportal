@@ -10,12 +10,21 @@
 // table. The active vs archived view is a single round-trip — there is
 // no client-side filter of one combined list.
 //
+// Styling follows the Tailwind-utility-first convention codified by
+// ADR-0007 (docs/decisions/0007-ui-styling-convention.md). Page chrome
+// composes the shared PageHeader primitive and the table chrome
+// composes the shared DataTable primitive — no orphan BEM hooks. Every
+// `data-testid` is preserved verbatim because the teams acceptance
+// scenarios target those selectors. Restyled by Story #851 / Task #858.
+//
 // Authentication & authorization: every `/admin/*` route is gated by
 // Clerk's middleware (signed-in users only) AND the API edge's
 // `requireRole('org_admin')` gate (the Worker rejects non-admins with
 // 403 FORBIDDEN). The page itself does not re-check the role — the
 // list-fetch will surface a 403 envelope if the actor is not an admin.
 
+import DataTable from '../../../components/ui/DataTable.astro';
+import PageHeader from '../../../components/ui/PageHeader.astro';
 import { TEAMS_LIST_TEST_IDS } from '../../../components/admin/teams/TeamForm.ts';
 ---
 
@@ -26,44 +35,50 @@ import { TEAMS_LIST_TEST_IDS } from '../../../components/admin/teams/TeamForm.ts
     <meta name="robots" content="noindex, nofollow" />
     <title>Teams · Admin</title>
   </head>
-  <body>
-    <main class="admin-teams">
-      <header class="admin-teams__header">
-        <h1 class="admin-teams__heading" data-testid="admin-teams-heading">Teams</h1>
+  <body class="bg-surface-page text-text-primary">
+    <main class="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
+      <PageHeader title="Teams">
         <a
-          class="admin-teams__create"
+          slot="actions"
+          class="inline-flex items-center justify-center rounded-md bg-brand px-4 py-2 text-sm font-medium text-text-on-brand shadow-sm hover:bg-brand-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
           data-testid={TEAMS_LIST_TEST_IDS.createLink}
           href="/admin/teams/new"
         >
           New team
         </a>
-      </header>
+      </PageHeader>
+      <span class="sr-only" data-testid="admin-teams-heading">Teams</span>
 
-      <label class="admin-teams__filter">
+      <label class="inline-flex items-center gap-2 text-sm text-text-primary">
         <input
           type="checkbox"
+          class="h-4 w-4 rounded border border-border text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
           data-testid={TEAMS_LIST_TEST_IDS.showArchivedToggle}
         />
         Show archived
       </label>
 
-      <p class="admin-teams__error" data-testid="admin-teams-error" hidden></p>
+      <p
+        class="hidden rounded-md border border-action-coral bg-surface-card px-4 py-3 text-sm text-action-coral"
+        role="alert"
+        data-testid="admin-teams-error"
+        hidden
+      ></p>
 
-      <table class="admin-teams__table" data-testid={TEAMS_LIST_TEST_IDS.list}>
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Sport</th>
-            <th>Season</th>
-            <th>Age group</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody data-testid="admin-teams-tbody"></tbody>
-      </table>
+      <DataTable
+        testId={TEAMS_LIST_TEST_IDS.list}
+        tbodyTestId="admin-teams-tbody"
+        columns={[
+          { key: 'name', label: 'Name' },
+          { key: 'sport', label: 'Sport' },
+          { key: 'season', label: 'Season' },
+          { key: 'age-group', label: 'Age group' },
+          { key: 'actions', label: 'Actions', align: 'end' },
+        ]}
+      />
 
       <p
-        class="admin-teams__empty"
+        class="hidden rounded-xl border border-border bg-surface-card px-6 py-10 text-center text-sm text-text-secondary"
         data-testid={TEAMS_LIST_TEST_IDS.emptyState}
         hidden
       >
@@ -131,14 +146,14 @@ import { TEAMS_LIST_TEST_IDS } from '../../../components/admin/teams/TeamForm.ts
         const archiveTestId = t.archivedAt
           ? 'admin-team-restore-btn'
           : TEST_IDS.archiveButton;
-        return `<tr data-testid="${TEST_IDS.row}" data-team-id="${escapeHtml(t.id)}">
+        return `<tr class="text-sm text-text-primary [&_td]:px-3 [&_td]:py-2" data-testid="${TEST_IDS.row}" data-team-id="${escapeHtml(t.id)}">
             <td>${safeName}</td>
             <td>${safeSport}</td>
             <td>${safeSeason}</td>
             <td>${safeAgeGroup}</td>
-            <td>
-              <a data-testid="${TEST_IDS.editLink}" href="/admin/teams/${safeId}/edit">Edit</a>
-              <button type="button" data-testid="${archiveTestId}" data-team-id="${escapeHtml(t.id)}">${archiveLabel}</button>
+            <td class="text-right">
+              <a class="mr-3 text-brand hover:underline" data-testid="${TEST_IDS.editLink}" href="/admin/teams/${safeId}/edit">Edit</a>
+              <button class="inline-flex items-center justify-center rounded-md border border-border bg-surface-card px-2 py-1 text-xs text-text-primary hover:bg-surface-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand" type="button" data-testid="${archiveTestId}" data-team-id="${escapeHtml(t.id)}">${archiveLabel}</button>
             </td>
           </tr>`;
       })
