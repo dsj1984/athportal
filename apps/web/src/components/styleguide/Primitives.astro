@@ -1,0 +1,277 @@
+---
+// apps/web/src/components/styleguide/Primitives.astro
+//
+// Section 5 of the internal styleguide. Renders the shared primitives
+// extracted by Epic #828 (story-styleguide-and-screenshots):
+//
+//   - FormField — every prop combination: default, with helper,
+//     required, error, error+helper, required+helper.
+//   - PageHeader — without actions, with actions, with intro + actions.
+//   - DataTable — populated, empty, and paginated branches.
+//
+// Styling follows the Tailwind-utility-first convention codified by
+// ADR-0007 (docs/decisions/0007-ui-styling-convention.md). Section
+// chrome reuses the existing `.styleguide-section` / `.styleguide-
+// subsection__title` BEM hooks defined alongside this file in the
+// sibling section components so the visual rhythm matches sections
+// 1–4 and the orphan-BEM lint stays green (each new BEM hook below
+// is defined in the colocated <style> block).
+//
+// Story #857 / Task #861.
+
+import FormField from '../ui/FormField.astro';
+import PageHeader from '../ui/PageHeader.astro';
+import DataTable from '../ui/DataTable.astro';
+import Btn from '../ui/Btn.astro';
+
+// Sample rows for the populated and paginated DataTable branches.
+const SAMPLE_ROWS: ReadonlyArray<{
+  id: string;
+  name: string;
+  role: string;
+  status: string;
+}> = [
+  { id: 'r1', name: 'Alex Rivera', role: 'Athlete', status: 'Active' },
+  { id: 'r2', name: 'Jordan Lee', role: 'Coach', status: 'Active' },
+  { id: 'r3', name: 'Sam Patel', role: 'Athlete', status: 'Pending' },
+];
+
+const DATATABLE_COLUMNS = [
+  { key: 'name', label: 'Name' },
+  { key: 'role', label: 'Role' },
+  { key: 'status', label: 'Status', align: 'end' as const },
+];
+---
+
+<section class="styleguide-section" data-testid="styleguide-section-primitives">
+  <h2 class="styleguide-section__title">5. Primitives (Epic #828)</h2>
+  <p class="styleguide-help">
+    The three shared primitives extracted by Epic #828. Every prop
+    combination is rendered side-by-side so the visual contract stays
+    pinned. Source: <code>apps/web/src/components/ui/FormField.astro</code>,
+    <code>PageHeader.astro</code>, and <code>DataTable.astro</code>.
+  </p>
+
+  <h3 class="styleguide-subsection__title">FormField — full props matrix</h3>
+  <p class="styleguide-help">
+    Combinations cover every observable branch in <code>buildFormFieldView</code>:
+    label-only, with helper, required, error (red-border state with
+    <code>role="alert"</code>), error + helper (error suppresses helper),
+    and required + helper. The slotted control wires
+    <code>aria-describedby</code> to the helper/error paragraph id.
+  </p>
+  <div class="styleguide-primitives-grid" data-testid="styleguide-formfield-grid">
+    <div class="styleguide-primitives-item">
+      <span class="styleguide-primitives-item__label"><code>default</code></span>
+      <FormField label="First name" htmlFor="sg-ff-default">
+        <input
+          id="sg-ff-default"
+          type="text"
+          class="rounded-md border border-border bg-surface-card px-3 py-2 text-sm text-text-primary"
+        />
+      </FormField>
+    </div>
+
+    <div class="styleguide-primitives-item">
+      <span class="styleguide-primitives-item__label"><code>helper</code></span>
+      <FormField
+        label="Email"
+        htmlFor="sg-ff-helper"
+        helper="We never share your address."
+      >
+        <input
+          id="sg-ff-helper"
+          type="email"
+          aria-describedby="sg-ff-helper-helper"
+          class="rounded-md border border-border bg-surface-card px-3 py-2 text-sm text-text-primary"
+        />
+      </FormField>
+    </div>
+
+    <div class="styleguide-primitives-item">
+      <span class="styleguide-primitives-item__label"><code>required</code></span>
+      <FormField label="Display name" htmlFor="sg-ff-required" required>
+        <input
+          id="sg-ff-required"
+          type="text"
+          required
+          class="rounded-md border border-border bg-surface-card px-3 py-2 text-sm text-text-primary"
+        />
+      </FormField>
+    </div>
+
+    <div class="styleguide-primitives-item">
+      <span class="styleguide-primitives-item__label"><code>error</code></span>
+      <FormField
+        label="Password"
+        htmlFor="sg-ff-error"
+        error="Password must be at least 12 characters."
+      >
+        <input
+          id="sg-ff-error"
+          type="password"
+          aria-describedby="sg-ff-error-error"
+          aria-invalid="true"
+          class="rounded-md border border-border bg-surface-card px-3 py-2 text-sm text-text-primary"
+        />
+      </FormField>
+    </div>
+
+    <div class="styleguide-primitives-item">
+      <span class="styleguide-primitives-item__label"><code>error + helper</code></span>
+      <FormField
+        label="Username"
+        htmlFor="sg-ff-error-helper"
+        helper="Letters and digits only."
+        error="That username is already taken."
+      >
+        <input
+          id="sg-ff-error-helper"
+          type="text"
+          aria-describedby="sg-ff-error-helper-error"
+          aria-invalid="true"
+          class="rounded-md border border-border bg-surface-card px-3 py-2 text-sm text-text-primary"
+        />
+      </FormField>
+    </div>
+
+    <div class="styleguide-primitives-item">
+      <span class="styleguide-primitives-item__label"><code>required + helper</code></span>
+      <FormField
+        label="Jersey number"
+        htmlFor="sg-ff-required-helper"
+        helper="Pick a number between 0 and 99."
+        required
+      >
+        <input
+          id="sg-ff-required-helper"
+          type="number"
+          required
+          aria-describedby="sg-ff-required-helper-helper"
+          class="rounded-md border border-border bg-surface-card px-3 py-2 text-sm text-text-primary"
+        />
+      </FormField>
+    </div>
+  </div>
+
+  <h3 class="styleguide-subsection__title">PageHeader — branches</h3>
+  <p class="styleguide-help">
+    Three branches: without an actions slot, with one actions button,
+    and with an intro paragraph + multi-button actions. Each preview
+    carries the canonical <code>page-header</code> testid via the
+    primitive.
+  </p>
+  <div class="styleguide-primitives-stack" data-testid="styleguide-pageheader-stack">
+    <div class="styleguide-primitives-item">
+      <span class="styleguide-primitives-item__label"><code>title only</code></span>
+      <PageHeader title="Dashboard" />
+    </div>
+
+    <div class="styleguide-primitives-item">
+      <span class="styleguide-primitives-item__label"><code>with-actions</code></span>
+      <PageHeader title="Roster">
+        <Btn slot="actions" kind="primary" size="default">Add athlete</Btn>
+      </PageHeader>
+    </div>
+
+    <div class="styleguide-primitives-item">
+      <span class="styleguide-primitives-item__label"><code>intro + actions</code></span>
+      <PageHeader
+        title="Invitations"
+        intro="Manage pending invitations and resend any that have lapsed."
+      >
+        <div slot="actions" class="styleguide-primitives-actions">
+          <Btn kind="ghost" size="default">Export</Btn>
+          <Btn kind="primary" size="default">Invite</Btn>
+        </div>
+      </PageHeader>
+    </div>
+  </div>
+
+  <h3 class="styleguide-subsection__title">DataTable — branches</h3>
+  <p class="styleguide-help">
+    Three branches: a populated table with rows in the default slot,
+    the empty-state fallback (no rows + <code>empty</code> prop), and a
+    paginated table with the <code>pagination</code> slot wired up.
+  </p>
+  <div class="styleguide-primitives-stack" data-testid="styleguide-datatable-stack">
+    <div class="styleguide-primitives-item">
+      <span class="styleguide-primitives-item__label"><code>populated</code></span>
+      <DataTable columns={DATATABLE_COLUMNS} testId="styleguide-datatable-populated">
+        {SAMPLE_ROWS.map((row) => (
+          <tr>
+            <td class="px-3 py-2">{row.name}</td>
+            <td class="px-3 py-2">{row.role}</td>
+            <td class="px-3 py-2 text-right">{row.status}</td>
+          </tr>
+        ))}
+      </DataTable>
+    </div>
+
+    <div class="styleguide-primitives-item">
+      <span class="styleguide-primitives-item__label"><code>empty</code></span>
+      <DataTable
+        columns={DATATABLE_COLUMNS}
+        empty={{ title: 'No athletes yet', body: 'Invite your first athlete to get started.' }}
+        testId="styleguide-datatable-empty"
+      />
+    </div>
+
+    <div class="styleguide-primitives-item">
+      <span class="styleguide-primitives-item__label"><code>paginated</code></span>
+      <DataTable columns={DATATABLE_COLUMNS} testId="styleguide-datatable-paginated">
+        {SAMPLE_ROWS.map((row) => (
+          <tr>
+            <td class="px-3 py-2">{row.name}</td>
+            <td class="px-3 py-2">{row.role}</td>
+            <td class="px-3 py-2 text-right">{row.status}</td>
+          </tr>
+        ))}
+        <Fragment slot="pagination">
+          <Btn kind="ghost" size="sm">Previous</Btn>
+          <span class="styleguide-primitives-pageinfo">Page 1 of 3</span>
+          <Btn kind="ghost" size="sm">Next</Btn>
+        </Fragment>
+      </DataTable>
+    </div>
+  </div>
+</section>
+
+<style>
+  .styleguide-primitives-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+  .styleguide-primitives-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .styleguide-primitives-item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface-card);
+  }
+  .styleguide-primitives-item__label {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+  }
+  .styleguide-primitives-item__label code {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+  }
+  .styleguide-primitives-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .styleguide-primitives-pageinfo {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+  }
+</style>
