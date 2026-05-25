@@ -1610,3 +1610,58 @@ Phrasing and tag conventions for `.feature` files themselves live in
 Read that rule before authoring a new scenario — it covers the canonical
 tag taxonomy, the Background discipline, and the forbidden patterns the
 linter enforces.
+
+## Local development orchestrator
+
+A single `pnpm dev` from the repo root brings up the api and web
+workspaces together:
+
+```bash
+pnpm dev
+```
+
+The script chains two stages:
+
+1. **`scripts/dev-preflight.mjs`** — verifies that `.env` exists at the
+   repo root, that the required env vars are populated
+   (`CLERK_SECRET_KEY`, `CLERK_PUBLISHABLE_KEY`,
+   `PUBLIC_CLERK_PUBLISHABLE_KEY`, `PUBLIC_API_URL`, `DATABASE_URL`),
+   and that the local SQLite file exists. If `packages/shared/data/local.db`
+   is missing, the script creates the parent directory and applies every
+   migration under `packages/shared/src/db/migrations/` in order. The
+   step exits non-zero with a punch list when any prerequisite is
+   missing — there are no silent fallbacks.
+2. **`turbo run dev --parallel`** — fans out to `@repo/api`
+   (`tsx watch src/local.ts`, listens on `http://localhost:8787` via
+   [`@hono/node-server`](https://github.com/honojs/node-server)) and
+   `@repo/web` (`astro dev`, listens on the Astro default port).
+
+The api uses Node + `better-sqlite3` for local dev because the Workers
+V8 isolate cannot load native bindings. The Workers entrypoint that
+ships with Epic #27 will reuse the same `app` from
+[`apps/api/src/index.ts`](../apps/api/src/index.ts) but construct
+`c.env.DB` from `@libsql/client` instead — the contract surface
+(`c.var.db` set by `withDb()`) stays the same across hosts.
+
+### Env contract enforced by the preflight
+
+| Var | Required by | Notes |
+|---|---|---|
+| `CLERK_SECRET_KEY` | api | Backend session validation. |
+| `CLERK_PUBLISHABLE_KEY` | api | Issuer derivation for authorized-party checks. |
+| `PUBLIC_CLERK_PUBLISHABLE_KEY` | web | Frontend Clerk init. |
+| `PUBLIC_API_URL` | web | Defaults to `http://localhost:8787` per `.env.example`. |
+| `DATABASE_URL` | api | Must use the `file:` scheme for local dev (e.g. `file:packages/shared/data/local.db`). `libsql://…` is rejected at preflight — that scheme lands with Epic #27. |
+| `CLERK_WEBHOOK_SECRET` | api | Optional locally; only needed to exercise the invitation-accepted webhook. |
+
+The preflight loads `.env` itself; the spawned api process re-loads it
+from [`apps/api/src/local.ts`](../apps/api/src/local.ts) because
+turbo's child processes do not inherit env mutations from the
+orchestrator. `apps/web/.env` is loaded by Astro per its usual
+convention.
+
+Story #760 wired this orchestrator. Before it, the api had no `dev`
+script and no runtime DB binding — every admin route under
+`/api/v1/admin/*` would crash on the first `c.var.db` access if hit by
+a real client. Tests passed because they injected the handle via
+`createTestApp(db)`; the production composition is now equivalent.

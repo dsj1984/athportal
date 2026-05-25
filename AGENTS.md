@@ -78,6 +78,15 @@ What currently exists on `main` / `epic/2`:
 - **Agent framework:** `.agents/` (submodule, do not edit directly),
   `.agentrc.json`, `.claude/` (harness settings + generated command
   mirrors), and a `temp/` scratch directory excluded from git.
+- **Local dev:** a single `pnpm dev` from the repo root runs
+  [`scripts/dev-preflight.mjs`](scripts/dev-preflight.mjs) (verifies
+  `.env`, creates + migrates the local SQLite file at
+  `packages/shared/data/local.db` on first run) and then
+  `turbo run dev --parallel` to launch the api and web workspaces
+  together. The api binds to `http://localhost:8787` via
+  [`@hono/node-server`](apps/api/src/local.ts) — Workers + libsql wiring
+  lands with Epic #27. See
+  [`docs/patterns.md` § _Local development orchestrator_](docs/patterns.md#local-development-orchestrator).
 
 Planned architecture and milestones live on GitHub Project #6.
 
