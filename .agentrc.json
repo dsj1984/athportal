@@ -11,7 +11,9 @@
       "data-dictionary.md",
       "decisions.md",
       "patterns.md",
+      "personas.md",
       "style-guide.md",
+      "testing-strategy.md",
       "web-routes.md"
     ],
     "commands": {
