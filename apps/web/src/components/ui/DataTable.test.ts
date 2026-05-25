@@ -9,11 +9,7 @@
 //
 // Story #843 / Task #853 — Epic #828 admin-surface restyle.
 import { describe, expect, it } from 'vitest';
-import {
-  DATA_TABLE_TEST_IDS,
-  type DataTableProps,
-  buildDataTable,
-} from './DataTable';
+import { DATA_TABLE_TEST_IDS, type DataTableProps, buildDataTable } from './DataTable';
 
 const baseColumns: DataTableProps['columns'] = [
   { key: 'name', label: 'Name' },
@@ -67,15 +63,11 @@ describe('buildDataTable — columns → header projection', () => {
   });
 
   it('throws TypeError when a column key is empty', () => {
-    expect(() =>
-      buildDataTable({ columns: [{ key: '   ', label: 'Name' }] }),
-    ).toThrow(TypeError);
+    expect(() => buildDataTable({ columns: [{ key: '   ', label: 'Name' }] })).toThrow(TypeError);
   });
 
   it('throws TypeError when a column label is empty', () => {
-    expect(() =>
-      buildDataTable({ columns: [{ key: 'name', label: '   ' }] }),
-    ).toThrow(TypeError);
+    expect(() => buildDataTable({ columns: [{ key: 'name', label: '   ' }] })).toThrow(TypeError);
   });
 
   it('throws TypeError when two columns share the same key', () => {
@@ -165,9 +157,9 @@ describe('buildDataTable — empty-state branch', () => {
   });
 
   it('throws TypeError when empty.title is empty or whitespace-only', () => {
-    expect(() =>
-      buildDataTable({ columns: baseColumns, empty: { title: '   ' } }),
-    ).toThrow(TypeError);
+    expect(() => buildDataTable({ columns: baseColumns, empty: { title: '   ' } })).toThrow(
+      TypeError,
+    );
   });
 });
 
