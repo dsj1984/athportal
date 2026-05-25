@@ -1,6 +1,6 @@
 {
   "$schema": ".agents/schemas/baselines/crap.schema.json",
-  "kernelVersion": "0.1.0",
+  "kernelVersion": "1.0.0",
   "generatedAt": "2026-05-25T18:04:58.620Z",
   "rollup": {
     "*": {
