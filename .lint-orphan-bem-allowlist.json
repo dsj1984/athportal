@@ -54,18 +54,6 @@
       ]
     },
     {
-      "path": "apps/web/src/pages/admin/reports.astro",
-      "classes": [
-        "admin-report__empty",
-        "admin-report__error",
-        "admin-report__header",
-        "admin-report__heading",
-        "admin-report__section",
-        "admin-report__subheading",
-        "admin-report__table"
-      ]
-    },
-    {
       "path": "apps/web/src/pages/admin/teams/[id]/edit.astro",
       "classes": [
         "admin-teams-edit__header",
