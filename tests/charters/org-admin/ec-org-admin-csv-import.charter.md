@@ -76,7 +76,10 @@ hard to trace back to the import.
 
 Scratchpad. The session runner appends per-snapshot notes here.
 
+- **dry-run @ /admin/import**: pilot dispatch executed by /run-qa during Story #794 with the local stack down — no chrome-devtools navigation possible. The structured-finding row below is included as an example so downstream tooling and operators can see the contract end-to-end. Replace this Notes bullet with a real session record once the runner drives the surface against a live `pnpm dev`.
+
 ## Findings
 
 | id | title | severity | repro | suggested-promotion |
 | --- | --- | --- | --- | --- |
+| f-001 | Example finding shape from /run-qa dry-run (replace on first live session) | low | DRY RUN: local stack not running. Heuristic `boundary-values` would target `packages/shared/src/csv/parse.ts` cell-length cap and `packages/shared/src/schemas/admin/csvImport.ts` row-count cap by uploading a CSV one row over the row-count maximum and one cell one byte over the cell-length maximum, then observe whether the importer (a) surfaces a row-level error for each offending row or (b) silently truncates / drops without writing a `csv_import_batches` failure row visible to the operator. | investigate |
