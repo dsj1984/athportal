@@ -221,6 +221,35 @@ jobs:
       - name: Lint orphan BEM hooks (ADR-0007)
         run: node scripts/lint-orphan-bem.mjs
 
+  lint-astro-frontmatter:
+    # Story #865 — Astro-frontmatter `<script` token lint.
+    # Walks apps/web/src/**/*.astro and fails when a component's
+    # frontmatter (`---` ... `---` block) contains the literal
+    # `<script` token in a comment. Astro's compiler treats the token
+    # as a real script-block opener and feeds the trailing comment
+    # body to esbuild as JS, producing `pnpm dev` parser errors on
+    # downstream consumers (PRs #862 and #864 fixed six instances of
+    # this trap manually). This lint enforces the rewording
+    # mechanically. Also runs in `.husky/pre-push`.
+    name: lint-astro-frontmatter
+    needs: [lint, typecheck]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - name: Set up toolchain (checkout + pnpm + node + install)
+        uses: ./.github/actions/setup-toolchain
+
+      - name: Lint Astro frontmatter for <script token
+        run: node scripts/lint-astro-frontmatter.mjs
+
+      - name: Unit-test the lint script itself
+        run: node --test scripts/lint-astro-frontmatter.test.mjs
+
   lint-deps:
     # Story #590 — architecture-boundary gate.
     # Runs dependency-cruiser against apps/** and packages/** using the

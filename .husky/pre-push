@@ -21,6 +21,12 @@
 #                      and fails on any class matching the BEM shape
 #                      that does not resolve via the four ADR-0007
 #                      resolver paths or the allowlist.
+#   7. lint-astro-frontmatter — catches the literal `<script` token
+#                      inside Astro frontmatter comments (PR #862,
+#                      PR #864). The token confuses Astro's compiler
+#                      into treating the trailing comment body as
+#                      script content, producing parser errors at
+#                      `pnpm dev` time.
 #
 # secretlint runs on pre-commit only (staged scope). At push time the
 # committed history is already past the local trust boundary;
@@ -36,3 +42,4 @@ pnpm run knip:fast
 pnpm run lint:baseline:check
 pnpm run lint:steps
 node scripts/lint-orphan-bem.mjs
+node scripts/lint-astro-frontmatter.mjs
