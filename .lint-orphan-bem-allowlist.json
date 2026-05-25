@@ -65,14 +65,7 @@
         "onboarding-age__row"
       ]
     },
-    {
-      "path": "apps/web/src/components/onboarding/ClerkVerifyEmailIsland.astro",
-      "classes": [
-        "onboarding-verify-email__resend",
-        "onboarding-verify-email__status"
-      ]
-    },
-    {
+{
       "path": "apps/web/src/components/onboarding/LegalAcceptanceCheckboxes.astro",
       "classes": [
         "onboarding-legal__label",

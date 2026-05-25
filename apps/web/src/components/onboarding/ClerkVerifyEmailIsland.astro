@@ -27,13 +27,16 @@ const view = buildClerkVerifyEmailView({ isVerified: false });
 ---
 
 <section
-  class="onboarding-verify-email"
+  class="flex flex-col gap-2 rounded-md border border-border bg-surface-card p-4"
   data-testid={CLERK_VERIFY_EMAIL_TEST_IDS.root}
   data-island="clerk-verify-email"
   data-verified={String(view.isVerified)}
 >
   <p
-    class="onboarding-verify-email__status"
+    class:list={[
+      'text-sm',
+      view.isVerified ? 'text-action-lime' : 'text-text-secondary',
+    ]}
     data-testid={CLERK_VERIFY_EMAIL_TEST_IDS.status}
     data-verified={String(view.isVerified)}
   >
@@ -41,7 +44,7 @@ const view = buildClerkVerifyEmailView({ isVerified: false });
   </p>
   <button
     type="button"
-    class="onboarding-verify-email__resend"
+    class="inline-flex w-fit items-center justify-center rounded-md border border-border bg-surface-card px-3 py-1.5 text-sm font-medium text-text-primary shadow-sm hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
     data-testid={CLERK_VERIFY_EMAIL_TEST_IDS.resend}
     hidden={view.isVerified}
   >
