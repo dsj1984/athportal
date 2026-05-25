@@ -14,8 +14,7 @@
 //
 // Story #760.
 
-import { execSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -98,30 +97,23 @@ if (dbFile !== null) {
   if (!existsSync(dbFile)) {
     console.log(`[dev-preflight] ${dbFile} not found — creating + applying migrations…`);
     try {
-      // Use a one-shot child process so we don't need to bring
-      // better-sqlite3 into this script's import surface (avoids
-      // forcing a native rebuild when the script runs in CI).
-      const initScript = `
-        const Database = require('better-sqlite3');
-        const fs = require('node:fs');
-        const path = require('node:path');
-        const db = new Database(${JSON.stringify(dbFile)});
-        db.pragma('foreign_keys = ON');
-        const dir = ${JSON.stringify(MIGRATIONS_DIR)};
-        const files = fs.readdirSync(dir).filter((f) => f.endsWith('.sql')).sort();
-        for (const file of files) {
-          const sql = fs.readFileSync(path.join(dir, file), 'utf8');
-          for (const stmt of sql.split('--> statement-breakpoint').map((s) => s.trim())) {
-            if (stmt.length > 0) db.exec(stmt);
-          }
-          console.log('[dev-preflight]   applied ' + file);
+      // better-sqlite3 ships as a transitive dep of apps/api +
+      // packages/shared; the pnpm hoisted store makes it resolvable
+      // from the repo root without a direct devDep here.
+      const { default: Database } = await import('better-sqlite3');
+      const db = new Database(dbFile);
+      db.pragma('foreign_keys = ON');
+      const files = readdirSync(MIGRATIONS_DIR)
+        .filter((f) => f.endsWith('.sql'))
+        .sort();
+      for (const file of files) {
+        const sql = readFileSync(join(MIGRATIONS_DIR, file), 'utf8');
+        for (const stmt of sql.split('--> statement-breakpoint').map((s) => s.trim())) {
+          if (stmt.length > 0) db.exec(stmt);
         }
-        db.close();
-      `;
-      execSync(`node -e ${JSON.stringify(initScript)}`, {
-        cwd: REPO_ROOT,
-        stdio: 'inherit',
-      });
+        console.log(`[dev-preflight]   applied ${file}`);
+      }
+      db.close();
     } catch (err) {
       failures.push(`failed to initialize local DB at ${dbFile}: ${err?.message ?? err}`);
     }
