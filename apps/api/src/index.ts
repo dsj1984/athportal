@@ -12,11 +12,23 @@
 //                                    Clerk JWT and writes
 //                                    `c.var.clerkSubjectId`. UNAUTH for
 //                                    missing/invalid tokens.
+//   2.5 withDb()                    — between clerkAuth and
+//                                    requireInternalUser. Reads
+//                                    `c.env.DB` (a Drizzle handle
+//                                    constructed by the host: the Node
+//                                    dev server, or — Epic #27 — the
+//                                    Workers entrypoint) and publishes
+//                                    it as `c.var.db`. Mounted only on
+//                                    `/api/v1/*` because the
+//                                    unauthenticated probes
+//                                    (`/health`, webhooks) do not
+//                                    touch the DB. Story #760.
 //   3. requireInternalUser()        — third, only on `/api/v1/*`
 //                                    (excluding `/api/v1/health` and
 //                                    `/api/v1/_debug/*`). Resolves the
 //                                    internal `users` row via JIT
 //                                    insert, attaches `c.var.auth`.
+//                                    Reads `c.var.db` set by withDb.
 //   4. requireOnboarded()           — fourth, only on `/api/v1/*`.
 //                                    Returns 403 ONBOARDING_REQUIRED
 //                                    when `users.onboarded_at` is null.
@@ -34,6 +46,7 @@ import { Hono } from 'hono';
 import { type ClerkAuthEnv, clerkAuth, requireInternalUser } from './middleware/auth';
 import { type RequestLoggerEnv, requestLogger } from './middleware/request-logger';
 import { requireOnboarded } from './middleware/requireOnboarded';
+import { withDb } from './middleware/withDb';
 import { type SyntheticFailureEnv, syntheticFailureRoute } from './routes/debug/synthetic-failure';
 import { adminRoute } from './routes/v1/admin';
 import { authRoute } from './routes/v1/auth';
@@ -70,6 +83,12 @@ app.route('/webhooks/clerk/invitation-accepted', clerkInvitationAcceptedRoute);
 
 // 4) Clerk JWT validation. Runs on every remaining request.
 app.use('*', clerkAuth());
+
+// 4.5) DB handle bridge. Publishes `c.env.DB` as `c.var.db` so the JIT
+//      user lookup and every downstream route can issue Drizzle queries.
+//      Scoped to /api/v1/* — the public probes and the Clerk webhook
+//      receiver do not touch the database. Story #760.
+app.use('/api/v1/*', withDb());
 
 // 5) JIT internal-user resolution. Scoped to /api/v1/* so future
 //    non-versioned routes (admin UI APIs, webhooks) can opt in

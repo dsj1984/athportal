@@ -55,5 +55,11 @@ export default defineConfig({
   integrations,
   vite: {
     plugins: [tailwindcss()],
+    // Load `.env` from the repo root so there is one source of truth
+    // for environment configuration across @repo/api and @repo/web.
+    // Without this, Astro/Vite would look for `.env` inside `apps/web/`
+    // and a fresh worktree would miss the operator's PUBLIC_CLERK_*
+    // and DATABASE_URL keys (Story #760).
+    envDir: '../../',
   },
 });
