@@ -19,117 +19,138 @@
 //     PATCHes /api/v1/admin/org. A success swaps the status element to
 //     read "Saved"; a 400 envelope folds back into per-field errors.
 //
-// Story #656 / Task #674.
+// Styling follows the Tailwind-utility-first convention codified by
+// ADR-0007 (docs/decisions/0007-ui-styling-convention.md) — utility
+// classes resolve against the @theme tokens declared in
+// apps/web/src/styles/global.css; no orphan BEM hooks. Each labelled
+// field composes the FormField primitive (Story #837).
+//
+// Story #656 / Task #674. Restyled by Story #842 / Task #852.
 
 import { ORG_CONFIG_FORM_TEST_IDS } from './OrgConfigForm.ts';
 import type { OrgConfigLoaderPayload } from './OrgConfigForm.ts';
+import FormField from '../ui/FormField.astro';
 
 interface Props {
   readonly loader: OrgConfigLoaderPayload;
 }
 const { loader } = Astro.props;
+
+const inputClass =
+  'rounded-md border border-border bg-surface-card px-3 py-2 text-sm text-text-primary shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand disabled:cursor-not-allowed disabled:opacity-60';
+const fieldErrorClass = 'text-xs text-action-coral';
 ---
 
 <form
-  class="admin-org-config"
+  class="flex flex-col gap-4"
   data-testid={ORG_CONFIG_FORM_TEST_IDS.form}
   novalidate
 >
   <p
-    class="admin-org-config__form-error"
+    class="rounded-md border border-action-coral bg-surface-card p-3 text-sm text-action-coral"
     data-testid={ORG_CONFIG_FORM_TEST_IDS.formError}
+    role="alert"
     hidden
   ></p>
 
-  <div class="admin-org-config__field">
-    <label for="admin-org-name">Organization name</label>
+  <FormField label="Organization name" htmlFor="admin-org-name" required>
     <input
       id="admin-org-name"
       name="name"
       type="text"
+      class={inputClass}
       data-testid={ORG_CONFIG_FORM_TEST_IDS.name}
       value={loader.name}
       required
       maxlength="200"
     />
-    <p class="admin-org-config__field-error" data-field-error="name" hidden></p>
-  </div>
+    <p class={fieldErrorClass} data-field-error="name" hidden></p>
+  </FormField>
 
-  <div class="admin-org-config__field">
-    <label for="admin-org-sports">Sports</label>
-    <ul id="admin-org-sports" data-testid="admin-org-sports-list">
+  <FormField label="Sports" htmlFor="admin-org-sports">
+    <ul
+      id="admin-org-sports"
+      class="flex flex-col gap-1 text-sm text-text-secondary"
+      data-testid="admin-org-sports-list"
+    >
       {loader.sports.length === 0
-        ? <li class="admin-org-config__placeholder">No sports configured.</li>
+        ? <li class="text-text-tertiary">No sports configured.</li>
         : loader.sports.map((s) => <li>{s}</li>)
       }
     </ul>
-  </div>
+  </FormField>
 
-  <div class="admin-org-config__field">
-    <label for="admin-org-contact-email">Contact email</label>
+  <FormField label="Contact email" htmlFor="admin-org-contact-email">
     <input
       id="admin-org-contact-email"
       name="contactEmail"
       type="email"
+      class={inputClass}
       data-testid="admin-org-contact-email-input"
       value={loader.contactEmail ?? ''}
       disabled
     />
-  </div>
+  </FormField>
 
-  <div class="admin-org-config__field">
-    <label for="admin-org-contact-phone">Contact phone</label>
+  <FormField label="Contact phone" htmlFor="admin-org-contact-phone">
     <input
       id="admin-org-contact-phone"
       name="contactPhone"
       type="tel"
+      class={inputClass}
       data-testid="admin-org-contact-phone-input"
       value={loader.contactPhone ?? ''}
       disabled
     />
-  </div>
+  </FormField>
 
-  <div class="admin-org-config__field">
-    <label for="admin-org-logo">Logo</label>
+  <FormField label="Logo" htmlFor="admin-org-logo">
     <input
       id="admin-org-logo"
       name="logo"
       type="file"
       accept="image/png,image/jpeg,image/webp"
+      class="text-sm text-text-primary file:mr-3 file:rounded-md file:border file:border-border file:bg-surface-card file:px-3 file:py-1 file:text-sm file:text-text-primary"
       data-testid={ORG_CONFIG_FORM_TEST_IDS.logo}
     />
-    <p class="admin-org-config__field-error" data-field-error="logo" hidden></p>
+    <p class={fieldErrorClass} data-field-error="logo" hidden></p>
     {loader.logoUrl
-      ? <img class="admin-org-config__logo-preview" src={loader.logoUrl} alt="Current logo" />
+      ? <img
+          class="mt-2 h-16 w-16 rounded-md border border-border object-cover"
+          src={loader.logoUrl}
+          alt="Current logo"
+        />
       : null
     }
-  </div>
+  </FormField>
 
-  <div class="admin-org-config__field">
-    <label for="admin-org-primary-color">Primary colour</label>
+  <FormField label="Primary colour" htmlFor="admin-org-primary-color">
     <input
       id="admin-org-primary-color"
       name="primaryColorHex"
       type="text"
+      class={inputClass}
       data-testid={ORG_CONFIG_FORM_TEST_IDS.primaryColor}
       value={loader.primaryColorHex ?? ''}
       placeholder="#RRGGBB"
       maxlength="7"
     />
-    <p class="admin-org-config__field-error" data-field-error="primaryColorHex" hidden></p>
-  </div>
+    <p class={fieldErrorClass} data-field-error="primaryColorHex" hidden></p>
+  </FormField>
 
   <button
     type="submit"
-    class="admin-org-config__submit"
+    class="inline-flex items-center justify-center rounded-md bg-brand px-4 py-2 text-sm font-medium text-text-on-brand shadow-sm hover:bg-brand-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand disabled:cursor-not-allowed disabled:opacity-60"
     data-testid={ORG_CONFIG_FORM_TEST_IDS.submit}
   >
     Save changes
   </button>
 
   <p
-    class="admin-org-config__status"
+    class="text-sm text-text-secondary"
     data-testid={ORG_CONFIG_FORM_TEST_IDS.status}
+    role="status"
+    aria-live="polite"
   ></p>
 </form>
 

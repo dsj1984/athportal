@@ -19,40 +19,52 @@ const view = buildLegalAcceptanceView(Astro.props);
 ---
 
 <fieldset
-  class="onboarding-legal"
+  class="flex flex-col gap-3 rounded-md border border-border bg-surface-card p-4"
   data-testid={view.testIds.root}
   data-island="legal-acceptance"
   data-tos-version={view.tos.version}
   data-privacy-version={view.privacy.version}
 >
-  <legend class="onboarding-legal__legend">Legal</legend>
+  <legend class="px-1 text-sm font-medium text-text-primary">Legal</legend>
 
-  <label class="onboarding-legal__row">
+  <label class="flex items-start gap-2 text-sm text-text-secondary">
     <input
       type="checkbox"
       name="acceptsTermsOfService"
+      class="mt-0.5 h-4 w-4 rounded border-border text-brand focus-visible:ring-2 focus-visible:ring-brand"
       data-testid={view.testIds.tosCheckbox}
       required
     />
-    <span class="onboarding-legal__label">
+    <span>
       I have read and accept the
-      <a href={view.tos.bodyUrl} target="_blank" rel="noopener noreferrer">
+      <a
+        class="text-brand underline hover:text-brand-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+        href={view.tos.bodyUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
         Terms of Service
       </a>
       (version {view.tos.version}).
     </span>
   </label>
 
-  <label class="onboarding-legal__row">
+  <label class="flex items-start gap-2 text-sm text-text-secondary">
     <input
       type="checkbox"
       name="acceptsPrivacyPolicy"
+      class="mt-0.5 h-4 w-4 rounded border-border text-brand focus-visible:ring-2 focus-visible:ring-brand"
       data-testid={view.testIds.privacyCheckbox}
       required
     />
-    <span class="onboarding-legal__label">
+    <span>
       I have read and accept the
-      <a href={view.privacy.bodyUrl} target="_blank" rel="noopener noreferrer">
+      <a
+        class="text-brand underline hover:text-brand-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+        href={view.privacy.bodyUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
         Privacy Policy
       </a>
       (version {view.privacy.version}).

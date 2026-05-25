@@ -4,7 +4,15 @@
 // `/admin/teams/new` — create-team page. Renders the shared TeamForm in
 // `create` mode pointing at the POST endpoint. On 2xx the form
 // redirects back to `/admin/teams`. Story #657 / Task #676.
+//
+// Styling follows the Tailwind-utility-first convention codified by
+// ADR-0007 (docs/decisions/0007-ui-styling-convention.md) — utility
+// classes resolve against the @theme tokens declared in
+// apps/web/src/styles/global.css; no orphan BEM hooks. Page chrome
+// composes the shared PageHeader primitive. Restyled by Story #851 /
+// Task #858.
 
+import PageHeader from '../../../components/ui/PageHeader.astro';
 import TeamForm from '../../../components/admin/teams/TeamForm.astro';
 ---
 
@@ -15,12 +23,17 @@ import TeamForm from '../../../components/admin/teams/TeamForm.astro';
     <meta name="robots" content="noindex, nofollow" />
     <title>New team · Admin</title>
   </head>
-  <body>
-    <main class="admin-teams-new">
-      <header class="admin-teams-new__header">
-        <h1>Create team</h1>
-        <a href="/admin/teams">Back to teams</a>
-      </header>
+  <body class="bg-surface-page text-text-primary">
+    <main class="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
+      <PageHeader title="Create team">
+        <a
+          slot="actions"
+          class="inline-flex items-center justify-center rounded-md border border-border bg-surface-card px-3 py-2 text-sm font-medium text-text-primary shadow-sm hover:bg-surface-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+          href="/admin/teams"
+        >
+          Back to teams
+        </a>
+      </PageHeader>
 
       <TeamForm mode="create" action="/api/v1/admin/teams" />
     </main>

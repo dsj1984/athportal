@@ -1,0 +1,69 @@
+---
+// apps/web/src/components/ui/DataTable.astro
+//
+// Shared DataTable primitive: a `<table>` with a typed columns→header
+// row, a default slot for `<tr>` rows, and an optional `pagination`
+// slot for the trailing button row. When the default slot renders no
+// rows and an `empty` prop is supplied, the primitive renders the
+// shared EmptyState primitive in place of an empty `<tbody>`.
+//
+// Styling follows the Tailwind-utility-first convention codified by
+// ADR-0007 (docs/decisions/0007-ui-styling-convention.md) — utility
+// classes resolve against the @theme tokens declared in
+// apps/web/src/styles/global.css; no orphan BEM hooks.
+//
+// Composition note: callers slot `<tr>` rows that already carry their
+// own per-cell `data-testid` invariants (e.g. the admin roster keeps
+// `admin-roster-row` on each emitted row). The DataTable does not
+// rewrite slotted markup — it only owns the chrome.
+//
+// Story #843 / Task #853 — Epic #828 admin-surface restyle.
+import EmptyState from './EmptyState.astro';
+import { buildDataTable, type DataTableProps } from './DataTable.ts';
+
+interface Props {
+  columns: Array<{ key: string; label: string; align?: 'start' | 'end' | 'center' }>;
+  empty?: { title: string; body?: string };
+  testId?: string;
+  tbodyTestId?: string;
+  class?: string;
+}
+
+const props: DataTableProps = Astro.props;
+const hasRows = Astro.slots.has('default');
+const hasPagination = Astro.slots.has('pagination');
+const view = buildDataTable(props, { hasRows, hasPagination });
+---
+
+<div class={view.rootClass} data-testid={view.testIds.root}>
+  {
+    view.showEmptyBranch && view.empty ? (
+      <EmptyState
+        title={view.empty.title}
+        body={view.empty.body ?? 'Nothing to show right now.'}
+      />
+    ) : (
+      <table class={view.tableClass} data-testid={view.testIds.table}>
+        <thead class={view.theadClass} data-testid={view.testIds.header}>
+          <tr>
+            {view.headers.map((header) => (
+              <th class={header.thClass} scope="col">
+                {header.label}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody class={view.tbodyClass} data-testid={view.testIds.tbody ?? undefined}>
+          <slot />
+        </tbody>
+      </table>
+    )
+  }
+  {
+    view.hasPagination && (
+      <div class={view.paginationClass} data-testid={view.testIds.pagination}>
+        <slot name="pagination" />
+      </div>
+    )
+  }
+</div>

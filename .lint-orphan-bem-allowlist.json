@@ -1,0 +1,34 @@
+{
+  "$schema-comment": "Pre-existing orphan BEM hooks tolerated by Story #834. The codifying Story is scoped to the EmptyState primitive plus the lint infrastructure; refactoring the listed files into Tailwind utilities is owned by follow-on Stories. New entries require a paired Story reference in the PR body. See docs/decisions/0007-ui-styling-convention.md for the binding rule and scripts/lint-orphan-bem.mjs for the resolver set.",
+  "entries": [
+    {
+      "path": "apps/web/src/components/ui/Avatar.astro",
+      "classes": [
+        "avatar--image",
+        "avatar--initials"
+      ]
+    },
+    {
+      "path": "apps/web/src/components/ui/EventChip.astro",
+      "classes": [
+        "event-chip__conflict-dot"
+      ]
+    },
+    {
+      "path": "apps/web/src/components/ui/Sidebar.astro",
+      "classes": [
+        "sidebar__label"
+      ]
+    },
+    {
+      "path": "apps/web/src/pages/dashboard.astro",
+      "classes": [
+        "dashboard__title",
+        "dashboard__widget",
+        "dashboard__widget-heading",
+        "dashboard__widget-row",
+        "dashboard__widget-rows"
+      ]
+    }
+  ]
+}

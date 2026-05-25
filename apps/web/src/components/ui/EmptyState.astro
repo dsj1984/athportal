@@ -3,7 +3,11 @@
 //
 // Shared empty-state primitive. Wraps the pure `buildEmptyState`
 // helper so the rendered markup and the unit-tested view-shape stay in
-// lockstep. Copy conventions: see docs/style-guide.md §4.5.
+// lockstep. Styling follows the Tailwind-utility-first convention
+// codified by ADR-0007 (docs/decisions/0007-ui-styling-convention.md)
+// — utility classes resolve against the @theme tokens declared in
+// apps/web/src/styles/global.css; no orphan BEM hooks remain. Copy
+// conventions: see docs/style-guide.md §4.5.
 import { buildEmptyState, type EmptyStateProps } from './EmptyState.ts';
 
 type Props = EmptyStateProps;
@@ -11,13 +15,16 @@ type Props = EmptyStateProps;
 const view = buildEmptyState(Astro.props);
 ---
 
-<section class="empty-state" data-testid={view.testIds.root}>
-  <h3 class="empty-state__title">{view.title}</h3>
-  <p class="empty-state__body">{view.body}</p>
+<section
+  class="flex flex-col items-center gap-3 rounded-xl border border-border bg-surface-card px-6 py-10 text-center"
+  data-testid={view.testIds.root}
+>
+  <h3 class="font-display text-lg font-semibold text-text-primary">{view.title}</h3>
+  <p class="max-w-prose text-sm text-text-secondary">{view.body}</p>
   {
     view.action && (
       <a
-        class="empty-state__cta"
+        class="mt-2 inline-flex items-center justify-center rounded-md bg-brand px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-brand-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
         data-testid={view.testIds.cta}
         href={view.action.href}
       >

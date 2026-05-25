@@ -10,8 +10,15 @@
 // `requireRole('org_admin')` gate on `/api/v1/admin/*`. The web
 // runtime carries the session cookie via Clerk so fetches from the
 // island arrive at the API edge already authenticated.
+//
+// Styling follows the Tailwind-utility-first convention codified by
+// ADR-0007 (docs/decisions/0007-ui-styling-convention.md) — utility
+// classes resolve against the @theme tokens declared in
+// apps/web/src/styles/global.css; no orphan BEM hooks. Page chrome
+// composes the canonical PageHeader primitive (Story #844 / Task #850).
 
 import CsvMappingTool from '../../components/admin/CsvMappingTool.astro';
+import PageHeader from '../../components/ui/PageHeader.astro';
 ---
 
 <html lang="en">
@@ -21,13 +28,11 @@ import CsvMappingTool from '../../components/admin/CsvMappingTool.astro';
     <title>Import roster</title>
   </head>
   <body>
-    <main class="admin-import-page">
-      <h1 class="admin-import-page__title">Import roster</h1>
-      <p class="admin-import-page__intro">
-        Upload a CSV of athletes; map each column to a target field; then
-        commit the import. Existing platform accounts are re-used
-        automatically.
-      </p>
+    <main class="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
+      <PageHeader
+        title="Import roster"
+        intro="Upload a CSV of athletes; map each column to a target field; then commit the import. Existing platform accounts are re-used automatically."
+      />
       <CsvMappingTool />
     </main>
   </body>

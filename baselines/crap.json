@@ -1,11 +1,11 @@
 {
   "$schema": ".agents/schemas/baselines/crap.schema.json",
-  "generatedAt": "2026-05-25T11:55:08.402Z",
+  "generatedAt": "2026-05-25T19:04:46.755Z",
   "kernelVersion": "1.0.0",
   "rollup": {
     "*": {
       "max": 506,
-      "methodsAbove20": 58,
+      "methodsAbove20": 60,
       "p50": 2,
       "p95": 42
     }
@@ -2334,6 +2334,24 @@
       "startLine": 25
     },
     {
+      "crap": 42,
+      "method": "buildDataTable",
+      "path": "apps/web/src/components/ui/DataTable.ts",
+      "startLine": 112
+    },
+    {
+      "crap": 20,
+      "method": "<anon method-1>",
+      "path": "apps/web/src/components/ui/DataTable.ts",
+      "startLine": 122
+    },
+    {
+      "crap": 20,
+      "method": "normalizeEmpty",
+      "path": "apps/web/src/components/ui/DataTable.ts",
+      "startLine": 195
+    },
+    {
       "crap": 20,
       "method": "buildEmptyState",
       "path": "apps/web/src/components/ui/EmptyState.ts",
@@ -2358,6 +2376,12 @@
       "startLine": 127
     },
     {
+      "crap": 90,
+      "method": "buildFormFieldView",
+      "path": "apps/web/src/components/ui/FormField.ts",
+      "startLine": 86
+    },
+    {
       "crap": 6,
       "method": "<anon method-1>",
       "path": "apps/web/src/components/ui/Input.tsx",
@@ -2374,6 +2398,12 @@
       "method": "resolvePositive",
       "path": "apps/web/src/components/ui/Logo.ts",
       "startLine": 41
+    },
+    {
+      "crap": 12,
+      "method": "buildPageHeader",
+      "path": "apps/web/src/components/ui/PageHeader.ts",
+      "startLine": 65
     },
     {
       "crap": 6,
