@@ -124,9 +124,14 @@ describe('lintSource', () => {
   });
 
   it('ignores literal <script> inside the component body (outside frontmatter)', () => {
-    const src = ['---', '// clean comment', '---', '<script>', 'console.log("hi");', '</script>'].join(
-      '\n',
-    );
+    const src = [
+      '---',
+      '// clean comment',
+      '---',
+      '<script>',
+      'console.log("hi");',
+      '</script>',
+    ].join('\n');
     assert.deepEqual(lintSource(src), []);
   });
 });

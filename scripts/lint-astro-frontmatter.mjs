@@ -36,7 +36,7 @@
 //     `lintSource`) are exported for the sibling unit test
 //     `scripts/lint-astro-frontmatter.test.mjs`.
 
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
