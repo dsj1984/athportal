@@ -71,8 +71,7 @@ export interface FormFieldView {
   readonly errorId: string;
 }
 
-const WRAPPER_BASE =
-  'flex flex-col gap-1 rounded-md border border-transparent bg-transparent p-0';
+const WRAPPER_BASE = 'flex flex-col gap-1 rounded-md border border-transparent bg-transparent p-0';
 const WRAPPER_ERROR = 'border border-action-coral rounded-md bg-transparent p-2';
 const LABEL_CLASS = 'text-sm font-medium text-text-primary';
 const HELPER_CLASS = 'text-xs text-text-tertiary';
