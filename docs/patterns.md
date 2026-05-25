@@ -159,6 +159,28 @@ Stick to glyphs that read as connectivity, verification, or data flow.
 Never introduce literal whistles, soccer balls, or distressed-block
 sports glyphs — see [`docs/style-guide.md` § 1](style-guide.md#1-core-design-philosophy).
 
+## Design explorations are directional, not canonical {#design-explorations}
+
+Point-in-time UI exploration bundles (e.g. Claude Design handoffs) live
+under [`docs/design-explorations/<date>-handoff/`](design-explorations/)
+and are **directional, not canonical**. They predate and inform the
+primitive library but do not constrain it. The canonical UI sources of
+truth are:
+
+- [`docs/style-guide.md`](style-guide.md) (rules + copy conventions)
+- [`apps/web/src/styles/global.css`](../apps/web/src/styles/global.css)
+  (tokens)
+- [`apps/web/src/components/ui/`](../apps/web/src/components/ui/)
+  (primitives)
+- `/internal/styleguide` (live primitive reference — run
+  `pnpm --filter @repo/web dev`)
+
+When an exploration disagrees with a canonical source, **the canonical
+source wins**. See
+[`docs/design-explorations/README.md`](design-explorations/README.md)
+for the recommended PRD reference template and the sunset triggers for
+overtaken mockups.
+
 ## Linting: Biome ↔ ESLint scope boundary
 
 The repo uses **two linters with non-overlapping concerns** so each tool
