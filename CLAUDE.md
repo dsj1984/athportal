@@ -19,6 +19,13 @@
 @.agents/rules/shell-conventions.md
 @.agents/rules/testing-standards.md
 
-## Project Testing Strategy (always active)
-
-@docs/testing-strategy.md
+<!--
+  Project docs (architecture.md, data-dictionary.md, decisions.md,
+  patterns.md, personas.md, style-guide.md, testing-strategy.md,
+  web-routes.md) are loaded via `.agentrc.json` → `project.docsContextFiles`,
+  which `.agents/instructions.md` §3 (Mandatory Reading) directs every
+  agent to read before starting any task. Listing them here as well
+  would duplicate the injection for Claude Code without reaching
+  non-Claude hosts; the agentrc list is the host-agnostic single source
+  of truth.
+-->

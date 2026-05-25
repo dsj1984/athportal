@@ -8,8 +8,7 @@
 >
 > Companion documents:
 >
-> - [`docs/testing-strategy.md`](testing-strategy.md) — automated test pyramid (unit / contract / acceptance).
-> - [`docs/manual-testing.md`](manual-testing.md) — human-driven exploratory and regression cadence; the **Manual QA gate** between phases below is defined there.
+> - [`docs/testing-strategy.md`](testing-strategy.md) — automated test pyramid (unit / contract / acceptance), quality baselines / ratchets, static-analysis gates, and the human-driven exploratory and regression cadence. The **Manual QA gate** between phases below is defined in that doc's [§ Manual Testing](testing-strategy.md#manual-testing) section.
 
 ---
 
@@ -54,7 +53,7 @@ Establishes the multi-tenant data model and the gate every authenticated user mu
 ### Exit gates
 
 - A coach can sign up, accept ToS, create an org, create a team, invite an athlete, and have that athlete appear on the roster.
-- Manual QA gate: tenancy-isolation charter (see [`manual-testing.md` § Phase gates](manual-testing.md#phase-gates)).
+- Manual QA gate: tenancy-isolation charter (see [`testing-strategy.md` § Phase gates](testing-strategy.md#phase-gates)).
 - Known deferral: acceptance-tier coverage for the onboarding gate is parked at `@pending` until the Clerk persona-CI seam lands in [#383](https://github.com/dsj1984/athportal/issues/383). Server-side correctness is pinned by contract tests in the meantime.
 
 ---
@@ -228,7 +227,7 @@ Production cutover, beta cohort onboarding, native apps (if shipping at MVP), an
 - Stripe live-mode keys provisioned (if commerce ships at MVP — see decision in `docs/decisions/`).
 - On-call rotation and incident runbook published in `docs/runbooks/`.
 - Beta cohort recruitment list finalized; onboarding script rehearsed.
-- Full pre-release manual regression sweep (see [`manual-testing.md` § Pre-release sweep](manual-testing.md#pre-release-sweep)).
+- Full pre-release manual regression sweep (see [`testing-strategy.md` § Pre-release sweep](testing-strategy.md#3-pre-release-sweep)).
 
 ### Exit gates
 

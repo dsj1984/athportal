@@ -2,7 +2,88 @@
 
 > The generic tier rules live in [`.agents/rules/testing-standards.md`](../.agents/rules/testing-standards.md); this document maps those rules onto the concrete tools, paths, and workspaces this repo uses. When `AGENTS.md`, `CLAUDE.md`, or `docs/patterns.md` talk about testing, they defer to this file — do not duplicate rules across documents.
 >
-> The three tiers (unit, contract, acceptance) are wired today: Vitest projects run unit + contract under `pnpm run test`, the smoke acceptance scenario runs under `pnpm --filter @repo/web exec bddgen && pnpm --filter @repo/web test:e2e -- --grep @smoke`, and the step-definition linter runs under `pnpm run lint:steps`. CI ([`quality.yml`](../.github/workflows/quality.yml)) gates every PR on the three; the nightly schedule ([`nightly.yml`](../.github/workflows/nightly.yml)) runs the full acceptance corpus and the Stryker mutation report.
+> The three tiers (unit, contract, acceptance) are wired today: Vitest projects run unit + contract under `pnpm run test`, the smoke acceptance scenario runs under `pnpm --filter @repo/web exec bddgen && pnpm --filter @repo/web test:e2e -- --grep @smoke`, and the step-definition linter runs under `pnpm run lint:steps`. CI ([`quality.yml`](../.github/workflows/quality.yml)) gates every PR on the three; the nightly schedule ([`nightly.yml`](../.github/workflows/nightly.yml)) runs the full acceptance corpus, the Stryker mutation report, and the full Lighthouse + bundle-size baselines.
+>
+> This document is the single source of truth for **what we test, how we test it, and what gates the result**. That includes the automated pyramid (unit → contract → acceptance), the quality-baseline ratchets that the pyramid runs through (coverage, CRAP, maintainability, mutation, bundle-size, Lighthouse, lint), the static-analysis gates that run alongside (dependency-cruiser, Knip, secretlint, RBAC matrix drift, step linter), and the manual-testing cadence that fills the gaps automation can't reach.
+
+---
+
+## Contents
+
+- [Pyramid Sizing Today](#pyramid-sizing-today)
+- [The Pyramid](#the-pyramid)
+- [Decision Matrix](#decision-matrix)
+- [Assertion Placement Rule](#assertion-placement-rule)
+- [Per-Tier Skeletons](#per-tier-skeletons)
+  - [Unit — pure function](#unit--pure-function)
+  - [Unit — React component](#unit--react-component)
+  - [Contract — route round-trip](#contract--route-round-trip)
+    - [Authenticated routes — `createTestApp(db, { actor })`](#authenticated-routes--createtestappdb--actor-)
+  - [Acceptance — user journey (Gherkin)](#acceptance--user-journey-gherkin)
+- [Forbidden Patterns](#forbidden-patterns)
+- [Where each tier lives (target)](#where-each-tier-lives-target)
+- [Cross-platform execution *(v1.0)*](#cross-platform-execution-v10)
+- [Quality Baselines & Ratchets](#quality-baselines--ratchets)
+  - [Coverage baseline (ADR-015)](#coverage-baseline-adr-015)
+  - [CRAP baseline (ADR-018)](#crap-baseline-adr-018)
+  - [Maintainability baseline (ADR-019)](#maintainability-baseline-adr-019)
+  - [Mutation testing (Stryker)](#mutation-testing-stryker)
+  - [Bundle-size baseline](#bundle-size-baseline)
+  - [Lighthouse baseline](#lighthouse-baseline)
+  - [Lint baseline ratchet](#lint-baseline-ratchet)
+- [Static Analysis Gates](#static-analysis-gates)
+  - [Dependency-cruiser (architecture rules)](#dependency-cruiser-architecture-rules)
+  - [Knip — dead code](#knip--dead-code)
+  - [Secretlint](#secretlint)
+  - [Step-definition linter](#step-definition-linter)
+  - [RBAC matrix drift check](#rbac-matrix-drift-check)
+- [Manual Testing](#manual-testing)
+  - [What manual testing is for](#what-manual-testing-is-for)
+  - [The three cadences](#the-three-cadences)
+    - [Per-Story exploratory charter](#1-per-story-exploratory-charter)
+    - [Per-phase regression checklist](#2-per-phase-regression-checklist)
+    - [Pre-release sweep](#3-pre-release-sweep)
+  - [Phase gates](#phase-gates)
+  - [Devices, browsers, and personas](#devices-browsers-and-personas)
+  - [Accessibility, performance, and security touchpoints](#accessibility-performance-and-security-touchpoints)
+  - [Findings, triage, and closing the loop](#findings-triage-and-closing-the-loop)
+  - [Regression checklist](#regression-checklist)
+  - [How to update this section](#how-to-update-this-section)
+- [Coverage expectations](#coverage-expectations)
+- [When to add a test vs. when to move one](#when-to-add-a-test-vs-when-to-move-one)
+- [Canonical step vocabulary](#canonical-step-vocabulary)
+- [Adding a new step](#adding-a-new-step)
+- [How the sizing was counted](#how-the-sizing-was-counted)
+
+---
+
+## Pyramid Sizing Today
+
+> *Last updated: 2026-05-25. Regenerate the counts with the commands in [§ How the sizing was counted](#how-the-sizing-was-counted) at the end of this document; update the table in the same PR that materially changes the corpus shape.*
+
+| Tier | Files | Test cases |
+|---|---:|---:|
+| **Unit** (Vitest `*.test.ts` / `*.test.tsx`) | 60 | 627 |
+| ↳ apps/web | 31 | 280 |
+| ↳ packages/shared | 19 | 246 |
+| ↳ packages/baselines | 6 | 79 |
+| ↳ apps/api | 4 | 22 |
+| **Contract** (Vitest `*.contract.test.ts`) | 32 | 174 |
+| ↳ apps/api | 24 | 139 |
+| ↳ packages/shared | 8 | 35 |
+| **Acceptance** (`.feature` files in `tests/features/**`) | 50 | 79 scenarios |
+| ↳ identity | 23 | 34 |
+| ↳ design-system | 11 | 23 |
+| ↳ observability | 7 | 12 |
+| ↳ org-admin | 8 | 9 |
+| ↳ foundation | 1 | 1 |
+| **Step library** (`apps/web/e2e/steps/**`) | 5 canonical + domain files | 145 Given/When/Then phrases |
+
+**Pyramid shape today.** Broad unit base (627 cases) → narrower contract band (174 cases) → narrow acceptance top (79 scenarios). The shape matches the [§ Decision Matrix](#decision-matrix) — wire-shape and DB-state assertions are concentrated at the contract tier, user-visible outcomes are concentrated at the top, and pure logic / component-render assertions are pushed to the base.
+
+**Per-workspace skew is intentional.** `apps/api`'s 22-case unit count is low because most of its logic is route handlers exercised at the contract tier (24 contract files, 139 cases). `apps/web`'s 280-case unit count is dominated by component-render coverage. `packages/shared`'s split (246 unit + 35 contract) reflects the boundary between pure helpers (RBAC policy, CSV parsing, validators) and persistence-touching code (Drizzle query helpers, cross-tenant isolation invariants).
+
+**What's NOT in the count above.** Static-analysis gates (dependency-cruiser rules, Knip dead-code scan, lint baseline, RBAC matrix drift) are not "tests" in the pyramid sense — they're documented in [§ Static Analysis Gates](#static-analysis-gates) below.
 
 ---
 
@@ -53,7 +134,15 @@ Pick the tier by the **class of assertion** the test makes, not by the surface a
 
 ---
 
-## Per-Layer Skeletons
+## Assertion Placement Rule
+
+**DB assertions and API-shape assertions MUST live at the contract tier.** They MUST NOT appear in `.feature` files, and SHOULD NOT appear in unit tests.
+
+This is the pyramid's load-bearing constraint and the same rule restated at the framework level in [`.agents/rules/testing-standards.md` § Assertion Placement Rule](../.agents/rules/testing-standards.md#assertion-placement). Bidirectional companion: [`.agents/rules/gherkin-standards.md` § Forbidden Patterns](../.agents/rules/gherkin-standards.md#forbidden-patterns) enforces the same boundary from the acceptance side.
+
+---
+
+## Per-Tier Skeletons
 
 The examples below are **skeletons**, not full implementations. They show the minimum structure each tier must follow.
 
@@ -219,6 +308,8 @@ Location: `tests/features/**/*.feature` at the repo root. Step definitions live 
 
 **Platform tagging convention.** No `@platform-*` tag means the scenario is cross-platform. `@platform-web` is reserved for scenarios whose underlying AC is genuinely web-only; `@platform-mobile` is the mirror. Authoring a scenario against the web runner first does **not** make it web-only — apply a `@platform-*` tag only when removing it would land a fictional AC on the other platform.
 
+**Smoke vs. full corpus.** The `@smoke` tag identifies scenarios that run on **every PR** via the `acceptance-smoke` job in [`quality.yml`](../.github/workflows/quality.yml). The full acceptance corpus runs **nightly** via [`nightly.yml`](../.github/workflows/nightly.yml) — so a non-smoke scenario landing on a PR is "covered" by the next night's run, not by the PR's own gate. Reserve `@smoke` for scenarios that genuinely guard the wedge (the foundation smoke, the sign-in happy path); over-tagging defeats the purpose by blowing out PR runtime.
+
 ```gherkin
 # tests/features/coach/roster/invite-athlete.feature
 @identity::coach @domain::roster
@@ -301,9 +392,333 @@ The v1.0 deliverables this section names as the written contract:
 
 ---
 
+## Quality Baselines & Ratchets
+
+The pyramid runs through a set of **baseline ratchets** — committed JSON snapshots under `baselines/` that record the current quality posture (coverage percentages, complexity scores, mutation kill rates, bundle sizes). Every PR re-runs the measurement and compares against the committed baseline; a regression beyond the per-baseline tolerance blocks merge. Improvements update the baseline in the same PR via `pnpm run <baseline>:update`.
+
+The pattern is **ratchet-only**: baselines can tighten (improve) but never loosen automatically. A deliberate loosening requires explicit operator approval in the PR description and ideally an ADR amendment. The runbook for each ratchet lives in this document; the architectural rationale lives in the linked ADR.
+
+### Coverage baseline (ADR-015)
+
+- **What it measures.** Per-workspace line and branch coverage from Vitest's V8 coverage reporter, rolled up per workspace.
+- **Baseline file.** [`baselines/coverage.json`](../baselines/coverage.json)
+- **Producer script.** [`scripts/coverage-baseline.mjs`](../scripts/coverage-baseline.mjs)
+- **Tolerance.** 2 percentage points below the recorded baseline per workspace. Smaller drops are absorbed silently to ride out platform/rounding noise; larger drops fail CI.
+- **Where it runs.** `pnpm run coverage:check` locally and in the `Quality baselines` job of [`quality.yml`](../.github/workflows/quality.yml).
+- **Special floors.** The RBAC policy module (`packages/shared/src/rbac/`) carries a ≥95% branch-coverage floor that does NOT decay with the ratchet — it's a hard threshold per ADR-015.
+- **Update.** Run `pnpm run coverage:update` after a deliberate scope change, commit the regenerated file, name the run in the commit message.
+
+### CRAP baseline (ADR-018)
+
+- **What it measures.** Per-function **CRAP score** (Change Risk Anti-Patterns: complexity² × (1 − coverage)³ + complexity). High CRAP means high cyclomatic complexity with low coverage — the riskiest code in the repo.
+- **Baseline file.** [`baselines/crap.json`](../baselines/crap.json)
+- **Producer script.** [`scripts/crap-baseline.mjs`](../scripts/crap-baseline.mjs)
+- **Tolerance.** Per-function relative-percent (5%) with a small absolute floor. New functions land in the baseline as-is (they're not "regressions" if there's no prior reading); existing functions cannot regress past the tolerance.
+- **Where it runs.** `pnpm run crap:check` locally and in the `Quality baselines` CI job.
+- **Update.** `pnpm run crap:update`. The common honest case is "I added a new function" — the update absorbs the new row; CI then enforces it going forward. The wrong move is to lower a hot function's bar to paper over uncovered complexity — diagnose the diff and either add tests or reduce branches.
+
+### Maintainability baseline (ADR-019)
+
+- **What it measures.** File-level **maintainability index** (a composite of Halstead volume, cyclomatic complexity, and SLOC, scaled 0–100). Higher is better.
+- **Baseline file.** [`baselines/maintainability.json`](../baselines/maintainability.json)
+- **Producer script.** [`scripts/maintainability-baseline.mjs`](../scripts/maintainability-baseline.mjs)
+- **Tolerance.** A rolling minimum across the workspace plus a hard floor (currently 70). A single file dipping below the rolling minimum is logged; dropping the rolling minimum below the hard floor fails CI.
+- **Where it runs.** `pnpm run maintainability:check` locally and in the `Quality baselines` CI job.
+- **Update.** `pnpm run maintainability:update`. Same discipline as CRAP: absorb new files, refuse to absorb a regression on an existing file without a real reason.
+
+### Mutation testing (Stryker)
+
+- **What it measures.** Per-mutant kill rate from Stryker's vitest-runner. A mutant is a small syntactic change to production code (`+` → `-`, `>` → `>=`, drop a branch); a "killed" mutant means at least one test caught it, "survived" means the mutation went undetected. Surviving mutants are gaps your tests don't actually defend against.
+- **Config.** [`stryker.config.json`](../stryker.config.json)
+- **Baseline file.** [`baselines/mutation.json`](../baselines/mutation.json) — per-workspace mutation score with a 5% relative tolerance.
+- **Producer script.** [`scripts/mutation-baseline.mjs`](../scripts/mutation-baseline.mjs)
+- **Where it runs.** **Nightly only** via [`nightly.yml`](../.github/workflows/nightly.yml) — the run is too slow for PR CI (per PRD #195 non-goal). PR authors do not see mutation feedback at PR-open time; regressions surface in the morning report and are fixed as follow-ups.
+- **Tier scope.** Unit tier only. Mutation testing is not meaningful at contract (mutants in integration paths frequently produce equivalent or unkillable cases) or acceptance (too slow, too coarse).
+- **Update.** `pnpm run mutation:update` — typically run when a deliberate test-removal lowers the score, or when a new module crosses into the corpus. As with CRAP, lowering a kill rate to paper over a real gap is the wrong move.
+
+### Bundle-size baseline
+
+- **What it measures.** Per-workspace built-artifact size (`apps/web` Astro build, `apps/api` Worker bundle when Epic #27 wires it).
+- **Baseline file.** [`baselines/bundle-size.json`](../baselines/bundle-size.json)
+- **Producer script.** [`scripts/bundle-size-baseline.mjs`](../scripts/bundle-size-baseline.mjs)
+- **Where it runs.** `pnpm run bundle-size:check` locally and in CI. See [`docs/patterns.md` § Bundle-size baseline ratchet](patterns.md#bundle-size-baseline-ratchet) for the per-workspace tolerance and the LCP-budget rationale.
+- **Tier scope.** Sits alongside the pyramid, not inside it — bundle size is a performance gate, not a correctness assertion, but a regression here often surfaces a pyramid gap (e.g. a new dep imported without a corresponding test reduction).
+
+### Lighthouse baseline
+
+- **What it measures.** Web-app performance / accessibility / best-practices / SEO scores from a Lighthouse run against built `apps/web`.
+- **Producer script.** [`scripts/lighthouse-baseline.mjs`](../scripts/lighthouse-baseline.mjs)
+- **Baseline file.** *Not yet committed.* The script exists but the baseline file (`baselines/lighthouse.json`) has not been seeded yet — a future Story will land the first Lighthouse run against the production-shaped Astro build, commit the baseline, and wire the check into nightly CI.
+- **Where it will run.** Nightly only, like mutation. Lighthouse is too slow and too environment-sensitive for PR gates.
+- **Tier scope.** Same framing as bundle-size — sits alongside the pyramid as a performance gate, not a correctness gate.
+
+### Lint baseline ratchet
+
+- **What it measures.** Count of ESLint warnings/errors in the workspace, broken down per-rule. The ratchet only allows the count to go **down**, never up.
+- **Baseline file.** [`baselines/lint.json`](../baselines/lint.json) (currently clean — 0 errors, 0 warnings, empty rows).
+- **Producer script.** [`scripts/lint-baseline.mjs`](../scripts/lint-baseline.mjs)
+- **Where it runs.** `pnpm run lint:baseline:check` locally, in the Husky `pre-commit` hook (via `quality-preview.js --staged`), and in CI's `Quality baselines` job.
+- **Tier scope.** A correctness gate at the linter layer. See [`docs/patterns.md` § Lint baseline ratchet](patterns.md#lint-baseline-ratchet) for the per-rule update procedure.
+
+---
+
+## Static Analysis Gates
+
+These gates do not belong to a pyramid tier — they enforce structural and policy invariants that complement the tests. Most run on every PR; some run only in the Husky `pre-commit` chain.
+
+### Dependency-cruiser (architecture rules)
+
+- **Config.** [`.dependency-cruiser.cjs`](../.dependency-cruiser.cjs)
+- **What it enforces.** The cross-workspace import graph. Today's rules include `no-circular`, `no-orphans`, `not-to-unresolvable`, `no-deprecated-core`, `not-to-dev-dep`, `shared-must-not-depend-on-apps` (the load-bearing rule that keeps the package hierarchy honest), `apps-must-not-cross-import`, `api-must-not-import-web`, `mobile-must-not-cross-import`, `no-relative-apps-to-packages`, `test-helpers-only-in-tests`, `drizzle-schema-owns-tables`, and `auth-middleware-no-incoming-routes`.
+- **Where it runs.** `pnpm run lint:deps` locally; CI gates every PR on it.
+- **Tier scope.** Not a "test" in the pyramid sense — these are **architecture rules**. Violations are review blockers, not absorbed via a baseline. See [`docs/patterns.md` § Dependency boundaries (dependency-cruiser)](patterns.md) for the per-rule rationale.
+
+### Knip — dead code
+
+- **Config.** [`knip.config.ts`](../knip.config.ts)
+- **What it enforces.** Unused exports, unused dependencies, unused files. Complements `dependency-cruiser` (which enforces import-graph shape) by catching the broader dead-export sweep.
+- **Where it runs.** `pnpm run knip:strict` in CI (fails on any unused export); `pnpm run knip:fast` for a lighter local pass focused on files + dependencies only.
+- **Tier scope.** Static analysis. Dead-code regressions sometimes signal an abandoned test path — the linter catches them before they rot.
+
+### Secretlint
+
+- **Config.** [`.secretlintrc.json`](../.secretlintrc.json) + the `@secretlint/secretlint-rule-preset-recommend` preset.
+- **What it enforces.** No real secrets in tracked files — API keys, JWT tokens, AWS credentials, GitHub PATs, etc. The preset's ignore list lives in `.secretlintignore` for known-safe matches.
+- **Where it runs.** `pnpm run lint:secrets` locally and in CI; the Husky `pre-commit` hook runs it against staged changes.
+- **Tier scope.** Security gate. Cross-references [`.agents/rules/security-baseline.md` § Secrets Management](../.agents/rules/security-baseline.md).
+
+### Step-definition linter
+
+- **Producer script.** [`scripts/lint-steps.mjs`](../scripts/lint-steps.mjs)
+- **What it enforces.** Three rule classes against `apps/web/e2e/steps/**`:
+  1. **No duplicate phrases.** A `Given/When/Then` phrase MUST be defined exactly once across the step library.
+  2. **No forbidden patterns inside step bodies.** Raw SQL, `/api/` URL literals, HTTP status-code assertions (`expect(res.status).toBe(...)`) — all push down to contract tests per [§ Assertion Placement Rule](#assertion-placement-rule).
+  3. **No unused phrases at Epic close.** Warnings during normal development; build failures at Epic close.
+- **Where it runs.** `pnpm run lint:steps` locally, in the Husky `pre-commit` hook, and in the `lint-steps` job of [`quality.yml`](../.github/workflows/quality.yml).
+- **Companion.** [`scripts/step-catalog.mjs`](../scripts/step-catalog.mjs) emits the live phrase vocabulary used by agent workflows for grounded scenario authoring.
+
+### RBAC matrix drift check
+
+- **Producer script.** [`scripts/render-rbac-matrix.mjs --check`](../scripts/render-rbac-matrix.mjs)
+- **What it enforces.** The published RBAC matrix in [`docs/data-dictionary.md`](data-dictionary.md) matches the source-of-truth `(role, resource, action)` triples in `packages/shared/src/rbac/`. A change to the policy module that isn't reflected in the docs fails CI.
+- **Where it runs.** The Husky `pre-commit` hook (so the doc is regenerated alongside the code change) and the `quality.yml` CI gate.
+- **Tier scope.** Doc-as-test. Pairs with the unit-tier policy tests under `packages/shared/src/rbac/`.
+
+---
+
+## Manual Testing
+
+> Human-driven testing is the counterpart to the automated pyramid above. Automation covers regression — that a known behavior still works. Manual testing covers the things humans notice that machines don't: visual polish, copy tone, real-device feel, the "does this flow actually feel right" question, and the edge cases nobody thought to encode in a `.feature` file yet.
+>
+> This section defines **when** to test manually, **what** to test, and **where** the artifacts live. The cadence is referenced from [`docs/path-to-mvp.md`](path-to-mvp.md) as the manual-QA gate between phases, and is the ongoing rhythm after MVP.
+
+### What manual testing is for
+
+Use manual testing for:
+
+- **Visual polish** — alignment, spacing, typography, hover states, focus rings, dark-mode contrast.
+- **Copy quality** — tone, voice, error-message helpfulness, microcopy that machines can't grade.
+- **Real-device feel** — touch targets on a phone, scroll inertia, keyboard handling, screen-reader announcements.
+- **Cross-surface flows** — a journey that crosses email → web → mobile, where any single tier's automation can't see all three.
+- **Exploratory edge cases** — "what happens if I…?" probes that surface bugs no scenario author predicted.
+- **Production-only validations** — DNS, deliverability, third-party webhooks, real Stripe payments, real Mux pipelines.
+
+Do **not** use manual testing for:
+
+- Anything an automated test already covers reliably. If a manual check keeps catching regressions, write the test.
+- Mass-scale data validation — that's a contract-tier test against a real DB.
+- "I'll just click around for a few minutes" with no charter. Untracked manual testing finds nothing reproducible.
+
+### The three cadences
+
+#### 1. Per-Story exploratory charter
+
+Every Story whose acceptance criteria include a user-visible surface gets a **10-minute exploratory charter** before the Story closes. The charter is appended to the Story's GitHub issue as a structured comment.
+
+##### Charter template
+
+```markdown
+### Manual exploratory charter — Story #<id>
+
+- **Mission:** <one sentence — what am I trying to learn?>
+- **Surfaces:** <which pages, components, or flows>
+- **Personas:** <which seeded test users>
+- **Devices:** <desktop browser + at least one mobile viewport unless the surface is desktop-only>
+- **Timebox:** 10 minutes
+- **Findings:**
+  - <bug | polish | copy | a11y | perf — one line each, link issues if filed>
+- **New automated tests filed:** <list issue numbers, or "none">
+```
+
+Rules:
+
+- The mission must be falsifiable — "explore the form" is not a mission; "find ways a coach could submit the form and end up with a confusing error" is.
+- Every finding either gets filed as an issue or recorded as deliberately accepted. No "I'll remember it" findings.
+- If a finding could have been caught by an automated test, file the test-writing work as part of closing the Story.
+
+#### 2. Per-phase regression checklist
+
+The checklist below grows phase-by-phase as new surfaces land. It is the **accumulating** manual sweep run before each phase's exit gate. New rows are appended at the end of the phase that introduced the surface; rows are never deleted, only marked deprecated when a surface is removed.
+
+The checklist lives in this section (see [§ Regression checklist](#regression-checklist)) so it sits next to the strategy that governs it. When a row's manual check becomes reliably automated, the row is marked **(automated → see <test path>)** and skipped during the sweep — but kept in the list for traceability.
+
+#### 3. Pre-release sweep
+
+Before MVP launch (Phase 7) and before every subsequent production release, run the **full** accumulated regression checklist against the staging environment with production-shaped data. Findings block the release until either fixed or explicitly accepted by the operator with a documented risk note.
+
+Pre-release sweep specifics:
+
+- Run from a **fresh** browser profile (no cached auth, no stale service worker).
+- Run against **at least** one mobile device per platform (iOS Safari, Android Chrome) — not just emulators.
+- Capture screenshots or screen recordings of the entire happy path; archive them with the release tag.
+- The sweep is performed by **two people** when possible — the second pair of eyes catches the first's blind spots.
+
+### Phase gates
+
+Each phase in [`docs/path-to-mvp.md`](path-to-mvp.md) has a **Manual QA gate** as part of its exit criteria. The gate is satisfied when:
+
+1. Every Story in the phase has a charter appended to its issue.
+2. The phase's incremental section of the regression checklist (the rows added during this phase) passes end-to-end against staging.
+3. Any open findings are either fixed or have a documented operator decision to defer.
+
+Specific charters called out by phase below are the minimum — Stories may add more.
+
+| Phase | Required charters |
+| --- | --- |
+| 1 — Tenancy & onboarding | Tenancy isolation; signup → org creation → invitation |
+| 2 — Identity surface | Profile completion happy path; calendar event publish + RSVP; public-profile SEO render |
+| 3 — Verified stats & media | Coach signs a stat → athlete sees badge; media upload survives full safety pipeline |
+| 4 — Communication | Push + email round-trip; preference center mutes both; team-feed cross-tenant isolation |
+| 5 — Safety & compliance | Parental consent grant/revoke visible on minor's surfaces; DSAR end-to-end; coach without SafeSport blocked from minor team |
+| 6 — Public surface & growth | Anonymous funnel from landing → club page → signup; crawler `robots.txt` honored |
+| 7 — Launch | Full pre-release sweep against production environment |
+
+### Devices, browsers, and personas
+
+#### Browser matrix
+
+The matrix is intentionally narrow at MVP. Add a row only when a real user reports a problem on a browser that isn't listed.
+
+| Surface | Required browsers |
+| --- | --- |
+| Public anonymous (landing, public profile, directories) | Latest Chrome, latest Safari, latest Firefox, iOS Safari, Android Chrome |
+| Authenticated coach / org admin surfaces | Latest Chrome, latest Safari |
+| Authenticated athlete surfaces | Latest Chrome, latest Safari, iOS Safari, Android Chrome |
+| Admin dashboard | Latest Chrome |
+
+#### Device matrix
+
+| Class | Minimum device for pre-release sweep |
+| --- | --- |
+| iOS phone | One real iPhone running the latest public iOS, plus one on the previous major version |
+| Android phone | One real Android running the latest Chrome |
+| Tablet | iPad (Safari) — public surfaces only |
+| Desktop | Whatever the operator uses; Lighthouse runs are captured here |
+
+Emulators and responsive-mode browser viewports are acceptable for per-Story charters. They are **not** sufficient for the pre-release sweep.
+
+#### Personas
+
+Use the seeded test-instance personas from [§ Canonical step vocabulary](#canonical-step-vocabulary):
+
+- `athlete` — minor and adult variants.
+- `coach` — head coach with a team; assistant coach.
+- `org admin` — owns an org with multiple teams.
+- `dev admin` — platform admin.
+- `parent` — once Phase 5 lands.
+- `anonymous` — no session.
+
+Test data must be **synthetic** — synthetic emails (`*@example.invalid`), synthetic names, no real PII even in staging.
+
+### Accessibility, performance, and security touchpoints
+
+These overlap with automated checks but always benefit from a human pass:
+
+- **Accessibility.** Tab through the surface with a keyboard. Run a screen reader on the happy path at least once per phase. Check focus rings, skip links, and form-error announcements. Axe / Lighthouse a11y scores are floors, not ceilings.
+- **Performance.** Lighthouse on the public surfaces at the end of every phase that touches them. Real-device "feel" check on a mid-tier Android — emulators lie about scroll smoothness.
+- **Security spot-checks.** Try the obvious things: change an ID in a URL, submit a form as a different role via the network tab, paste a JWT from another tenant. Findings file as security issues, not feature bugs.
+
+### Findings, triage, and closing the loop
+
+- File every finding as a GitHub issue. Tag with `manual-qa`. Link back to the Story or phase that surfaced it.
+- Findings that recur across phases are a signal the automated tier is wrong, not that the manual sweep is working. Open a meta-issue to add the missing automated coverage.
+- A finding is **closed** only when the fix has landed *and* either (a) an automated test now covers it, or (b) the operator has explicitly accepted that this class of bug stays in the manual-only column with a documented reason.
+
+### Regression checklist
+
+The accumulating sweep, grouped by phase. Rows are appended as phases land. The "Run" column is checked off during each pre-release sweep — never edited in-place; copy the table into the release notes and check it there.
+
+> **Status today:** Foundation phases (0) are complete but no user-visible surface has shipped yet, so the checklist below is the **target shape**. Rows are filled in as each phase's Stories close.
+
+#### Phase 1 — Tenancy & onboarding
+
+- [ ] Signup with new email → email verification → onboarding gate → ToS acceptance → org creation.
+- [ ] Org admin creates a team and invites a coach by email.
+- [ ] Coach accepts invitation and appears on team's coaching staff.
+- [ ] Coach invites an athlete; athlete accepts; athlete appears on roster.
+- [ ] Cross-tenant probe: a user in Org A cannot see Org B's roster, teams, or org settings via the UI or by manipulating IDs.
+- [ ] ToS version bump forces re-acceptance on next sign-in.
+
+#### Phase 2 — Identity surface
+
+- [ ] Athlete completes profile to 100%; completion badge updates live.
+- [ ] Athlete sets vanity URL; collision against an existing URL is rejected with a helpful message.
+- [ ] Public profile renders correctly when shared as a link (OpenGraph card, title, description).
+- [ ] Coach publishes a calendar event; athletes on the team see it.
+- [ ] Athlete RSVPs; the coach's event view reflects the RSVP within the expected propagation time.
+- [ ] iCal feed URL produces a valid `.ics` file that imports cleanly into Google Calendar and Apple Calendar.
+
+#### Phase 3 — Verified stats & media
+
+- [ ] Coach records a stat from the sideline UI on a mobile device with patchy connectivity; stat is queued and syncs when online.
+- [ ] Coach signs the stat; athlete's public profile reflects the verified badge.
+- [ ] Stat-signature audit trail visible in admin dashboard with timestamp and signer identity.
+- [ ] Media upload (photo + video) survives the safety pipeline end-to-end; unsafe content is blocked with a clear user message.
+- [ ] Block / report flow: athlete reports a coach; report appears in admin queue.
+
+#### Phase 4 — Communication & engagement
+
+- [ ] Event publication triggers push (on PWA-installed device) and email.
+- [ ] Preference center mutes push only; email still delivers. Then mutes email only; push still delivers.
+- [ ] Team-feed post is visible to roster members; never to a user in another team or org.
+- [ ] PWA installs from the browser prompt; survives a service-worker update without losing auth.
+
+#### Phase 5 — Safety, compliance, legal
+
+- [ ] Parent claims their minor athlete; consent state visible on the minor's surfaces.
+- [ ] Parent revokes consent; previously consented surfaces immediately lock down.
+- [ ] DSAR submission produces a downloadable export within the documented SLA.
+- [ ] Account deletion request flows through admin dashboard; user disappears from public surfaces; retention policy honored on the back end.
+- [ ] Coach without completed SafeSport cannot be added to a team containing a minor.
+- [ ] Admin impersonation: every impersonated action is logged with both the operator and the impersonated user.
+
+#### Phase 6 — Public surface & growth
+
+- [ ] Anonymous landing → club page → public roster → public profile → signup CTA, all reachable without auth.
+- [ ] `robots.txt` and sitemap reflect the documented crawler policy; private surfaces are excluded.
+- [ ] Funnel instrumentation fires the expected events on anonymous → registered conversion.
+- [ ] Apex domain redirects to canonical hostname; HTTPS enforced; HSTS header present.
+
+#### Phase 7 — Launch
+
+- [ ] Full sweep of phases 1–6 against the production environment with seeded beta data.
+- [ ] Real Stripe payment in live mode (if commerce ships at MVP).
+- [ ] Production email deliverability: signup confirmation lands in Gmail, Outlook, iCloud inboxes (not spam).
+- [ ] On-call rotation paged by a deliberate synthetic alert; runbook executed end-to-end.
+- [ ] Rollback rehearsed: a tagged release can be reverted without data loss within the documented RTO.
+
+### How to update this section
+
+- A new surface lands → append rows to the relevant phase's regression checklist in the same PR that ships the surface.
+- A manual check becomes reliably automated → mark the row **(automated → see <test path>)** rather than deleting it.
+- A finding recurs across phases → that's a signal; open a meta-issue to add automated coverage rather than just adding another checklist row.
+- A surface is removed → mark its rows **(deprecated — <date>)** rather than deleting them, so the change is traceable in git history.
+
+---
+
 ## Coverage expectations
 
-- **Line / branch coverage** — measured at the unit tier only. The RBAC policy module carries a ≥95% branch-coverage floor; other packages follow each workspace's Vitest config default.
+- **Line / branch coverage** — measured at the unit tier only. The RBAC policy module carries a ≥95% branch-coverage floor; other packages follow each workspace's Vitest config default and ratchet via the [coverage baseline](#coverage-baseline-adr-015).
 - **Contract coverage** — measured by API surface, not lines. Every public route, published event, and shared Zod schema SHOULD have at least one happy-path and one negative-path contract test.
 - **Mutation testing** — runs on the unit tier nightly. Acceptance-tier mutation is in-scope but lower priority than unit (and lower threshold accordingly).
 
@@ -353,3 +768,29 @@ Before authoring a new step definition:
 3. **Honor the tier boundaries.** A step body asserts user-visible outcomes only. HTTP status codes, DB row state, JSON shapes, and raw SQL belong in contract tests — see the assertion-placement rule above. The step-definition linter enforces this.
 4. **Reference the new step from a scenario in the same PR.** Unused steps are warnings on PR runs and become build failures at Epic close.
 5. **Run the linter.** `pnpm run lint:steps` executes locally the same checks that run in CI.
+
+---
+
+## How the sizing was counted
+
+The sizing table at the top of this document is hand-rolled — there's no automated sizing report yet (a future Story may add `scripts/test-corpus-counts.mjs` to lift this into CI). Until then, regenerate the counts with the commands below and update the table in the same PR that materially changes the corpus shape (adds a workspace, deletes a domain, migrates a tier).
+
+```bash
+# Unit + contract files, per workspace
+find apps/web/src packages/shared/src packages/baselines/src apps/api/src \
+  -name "*.test.ts" -o -name "*.test.tsx" | grep -v contract
+
+find apps/api/src packages/shared/src -name "*.contract.test.ts"
+
+# Test cases (it/test calls) per file
+grep -rcE "^\s*(it|test)\(" <file>
+
+# Acceptance scenarios
+find tests/features -name "*.feature"
+grep -rE "^\s*(Scenario|Scenario Outline):" tests/features | wc -l
+
+# Step phrases (Given/When/Then definitions)
+grep -rE "^\s*(Given|When|Then)\(" apps/web/e2e/steps
+```
+
+The counts should be re-run when the gap between the documented size and the actual corpus exceeds ~10% in any tier, or whenever a workspace is added or removed.
