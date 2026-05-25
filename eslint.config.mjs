@@ -170,6 +170,7 @@ export const toolingConfig = [
       '**/drizzle.config.ts',
       '**/knip.config.ts',
       '**/e2e/**/*.{ts,tsx}',
+      'scripts/qa/**/*.ts',
     ],
     languageOptions: {
       parserOptions: {
@@ -195,7 +196,15 @@ export const toolingConfig = [
       '@typescript-eslint/no-unsafe-assignment': 'off',
       '@typescript-eslint/no-unsafe-member-access': 'off',
       '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-return': 'off',
+      '@typescript-eslint/no-unsafe-argument': 'off',
       '@typescript-eslint/require-await': 'off',
+      // Test fixtures intentionally destructure to discard fields; the
+      // leading-underscore convention is established across the codebase.
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
     },
   },
 ];
