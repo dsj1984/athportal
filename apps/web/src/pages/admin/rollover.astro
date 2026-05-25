@@ -31,7 +31,16 @@
 // 403 FORBIDDEN). The page itself does not re-check the role — the
 // preview/commit fetches will surface a 403 envelope if the actor is
 // not an admin.
+//
+// Styling follows the Tailwind-utility-first convention codified by
+// ADR-0007 (docs/decisions/0007-ui-styling-convention.md) — utility
+// classes resolve against the @theme tokens declared in
+// apps/web/src/styles/global.css; no orphan BEM hooks. Page chrome
+// composes the canonical PageHeader primitive; the initial diff
+// placeholder composes EmptyState (Story #844 / Task #855).
 
+import EmptyState from '../../components/ui/EmptyState.astro';
+import PageHeader from '../../components/ui/PageHeader.astro';
 import { ROLLOVER_TEST_IDS } from '../../components/admin/rollover/RolloverPreview.ts';
 ---
 
@@ -43,31 +52,34 @@ import { ROLLOVER_TEST_IDS } from '../../components/admin/rollover/RolloverPrevi
     <title>Season rollover · Admin</title>
   </head>
   <body>
-    <main class="admin-rollover">
-      <header class="admin-rollover__header">
-        <h1 data-testid="admin-rollover-heading">Season rollover</h1>
-      </header>
+    <main class="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
+      <PageHeader title="Season rollover" />
 
-      <section class="admin-rollover__seasons" aria-label="Season selection">
-        <label>
+      <section
+        class="flex flex-wrap items-end gap-4 rounded-xl border border-border bg-surface-card p-6 shadow-sm"
+        aria-label="Season selection"
+      >
+        <label class="flex min-w-48 flex-1 flex-col gap-1 text-sm font-medium text-text-primary">
           Source season
           <input
             type="text"
+            class="rounded-md border border-border bg-surface-bg px-3 py-2 text-sm text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
             data-testid={ROLLOVER_TEST_IDS.sourceSeason}
             placeholder="e.g. Fall 2026"
           />
         </label>
-        <label>
+        <label class="flex min-w-48 flex-1 flex-col gap-1 text-sm font-medium text-text-primary">
           Target season
           <input
             type="text"
+            class="rounded-md border border-border bg-surface-bg px-3 py-2 text-sm text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
             data-testid={ROLLOVER_TEST_IDS.targetSeason}
             placeholder="e.g. Fall 2027"
           />
         </label>
         <button
           type="button"
-          class="admin-rollover__load"
+          class="inline-flex items-center justify-center rounded-md bg-brand px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-brand-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
           data-testid="admin-rollover-load-btn"
         >
           Load roster
@@ -75,35 +87,39 @@ import { ROLLOVER_TEST_IDS } from '../../components/admin/rollover/RolloverPrevi
       </section>
 
       <p
-        class="admin-rollover__error"
+        class="rounded-md border border-action-coral bg-surface-card px-4 py-3 text-sm text-action-coral"
         data-testid={ROLLOVER_TEST_IDS.error}
         hidden
       ></p>
 
-      <table
-        class="admin-rollover__decisions"
-        data-testid={ROLLOVER_TEST_IDS.decisions}
-      >
-        <thead>
-          <tr>
-            <th>Athlete</th>
-            <th>Source team</th>
-            <th>Decision</th>
-            <th>Target team</th>
-          </tr>
-        </thead>
-        <tbody data-testid="admin-rollover-decisions-tbody"></tbody>
-      </table>
+      <div class="overflow-x-auto rounded-xl border border-border bg-surface-card shadow-sm">
+        <table
+          class="w-full border-collapse text-sm text-text-secondary [&_th]:bg-surface-bg [&_th]:px-3 [&_th]:py-2 [&_th]:text-left [&_th]:font-medium [&_th]:text-text-primary [&_td]:border-t [&_td]:border-border [&_td]:px-3 [&_td]:py-2 [&_input]:rounded-md [&_input]:border [&_input]:border-border [&_input]:bg-surface-bg [&_input]:px-2 [&_input]:py-1 [&_input]:text-sm [&_select]:rounded-md [&_select]:border [&_select]:border-border [&_select]:bg-surface-bg [&_select]:px-2 [&_select]:py-1 [&_select]:text-sm"
+          data-testid={ROLLOVER_TEST_IDS.decisions}
+        >
+          <thead>
+            <tr>
+              <th>Athlete</th>
+              <th>Source team</th>
+              <th>Decision</th>
+              <th>Target team</th>
+            </tr>
+          </thead>
+          <tbody data-testid="admin-rollover-decisions-tbody"></tbody>
+        </table>
+      </div>
 
-      <div class="admin-rollover__actions">
+      <div class="flex flex-wrap gap-3">
         <button
           type="button"
+          class="inline-flex items-center justify-center rounded-md bg-brand px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-brand-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
           data-testid={ROLLOVER_TEST_IDS.previewBtn}
         >
           Preview
         </button>
         <button
           type="button"
+          class="inline-flex items-center justify-center rounded-md border border-border bg-surface-card px-4 py-2 text-sm font-medium text-text-primary shadow-sm hover:bg-surface-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand disabled:cursor-not-allowed disabled:opacity-50"
           data-testid={ROLLOVER_TEST_IDS.commitBtn}
           disabled
         >
@@ -112,12 +128,17 @@ import { ROLLOVER_TEST_IDS } from '../../components/admin/rollover/RolloverPrevi
       </div>
 
       <section
-        class="admin-rollover__diff"
+        class="rounded-xl border border-border bg-surface-card p-6 shadow-sm [&_h2]:font-display [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:text-text-primary [&_p]:mt-2 [&_p]:text-sm [&_p]:text-text-secondary [&_ul]:mt-3 [&_ul]:flex [&_ul]:flex-col [&_ul]:gap-1 [&_ul]:text-sm [&_ul]:text-text-secondary [&_li]:rounded-md [&_li]:bg-surface-bg [&_li]:px-3 [&_li]:py-2"
         data-testid={ROLLOVER_TEST_IDS.diff}
-      ></section>
+      >
+        <EmptyState
+          title="No preview yet"
+          body="Load the source-season roster, mark each athlete promote / archive / transfer, then run Preview to see the planned writes."
+        />
+      </section>
 
       <p
-        class="admin-rollover__status"
+        class="text-sm text-text-secondary"
         data-testid={ROLLOVER_TEST_IDS.status}
       ></p>
     </main>
