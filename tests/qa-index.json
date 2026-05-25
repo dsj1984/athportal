@@ -12,6 +12,32 @@
     "time_box_minutes": 30
   },
   {
+    "id": "ec-org-admin-invitation-flow",
+    "path": "tests/charters/org-admin/ec-org-admin-invitation-flow.charter.md",
+    "type": "charter",
+    "domain": "org-admin",
+    "persona": "org-admin",
+    "route_prefixes": [
+      "/admin/invitations",
+      "/admin/invitations/athlete",
+      "/admin/invitations/coach"
+    ],
+    "mission": "Probe the invitation flow at /admin/invitations for race conditions on concurrent accepts/declines, email-handling edge cases (case sensitivity, plus-aliases, unicode local-parts, leading/trailing whitespace), and the expired-token surface so a stale or replayed acceptance link cannot silently provision a membership.",
+    "time_box_minutes": 30
+  },
+  {
+    "id": "ec-org-admin-season-rollover",
+    "path": "tests/charters/org-admin/ec-org-admin-season-rollover.charter.md",
+    "type": "charter",
+    "domain": "org-admin",
+    "persona": "org-admin",
+    "route_prefixes": [
+      "/admin/rollover"
+    ],
+    "mission": "Probe the season rollover surface at /admin/rollover for stale- reference and orphaned-membership defects: athletes whose teams no longer exist after the rollover, coaches whose assignments dangle, and fee or roster rows that remain attached to archived teams. The goal is to find paths where the apply step succeeds at the UI layer while the persisted state contains references that no longer resolve.",
+    "time_box_minutes": 30
+  },
+  {
     "id": "tp-identity-signup-happy-path",
     "path": "tests/plans/identity/tp-identity-signup-happy-path.plan.md",
     "type": "plan",
