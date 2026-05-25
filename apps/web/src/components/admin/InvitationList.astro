@@ -13,56 +13,73 @@
 // reload — which is the user-visible contract the acceptance
 // scenario (Task #667) asserts.
 //
+// Styling follows the Tailwind-utility-first convention codified by
+// ADR-0007 (docs/decisions/0007-ui-styling-convention.md) — utility
+// classes resolve against the @theme tokens declared in
+// apps/web/src/styles/global.css; no orphan BEM hooks. The list
+// chrome composes the shared DataTable primitive; the prior
+// `.invitation-list__*` class hooks are replaced by `data-*`
+// attribute hooks that the inline script targets. Restyled by
+// Story #851 / Task #859.
+//
 // `data-testid` invariance (locked by the Tech Spec):
 //
 //   - admin-invitations-list           (table wrapper)
 //   - admin-invitation-resend-btn      (one per row)
 //   - admin-invitation-revoke-btn      (one per row)
-//
-// The Astro shell carries the minimum HTML the script needs to
-// progressively enhance — a wrapper with the testid, a status region
-// for the empty / loading states, and a template element the script
-// clones per row. This keeps the no-JS surface honest (the table
-// renders empty rather than crashing) without shipping a React
-// runtime for a small enough surface that vanilla DOM is the
-// pragmatic choice.
+
+import DataTable from '../ui/DataTable.astro';
 ---
 
-<section class="invitation-list" data-testid="admin-invitations-list">
-  <h2>Pending invitations</h2>
-  <p class="invitation-list__status" data-testid="admin-invitations-status">Loading…</p>
-  <table class="invitation-list__table" hidden>
-    <thead>
-      <tr>
-        <th scope="col">Email</th>
-        <th scope="col">Role</th>
-        <th scope="col">Sent</th>
-        <th scope="col">Actions</th>
-      </tr>
-    </thead>
-    <tbody class="invitation-list__rows"></tbody>
-  </table>
+<section class="flex flex-col gap-3" data-admin-invitations>
+  <h2 class="font-display text-lg font-semibold text-text-primary">Pending invitations</h2>
+  <p
+    class="text-sm text-text-secondary"
+    data-testid="admin-invitations-status"
+    data-invitations-status
+  >
+    Loading…
+  </p>
+  <div data-invitations-table hidden>
+    <DataTable
+      testId="admin-invitations-list"
+      tbodyTestId="admin-invitations-tbody"
+      columns={[
+        { key: 'email', label: 'Email' },
+        { key: 'role', label: 'Role' },
+        { key: 'sent', label: 'Sent' },
+        { key: 'actions', label: 'Actions', align: 'end' },
+      ]}
+    />
+  </div>
 
-  <template class="invitation-list__row-template">
-    <tr class="invitation-list__row">
-      <td class="invitation-list__email"></td>
-      <td class="invitation-list__role"></td>
-      <td class="invitation-list__created"></td>
-      <td class="invitation-list__actions">
-        <button
-          type="button"
-          class="invitation-list__resend"
-          data-testid="admin-invitation-resend-btn"
-        >
-          Resend
-        </button>
-        <button
-          type="button"
-          class="invitation-list__revoke"
-          data-testid="admin-invitation-revoke-btn"
-        >
-          Revoke
-        </button>
+  <template data-invitations-row-template>
+    <tr
+      class="text-sm text-text-primary [&_td]:px-3 [&_td]:py-2"
+      data-invitations-row
+    >
+      <td data-invitations-email></td>
+      <td data-invitations-role></td>
+      <td data-invitations-created></td>
+      <td class="text-right">
+        <div class="inline-flex items-center gap-2">
+          <button
+            type="button"
+            class="inline-flex items-center justify-center rounded-md border border-border bg-surface-card px-2 py-1 text-xs text-text-primary hover:bg-surface-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+            data-testid="admin-invitation-resend-btn"
+            data-invitations-resend
+          >
+            Resend
+          </button>
+          <button
+            type="button"
+            class="inline-flex items-center justify-center rounded-md border border-action-coral bg-surface-card px-2 py-1 text-xs text-action-coral hover:bg-surface-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-coral"
+            data-testid="admin-invitation-revoke-btn"
+            data-invitations-revoke
+          >
+            Revoke
+          </button>
+        </div>
       </td>
     </tr>
   </template>
@@ -98,29 +115,33 @@
   }
 
   function render(root: HTMLElement, rows: readonly InvitationRow[]): void {
-    const status = root.querySelector<HTMLElement>('.invitation-list__status');
-    const table = root.querySelector<HTMLTableElement>('.invitation-list__table');
-    const tbody = root.querySelector<HTMLTableSectionElement>('.invitation-list__rows');
-    const template = root.querySelector<HTMLTemplateElement>('.invitation-list__row-template');
-    if (!status || !table || !tbody || !template) return;
+    const status = root.querySelector<HTMLElement>('[data-invitations-status]');
+    const tableWrap = root.querySelector<HTMLElement>('[data-invitations-table]');
+    const tbody = root.querySelector<HTMLTableSectionElement>(
+      '[data-testid="admin-invitations-tbody"]',
+    );
+    const template = root.querySelector<HTMLTemplateElement>(
+      '[data-invitations-row-template]',
+    );
+    if (!status || !tableWrap || !tbody || !template) return;
 
     tbody.innerHTML = '';
     if (rows.length === 0) {
       status.textContent = 'No pending invitations.';
-      table.hidden = true;
+      tableWrap.hidden = true;
       return;
     }
 
     status.textContent = '';
-    table.hidden = false;
+    tableWrap.hidden = false;
     for (const row of rows) {
       const fragment = template.content.cloneNode(true) as DocumentFragment;
-      const tr = fragment.querySelector<HTMLTableRowElement>('.invitation-list__row');
+      const tr = fragment.querySelector<HTMLTableRowElement>('[data-invitations-row]');
       if (!tr) continue;
       tr.dataset.invitationId = row.id;
-      const email = tr.querySelector<HTMLElement>('.invitation-list__email');
-      const role = tr.querySelector<HTMLElement>('.invitation-list__role');
-      const created = tr.querySelector<HTMLElement>('.invitation-list__created');
+      const email = tr.querySelector<HTMLElement>('[data-invitations-email]');
+      const role = tr.querySelector<HTMLElement>('[data-invitations-role]');
+      const created = tr.querySelector<HTMLElement>('[data-invitations-created]');
       if (email) email.textContent = row.email;
       if (role) role.textContent = row.role;
       if (created) created.textContent = format(row.createdAt);
@@ -134,7 +155,7 @@
       credentials: 'include',
     });
     if (!res.ok) {
-      const status = root.querySelector<HTMLElement>('.invitation-list__status');
+      const status = root.querySelector<HTMLElement>('[data-invitations-status]');
       if (status) status.textContent = 'Failed to load invitations.';
       return;
     }
@@ -147,11 +168,11 @@
     root.addEventListener('click', async (event) => {
       const target = event.target;
       if (!(target instanceof HTMLElement)) return;
-      const row = target.closest<HTMLTableRowElement>('.invitation-list__row');
+      const row = target.closest<HTMLTableRowElement>('[data-invitations-row]');
       const id = row?.dataset.invitationId;
       if (!id) return;
 
-      if (target.classList.contains('invitation-list__resend')) {
+      if (target.closest('[data-invitations-resend]')) {
         await fetch(`/api/v1/admin/invitations/${encodeURIComponent(id)}/resend`, {
           method: 'POST',
           credentials: 'include',
@@ -159,7 +180,7 @@
         return;
       }
 
-      if (target.classList.contains('invitation-list__revoke')) {
+      if (target.closest('[data-invitations-revoke]')) {
         const res = await fetch(`/api/v1/admin/invitations/${encodeURIComponent(id)}/revoke`, {
           method: 'POST',
           credentials: 'include',
@@ -170,20 +191,20 @@
           // status copy so the user sees the same state they would
           // after a fresh load with no invitations.
           const tbody = root.querySelector<HTMLTableSectionElement>(
-            '.invitation-list__rows',
+            '[data-testid="admin-invitations-tbody"]',
           );
           if (tbody && tbody.children.length === 0) {
-            const status = root.querySelector<HTMLElement>('.invitation-list__status');
-            const table = root.querySelector<HTMLTableElement>('.invitation-list__table');
+            const status = root.querySelector<HTMLElement>('[data-invitations-status]');
+            const tableWrap = root.querySelector<HTMLElement>('[data-invitations-table]');
             if (status) status.textContent = 'No pending invitations.';
-            if (table) table.hidden = true;
+            if (tableWrap) tableWrap.hidden = true;
           }
         }
       }
     });
   }
 
-  const root = document.querySelector<HTMLElement>('[data-testid="admin-invitations-list"]');
+  const root = document.querySelector<HTMLElement>('[data-admin-invitations]');
   if (root) {
     bind(root);
     void load(root);
