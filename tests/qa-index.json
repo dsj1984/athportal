@@ -1,5 +1,33 @@
 [
   {
+    "id": "ec-identity-auth-fuzz",
+    "path": "tests/charters/identity/ec-identity-auth-fuzz.charter.md",
+    "type": "charter",
+    "domain": "identity",
+    "persona": "visitor",
+    "route_prefixes": [
+      "/sign-in",
+      "/sign-up",
+      "/sign-out"
+    ],
+    "mission": "Probe `/sign-in` and `/sign-up` for credential-stuffing, session-replay, and encoding-bypass paths that grant an unauthorised session, leak user existence, or persist past sign-out.",
+    "time_box_minutes": 45
+  },
+  {
+    "id": "ec-identity-cross-tenant",
+    "path": "tests/charters/identity/ec-identity-cross-tenant.charter.md",
+    "type": "charter",
+    "domain": "identity",
+    "persona": "org-admin",
+    "route_prefixes": [
+      "/admin",
+      "/dashboard",
+      "/onboarding"
+    ],
+    "mission": "Probe role-scoped surfaces for cross-tenant leakage using two seeded orgs. A user authenticated against tenant A must never read, list, or mutate a resource owned by tenant B; the probes target the routes whose ownership check is missing, stale, or trustingly client-side.",
+    "time_box_minutes": 45
+  },
+  {
     "id": "ec-org-admin-csv-import",
     "path": "tests/charters/org-admin/ec-org-admin-csv-import.charter.md",
     "type": "charter",
@@ -12,16 +40,110 @@
     "time_box_minutes": 30
   },
   {
-    "id": "tp-design-system-styleguide-walkthrough",
-    "path": "tests/plans/design-system/tp-design-system-styleguide-walkthrough.plan.md",
+    "id": "tp-identity-jit-provisioning",
+    "path": "tests/plans/identity/tp-identity-jit-provisioning.plan.md",
     "type": "plan",
-    "domain": "design-system",
-    "persona": "org-admin",
+    "domain": "identity",
+    "persona": "athlete",
     "surface": "web",
     "route_prefixes": [
-      "/internal/styleguide"
+      "/sign-up",
+      "/onboarding"
     ],
-    "est_minutes": 10
+    "est_minutes": 8
+  },
+  {
+    "id": "tp-identity-onboarding-gate",
+    "path": "tests/plans/identity/tp-identity-onboarding-gate.plan.md",
+    "type": "plan",
+    "domain": "identity",
+    "persona": "athlete",
+    "surface": "web",
+    "route_prefixes": [
+      "/onboarding",
+      "/dashboard",
+      "/sign-up"
+    ],
+    "est_minutes": 7
+  },
+  {
+    "id": "tp-identity-role-assignment",
+    "path": "tests/plans/identity/tp-identity-role-assignment.plan.md",
+    "type": "plan",
+    "domain": "identity",
+    "persona": "athlete",
+    "surface": "web",
+    "route_prefixes": [
+      "/sign-up",
+      "/onboarding",
+      "/dashboard"
+    ],
+    "est_minutes": 12
+  },
+  {
+    "id": "tp-identity-signin-bad-password",
+    "path": "tests/plans/identity/tp-identity-signin-bad-password.plan.md",
+    "type": "plan",
+    "domain": "identity",
+    "persona": "athlete",
+    "surface": "web",
+    "route_prefixes": [
+      "/sign-in"
+    ],
+    "est_minutes": 5
+  },
+  {
+    "id": "tp-identity-signin-email-not-verified",
+    "path": "tests/plans/identity/tp-identity-signin-email-not-verified.plan.md",
+    "type": "plan",
+    "domain": "identity",
+    "persona": "athlete",
+    "surface": "web",
+    "route_prefixes": [
+      "/sign-up",
+      "/sign-in"
+    ],
+    "est_minutes": 7
+  },
+  {
+    "id": "tp-identity-signin-happy",
+    "path": "tests/plans/identity/tp-identity-signin-happy.plan.md",
+    "type": "plan",
+    "domain": "identity",
+    "persona": "athlete",
+    "surface": "web",
+    "route_prefixes": [
+      "/sign-in",
+      "/dashboard"
+    ],
+    "est_minutes": 5
+  },
+  {
+    "id": "tp-identity-signout",
+    "path": "tests/plans/identity/tp-identity-signout.plan.md",
+    "type": "plan",
+    "domain": "identity",
+    "persona": "athlete",
+    "surface": "web",
+    "route_prefixes": [
+      "/sign-out",
+      "/dashboard",
+      "/sign-in"
+    ],
+    "est_minutes": 6
+  },
+  {
+    "id": "tp-identity-signup-coach",
+    "path": "tests/plans/identity/tp-identity-signup-coach.plan.md",
+    "type": "plan",
+    "domain": "identity",
+    "persona": "coach",
+    "surface": "web",
+    "route_prefixes": [
+      "/sign-up",
+      "/onboarding"
+    ],
+    "est_minutes": 9
   },
   {
     "id": "tp-identity-signup-happy-path",
@@ -35,5 +157,18 @@
       "/onboarding"
     ],
     "est_minutes": 8
+  },
+  {
+    "id": "tp-identity-signup-org-admin",
+    "path": "tests/plans/identity/tp-identity-signup-org-admin.plan.md",
+    "type": "plan",
+    "domain": "identity",
+    "persona": "org-admin",
+    "surface": "web",
+    "route_prefixes": [
+      "/sign-up",
+      "/onboarding"
+    ],
+    "est_minutes": 10
   }
 ]
