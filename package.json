@@ -38,6 +38,7 @@
     "mutation:update": "node scripts/mutation-baseline.mjs --update",
     "lighthouse:check": "node scripts/lighthouse-baseline.mjs --check",
     "lighthouse:update": "node scripts/lighthouse-baseline.mjs --update",
+    "lint:qa": "node scripts/qa/lint.mjs",
     "lint:steps": "node scripts/lint-steps.mjs",
     "lint:steps:fixtures": "node scripts/lint-steps.mjs --fixtures",
     "lint:deps": "depcruise apps packages --config .dependency-cruiser.cjs",
@@ -71,6 +72,7 @@
     "dependency-cruiser": "^17.4.0",
     "eslint": "^9",
     "eslint-config-prettier": "^10.1.8",
+    "gray-matter": "^4.0.3",
     "knip": "^6.14.1",
     "lint-staged": "^17.0.5",
     "markdownlint-cli2": "^0.22.1",
@@ -78,7 +80,8 @@
     "turbo": "^2",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.59.3",
-    "vitest": "^4.1.6"
+    "vitest": "^4.1.6",
+    "zod": "^3.23.8"
   },
   "pnpm": {
     "overrides": {
