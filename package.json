@@ -38,6 +38,7 @@
     "mutation:update": "node scripts/mutation-baseline.mjs --update",
     "lighthouse:check": "node scripts/lighthouse-baseline.mjs --check",
     "lighthouse:update": "node scripts/lighthouse-baseline.mjs --update",
+    "lint:qa": "node scripts/qa/lint.mjs",
     "lint:steps": "node scripts/lint-steps.mjs",
     "lint:steps:fixtures": "node scripts/lint-steps.mjs --fixtures",
     "lint:deps": "depcruise apps packages --config .dependency-cruiser.cjs",
