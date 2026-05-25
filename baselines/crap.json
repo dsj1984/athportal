@@ -1,13 +1,13 @@
 {
   "$schema": ".agents/schemas/baselines/crap.schema.json",
-  "kernelVersion": "0.1.0",
-  "generatedAt": "2026-05-25T21:15:38.409Z",
+  "generatedAt": "2026-05-25T21:32:24.220Z",
+  "kernelVersion": "1.0.0",
   "rollup": {
     "*": {
-      "p50": 2,
-      "p95": 42,
       "max": 506,
-      "methodsAbove20": 60
+      "methodsAbove20": 60,
+      "p50": 2,
+      "p95": 42
     }
   },
   "rows": [
@@ -2280,36 +2280,6 @@
       "startLine": 57
     },
     {
-      "crap": 2,
-      "method": "buildBadgeView",
-      "path": "apps/web/src/components/ui/_lib/badge.ts",
-      "startLine": 83
-    },
-    {
-      "crap": 12,
-      "method": "resolveTone",
-      "path": "apps/web/src/components/ui/_lib/badge.ts",
-      "startLine": 97
-    },
-    {
-      "crap": 2,
-      "method": "cn",
-      "path": "apps/web/src/components/ui/_lib/cn.ts",
-      "startLine": 14
-    },
-    {
-      "crap": 6,
-      "method": "resolveEventColor",
-      "path": "apps/web/src/components/ui/_lib/eventColors.ts",
-      "startLine": 113
-    },
-    {
-      "crap": 6,
-      "method": "resolveSidebarNav",
-      "path": "apps/web/src/components/ui/_lib/sidebarNav.ts",
-      "startLine": 67
-    },
-    {
       "crap": 30,
       "method": "buildAvatarView",
       "path": "apps/web/src/components/ui/Avatar.ts",
@@ -2536,6 +2506,36 @@
       "method": "resolvePositive",
       "path": "apps/web/src/components/ui/VerifiedTick.ts",
       "startLine": 36
+    },
+    {
+      "crap": 2,
+      "method": "buildBadgeView",
+      "path": "apps/web/src/components/ui/_lib/badge.ts",
+      "startLine": 83
+    },
+    {
+      "crap": 12,
+      "method": "resolveTone",
+      "path": "apps/web/src/components/ui/_lib/badge.ts",
+      "startLine": 97
+    },
+    {
+      "crap": 2,
+      "method": "cn",
+      "path": "apps/web/src/components/ui/_lib/cn.ts",
+      "startLine": 14
+    },
+    {
+      "crap": 6,
+      "method": "resolveEventColor",
+      "path": "apps/web/src/components/ui/_lib/eventColors.ts",
+      "startLine": 113
+    },
+    {
+      "crap": 6,
+      "method": "resolveSidebarNav",
+      "path": "apps/web/src/components/ui/_lib/sidebarNav.ts",
+      "startLine": 67
     },
     {
       "crap": 42,
