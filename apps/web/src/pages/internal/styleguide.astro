@@ -30,6 +30,7 @@ import Foundations from '../../components/styleguide/Foundations.astro';
 import InteractiveAtoms from '../../components/styleguide/InteractiveAtoms.astro';
 import DisplayAtoms from '../../components/styleguide/DisplayAtoms.astro';
 import Composites from '../../components/styleguide/Composites.astro';
+import Primitives from '../../components/styleguide/Primitives.astro';
 import {
   STYLEGUIDE_ROBOTS_HEADER,
   decideStyleguideAccess,
@@ -69,6 +70,7 @@ if (decision.kind === 'redirect') {
     <InteractiveAtoms />
     <DisplayAtoms />
     <Composites />
+    <Primitives />
   </main>
 </RootLayout>
 
