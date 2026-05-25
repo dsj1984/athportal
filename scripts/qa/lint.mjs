@@ -286,11 +286,14 @@ export async function runLint({ plansRoot = DEFAULT_PLANS_ROOT, paths = null } =
 // a child process.
 export { discoverPlanFiles, validatePlanFile, validatePlanBody };
 
-// Only run when invoked directly (not when imported by tests).
-if (
-  import.meta.url === `file://${process.argv[1].replace(/\\/g, '/')}` ||
-  fileURLToPath(import.meta.url) === path.resolve(process.argv[1] ?? '')
-) {
+// Only run when invoked directly (not when imported by tests). The
+// resolved CLI argv may be undefined when the module is imported via
+// `node -e "import(...)"`, so guard the comparison defensively.
+const invokedAs = process.argv[1] ?? '';
+const isDirectCli =
+  invokedAs.length > 0 &&
+  fileURLToPath(import.meta.url) === path.resolve(invokedAs);
+if (isDirectCli) {
   const code = await runLint();
   process.exit(code);
 }
