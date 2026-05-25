@@ -1,0 +1,27 @@
+[
+  {
+    "id": "ec-org-admin-csv-import",
+    "path": "tests/charters/org-admin/ec-org-admin-csv-import.charter.md",
+    "type": "charter",
+    "domain": "org-admin",
+    "persona": "org-admin",
+    "route_prefixes": [
+      "/admin/import"
+    ],
+    "mission": "Find ways the CSV import surface accepts malformed, ambiguous, or out-of-range data without surfacing a visible error.",
+    "time_box_minutes": 30
+  },
+  {
+    "id": "tp-identity-signup-happy-path",
+    "path": "tests/plans/identity/tp-identity-signup-happy-path.plan.md",
+    "type": "plan",
+    "domain": "identity",
+    "persona": "athlete",
+    "surface": "web",
+    "route_prefixes": [
+      "/sign-up",
+      "/onboarding"
+    ],
+    "est_minutes": 8
+  }
+]

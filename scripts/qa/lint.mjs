@@ -508,6 +508,13 @@ const invokedAs = process.argv[1] ?? '';
 const isDirectCli =
   invokedAs.length > 0 && fileURLToPath(import.meta.url) === path.resolve(invokedAs);
 if (isDirectCli) {
-  const code = await runLint();
+  // Positional args (anything that is not a `--`-prefixed flag) are
+  // treated as explicit artifact paths. The Husky `pre-commit` hook
+  // uses this to scope lint:qa to staged `.plan.md` / `.charter.md`
+  // files only; CI continues to invoke `pnpm run lint:qa` with no args
+  // so the full corpus is checked.
+  const positional = process.argv.slice(2).filter((arg) => !arg.startsWith('--'));
+  const paths = positional.length > 0 ? positional.map((p) => path.resolve(p)) : null;
+  const code = await runLint({ paths });
   process.exit(code);
 }
