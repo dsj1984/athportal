@@ -39,6 +39,7 @@ for which tool owns which rule class.
 ```bash
 pnpm install                       # install workspace deps
 cp .env.example .env               # placeholders only — fill in locally
+pnpm dev                           # preflight (.env + local SQLite) + api & web in parallel
 pnpm run lint                      # Biome + ESLint + markdownlint (parallel)
 pnpm run lint:secrets              # secretlint (matches the pre-commit gate)
 pnpm run knip:strict               # full unused-files / -exports / -deps pass
