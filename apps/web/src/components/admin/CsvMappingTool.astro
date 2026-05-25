@@ -11,33 +11,44 @@
 // (`admin-csv-upload-input`, `admin-csv-mapping`, `admin-csv-preview`,
 // `admin-csv-commit-btn`, `admin-csv-status`) are part of the
 // acceptance-test contract (Task #686) and MUST NOT drift.
+//
+// Styling follows the Tailwind-utility-first convention codified by
+// ADR-0007 (docs/decisions/0007-ui-styling-convention.md) — utility
+// classes resolve against the @theme tokens declared in
+// apps/web/src/styles/global.css; no orphan BEM hooks. The upload
+// control composes the canonical FormField primitive (Story #844 /
+// Task #850).
 
 import { CSV_IMPORT_TEST_IDS } from './CsvMappingTool.ts';
+import FormField from '../ui/FormField.astro';
 ---
 
-<section class="admin-csv-import">
-  <h2 class="admin-csv-import__title">Import roster from CSV</h2>
+<section class="flex flex-col gap-6 rounded-xl border border-border bg-surface-card p-6 shadow-sm">
+  <h2 class="font-display text-xl font-semibold text-text-primary">Import roster from CSV</h2>
 
-  <label class="admin-csv-import__upload">
-    <span>Choose a CSV file</span>
+  <FormField label="Choose a CSV file" htmlFor="admin-csv-upload-input">
     <input
+      id="admin-csv-upload-input"
       type="file"
       accept=".csv,text/csv"
+      class="block w-full cursor-pointer rounded-md border border-border bg-surface-bg px-3 py-2 text-sm text-text-primary file:mr-3 file:rounded-md file:border-0 file:bg-brand file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white hover:file:bg-brand-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
       data-testid={CSV_IMPORT_TEST_IDS.uploadInput}
     />
-  </label>
+  </FormField>
 
   <fieldset
-    class="admin-csv-import__mapping"
+    class="flex flex-col gap-3 rounded-md border border-border bg-surface-bg p-4"
     data-testid={CSV_IMPORT_TEST_IDS.mapping}
     hidden
   >
-    <legend>Map each CSV column to a target field</legend>
-    <div class="admin-csv-import__mapping-rows"></div>
+    <legend class="px-1 text-sm font-medium text-text-primary">
+      Map each CSV column to a target field
+    </legend>
+    <div id="admin-csv-mapping-rows" class="flex flex-col gap-2"></div>
   </fieldset>
 
   <table
-    class="admin-csv-import__preview"
+    class="w-full border-collapse overflow-hidden rounded-md border border-border text-sm text-text-secondary [&_th]:bg-surface-bg [&_th]:px-3 [&_th]:py-2 [&_th]:text-left [&_th]:font-medium [&_th]:text-text-primary [&_td]:border-t [&_td]:border-border [&_td]:px-3 [&_td]:py-2"
     data-testid={CSV_IMPORT_TEST_IDS.preview}
     hidden
   >
@@ -47,13 +58,13 @@ import { CSV_IMPORT_TEST_IDS } from './CsvMappingTool.ts';
 
   <button
     type="button"
-    class="admin-csv-import__commit"
+    class="inline-flex w-fit items-center justify-center rounded-md bg-brand px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-brand-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand disabled:cursor-not-allowed disabled:opacity-50"
     data-testid={CSV_IMPORT_TEST_IDS.commitBtn}
     disabled
   >Import roster</button>
 
   <p
-    class="admin-csv-import__status"
+    class="text-sm text-text-secondary"
     data-testid={CSV_IMPORT_TEST_IDS.status}
     aria-live="polite"
   ></p>
@@ -78,6 +89,10 @@ import { CSV_IMPORT_TEST_IDS } from './CsvMappingTool.ts';
     { value: 'teamName', label: 'Team' },
   ];
 
+  const MAPPING_ROW_CLASS = 'flex items-center gap-3 rounded-md bg-surface-card px-3 py-2 text-sm text-text-primary';
+  const MAPPING_HEADER_CLASS = 'min-w-32 flex-shrink-0 font-medium';
+  const MAPPING_SELECT_CLASS = 'flex-1 rounded-md border border-border bg-surface-bg px-2 py-1 text-sm text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand';
+
   function $<T extends HTMLElement>(selector: string): T | null {
     return document.querySelector(selector) as T | null;
   }
@@ -88,7 +103,7 @@ import { CSV_IMPORT_TEST_IDS } from './CsvMappingTool.ts';
   const mappingFieldset = $<HTMLFieldSetElement>(
     `[data-testid="${CSV_IMPORT_TEST_IDS.mapping}"]`,
   );
-  const mappingRows = $<HTMLDivElement>('.admin-csv-import__mapping-rows');
+  const mappingRows = $<HTMLDivElement>('#admin-csv-mapping-rows');
   const previewTable = $<HTMLTableElement>(
     `[data-testid="${CSV_IMPORT_TEST_IDS.preview}"]`,
   );
@@ -120,12 +135,14 @@ import { CSV_IMPORT_TEST_IDS } from './CsvMappingTool.ts';
       const fragment = document.createDocumentFragment();
       for (const header of headers) {
         const row = document.createElement('label');
-        row.className = 'admin-csv-import__mapping-row';
+        row.className = MAPPING_ROW_CLASS;
         const span = document.createElement('span');
+        span.className = MAPPING_HEADER_CLASS;
         span.textContent = header;
         row.appendChild(span);
 
         const select = document.createElement('select');
+        select.className = MAPPING_SELECT_CLASS;
         select.dataset.header = header;
         for (const opt of TARGET_OPTIONS) {
           const option = document.createElement('option');

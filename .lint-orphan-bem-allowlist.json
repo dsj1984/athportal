@@ -2,17 +2,6 @@
   "$schema-comment": "Pre-existing orphan BEM hooks tolerated by Story #834. The codifying Story is scoped to the EmptyState primitive plus the lint infrastructure; refactoring the listed files into Tailwind utilities is owned by follow-on Stories. New entries require a paired Story reference in the PR body. See docs/decisions/0007-ui-styling-convention.md for the binding rule and scripts/lint-orphan-bem.mjs for the resolver set.",
   "entries": [
     {
-      "path": "apps/web/src/components/admin/CsvMappingTool.astro",
-      "classes": [
-        "admin-csv-import__commit",
-        "admin-csv-import__mapping",
-        "admin-csv-import__preview",
-        "admin-csv-import__status",
-        "admin-csv-import__title",
-        "admin-csv-import__upload"
-      ]
-    },
-    {
       "path": "apps/web/src/components/admin/InvitationList.astro",
       "classes": [
         "invitation-list__actions"
@@ -45,7 +34,7 @@
         "team-form__submit"
       ]
     },
-{
+    {
       "path": "apps/web/src/components/ui/Avatar.astro",
       "classes": [
         "avatar--image",
@@ -65,13 +54,6 @@
       ]
     },
     {
-      "path": "apps/web/src/pages/admin/import.astro",
-      "classes": [
-        "admin-import-page__intro",
-        "admin-import-page__title"
-      ]
-    },
-    {
       "path": "apps/web/src/pages/admin/reports.astro",
       "classes": [
         "admin-report__empty",
@@ -81,19 +63,6 @@
         "admin-report__section",
         "admin-report__subheading",
         "admin-report__table"
-      ]
-    },
-    {
-      "path": "apps/web/src/pages/admin/rollover.astro",
-      "classes": [
-        "admin-rollover__actions",
-        "admin-rollover__decisions",
-        "admin-rollover__diff",
-        "admin-rollover__error",
-        "admin-rollover__header",
-        "admin-rollover__load",
-        "admin-rollover__seasons",
-        "admin-rollover__status"
       ]
     },
     {
