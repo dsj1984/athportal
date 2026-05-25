@@ -291,8 +291,7 @@ export { discoverPlanFiles, validatePlanFile, validatePlanBody };
 // `node -e "import(...)"`, so guard the comparison defensively.
 const invokedAs = process.argv[1] ?? '';
 const isDirectCli =
-  invokedAs.length > 0 &&
-  fileURLToPath(import.meta.url) === path.resolve(invokedAs);
+  invokedAs.length > 0 && fileURLToPath(import.meta.url) === path.resolve(invokedAs);
 if (isDirectCli) {
   const code = await runLint();
   process.exit(code);
