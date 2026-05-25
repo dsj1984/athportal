@@ -57,23 +57,7 @@
         "team-form__submit"
       ]
     },
-    {
-      "path": "apps/web/src/components/onboarding/AgeAttestation.astro",
-      "classes": [
-        "onboarding-age__label",
-        "onboarding-age__legend",
-        "onboarding-age__row"
-      ]
-    },
 {
-      "path": "apps/web/src/components/onboarding/LegalAcceptanceCheckboxes.astro",
-      "classes": [
-        "onboarding-legal__label",
-        "onboarding-legal__legend",
-        "onboarding-legal__row"
-      ]
-    },
-    {
       "path": "apps/web/src/components/onboarding/OnboardingForm.astro",
       "classes": [
         "onboarding-form__field",
@@ -82,16 +66,7 @@
         "onboarding-form__submit"
       ]
     },
-    {
-      "path": "apps/web/src/components/onboarding/ProfilePhotoUploader.astro",
-      "classes": [
-        "onboarding-photo__helper",
-        "onboarding-photo__legend",
-        "onboarding-photo__preview",
-        "onboarding-photo__remove"
-      ]
-    },
-    {
+{
       "path": "apps/web/src/components/ui/Avatar.astro",
       "classes": [
         "avatar--image",
