@@ -74,4 +74,32 @@ export interface Env {
    * verifier's error detail to the caller.
    */
   CLERK_WEBHOOK_SIGNING_SECRET: string;
+
+  /**
+   * Drizzle handle published into `c.var.db` by `withDb` (Story #760).
+   *
+   * The host (Node dev server in `apps/api/src/local.ts`, future
+   * Workers entrypoint in Epic #27) constructs the handle at wrap time
+   * and passes it through `c.env`. Typed as `unknown` for the same
+   * driver-agnostic reason as `InternalUserDb` in
+   * `./middleware/auth.ts` — downstream consumers narrow structurally
+   * to the methods they call.
+   *
+   * Required at runtime. `withDb` throws synchronously when this
+   * binding is missing.
+   */
+  DB: unknown;
+
+  /**
+   * Origin connection string for the persistence layer (Story #760).
+   *
+   * Local dev: `file:packages/shared/data/local.db` (better-sqlite3).
+   * Staging / production: `libsql://<db>.turso.io` (Workers + libsql).
+   *
+   * The Worker host (Epic #27) constructs the `DB` handle from this
+   * URL per-request. Local dev constructs `DB` once at startup and
+   * passes it pre-built — the URL is surfaced here only for the
+   * preflight + diagnostics surface.
+   */
+  DATABASE_URL: string;
 }

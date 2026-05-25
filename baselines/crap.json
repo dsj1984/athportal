@@ -1,6 +1,6 @@
 {
   "$schema": ".agents/schemas/baselines/crap.schema.json",
-  "generatedAt": "2026-05-24T23:21:10.507Z",
+  "generatedAt": "2026-05-25T11:55:08.402Z",
   "kernelVersion": "1.0.0",
   "rollup": {
     "*": {
@@ -15,13 +15,13 @@
       "crap": 2,
       "method": "<anon method-1>",
       "path": "apps/api/src/index.ts",
-      "startLine": 55
+      "startLine": 68
     },
     {
       "crap": 2,
       "method": "<anon method-2>",
       "path": "apps/api/src/index.ts",
-      "startLine": 56
+      "startLine": 69
     },
     {
       "crap": 2,
@@ -250,6 +250,18 @@
       "method": "<anon method-1>",
       "path": "apps/api/src/middleware/requireRole.ts",
       "startLine": 96
+    },
+    {
+      "crap": 2,
+      "method": "withDb",
+      "path": "apps/api/src/middleware/withDb.ts",
+      "startLine": 54
+    },
+    {
+      "crap": 12,
+      "method": "<anon method-1>",
+      "path": "apps/api/src/middleware/withDb.ts",
+      "startLine": 55
     },
     {
       "crap": 6,
