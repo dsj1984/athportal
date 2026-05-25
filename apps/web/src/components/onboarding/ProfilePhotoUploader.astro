@@ -16,29 +16,30 @@ const view = buildProfilePhotoView();
 ---
 
 <fieldset
-  class="onboarding-photo"
+  class="flex flex-col gap-3 rounded-md border border-border bg-surface-card p-4"
   data-testid={view.testIds.root}
   data-island="profile-photo"
   data-upload-id=""
 >
-  <legend class="onboarding-photo__legend">{view.heading}</legend>
-  <p class="onboarding-photo__helper">{view.helperText}</p>
+  <legend class="px-1 text-sm font-medium text-text-primary">{view.heading}</legend>
+  <p class="text-xs text-text-tertiary">{view.helperText}</p>
 
   <input
     type="file"
     accept="image/jpeg,image/png,image/webp"
     name="profilePhotoUpload"
+    class="block w-full text-sm text-text-secondary file:mr-3 file:rounded-md file:border file:border-border file:bg-surface-card file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-text-primary file:shadow-sm hover:file:bg-surface-hover"
     data-testid={view.testIds.upload}
   />
   <img
-    class="onboarding-photo__preview"
+    class="h-24 w-24 rounded-full border border-border object-cover"
     data-testid={view.testIds.preview}
     alt="Profile photo preview"
     hidden
   />
   <button
     type="button"
-    class="onboarding-photo__remove"
+    class="inline-flex w-fit items-center justify-center rounded-md border border-border bg-surface-card px-3 py-1.5 text-sm font-medium text-text-primary shadow-sm hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
     data-testid={view.testIds.remove}
     hidden
   >

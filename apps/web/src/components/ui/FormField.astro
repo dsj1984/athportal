@@ -1,0 +1,50 @@
+---
+// apps/web/src/components/ui/FormField.astro
+//
+// Shared form-field primitive. Wraps the pure `buildFormFieldView`
+// helper so the rendered markup and the unit-tested view-shape stay in
+// lockstep. Styling follows the Tailwind-utility-first convention
+// codified by ADR-0007 (docs/decisions/0007-ui-styling-convention.md)
+// — utility classes resolve against the @theme tokens declared in
+// apps/web/src/styles/global.css; no orphan BEM hooks.
+//
+// Composition: the slotted control element (input/textarea/select/
+// checkbox group) is rendered into the default slot. The slot owner
+// is responsible for wiring `aria-describedby` to `helperId` / `errorId`
+// when those are present.
+//
+// Story #837 / Task #841.
+import { buildFormFieldView, type FormFieldProps } from './FormField.ts';
+
+interface Props {
+  label: string;
+  htmlFor: string;
+  helper?: string;
+  error?: string | null;
+  required?: boolean;
+}
+
+const view = buildFormFieldView(Astro.props satisfies FormFieldProps);
+---
+
+<div class={view.wrapperClass}>
+  <label class={view.labelClass} for={view.htmlFor}>
+    {view.label}
+    {view.required && <span aria-hidden="true"> *</span>}
+  </label>
+  <slot />
+  {
+    view.helper && !view.hasError && (
+      <p class={view.helperClass} id={view.helperId}>
+        {view.helper}
+      </p>
+    )
+  }
+  {
+    view.hasError && (
+      <p class={view.errorClass} id={view.errorId} role="alert">
+        {view.error}
+      </p>
+    )
+  }
+</div>

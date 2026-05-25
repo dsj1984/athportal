@@ -16,18 +16,19 @@ const view = buildAgeAttestationView();
 ---
 
 <fieldset
-  class="onboarding-age"
+  class="flex flex-col gap-3 rounded-md border border-border bg-surface-card p-4"
   data-testid={view.testIds.root}
   data-island="age-attestation"
 >
-  <legend class="onboarding-age__legend">Age</legend>
-  <label class="onboarding-age__row">
+  <legend class="px-1 text-sm font-medium text-text-primary">Age</legend>
+  <label class="flex items-start gap-2 text-sm text-text-secondary">
     <input
       type="checkbox"
       name="isAtLeast13"
+      class="mt-0.5 h-4 w-4 rounded border-border text-brand focus-visible:ring-2 focus-visible:ring-brand"
       data-testid={view.testIds.checkbox}
       required
     />
-    <span class="onboarding-age__label">{view.label}</span>
+    <span>{view.label}</span>
   </label>
 </fieldset>
