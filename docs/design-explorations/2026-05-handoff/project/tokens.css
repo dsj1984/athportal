@@ -1,0 +1,207 @@
+/* AthPortal design tokens — mirrored from docs/style-guide.md */
+:root {
+  /* Brand */
+  --color-brand: #9333ea;
+  --color-brand-dark: #6b21a8;
+  --color-brand-hover: #7c22d0;
+
+  /* Functional accents */
+  --color-action-cyan: #06b6d4;
+  --color-action-lime: #10b981;
+  --color-action-amber: #f59e0b;
+  --color-action-coral: #f43f5e;
+
+  /* Surfaces */
+  --color-surface-bg: #f8fafc;
+  --color-surface-card: #ffffff;
+  --color-surface-hover: #f1f5f9;
+  --color-surface-active: #e2e8f0;
+
+  /* Text */
+  --color-text-primary: #0f1115;
+  --color-text-secondary: #475569;
+  --color-text-tertiary: #64748b;
+
+  /* Borders */
+  --color-border: #e2e8f0;
+  --color-border-strong: #cbd5e1;
+
+  /* Type */
+  --font-display: "Space Grotesk", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Radii */
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-xl: 18px;
+  --r-2xl: 24px;
+
+  /* Shadows (light, airy) */
+  --shadow-xs: 0 1px 2px rgba(15,17,21,0.04);
+  --shadow-sm: 0 1px 2px rgba(15,17,21,0.06), 0 1px 1px rgba(15,17,21,0.04);
+  --shadow-md: 0 4px 16px rgba(15,17,21,0.06), 0 1px 2px rgba(15,17,21,0.04);
+  --shadow-lg: 0 12px 40px rgba(15,17,21,0.08), 0 2px 6px rgba(15,17,21,0.04);
+}
+
+/* Artboards: each artboard scopes its own ap-* surface so styles don't bleed */
+.ap {
+  font-family: var(--font-body);
+  color: var(--color-text-primary);
+  background: var(--color-surface-bg);
+  font-size: 14px;
+  line-height: 1.45;
+  letter-spacing: -0.005em;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+}
+.ap *, .ap *::before, .ap *::after { box-sizing: border-box; }
+.ap h1, .ap h2, .ap h3, .ap h4, .ap h5 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin: 0;
+  color: var(--color-text-primary);
+}
+.ap p { margin: 0; }
+.ap button { font: inherit; cursor: pointer; }
+.ap .display { font-family: var(--font-display); }
+.ap .mono { font-family: var(--font-mono); }
+
+/* Reusable atoms */
+.ap .card {
+  background: var(--color-surface-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--r-lg);
+}
+.ap .card-soft {
+  background: var(--color-surface-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-sm);
+}
+.ap .row { display: flex; align-items: center; }
+.ap .col { display: flex; flex-direction: column; }
+.ap .between { justify-content: space-between; }
+.ap .gap-1 { gap: 4px; } .ap .gap-2 { gap: 8px; } .ap .gap-3 { gap: 12px; }
+.ap .gap-4 { gap: 16px; } .ap .gap-5 { gap: 20px; } .ap .gap-6 { gap: 24px; }
+
+/* Soft translucent badge — REQUIRED pattern per style guide */
+.ap .badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 8px; border-radius: 999px;
+  font-size: 11px; font-weight: 600; letter-spacing: 0.02em;
+  line-height: 1.5;
+}
+.ap .badge.brand   { background: color-mix(in srgb, var(--color-brand) 12%, transparent); color: var(--color-brand); }
+.ap .badge.cyan    { background: color-mix(in srgb, var(--color-action-cyan) 13%, transparent); color: #0891b2; }
+.ap .badge.lime    { background: color-mix(in srgb, var(--color-action-lime) 14%, transparent); color: #047857; }
+.ap .badge.amber   { background: color-mix(in srgb, var(--color-action-amber) 16%, transparent); color: #b45309; }
+.ap .badge.coral   { background: color-mix(in srgb, var(--color-action-coral) 14%, transparent); color: #be123c; }
+.ap .badge.slate   { background: #f1f5f9; color: #475569; }
+.ap .badge.dot::before {
+  content: ""; width: 6px; height: 6px; border-radius: 999px; background: currentColor; opacity: 0.85;
+}
+
+/* Buttons */
+.ap .btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  height: 36px; padding: 0 14px; border-radius: var(--r-md);
+  font-size: 13px; font-weight: 600; letter-spacing: -0.005em;
+  border: 1px solid transparent; transition: background .12s, border-color .12s, color .12s;
+  white-space: nowrap;
+}
+.ap .btn.primary { background: var(--color-brand); color: #fff; }
+.ap .btn.primary:hover { background: var(--color-brand-hover); }
+.ap .btn.ghost { background: transparent; color: var(--color-text-primary); border-color: var(--color-border); }
+.ap .btn.ghost:hover { background: var(--color-surface-hover); }
+.ap .btn.subtle { background: var(--color-surface-hover); color: var(--color-text-primary); }
+.ap .btn.coral { background: color-mix(in srgb, var(--color-action-coral) 12%, transparent); color: #be123c; }
+.ap .btn.sm { height: 30px; padding: 0 10px; font-size: 12px; border-radius: 8px; }
+.ap .btn.lg { height: 44px; padding: 0 18px; font-size: 14px; border-radius: 12px; }
+
+/* Inputs */
+.ap .input, .ap .textarea, .ap .select {
+  width: 100%; height: 38px; padding: 0 12px;
+  background: var(--color-surface-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--r-md);
+  font: inherit; color: var(--color-text-primary);
+  transition: border-color .12s, box-shadow .12s;
+}
+.ap .input:focus, .ap .textarea:focus, .ap .select:focus {
+  outline: none; border-color: var(--color-brand);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-brand) 18%, transparent);
+}
+.ap .textarea { height: auto; padding: 10px 12px; resize: none; }
+.ap .label { font-size: 12px; font-weight: 500; color: var(--color-text-secondary); display: block; margin-bottom: 6px; }
+
+/* Avatar */
+.ap .avatar {
+  display: inline-flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, #c4b5fd 0%, #a78bfa 100%);
+  color: #fff; font-weight: 600; font-family: var(--font-display);
+  border-radius: 999px; overflow: hidden; flex: 0 0 auto;
+}
+
+/* Placeholder image — subtle stripes + monospace explainer */
+.ap .ph {
+  position: relative; overflow: hidden;
+  background:
+    repeating-linear-gradient(45deg,
+      color-mix(in srgb, var(--color-text-secondary) 8%, transparent) 0 1px,
+      transparent 1px 10px),
+    color-mix(in srgb, var(--color-text-secondary) 4%, transparent);
+  border: 1px solid var(--color-border);
+  border-radius: var(--r-md);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono); font-size: 11px; color: var(--color-text-secondary);
+  text-align: center;
+}
+
+/* Dividers + utility */
+.ap .hr { height: 1px; background: var(--color-border); border: 0; width: 100%; }
+.ap .vr { width: 1px; background: var(--color-border); align-self: stretch; }
+.ap .muted { color: var(--color-text-secondary); }
+.ap .tiny { font-size: 11px; }
+.ap .small { font-size: 12px; }
+.ap .strong { font-weight: 600; }
+
+/* Verified check */
+.ap .check {
+  width: 14px; height: 14px; border-radius: 999px; background: var(--color-action-lime);
+  display: inline-flex; align-items: center; justify-content: center; color: #fff;
+}
+
+/* Chrome shell for desktop signed-in app */
+.ap .shell {
+  display: grid; grid-template-columns: 232px 1fr;
+  height: 100%; background: var(--color-surface-bg);
+}
+.ap .sidebar {
+  background: var(--color-surface-card);
+  border-right: 1px solid var(--color-border);
+  display: flex; flex-direction: column; padding: 16px 12px; gap: 4px;
+}
+.ap .topbar {
+  height: 56px; flex: 0 0 auto;
+  background: var(--color-surface-card);
+  border-bottom: 1px solid var(--color-border);
+  display: flex; align-items: center; padding: 0 24px; gap: 16px;
+}
+.ap .main { padding: 28px 32px; overflow: auto; flex: 1 1 auto; }
+.ap .content { display: flex; flex-direction: column; min-height: 0; }
+.ap .nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px; border-radius: 10px;
+  font-size: 13px; color: var(--color-text-secondary); font-weight: 500;
+  cursor: pointer;
+}
+.ap .nav-item:hover { background: var(--color-surface-hover); color: var(--color-text-primary); }
+.ap .nav-item.active {
+  background: color-mix(in srgb, var(--color-brand) 10%, transparent);
+  color: var(--color-brand);
+}
+.ap .nav-section { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: #94a3b8; padding: 14px 10px 6px; }
