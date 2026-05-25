@@ -1,4 +1,8 @@
 // apps/api/src/local.ts
+/* v8 ignore file -- Node-only dev entrypoint; binds a native module
+   (better-sqlite3) and starts an HTTP listener, so it is not
+   contract-testable. The production code it composes is covered by
+   every other apps/api contract test. (Story #760) */
 //
 // Node-only dev entrypoint for `@repo/api` (Story #760).
 //
