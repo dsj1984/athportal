@@ -44,8 +44,8 @@
     "lint:deps": "depcruise apps packages --config .dependency-cruiser.cjs",
     "lint:deps:graph": "node scripts/dep-graph.mjs",
     "audit:check": "node scripts/audit-check.mjs",
-    "sync:commands": "node .agents/scripts/sync-claude-commands.js",
-    "prepare": "node .agents/scripts/sync-claude-commands.js",
+    "sync:commands": "node .agents/scripts/sync-claude-commands.js && node scripts/sync-local-commands.mjs",
+    "prepare": "node .agents/scripts/sync-claude-commands.js && node scripts/sync-local-commands.mjs",
     "quality:preview": "node .agents/scripts/quality-preview.js --changed-since HEAD",
     "quality:watch": "node .agents/scripts/quality-watch.js",
     "quality:ci-local": "pnpm run lint && pnpm run typecheck && pnpm run test && pnpm run build && pnpm run lint:baseline:check && pnpm run knip:strict && pnpm run lint:secrets && node scripts/lint-orphan-bem.mjs && node scripts/lint-astro-frontmatter.mjs"
