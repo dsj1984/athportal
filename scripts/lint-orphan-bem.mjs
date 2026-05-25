@@ -154,10 +154,8 @@ export function extractClassAttributes(markup) {
     return 1;
   }
   const out = [];
-  let m;
-  CLASS_ATTR_RE.lastIndex = 0;
-  while ((m = CLASS_ATTR_RE.exec(markup)) !== null) {
-    out.push({ value: m[1], line: lineFor(m.index) });
+  for (const m of markup.matchAll(CLASS_ATTR_RE)) {
+    out.push({ value: m[1], line: lineFor(m.index ?? 0) });
   }
   return out;
 }
@@ -195,12 +193,9 @@ export function collectColocatedStyleClasses(source) {
   const out = new Set();
   const re = /<style\b[^>]*>([\s\S]*?)<\/style>/g;
   const classRe = /\.([A-Za-z][\w-]*)/g;
-  let m;
-  while ((m = re.exec(source)) !== null) {
+  for (const m of source.matchAll(re)) {
     const body = m[1];
-    let c;
-    classRe.lastIndex = 0;
-    while ((c = classRe.exec(body)) !== null) {
+    for (const c of body.matchAll(classRe)) {
       out.add(c[1]);
     }
   }
@@ -220,12 +215,9 @@ export function collectColocatedStyleClasses(source) {
 export function collectScriptReferences(source) {
   const out = new Set();
   const re = /<script\b[^>]*>([\s\S]*?)<\/script>/g;
-  let m;
-  while ((m = re.exec(source)) !== null) {
+  for (const m of source.matchAll(re)) {
     const body = m[1];
-    let s;
-    STRING_LITERAL_RE.lastIndex = 0;
-    while ((s = STRING_LITERAL_RE.exec(body)) !== null) {
+    for (const s of body.matchAll(STRING_LITERAL_RE)) {
       const value = s[1];
       // Strip a leading dot (CSS-selector form) so the bare class name
       // can be matched against BEM candidates.
@@ -249,8 +241,7 @@ export function collectScriptReferences(source) {
 export function collectGlobalCssClasses(globalCssText) {
   const out = new Set();
   const classRe = /\.([A-Za-z][\w-]*)/g;
-  let m;
-  while ((m = classRe.exec(globalCssText)) !== null) {
+  for (const m of globalCssText.matchAll(classRe)) {
     out.add(m[1]);
   }
   return out;
@@ -269,14 +260,13 @@ export function collectGlobalCssClasses(globalCssText) {
 export function collectCvaClasses(primitivesRoot) {
   const out = new Set();
   if (!fs.existsSync(primitivesRoot)) return out;
-  const files = walk(primitivesRoot, (name) =>
-    name.endsWith('.ts') && !name.endsWith('.test.ts') && !name.endsWith('.d.ts'),
+  const files = walk(
+    primitivesRoot,
+    (name) => name.endsWith('.ts') && !name.endsWith('.test.ts') && !name.endsWith('.d.ts'),
   );
   for (const file of files) {
     const src = fs.readFileSync(file, 'utf8');
-    let m;
-    STRING_LITERAL_RE.lastIndex = 0;
-    while ((m = STRING_LITERAL_RE.exec(src)) !== null) {
+    for (const m of src.matchAll(STRING_LITERAL_RE)) {
       const value = m[1];
       const candidates = value.split(/\s+/).filter(Boolean);
       for (const cand of candidates) {
@@ -369,9 +359,7 @@ export function runLint({
   allowlistPath = ALLOWLIST_PATH,
   repoRoot = REPO_ROOT,
 } = {}) {
-  const globalCssText = fs.existsSync(globalCssPath)
-    ? fs.readFileSync(globalCssPath, 'utf8')
-    : '';
+  const globalCssText = fs.existsSync(globalCssPath) ? fs.readFileSync(globalCssPath, 'utf8') : '';
   const context = {
     globalCssClasses: collectGlobalCssClasses(globalCssText),
     cvaClasses: collectCvaClasses(primitivesRoot),
@@ -427,9 +415,7 @@ async function main(argv) {
   if (asJson) {
     process.stdout.write(`${JSON.stringify(findings, null, 2)}\n`);
   } else if (findings.length > 0) {
-    process.stderr.write(
-      `lint-orphan-bem: ${findings.length} orphan BEM class name(s) found:\n`,
-    );
+    process.stderr.write(`lint-orphan-bem: ${findings.length} orphan BEM class name(s) found:\n`);
     for (const f of findings) {
       process.stderr.write(`  ${f.path}:${f.line}  ${f.class}\n`);
     }

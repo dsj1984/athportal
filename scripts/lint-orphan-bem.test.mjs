@@ -72,9 +72,7 @@ describe('extractBemCandidates', () => {
   });
 
   it('does not match Tailwind state/variant utilities with single dashes', () => {
-    const out = extractBemCandidates([
-      { value: 'hover:bg-brand focus-visible:ring-2', line: 1 },
-    ]);
+    const out = extractBemCandidates([{ value: 'hover:bg-brand focus-visible:ring-2', line: 1 }]);
     assert.equal(out.length, 0);
   });
 
@@ -182,11 +180,7 @@ describe('findOrphans (resolver paths)', () => {
   });
 
   it('reports an unresolved class as orphan with file line number', () => {
-    const source = [
-      '<div>',
-      '  <span class="orphan__hook">x</span>',
-      '</div>',
-    ].join('\n');
+    const source = ['<div>', '  <span class="orphan__hook">x</span>', '</div>'].join('\n');
     const out = findOrphans({
       source,
       context: baseContext,
@@ -352,11 +346,7 @@ describe('collectCvaClasses', () => {
   });
 
   it('does not scan .test.ts siblings', () => {
-    writeFileSync(
-      join(dir, 'Bar.test.ts'),
-      `expect(x).toBe('bar__only-in-test');`,
-      'utf8',
-    );
+    writeFileSync(join(dir, 'Bar.test.ts'), `expect(x).toBe('bar__only-in-test');`, 'utf8');
     const out = collectCvaClasses(dir);
     assert.ok(!out.has('bar__only-in-test'));
   });
