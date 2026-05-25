@@ -38,13 +38,16 @@
     "mutation:update": "node scripts/mutation-baseline.mjs --update",
     "lighthouse:check": "node scripts/lighthouse-baseline.mjs --check",
     "lighthouse:update": "node scripts/lighthouse-baseline.mjs --update",
+    "lint:qa": "node scripts/qa/lint.mjs",
+    "index:qa": "node scripts/qa/index.mjs",
+    "coverage:qa": "node scripts/qa/coverage.mjs",
     "lint:steps": "node scripts/lint-steps.mjs",
     "lint:steps:fixtures": "node scripts/lint-steps.mjs --fixtures",
     "lint:deps": "depcruise apps packages --config .dependency-cruiser.cjs",
     "lint:deps:graph": "node scripts/dep-graph.mjs",
     "audit:check": "node scripts/audit-check.mjs",
-    "sync:commands": "node .agents/scripts/sync-claude-commands.js",
-    "prepare": "node .agents/scripts/sync-claude-commands.js",
+    "sync:commands": "node .agents/scripts/sync-claude-commands.js && node scripts/sync-local-commands.mjs",
+    "prepare": "node .agents/scripts/sync-claude-commands.js && node scripts/sync-local-commands.mjs",
     "quality:preview": "node .agents/scripts/quality-preview.js --changed-since HEAD",
     "quality:watch": "node .agents/scripts/quality-watch.js",
     "quality:ci-local": "pnpm run lint && pnpm run typecheck && pnpm run test && pnpm run build && pnpm run lint:baseline:check && pnpm run knip:strict && pnpm run lint:secrets && node scripts/lint-orphan-bem.mjs && node scripts/lint-astro-frontmatter.mjs"
@@ -71,6 +74,7 @@
     "dependency-cruiser": "^17.4.0",
     "eslint": "^9",
     "eslint-config-prettier": "^10.1.8",
+    "gray-matter": "^4.0.3",
     "knip": "^6.14.1",
     "lint-staged": "^17.0.5",
     "markdownlint-cli2": "^0.22.1",
@@ -78,7 +82,8 @@
     "turbo": "^2",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.59.3",
-    "vitest": "^4.1.6"
+    "vitest": "^4.1.6",
+    "zod": "^3.23.8"
   },
   "pnpm": {
     "overrides": {

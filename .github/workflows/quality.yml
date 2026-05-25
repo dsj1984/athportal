@@ -193,6 +193,48 @@ jobs:
       - name: Lint step definitions
         run: pnpm run lint:steps
 
+  qa-corpus:
+    # Epic #775 — QA-corpus gates.
+    # Three sequential checks against tests/plans/ and tests/charters/:
+    #   1. lint:qa — front-matter Zod schemas + body-shape rules
+    #      (scripts/qa/lint.mjs)
+    #   2. index:qa --check — tests/qa-index.json must be in sync with
+    #      the live corpus (scripts/qa/index.mjs)
+    #   3. coverage:qa --report — per-domain floors declared in
+    #      scripts/qa/schema/coverage-floors.ts (PRD #781 AC-7) must
+    #      hold; writes coverage/qa-coverage.json and exits 1 on gaps
+    # Citation: Tech Spec #782 § CI integration; PRD #781 AC-4/AC-7/AC-8;
+    # Acceptance Spec #783 AC-6/AC-14/AC-15.
+    name: QA corpus (lint + index + coverage)
+    needs: [lint, typecheck]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - name: Set up toolchain (checkout + pnpm + node + install)
+        uses: ./.github/actions/setup-toolchain
+
+      - name: Lint QA corpus (front-matter + body shape)
+        run: pnpm run lint:qa
+
+      - name: Check QA index is in sync with the corpus
+        run: pnpm run index:qa -- --check
+
+      - name: Report QA coverage against per-domain floors
+        run: pnpm run coverage:qa -- --report
+
+      - name: Upload QA coverage report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: qa-coverage
+          path: coverage/qa-coverage.json
+          if-no-files-found: ignore
+
   lint-orphan-bem:
     # Story #834 / Task #840 — orphan BEM lint gate.
     # Walks apps/web/src/ and fails when any class name matching the

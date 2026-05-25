@@ -49,7 +49,20 @@ node .agents/scripts/quality-preview.js --changed-since HEAD --staged
 # (forbidden patterns, duplicate phrases, unused-step warning) are enforced.
 pnpm run lint:steps --staged
 
-# --- 5. RBAC matrix drift check ------------------------------------------
+# --- 5. QA-corpus lint on staged plan/charter files ---------------------
+# Epic #775 — when a staged path is a Test Plan (*.plan.md) or
+# Exploratory Charter (*.charter.md), run the QA-corpus linter against
+# just those files. The lint script (scripts/qa/lint.mjs) accepts
+# positional paths to scope validation; the full-corpus walk runs in
+# CI via `pnpm run lint:qa`. We skip the invocation entirely when no
+# QA artifacts are staged so the hook stays fast on unrelated commits.
+staged_qa=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(plan|charter)\.md$' || true)
+if [ -n "$staged_qa" ]; then
+	# shellcheck disable=SC2086 # word-split each path into a separate argv entry
+	pnpm exec node scripts/qa/lint.mjs $staged_qa
+fi
+
+# --- 6. RBAC matrix drift check ------------------------------------------
 # Epic #9 / Story #616 — packages/shared/src/rbac/rules.ts is the source of
 # truth for the RBAC matrix; docs/data-dictionary.md publishes it between
 # sentinel comments. render-rbac-matrix.mjs --check re-derives the table

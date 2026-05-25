@@ -49,6 +49,16 @@
   - [Findings, triage, and closing the loop](#findings-triage-and-closing-the-loop)
   - [Regression checklist](#regression-checklist)
   - [How to update this section](#how-to-update-this-section)
+- [QA Corpus](#qa-corpus)
+  - [Overview](#overview)
+  - [Test Plan format](#test-plan-format)
+  - [Exploratory Charter format](#exploratory-charter-format)
+  - [Heuristic library](#heuristic-library)
+  - [Lint, index, and coverage gates](#lint-index-and-coverage-gates)
+  - [Agent-runner runbook](#agent-runner-runbook)
+  - [Promotion pipeline (charter finding → Test Plan / scenario)](#promotion-pipeline-charter-finding--test-plan--scenario)
+  - [Safety-constraints contract](#safety-constraints-contract)
+  - [Per-domain coverage floors](#per-domain-coverage-floors)
 - [Coverage expectations](#coverage-expectations)
 - [When to add a test vs. when to move one](#when-to-add-a-test-vs-when-to-move-one)
 - [Canonical step vocabulary](#canonical-step-vocabulary)
@@ -511,6 +521,8 @@ These gates do not belong to a pyramid tier — they enforce structural and poli
 > Human-driven testing is the counterpart to the automated pyramid above. Automation covers regression — that a known behavior still works. Manual testing covers the things humans notice that machines don't: visual polish, copy tone, real-device feel, the "does this flow actually feel right" question, and the edge cases nobody thought to encode in a `.feature` file yet.
 >
 > This section defines **when** to test manually, **what** to test, and **where** the artifacts live. The cadence is referenced from [`docs/path-to-mvp.md`](path-to-mvp.md) as the manual-QA gate between phases, and is the ongoing rhythm after MVP.
+>
+> The **scripted artifacts** that drive manual sessions (Test Plans, Exploratory Charters, the shared heuristic library) live in the [§ QA Corpus](#qa-corpus) section below. The Manual Testing section here governs the **cadence and judgment calls**; the QA Corpus section governs the **on-disk shape, the lint gates, and the agent-runner contract** that lets a human session and an agent-driven session ride the same artifacts.
 
 ### What manual testing is for
 
@@ -713,6 +725,192 @@ The accumulating sweep, grouped by phase. Rows are appended as phases land. The 
 - A manual check becomes reliably automated → mark the row **(automated → see <test path>)** rather than deleting it.
 - A finding recurs across phases → that's a signal; open a meta-issue to add automated coverage rather than just adding another checklist row.
 - A surface is removed → mark its rows **(deprecated — <date>)** rather than deleting them, so the change is traceable in git history.
+
+---
+
+## QA Corpus
+
+> The QA Corpus is the on-disk substrate that turns the [§ Manual Testing](#manual-testing) cadence into reviewable, lintable, and re-runnable artifacts. It complements the unit, contract, and acceptance tiers above — it does not replace them. Test Plans script the manual sweeps that the automated tiers can't yet reach; Exploratory Charters drive the time-boxed probes that surface the next round of bugs.
+>
+> **Citations.** [Tech Spec #782](https://github.com/dsj1984/athportal/issues/782) § Core Components #7–8, [PRD #781](https://github.com/dsj1984/athportal/issues/781) AC-9, [Acceptance Spec #783](https://github.com/dsj1984/athportal/issues/783) AC-16.
+
+### Overview
+
+The corpus is two artifact families and a shared library:
+
+- **Test Plans** (`tests/plans/<domain>/tp-*.plan.md`) — scripted, repeatable walk-throughs of a user-visible journey. A plan declares its surface, persona, route prefixes, and time-box in YAML front-matter, then walks Setup → numbered Steps (each with an `**Expected:**` line) → Cleanup. Plans are the unit of *regression manual sweep*: every plan must be runnable by a human or by an agent runner against the same artifact and produce the same verdict.
+- **Exploratory Charters** (`tests/charters/<domain>/ec-*.charter.md`) — time-boxed probes whose mission is to *find* something, not to confirm a known outcome. A charter declares a mission, a list of heuristics it will apply, and a load-bearing `safety_constraints` block (environment scope, mutation surface, required reset). Findings are appended to the charter's `## Findings` table; promotable findings become Test Plans or `.feature` scenarios in a follow-up PR (see [§ Promotion pipeline](#promotion-pipeline-charter-finding--test-plan--scenario) below).
+- **Heuristic library** (`tests/charters/_heuristics/<name>.md`) — shared, named heuristic cards (boundary-values, encoding-fuzz, cross-tenant-probe, …) referenced by charters via the `heuristics:` array in front-matter. Reuse is enforced at the lint layer: a charter that lists an unknown heuristic name fails `pnpm run lint:qa` with a clear "does not resolve to tests/charters/_heuristics/<name>.md" error.
+
+**Human-vs-agent parity** is the principle that holds the corpus together. Every artifact is authored once and read by both audiences:
+
+- A **human** opens the file in their editor, follows the Setup, runs the Steps, and either records pass/fail (plan) or appends findings (charter).
+- An **agent** loads the same file via the upcoming `/run-qa`-family slash commands (see [§ Agent-runner runbook](#agent-runner-runbook)) and drives the same workflow through the `chrome-devtools` MCP surface. The agent sees the same front-matter, the same numbered steps, the same `**Expected:**` predicates, and (for charters) the same `safety_constraints` gate.
+
+The parity rule is enforced bidirectionally: an instruction that only a human can follow ("look closely at the spacing") belongs in the body as a `**Note:**` aside, not as a numbered step the agent will try to assert against. An instruction that only an agent can follow ("use the chrome-devtools `take_snapshot` tool") belongs nowhere — it leaks runtime implementation into a portable artifact. Both sides drive against user-visible outcomes only.
+
+### Test Plan format
+
+Test Plan front-matter is validated by [`scripts/qa/schema/plan.front-matter.zod.ts`](../scripts/qa/schema/plan.front-matter.zod.ts). The required fields are:
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | string | Kebab-case, prefixed with `tp-`. Regex: `^tp-[a-z0-9]+(?:-[a-z0-9]+)*$`. Example: `tp-identity-signup-happy-path`. |
+| `type` | literal `plan` | Used by the lint dispatcher to route the file to the plan branch. |
+| `title` | string | One-line human-readable headline. |
+| `domain` | enum | One of the values in [`scripts/qa/schema/domains.ts`](../scripts/qa/schema/domains.ts). Live domains today: `identity`, `org-admin`, `design-system`. Deferred entries (`marketing`, `public-discovery`, `settings`, `athlete-dashboard`, `coach-dashboard`) are accepted by the schema so future Epics land their plans in the same PR that ships the routes. `mobile` is reserved. |
+| `persona` | enum | One of `visitor`, `athlete`, `coach`, `org-admin`, `platform-admin` (see [`scripts/qa/schema/personas.ts`](../scripts/qa/schema/personas.ts)). Mirrors [`docs/personas.md`](personas.md). |
+| `surface` | enum | `web` today. `mobile` is reserved until the mobile Epic lands. |
+| `route_prefixes` | string[] | At least one entry. Each must start with `/` and use URL-safe characters. |
+| `est_minutes` | positive integer | The human time-box. The runner does not enforce this — it is documentation. |
+| `prerequisites` | string[] | Optional. Free-form natural-language list of setup steps the agent or human must satisfy before starting. |
+
+The body follows a canonical three-section shape. Each section is a top-level H2 in the exact order below:
+
+1. `## Setup` — natural-language prose listing the preconditions (local stack running, DB seeded, test email picked, side-channels ready).
+2. `## Steps` — a numbered list. Every step's body MUST contain a `**Expected:**` line. The lint script enforces this — a numbered step without an expected line fails `lint:qa` with `step <n> is missing an "**Expected:**" line`.
+3. `## Cleanup` — natural-language prose listing the teardown actions (sign out, reset DB, delete partially-registered Clerk users).
+
+Example skeleton:
+
+````markdown
+---
+id: tp-identity-signup-happy-path
+type: plan
+title: Sign-up → onboarding happy path (athlete)
+domain: identity
+persona: athlete
+surface: web
+route_prefixes:
+  - /sign-up
+  - /onboarding
+est_minutes: 8
+prerequisites:
+  - "local stack running (pnpm dev)"
+  - "DB seeded with a fresh org via pnpm --filter @repo/shared run db:seed"
+---
+
+## Setup
+
+- Confirm the local stack is running …
+- Pick a fresh, unique test email address …
+
+## Steps
+
+1. Open a fresh browser session and visit `/sign-up`.
+   **Expected:** the sign-up page renders with a heading that announces the sign-up flow …
+
+2. Enter the test email address and a strong password, then submit the form.
+   **Expected:** the page transitions to a "verify your email" state …
+
+## Cleanup
+
+- Sign out by visiting `/sign-out` …
+- Reset the local DB: `pnpm --filter @repo/shared run db:reset && pnpm --filter @repo/shared run db:seed`.
+````
+
+The live pilot lives at [`tests/plans/identity/tp-identity-signup-happy-path.plan.md`](../tests/plans/identity/tp-identity-signup-happy-path.plan.md) — copy its shape verbatim when authoring a new plan.
+
+### Exploratory Charter format
+
+Exploratory Charter front-matter is validated by [`scripts/qa/schema/charter.front-matter.zod.ts`](../scripts/qa/schema/charter.front-matter.zod.ts). The required fields are:
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | string | Kebab-case, prefixed with `ec-`. Regex: `^ec-[a-z0-9]+(?:-[a-z0-9]+)*$`. Example: `ec-org-admin-csv-import`. |
+| `type` | literal `charter` | Lint dispatcher route. |
+| `title` | string | One-line human-readable headline. |
+| `domain` | enum | Same enum as plans (see above). |
+| `persona` | enum | Same enum as plans (see above). |
+| `route_prefixes` | string[] | At least one. Same regex as plans. |
+| `mission` | string | One-sentence falsifiable mission (e.g. "find ways the CSV import surface accepts malformed data without surfacing a visible error"). |
+| `heuristics` | string[] | At least one kebab-case heuristic name. Each must resolve to `tests/charters/_heuristics/<name>.md` — the lint script enforces this. |
+| `time_box_minutes` | positive integer | The session timebox (typically 15–30 minutes). |
+| `safety_constraints` | object | **Mandatory, load-bearing.** See [§ Safety-constraints contract](#safety-constraints-contract) below. |
+| `prerequisites` | string[] | Optional, same shape as plans. |
+
+The body shape:
+
+1. `## Mission` — a paragraph expanding the front-matter mission with the *why* (which downstream surfaces a bug here would corrupt, what classes of defect are most dangerous).
+2. `## Heuristics` — one bullet per heuristic listed in the front-matter, with a sentence or two explaining how this charter will apply that named heuristic to the specific surface.
+3. `## Notes` — optional scratchpad. The session runner appends per-snapshot notes here.
+4. `## Findings` — a table with columns `id | title | severity | repro | suggested-promotion`. New findings are appended as new rows; rows are never deleted — promoted findings stay in the table for traceability with their `suggested-promotion` cell pointing at the follow-up issue or PR.
+
+The live pilot lives at [`tests/charters/org-admin/ec-org-admin-csv-import.charter.md`](../tests/charters/org-admin/ec-org-admin-csv-import.charter.md) — copy its shape when authoring a new charter.
+
+### Heuristic library
+
+Shared heuristic cards live under [`tests/charters/_heuristics/`](../tests/charters/_heuristics/). Each card is a single Markdown file whose basename (without `.md`) is the heuristic's canonical name. A charter references a heuristic by listing the basename in its `heuristics:` array; the lint script registers every file in the directory at startup and rejects any name that does not resolve.
+
+The 8 heuristics shipped by Story #791:
+
+| Name | What it probes |
+|---|---|
+| `boundary-values` | Off-by-one transitions on every numeric/length/range bound the surface accepts. |
+| `auth-fuzz` | Authentication surface: malformed sessions, expired tokens, cross-tenant cookies, replay attempts. |
+| `cross-tenant-probe` | Ownership invariants: can a user in Org A see, mutate, or enumerate resources in Org B by manipulating IDs? |
+| `email-collision` | Email-uniqueness invariants: case-folding, plus-addressing, Unicode lookalikes, normalization corners. |
+| `encoding-fuzz` | Character-encoding deviations from the parser's assumptions (UTF-16-LE, BOMs, Windows-1252 smart quotes, embedded NUL bytes). |
+| `form-fuzz` | Wrong-type values substituted into typed fields (phone in email, HTML in name, oversize strings in capped columns). |
+| `landmark-tour` | Accessibility landmark sweep: every page reachable via landmarks, every form labelled, every interactive control reachable by keyboard. |
+| `money-tour` | Money handling: currency formatting, rounding boundaries, negative values, zero-amount handling, currency-mixing edge cases. |
+
+Heuristic cards are intentionally short — a `## When to apply` paragraph and a list of concrete probes. They are reference material, not scripts; the charter that *uses* a heuristic is responsible for translating it into surface-specific moves.
+
+### Lint, index, and coverage gates
+
+The QA Corpus has three CLI gates, layered:
+
+- **`pnpm run lint:qa`** — runs [`scripts/qa/lint.mjs`](../scripts/qa/lint.mjs). Discovers every `*.plan.md` under `tests/plans/` and every `*.charter.md` under `tests/charters/` (skipping `_heuristics/`), validates each artifact's front-matter against the matching Zod schema, validates the body-section shape, and (for charters) resolves every heuristic name against the `_heuristics/` directory. Exit code 0 on a clean pass, 1 on any artifact failure, 2 on CLI misuse. Wired into the `quality.yml` CI gate and (via a later Story) the Husky `pre-commit` hook against staged `.plan.md` / `.charter.md` paths.
+- **`pnpm run index:qa`** *(lands with a later Story)* — emits a deterministic JSON index of the corpus (id, type, domain, persona, route_prefixes, file path) so agent workflows and the coverage check can read the corpus shape without re-parsing every file. The index is committed and ratcheted; drift between the index and the on-disk corpus fails CI.
+- **`pnpm run coverage:qa`** *(lands with a later Story)* — enforces the per-domain plan + charter floors declared in `scripts/qa/schema/coverage-floors.ts` (planned location; ships with the coverage Story). A domain whose plan count falls below its floor fails CI, the same ratchet shape as the other quality baselines.
+
+`lint:qa` is the only gate live today; `index:qa` and `coverage:qa` are forward-looking commitments named here so authors and reviewers know the lint they pass on PR-open is the first of three.
+
+### Agent-runner runbook
+
+The agent runners are slash commands that load a QA-corpus artifact, drive the steps through the `chrome-devtools` MCP surface, and record the outcome back to the artifact (charters) or to the run-log (plans). The commands land in later Stories of Epic #775:
+
+- **`/run-qa <plan-or-charter-id>`** *(lands with Story #794)* — runs a single named artifact end-to-end. Loads the file from `tests/plans/` or `tests/charters/` by `id`, validates it through the same Zod schemas the linter uses, then dispatches to the plan-runner or charter-runner.
+- **`/run-qa-domain <domain>`** *(lands with Story #807)* — runs every artifact in a domain (e.g. all `domain: identity` plans + charters) in deterministic id-sorted order.
+- **`/run-qa-all`** *(lands with Story #807)* — runs the entire corpus. The pre-release sweep companion to the human pre-release sweep documented in [§ Pre-release sweep](#3-pre-release-sweep).
+
+The runners drive the browser through the `chrome-devtools` MCP surface — `navigate_page`, `take_snapshot`, `click`, `fill`, `evaluate_script`, `take_screenshot`, `list_console_messages`, and `list_network_requests` are the primary tools. The runner reads `route_prefixes[0]` from front-matter to decide where to start, applies each step's interaction, then evaluates the `**Expected:**` predicate against the post-step snapshot.
+
+**Safety gate.** A charter whose `safety_constraints.environment` is anything other than `local` cannot run unless the operator passes `--allow-non-local` explicitly. The gate exists because charters mutate state (per the `mutation_surface` declaration) and a stray `preview` or `staging` run would leak fuzz data into a shared environment. The `environment: prod` value is denylisted at the schema layer, so a prod-targeted charter cannot even land on `main` — the runner gate is a second line of defense against the `local` → non-local class of mistake.
+
+### Promotion pipeline (charter finding → Test Plan / scenario)
+
+A charter is a *probe*; once it finds a real defect, the defect is fixed and the surface gains a permanent guard. The fix PR carries the promotion:
+
+- **Always:** the bug fix itself, plus a row appended to a Test Plan that exercises the regression manually. If the affected surface had no plan yet, the PR creates the plan. The charter's `## Findings` row's `suggested-promotion` cell points at the plan id (and, when relevant, the new contract or unit test).
+- **When the defect is user-visible:** a new `.feature` scenario at the acceptance tier asserting the user-visible outcome ("after a malformed CSV upload, the operator sees a row-level error"). The scenario is authored per [`gherkin-standards.md`](../.agents/rules/gherkin-standards.md) and does NOT assert on the wire shape — that lives in the matching contract test under `apps/api/src/**/*.contract.test.ts`.
+
+The pipeline closes the loop: a charter finding is never a one-shot — it is the trigger for both a regression script and (where the assertion class warrants it) a permanent automated guard. The charter row stays in `## Findings` with its `suggested-promotion` populated so a future reviewer can trace fix → plan → scenario → test.
+
+### Safety-constraints contract
+
+The `safety_constraints` block on every charter is the corpus's load-bearing security gate. It is validated by [`scripts/qa/schema/charter.front-matter.zod.ts`](../scripts/qa/schema/charter.front-matter.zod.ts) and has three required fields:
+
+- **`environment`** — one of `local`, `preview`, `staging`. The literal `prod` is **denylisted at the schema layer**: the Zod error message reads "safety_constraints.environment must not be \"prod\" — charters that target production are denylisted at the lint layer" so the operator immediately understands a denylist, not a typo, is the cause. The `lint:qa` gate therefore refuses to merge a prod-targeted charter onto `main`. The agent-runner gate is the second line of defense — `environment: local` runs without ceremony; anything else requires the operator to pass `--allow-non-local` explicitly.
+- **`mutation_surface`** — a non-empty list of natural-language identifiers naming every persisted surface the charter is allowed to mutate (e.g. `"csv_import_batches table"`, `"athlete_memberships table"`). The list is documentation for the operator and a checklist for the cleanup step — it does NOT grant runtime capability; the runner does not enforce a per-table allow-list. The list's load-bearing role is review: a charter that mutates a surface not declared here is a defect in the charter, caught at PR review.
+- **`required_reset`** — a single string naming the command (or sequence) that returns the named mutation surface to a clean state. Example: `"pnpm --filter @repo/shared run db:reset && pnpm --filter @repo/shared run db:seed"`. The runner displays this string at the end of every charter session as a reminder; the human operator runs it before the next charter.
+
+A charter that omits any of the three fields fails `lint:qa` with a path-prefixed error (e.g. `safety_constraints.environment: Required`) so the operator sees the missing field by name.
+
+### Per-domain coverage floors
+
+Each live domain carries a minimum plan + charter count, enforced by `pnpm run coverage:qa` (lands with a later Story; the floors table below is mirrored from `scripts/qa/schema/coverage-floors.ts`'s planned shape so reviewers do not need to open the Epic).
+
+| Domain | Plans (floor) | Charters (floor) |
+|---|---:|---:|
+| `identity` | 10 | 1 |
+| `org-admin` | 6 | 2 |
+| `design-system` | 1 | 0 |
+
+Domains not listed (`marketing`, `public-discovery`, `settings`, `athlete-dashboard`, `coach-dashboard`) are deferred — their floors land in the same PR that ships the routes those domains cover. `mobile` is reserved.
+
+The floors ratchet only upward: a Story that lifts a domain's plan count over its floor lands the new floor in the same PR. Lowering a floor requires explicit operator approval in the PR description, the same discipline as the lint and coverage baselines above.
 
 ---
 

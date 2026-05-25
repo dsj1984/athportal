@@ -18,6 +18,7 @@
     "packages/config/vitest.base.ts",
     "packages/config/vitest.contract.ts",
     "packages/shared/vitest.config.ts",
-    "packages/shared/drizzle.config.ts"
+    "packages/shared/drizzle.config.ts",
+    "scripts/qa/**/*.ts"
   ]
 }
