@@ -158,18 +158,16 @@ const charterFrontMatterBaseSchema = z
  * domain refinement runs on top via `parseCharterFrontMatter` so callers
  * get one consolidated `ZodError`.
  */
-export const charterFrontMatterSchema = charterFrontMatterBaseSchema.superRefine(
-  (value, ctx) => {
-    const domainReservation = reservedDomainMessage(value.domain);
-    if (domainReservation) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['domain'],
-        message: `domain "${value.domain}" is ${domainReservation}`,
-      });
-    }
-  },
-);
+export const charterFrontMatterSchema = charterFrontMatterBaseSchema.superRefine((value, ctx) => {
+  const domainReservation = reservedDomainMessage(value.domain);
+  if (domainReservation) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['domain'],
+      message: `domain "${value.domain}" is ${domainReservation}`,
+    });
+  }
+});
 
 export type SafetyConstraints = z.infer<typeof safetyConstraintsSchema>;
 export type CharterFrontMatter = z.infer<typeof charterFrontMatterSchema>;

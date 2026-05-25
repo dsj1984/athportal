@@ -1,14 +1,16 @@
 #!/usr/bin/env node
 // scripts/qa/lint.mjs
 //
-// QA-corpus linter. This is the **plan branch** — it scans every
-// `tests/plans/**/*.plan.md` artifact, validates its YAML front-matter
-// against the Zod schema in `scripts/qa/schema/plan.front-matter.zod.ts`,
-// and verifies the required body sections (`## Setup`, `## Steps`,
-// `## Cleanup`). The charter branch is added under the same dispatcher
-// by a later Story; the dispatcher reads `type:` from front-matter and
-// routes accordingly. Today, `type: charter` files are skipped with a
-// neutral message (the charter validator has not landed yet).
+// QA-corpus linter. Scans every `tests/plans/**/*.plan.md` and
+// `tests/charters/**/*.charter.md` artifact, validates its YAML
+// front-matter against the matching Zod schema in `scripts/qa/schema/`,
+// and verifies the required body sections.
+//
+// The dispatcher reads `type:` from front-matter and routes:
+//   - `type: plan`    → plan.front-matter.zod.ts + Setup/Steps/Cleanup body
+//   - `type: charter` → charter.front-matter.zod.ts + Mission/Heuristics/
+//                       Findings body + heuristic-name resolution against
+//                       tests/charters/_heuristics/<name>.md
 //
 // Wired into:
 //   - `pnpm run lint:qa` (package.json scripts) — CI quality gate
@@ -16,13 +18,13 @@
 //     `.plan.md` / `.charter.md` paths (added by a later Story)
 //
 // Exit codes:
-//   0 — every plan parsed and body-shape-checked clean
-//   1 — at least one plan failed schema or body validation
+//   0 — every artifact parsed and body-shape-checked clean
+//   1 — at least one artifact failed schema or body validation
 //   2 — CLI usage error (unreadable paths, malformed args)
 //
 // Output contract:
 //   - Success path prints a one-line summary to stdout:
-//       "lint:qa: ok — N plan(s) checked"
+//       "lint:qa: ok — N plan(s), M charter(s) checked"
 //   - Each error prints a per-file row to stderr:
 //       "<file>: <field-path-or-section>: <message>"
 //     Multiple errors per file are listed individually so the operator
@@ -36,6 +38,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import matter from 'gray-matter';
 
+import { safeParseCharterFrontMatter } from './schema/charter.front-matter.zod.ts';
 import { safeParsePlanFrontMatter } from './schema/plan.front-matter.zod.ts';
 
 // ---------------------------------------------------------------------------
@@ -45,9 +48,11 @@ import { safeParsePlanFrontMatter } from './schema/plan.front-matter.zod.ts';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const DEFAULT_PLANS_ROOT = path.join(REPO_ROOT, 'tests', 'plans');
+const DEFAULT_CHARTERS_ROOT = path.join(REPO_ROOT, 'tests', 'charters');
+const HEURISTICS_DIRNAME = '_heuristics';
 
 // ---------------------------------------------------------------------------
-// Body-shape rules (plan branch)
+// Body-shape rules
 // ---------------------------------------------------------------------------
 
 /**
@@ -55,6 +60,13 @@ const DEFAULT_PLANS_ROOT = path.join(REPO_ROOT, 'tests', 'plans');
  * canonical body shape per Tech Spec #782 § Body shape → "Plan".
  */
 const REQUIRED_PLAN_SECTIONS = ['## Setup', '## Steps', '## Cleanup'];
+
+/**
+ * Required H2 sections for a charter, in order. Per Tech Spec #782
+ * § Body shape → "Charter". `## Notes` is optional per the spec body
+ * (free-form scratchpad) and is not required.
+ */
+const REQUIRED_CHARTER_SECTIONS = ['## Mission', '## Heuristics', '## Findings'];
 
 /**
  * Each numbered step in a plan must be followed by an `**Expected:**`
@@ -70,11 +82,14 @@ const EXPECTED_LINE_PATTERN = /\*\*Expected:\*\*/;
 // ---------------------------------------------------------------------------
 
 /**
- * Recursively collect every `.plan.md` file under `root`. Returns
+ * Recursively collect every file matching `suffix` under `root`. Returns
  * absolute paths sorted for deterministic output across platforms
  * (Windows readdir order is not lexicographic by default).
+ *
+ * Skips the `_heuristics/` directory so heuristic reference cards are
+ * not parsed as charters.
  */
-async function discoverPlanFiles(root) {
+async function discoverArtifacts(root, suffix) {
   let entries;
   try {
     entries = await readdir(root, { withFileTypes: true });
@@ -86,13 +101,45 @@ async function discoverPlanFiles(root) {
   for (const entry of entries) {
     const abs = path.join(root, entry.name);
     if (entry.isDirectory()) {
-      const nested = await discoverPlanFiles(abs);
+      if (entry.name === HEURISTICS_DIRNAME) continue;
+      const nested = await discoverArtifacts(abs, suffix);
       out.push(...nested);
-    } else if (entry.isFile() && entry.name.endsWith('.plan.md')) {
+    } else if (entry.isFile() && entry.name.endsWith(suffix)) {
       out.push(abs);
     }
   }
   return out.sort((a, b) => a.localeCompare(b));
+}
+
+async function discoverPlanFiles(root) {
+  return discoverArtifacts(root, '.plan.md');
+}
+
+async function discoverCharterFiles(root) {
+  return discoverArtifacts(root, '.charter.md');
+}
+
+/**
+ * Build the set of known heuristic names by listing the
+ * `tests/charters/_heuristics/` directory. Each `.md` file's basename
+ * (without extension) is a registered heuristic name.
+ */
+async function loadHeuristicNames(chartersRoot) {
+  const heuristicsDir = path.join(chartersRoot, HEURISTICS_DIRNAME);
+  let entries;
+  try {
+    entries = await readdir(heuristicsDir, { withFileTypes: true });
+  } catch (err) {
+    if (err.code === 'ENOENT') return new Set();
+    throw err;
+  }
+  const names = new Set();
+  for (const entry of entries) {
+    if (entry.isFile() && entry.name.endsWith('.md')) {
+      names.add(entry.name.replace(/\.md$/, ''));
+    }
+  }
+  return names;
 }
 
 // ---------------------------------------------------------------------------
@@ -111,29 +158,35 @@ function formatPath(zodPath) {
 }
 
 /**
+ * Search for required H2 sections inside `body`. Line-by-line scan so a
+ * `## Heading` reference inside a code block does not satisfy the rule.
+ */
+function findMissingSections(body, required) {
+  const lines = body.split(/\r?\n/);
+  const sectionLines = new Set(lines.map((line) => line.trim()));
+  const errors = [];
+  for (const section of required) {
+    if (!sectionLines.has(section)) {
+      errors.push({
+        section: section.replace('## ', ''),
+        message: `missing required section "${section}"`,
+      });
+    }
+  }
+  return errors;
+}
+
+/**
  * Validate the body of a plan. Returns an array of `{ section, message }`
  * errors so the caller can render them per-file.
  */
 function validatePlanBody(body) {
-  const errors = [];
-
-  // Required H2 sections — search line-by-line so a `## Steps` reference
-  // inside a code block does not satisfy the rule.
-  const lines = body.split(/\r?\n/);
-  const sectionLines = new Set(lines.map((line) => line.trim()));
-
-  for (const required of REQUIRED_PLAN_SECTIONS) {
-    if (!sectionLines.has(required)) {
-      errors.push({
-        section: required.replace('## ', ''),
-        message: `missing required section "${required}"`,
-      });
-    }
-  }
+  const errors = findMissingSections(body, REQUIRED_PLAN_SECTIONS);
 
   // If `## Steps` is present, every numbered step must be followed by an
   // `**Expected:**` line within the same step block. We segment the
   // Steps section between `## Steps` and the next H2 header.
+  const lines = body.split(/\r?\n/);
   const stepsStart = lines.findIndex((line) => line.trim() === '## Steps');
   if (stepsStart >= 0) {
     let stepsEnd = lines.findIndex((line, idx) => idx > stepsStart && /^##\s+/.test(line));
@@ -156,6 +209,33 @@ function validatePlanBody(body) {
     }
   }
 
+  return errors;
+}
+
+/**
+ * Validate the body of a charter. Returns an array of `{ section,
+ * message }` errors. The charter body must carry `## Mission`,
+ * `## Heuristics`, and `## Findings` headings; `## Notes` is optional.
+ */
+function validateCharterBody(body) {
+  return findMissingSections(body, REQUIRED_CHARTER_SECTIONS);
+}
+
+/**
+ * Resolve the heuristic names referenced in a charter's front-matter
+ * against the registered set. Returns an array of `{ name, message }`
+ * for every unknown name.
+ */
+function validateCharterHeuristics(heuristicNames, knownHeuristics) {
+  const errors = [];
+  for (const name of heuristicNames) {
+    if (!knownHeuristics.has(name)) {
+      errors.push({
+        name,
+        message: `heuristic "${name}" does not resolve to tests/charters/_heuristics/${name}.md`,
+      });
+    }
+  }
   return errors;
 }
 
@@ -189,11 +269,17 @@ async function validatePlanFile(absPath) {
     ];
   }
 
-  // Type discriminator — the charter branch lands in a later Story.
-  // Skip charters silently so a mixed `lint:qa` run still passes when
-  // the only failures would have been "charter branch not implemented".
-  if (parsed.data.type === 'charter') {
-    return [];
+  // A `.plan.md` whose front-matter type is anything but `plan` is a
+  // type/path mismatch — surface it as a single clear error rather than
+  // letting the plan schema reject every other field.
+  if (parsed.data.type !== undefined && parsed.data.type !== 'plan') {
+    return [
+      {
+        file: absPath,
+        field: 'type',
+        message: `file extension .plan.md requires type: "plan" (received "${parsed.data.type}")`,
+      },
+    ];
   }
 
   // Plan schema validation
@@ -223,6 +309,89 @@ async function validatePlanFile(absPath) {
   return errors;
 }
 
+/**
+ * Validate a single charter file. Returns an array of `{ file, field,
+ * message }` errors; an empty array means the file is clean.
+ *
+ * `knownHeuristics` is the Set of registered heuristic names; used to
+ * resolve every name listed in charter front-matter against the
+ * `_heuristics/` directory.
+ */
+async function validateCharterFile(absPath, knownHeuristics) {
+  const errors = [];
+  let raw;
+  try {
+    raw = await readFile(absPath, 'utf8');
+  } catch (err) {
+    return [{ file: absPath, field: '<io>', message: `unreadable: ${err.message}` }];
+  }
+
+  let parsed;
+  try {
+    parsed = matter(raw);
+  } catch (err) {
+    return [
+      { file: absPath, field: '<front-matter>', message: `unparseable YAML: ${err.message}` },
+    ];
+  }
+
+  if (!parsed.data || Object.keys(parsed.data).length === 0) {
+    return [
+      { file: absPath, field: '<front-matter>', message: 'missing or empty YAML front-matter' },
+    ];
+  }
+
+  // A `.charter.md` whose front-matter type is anything but `charter`
+  // is a type/path mismatch — surface it clearly.
+  if (parsed.data.type !== undefined && parsed.data.type !== 'charter') {
+    return [
+      {
+        file: absPath,
+        field: 'type',
+        message: `file extension .charter.md requires type: "charter" (received "${parsed.data.type}")`,
+      },
+    ];
+  }
+
+  const result = safeParseCharterFrontMatter(parsed.data);
+  if (!result.success) {
+    for (const issue of result.error.issues) {
+      errors.push({
+        file: absPath,
+        field: formatPath(issue.path),
+        message: issue.message,
+      });
+    }
+  }
+
+  const bodyErrors = validateCharterBody(parsed.content);
+  for (const bodyError of bodyErrors) {
+    errors.push({
+      file: absPath,
+      field: bodyError.section,
+      message: bodyError.message,
+    });
+  }
+
+  // Heuristic-name resolution only runs once the front-matter parsed
+  // (otherwise `heuristics` may not exist or may not be an array). Even
+  // when the schema fails, we attempt to resolve any names that *did*
+  // come through as a string[] so authors see every issue at once.
+  const heuristicCandidate = parsed.data.heuristics;
+  if (Array.isArray(heuristicCandidate)) {
+    const heuristicErrors = validateCharterHeuristics(heuristicCandidate, knownHeuristics);
+    for (const herr of heuristicErrors) {
+      errors.push({
+        file: absPath,
+        field: 'heuristics',
+        message: herr.message,
+      });
+    }
+  }
+
+  return errors;
+}
+
 // ---------------------------------------------------------------------------
 // CLI entry point
 // ---------------------------------------------------------------------------
@@ -241,22 +410,42 @@ function reportErrors(errors) {
 /**
  * Main. Returns an exit code instead of calling `process.exit` so the
  * function is testable from unit tests.
+ *
+ * Options:
+ *   - `plansRoot`     — override the plan discovery root (test fixtures)
+ *   - `chartersRoot`  — override the charter discovery root (test fixtures)
+ *   - `paths`         — when provided, validate exactly this list of file
+ *                       paths instead of recursive discovery; each path is
+ *                       dispatched on its suffix (`.plan.md` vs `.charter.md`).
  */
-export async function runLint({ plansRoot = DEFAULT_PLANS_ROOT, paths = null } = {}) {
-  const planFiles = paths ?? (await discoverPlanFiles(plansRoot));
+export async function runLint({
+  plansRoot = DEFAULT_PLANS_ROOT,
+  chartersRoot = DEFAULT_CHARTERS_ROOT,
+  paths = null,
+} = {}) {
+  const knownHeuristics = await loadHeuristicNames(chartersRoot);
 
-  if (planFiles.length === 0) {
-    // An empty corpus is not a failure — the pilot plan lands later in
-    // the same Story. CI catches a regression that *deletes* the pilot
-    // via the coverage gate, not this lint.
-    process.stdout.write('lint:qa: ok — 0 plan(s) checked\n');
+  let planFiles;
+  let charterFiles;
+  if (paths === null) {
+    planFiles = await discoverPlanFiles(plansRoot);
+    charterFiles = await discoverCharterFiles(chartersRoot);
+  } else {
+    planFiles = paths.filter((p) => p.endsWith('.plan.md'));
+    charterFiles = paths.filter((p) => p.endsWith('.charter.md'));
+  }
+
+  if (planFiles.length === 0 && charterFiles.length === 0) {
+    // An empty corpus is not a failure — the pilot artifact lands later
+    // in the same Story. CI catches a regression that *deletes* the
+    // pilot via the coverage gate, not this lint.
+    process.stdout.write('lint:qa: ok — 0 plan(s), 0 charter(s) checked\n');
     return 0;
   }
 
   const allErrors = [];
+
   for (const file of planFiles) {
-    // Skip directories or non-existent paths cleanly when `paths` was
-    // supplied by a caller (e.g. Husky's staged-file list).
     let entryStat;
     try {
       entryStat = await stat(file);
@@ -270,21 +459,47 @@ export async function runLint({ plansRoot = DEFAULT_PLANS_ROOT, paths = null } =
     allErrors.push(...errors);
   }
 
+  for (const file of charterFiles) {
+    let entryStat;
+    try {
+      entryStat = await stat(file);
+    } catch {
+      continue;
+    }
+    if (!entryStat.isFile()) continue;
+    if (!file.endsWith('.charter.md')) continue;
+
+    const errors = await validateCharterFile(file, knownHeuristics);
+    allErrors.push(...errors);
+  }
+
+  const totalArtifacts = planFiles.length + charterFiles.length;
   if (allErrors.length > 0) {
     reportErrors(allErrors);
     process.stderr.write(
-      `lint:qa: FAIL — ${allErrors.length} error(s) across ${planFiles.length} plan(s)\n`,
+      `lint:qa: FAIL — ${allErrors.length} error(s) across ${totalArtifacts} artifact(s)\n`,
     );
     return 1;
   }
 
-  process.stdout.write(`lint:qa: ok — ${planFiles.length} plan(s) checked\n`);
+  process.stdout.write(
+    `lint:qa: ok — ${planFiles.length} plan(s), ${charterFiles.length} charter(s) checked\n`,
+  );
   return 0;
 }
 
 // Exported for unit tests so they can drive validation without spawning
 // a child process.
-export { discoverPlanFiles, validatePlanFile, validatePlanBody };
+export {
+  discoverPlanFiles,
+  discoverCharterFiles,
+  loadHeuristicNames,
+  validatePlanFile,
+  validatePlanBody,
+  validateCharterFile,
+  validateCharterBody,
+  validateCharterHeuristics,
+};
 
 // Only run when invoked directly (not when imported by tests). The
 // resolved CLI argv may be undefined when the module is imported via
