@@ -1,7 +1,7 @@
 {
   "$schema": ".agents/schemas/baselines/maintainability.schema.json",
   "kernelVersion": "0.1.0",
-  "generatedAt": "2026-05-25T17:42:54.873Z",
+  "generatedAt": "2026-05-25T18:04:58.028Z",
   "rollup": {
     "*": {
       "min": 70.515,
@@ -309,6 +309,10 @@
     {
       "mi": 97.51,
       "path": "apps/web/src/components/ui/EventChip.ts"
+    },
+    {
+      "mi": 89.666,
+      "path": "apps/web/src/components/ui/FormField.ts"
     },
     {
       "mi": 124.358,

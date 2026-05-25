@@ -18,9 +18,16 @@
 // The PRD-defined data-testid surface is fully present here so the
 // acceptance scenario (`tests/features/org-admin/org-config.feature`)
 // targets stable selectors across the placeholder-to-live-data swap.
+//
+// Styling follows the Tailwind-utility-first convention codified by
+// ADR-0007 (docs/decisions/0007-ui-styling-convention.md) — utility
+// classes resolve against the @theme tokens declared in
+// apps/web/src/styles/global.css; no orphan BEM hooks. Page chrome is
+// composed from the canonical PageHeader primitive (Story #836).
 
 import OrgConfigForm from '../../components/admin/OrgConfigForm.astro';
 import type { OrgConfigLoaderPayload } from '../../components/admin/OrgConfigForm.ts';
+import PageHeader from '../../components/ui/PageHeader.astro';
 
 /**
  * Placeholder loader. Production wires the real DB-backed reader once
@@ -52,11 +59,11 @@ const loader = readOrgConfigPlaceholder();
     <title>Organization configuration</title>
   </head>
   <body>
-    <main class="admin-org-page">
-      <h1 class="admin-org-page__title">Organization configuration</h1>
-      <p class="admin-org-page__intro">
-        Update your organization’s public profile, brand colour, and logo.
-      </p>
+    <main class="mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
+      <PageHeader
+        title="Organization configuration"
+        intro="Update your organization’s public profile, brand colour, and logo."
+      />
       <OrgConfigForm loader={loader} />
     </main>
   </body>

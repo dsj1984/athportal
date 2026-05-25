@@ -1,13 +1,13 @@
 {
   "$schema": ".agents/schemas/baselines/crap.schema.json",
   "kernelVersion": "0.1.0",
-  "generatedAt": "2026-05-25T17:42:55.253Z",
+  "generatedAt": "2026-05-25T18:04:58.620Z",
   "rollup": {
     "*": {
       "p50": 2,
       "p95": 42,
       "max": 506,
-      "methodsAbove20": 58
+      "methodsAbove20": 59
     }
   },
   "rows": [
@@ -2386,6 +2386,12 @@
       "method": "normaliseOptional",
       "path": "apps/web/src/components/ui/EventChip.ts",
       "startLine": 127
+    },
+    {
+      "crap": 90,
+      "method": "buildFormFieldView",
+      "path": "apps/web/src/components/ui/FormField.ts",
+      "startLine": 86
     },
     {
       "crap": 6,
