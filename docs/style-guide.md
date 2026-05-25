@@ -27,6 +27,11 @@ re-sync.
   `apps/web/src/components/ui/*` — see
   [`docs/patterns.md` § *Primitive library*](patterns.md#primitive-library)
   for the import-this-not-Tailwind contributor rule.
+* **Authoring convention.** Component styling is Tailwind-utility-first
+  on `@theme` tokens; primitives replace BEM hand-authoring; orphan BEM
+  class names are forbidden and mechanically lint-enforced. See
+  [`docs/decisions/0007-ui-styling-convention.md`](decisions/0007-ui-styling-convention.md)
+  for the binding rule and `scripts/lint-orphan-bem.mjs` for enforcement.
 
 ## 1. Core Design Philosophy
 

@@ -17,6 +17,10 @@
 #   5. lint:steps    — BDD step-vocabulary linter; cheap and noisy when
 #                      a developer renames a step without updating the
 #                      vocabulary.
+#   6. lint-orphan-bem — ADR-0007 orphan-BEM gate. Walks apps/web/src/
+#                      and fails on any class matching the BEM shape
+#                      that does not resolve via the four ADR-0007
+#                      resolver paths or the allowlist.
 #
 # secretlint runs on pre-commit only (staged scope). At push time the
 # committed history is already past the local trust boundary;
@@ -31,3 +35,4 @@ pnpm run lint
 pnpm run knip:fast
 pnpm run lint:baseline:check
 pnpm run lint:steps
+node scripts/lint-orphan-bem.mjs

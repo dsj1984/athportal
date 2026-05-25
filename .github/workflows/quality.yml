@@ -193,6 +193,34 @@ jobs:
       - name: Lint step definitions
         run: pnpm run lint:steps
 
+  lint-orphan-bem:
+    # Story #834 / Task #840 — orphan BEM lint gate.
+    # Walks apps/web/src/ and fails when any class name matching the
+    # BEM block-element (foo__bar) or modifier (foo--bar) shape does
+    # not resolve via the four ADR-0007 resolver paths (colocated
+    # <style>, global.css, cva variant, colocated <script>). The
+    # script also runs in .husky/pre-push as part of the fail-fast
+    # local chain; this job is its CI mirror. Pre-existing orphans
+    # tolerated by the codifying Story live in
+    # .lint-orphan-bem-allowlist.json — follow-on Stories peel entries
+    # off the allowlist as they refactor each surface. See
+    # docs/decisions/0007-ui-styling-convention.md for the binding rule.
+    name: lint-orphan-bem
+    needs: [lint, typecheck]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - name: Set up toolchain (checkout + pnpm + node + install)
+        uses: ./.github/actions/setup-toolchain
+
+      - name: Lint orphan BEM hooks (ADR-0007)
+        run: node scripts/lint-orphan-bem.mjs
+
   lint-deps:
     # Story #590 — architecture-boundary gate.
     # Runs dependency-cruiser against apps/** and packages/** using the
