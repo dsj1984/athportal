@@ -110,7 +110,7 @@ secret-scan jobs for SARIF upload).
 Every job above (plus `Guard destructive migrations` from
 [`migration-label-guard.yml`](./.github/workflows/migration-label-guard.yml))
 is enforced as a **required status check** on `main`. The full set is
-14 checks; PRs cannot merge until every one is green. The authoritative
+15 checks; PRs cannot merge until every one is green. The authoritative
 table — including each check's source workflow, what it gates, and its
 documented escape hatch (allow-list, `:update` script, or `rationale`
 bump per the relevant ADR) — lives in
