@@ -12,6 +12,18 @@
     "time_box_minutes": 30
   },
   {
+    "id": "tp-design-system-styleguide-walkthrough",
+    "path": "tests/plans/design-system/tp-design-system-styleguide-walkthrough.plan.md",
+    "type": "plan",
+    "domain": "design-system",
+    "persona": "org-admin",
+    "surface": "web",
+    "route_prefixes": [
+      "/internal/styleguide"
+    ],
+    "est_minutes": 10
+  },
+  {
     "id": "tp-identity-signup-happy-path",
     "path": "tests/plans/identity/tp-identity-signup-happy-path.plan.md",
     "type": "plan",
