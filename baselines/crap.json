@@ -1,6 +1,6 @@
 {
   "$schema": ".agents/schemas/baselines/crap.schema.json",
-  "generatedAt": "2026-05-25T17:37:05.862Z",
+  "generatedAt": "2026-05-25T17:38:08.200Z",
   "kernelVersion": "1.0.0",
   "rollup": {
     "*": {
@@ -2374,6 +2374,12 @@
       "method": "resolvePositive",
       "path": "apps/web/src/components/ui/Logo.ts",
       "startLine": 41
+    },
+    {
+      "crap": 12,
+      "method": "buildPageHeader",
+      "path": "apps/web/src/components/ui/PageHeader.ts",
+      "startLine": 65
     },
     {
       "crap": 6,

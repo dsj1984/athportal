@@ -1,17 +1,24 @@
 ---
 // apps/web/src/pages/dashboard.astro
 //
-// Post-onboarding landing surface. Composes the initial widget set
-// (RecentActivity, Roster, Upcoming) and renders an EmptyState on the
-// no-data branch for every widget — no widget falls back to a
-// perpetual skeleton (PRD #489 §Dashboard empty states).
+// Post-onboarding landing surface. Composes the canonical
+// page-chrome primitive (PageHeader), the bordered-surface primitive
+// (Card), and the empty-state primitive (EmptyState). At MVP the
+// dashboard reads no real data; the page hands `EMPTY_DASHBOARD_DATA`
+// to `buildDashboard` so the freshly-onboarded view is exercised
+// end-to-end. When real readers wire in, swap the constant for the
+// live query and the empty-state branches stay identical.
 //
-// At MVP the dashboard reads no real data; the page hands
-// `EMPTY_DASHBOARD_DATA` to `buildDashboard` so the freshly-onboarded
-// view is exercised end-to-end. When real readers wire in, swap the
-// constant for the live query and the empty-state branches stay
-// identical.
+// Styling follows the Tailwind-utility-first convention codified by
+// ADR-0007 (docs/decisions/0007-ui-styling-convention.md) — utility
+// classes resolve against the @theme tokens declared in
+// apps/web/src/styles/global.css; no orphan BEM hooks. Palette and
+// typography per docs/style-guide.md §3, page chrome per §4.
+//
+// Story #836 / Task #847 — Epic #828 dashboard surface.
+import Card from '../components/ui/Card.astro';
 import EmptyState from '../components/ui/EmptyState.astro';
+import PageHeader from '../components/ui/PageHeader.astro';
 import RootLayout from '../layouts/RootLayout.astro';
 import { EMPTY_DASHBOARD_DATA, buildDashboard } from './dashboard.ts';
 
@@ -19,23 +26,32 @@ const view = buildDashboard(EMPTY_DASHBOARD_DATA);
 ---
 
 <RootLayout title="Dashboard">
-  <main class="dashboard">
-    <h1 class="dashboard__title">Dashboard</h1>
-    {
-      view.widgets.map((widget) => (
-        <section class="dashboard__widget" data-testid={widget.id}>
-          <h2 class="dashboard__widget-heading">{widget.heading}</h2>
-          {widget.isEmpty ? (
-            <EmptyState {...widget.emptyState} />
-          ) : (
-            <ul class="dashboard__widget-rows">
-              {widget.rows.map((_row, idx) => (
-                <li class="dashboard__widget-row" data-row-index={idx} />
-              ))}
-            </ul>
-          )}
-        </section>
-      ))
-    }
+  <main class="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
+    <PageHeader title="Dashboard" intro="Your post-onboarding home." />
+    <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      {
+        view.widgets.map((widget) => (
+          <section data-testid={widget.id}>
+            <Card soft>
+              <h2 class="font-display text-lg font-semibold text-text-primary">{widget.heading}</h2>
+              {widget.isEmpty ? (
+                <div class="mt-4">
+                  <EmptyState {...widget.emptyState} />
+                </div>
+              ) : (
+                <ul class="mt-4 flex flex-col gap-2">
+                  {widget.rows.map((_row, idx) => (
+                    <li
+                      class="rounded-md border border-border bg-surface-bg px-3 py-2 text-sm text-text-secondary"
+                      data-row-index={idx}
+                    />
+                  ))}
+                </ul>
+              )}
+            </Card>
+          </section>
+        ))
+      }
+    </div>
   </main>
 </RootLayout>
