@@ -19,18 +19,6 @@
       ]
     },
     {
-      "path": "apps/web/src/components/admin/OrgConfigForm.astro",
-      "classes": [
-        "admin-org-config__field",
-        "admin-org-config__field-error",
-        "admin-org-config__form-error",
-        "admin-org-config__logo-preview",
-        "admin-org-config__placeholder",
-        "admin-org-config__status",
-        "admin-org-config__submit"
-      ]
-    },
-    {
       "path": "apps/web/src/components/admin/invitations/AthleteInviteForm.astro",
       "classes": [
         "athlete-invite__field",
@@ -81,13 +69,6 @@
       "classes": [
         "admin-import-page__intro",
         "admin-import-page__title"
-      ]
-    },
-    {
-      "path": "apps/web/src/pages/admin/org.astro",
-      "classes": [
-        "admin-org-page__intro",
-        "admin-org-page__title"
       ]
     },
     {
