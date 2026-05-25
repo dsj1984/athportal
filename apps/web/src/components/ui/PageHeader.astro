@@ -1,0 +1,43 @@
+---
+// apps/web/src/components/ui/PageHeader.astro
+//
+// Canonical page-chrome primitive: a stacked title + optional intro
+// block with an optional right-aligned actions slot. Styling follows
+// the Tailwind-utility-first convention codified by ADR-0007
+// (docs/decisions/0007-ui-styling-convention.md) — utility classes
+// resolve against the @theme tokens declared in
+// apps/web/src/styles/global.css; no orphan BEM hooks. Palette and
+// typography match docs/style-guide.md §3, page chrome matches §4.
+//
+// Story #836 / Task #845 — Epic #828 dashboard surface.
+import { type PageHeaderProps, buildPageHeader } from './PageHeader.ts';
+
+interface Props {
+  title: string;
+  intro?: string;
+}
+
+const props: PageHeaderProps = Astro.props;
+const hasActions = Astro.slots.has('actions');
+const view = buildPageHeader(props, { hasActions });
+---
+
+<header class={view.rootClass} data-testid={view.testIds.root}>
+  <div>
+    <h1 class={view.titleClass} data-testid={view.testIds.title}>{view.title}</h1>
+    {
+      view.intro && (
+        <p class={view.introClass} data-testid={view.testIds.intro}>
+          {view.intro}
+        </p>
+      )
+    }
+  </div>
+  {
+    view.hasActions && (
+      <div class={view.actionsClass} data-testid={view.testIds.actions}>
+        <slot name="actions" />
+      </div>
+    )
+  }
+</header>
