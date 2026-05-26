@@ -163,7 +163,10 @@ function buildApp(db: DbHandle) {
 
 interface ResponseBody {
   success: boolean;
-  data?: { invite: { id: string; teamId: string; status: string } };
+  data?: {
+    invite: { id: string; teamId: string; status: string };
+    outcome?: 'accepted' | 'already-on-roster';
+  };
   error?: { code: string; message: string };
 }
 
@@ -353,6 +356,133 @@ describe('POST /api/v1/public/roster-invites/:token/accept — lifecycle guards'
       method: 'POST',
     });
     expect(res.status).toBe(404);
+  });
+});
+
+describe('POST /api/v1/public/roster-invites/:token/accept — re-add semantics', () => {
+  it('transitions invite to accepted without duplicate roster_entry when the athlete already has an active entry', async () => {
+    // Arrange — athlete is already actively on the roster of this
+    // team. A fresh invite arrives (e.g. coach re-issued one without
+    // realising the athlete was already added manually).
+    const db = freshDb();
+    seedOrg(db, ORG_A);
+    const team = seedTeam(db, ORG_A, 't_already_on');
+    const coach = seedUser(db, ORG_A, 'u_coach_aon', 'coach-aon@test.invalid');
+    const athleteId = 'u_athlete_aon';
+    const athleteEmail = 'recipient-aon@test.invalid';
+    seedUser(db, ORG_A, athleteId, athleteEmail);
+    // Pre-existing active membership + roster_entry for this athlete.
+    db.insert(athleteMemberships)
+      .values({
+        id: 'am_existing_aon',
+        orgId: ORG_A,
+        teamId: team,
+        athleteUserId: athleteId,
+        endedAt: null,
+      })
+      .run();
+    db.insert(rosterEntries)
+      .values({
+        id: 're_existing_aon',
+        orgId: ORG_A,
+        teamId: team,
+        athleteUserId: athleteId,
+        endedAt: null,
+      })
+      .run();
+    const invite = seedInvite(db, ORG_A, team, coach, {
+      id: 'rinv_already_on',
+      email: athleteEmail,
+      token: '6'.repeat(64),
+    });
+
+    // Act
+    const res = await buildApp(db).request(
+      `/api/v1/public/roster-invites/${invite.plaintextToken}/accept`,
+      { method: 'POST' },
+    );
+
+    // Assert — 200 with already-on-roster outcome, invite still
+    // transitions to accepted (lifecycle outcome is the same).
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as ResponseBody;
+    expect(body.success).toBe(true);
+    expect(body.data?.invite.status).toBe('accepted');
+    expect(body.data?.outcome).toBe('already-on-roster');
+
+    // Invite row is accepted.
+    const inviteRows = db.select().from(rosterInvites).where(eq(rosterInvites.id, invite.id)).all();
+    expect(inviteRows[0]?.status).toBe('accepted');
+
+    // No duplicate roster_entry — still exactly one active entry,
+    // and it is the pre-existing one (not a freshly inserted row).
+    const entries = db.select().from(rosterEntries).where(eq(rosterEntries.teamId, team)).all();
+    expect(entries).toHaveLength(1);
+    expect(entries[0]?.id).toBe('re_existing_aon');
+
+    // No duplicate active membership.
+    const memberships = db
+      .select()
+      .from(athleteMemberships)
+      .where(eq(athleteMemberships.teamId, team))
+      .all();
+    expect(memberships).toHaveLength(1);
+    expect(memberships[0]?.id).toBe('am_existing_aon');
+  });
+
+  it('creates a fresh active membership when the athlete has a prior ended membership on this team', async () => {
+    // Arrange — the athlete LEFT this team in the past (membership
+    // has endedAt set) and is being re-invited.
+    const db = freshDb();
+    seedOrg(db, ORG_A);
+    const team = seedTeam(db, ORG_A, 't_re_add');
+    const coach = seedUser(db, ORG_A, 'u_coach_re', 'coach-re@test.invalid');
+    const athleteId = 'u_athlete_re';
+    const athleteEmail = 'recipient-re@test.invalid';
+    seedUser(db, ORG_A, athleteId, athleteEmail);
+    // Historical (ended) membership — must NOT block a fresh active one.
+    db.insert(athleteMemberships)
+      .values({
+        id: 'am_ended',
+        orgId: ORG_A,
+        teamId: team,
+        athleteUserId: athleteId,
+        endedAt: new Date(Date.now() - 30 * 86_400_000),
+      })
+      .run();
+    const invite = seedInvite(db, ORG_A, team, coach, {
+      id: 'rinv_re_add',
+      email: athleteEmail,
+      token: '7'.repeat(64),
+    });
+
+    // Act
+    const res = await buildApp(db).request(
+      `/api/v1/public/roster-invites/${invite.plaintextToken}/accept`,
+      { method: 'POST' },
+    );
+
+    // Assert — 200, fresh accept (not already-on-roster).
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as ResponseBody;
+    expect(body.data?.outcome).toBe('accepted');
+
+    // A fresh active membership now exists alongside the historical
+    // ended one — two rows total, exactly one with endedAt = null.
+    const memberships = db
+      .select()
+      .from(athleteMemberships)
+      .where(eq(athleteMemberships.teamId, team))
+      .all();
+    expect(memberships).toHaveLength(2);
+    const active = memberships.filter((m) => m.endedAt === null);
+    expect(active).toHaveLength(1);
+    expect(active[0]?.id).not.toBe('am_ended');
+
+    // A fresh roster_entry was inserted.
+    const entries = db.select().from(rosterEntries).where(eq(rosterEntries.teamId, team)).all();
+    expect(entries).toHaveLength(1);
+    expect(entries[0]?.endedAt).toBeNull();
   });
 });
 

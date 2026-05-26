@@ -54,7 +54,7 @@
 
 import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { athleteMemberships, rosterEntries, rosterInvites, users } from '@repo/shared/db/schema';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { hashToken } from '../../../mailer/rosterInvite';
 import type { RequireInternalUserEnv } from '../../../middleware/auth';
@@ -252,26 +252,57 @@ publicRosterInvitesRoute.post('/:token/accept', (c) => {
     return c.json(errorBody('RECIPIENT_NOT_FOUND', 'recipient-not-found'), 409);
   }
 
-  // Single-tx accept: insert membership (if absent), insert roster
-  // entry, flip invite status. better-sqlite3's `db.transaction` is
-  // synchronous and returns the inner result — we use it so a partial
-  // failure rolls back every write.
-  db.transaction((tx) => {
-    // Insert membership if absent. The unique-active predicate on the
-    // table (per Tech Spec §Data Models) is not declared in the
-    // migration as a partial index here, so we probe first.
-    const existingMembership = tx
+  // Single-tx accept: probe for an active roster_entry, insert
+  // membership (if absent), insert roster_entry (if not already
+  // active), flip invite status. better-sqlite3's `db.transaction`
+  // is synchronous and returns the inner result — we use it so a
+  // partial failure rolls back every write.
+  //
+  // We classify the outcome so the caller can distinguish a fresh
+  // join from "already on roster" without re-querying:
+  //   - 'accepted'          → a new active roster_entry was inserted.
+  //   - 'already-on-roster' → the athlete already has an active row
+  //     for this team; we skip the insert (would otherwise crash on
+  //     the partial-unique-index over (team_id, athlete_user_id)
+  //     WHERE ended_at IS NULL), but the invite still transitions to
+  //     `accepted` because the lifecycle outcome is the same — they
+  //     are on the roster.
+  const outcome = db.transaction<'accepted' | 'already-on-roster'>((tx) => {
+    // Probe for an existing **active** roster_entry. An ended entry
+    // (endedAt IS NOT NULL) is treated as historical and does NOT
+    // block a fresh insert — the athlete may have been removed and
+    // is being re-added.
+    const existingActiveEntry = tx
+      .select()
+      .from(rosterEntries)
+      .where(
+        and(
+          eq(rosterEntries.teamId, invite.teamId),
+          eq(rosterEntries.athleteUserId, recipient.id),
+          isNull(rosterEntries.endedAt),
+        ),
+      )
+      .limit(1)
+      .all();
+    const alreadyOnRoster = existingActiveEntry.length > 0;
+
+    // Insert membership if no active membership exists. An ended
+    // membership (endedAt IS NOT NULL) is historical — an athlete
+    // who left this team and is being re-invited MUST receive a
+    // fresh active membership row.
+    const existingActiveMembership = tx
       .select()
       .from(athleteMemberships)
       .where(
         and(
           eq(athleteMemberships.teamId, invite.teamId),
           eq(athleteMemberships.athleteUserId, recipient.id),
+          isNull(athleteMemberships.endedAt),
         ),
       )
       .limit(1)
       .all();
-    if (existingMembership.length === 0) {
+    if (existingActiveMembership.length === 0) {
       tx.insert(athleteMemberships)
         .values({
           id: newId('am'),
@@ -285,24 +316,28 @@ publicRosterInvitesRoute.post('/:token/accept', (c) => {
         .run();
     }
 
-    tx.insert(rosterEntries)
-      .values({
-        id: newId('re'),
-        orgId: invite.orgId,
-        teamId: invite.teamId,
-        athleteUserId: recipient.id,
-        jerseyNumber: null,
-        primaryPosition: null,
-        endedAt: null,
-        createdAt: now,
-        updatedAt: now,
-      })
-      .run();
+    if (!alreadyOnRoster) {
+      tx.insert(rosterEntries)
+        .values({
+          id: newId('re'),
+          orgId: invite.orgId,
+          teamId: invite.teamId,
+          athleteUserId: recipient.id,
+          jerseyNumber: null,
+          primaryPosition: null,
+          endedAt: null,
+          createdAt: now,
+          updatedAt: now,
+        })
+        .run();
+    }
 
     tx.update(rosterInvites)
       .set({ status: 'accepted', acceptedAt: now, updatedAt: now })
       .where(eq(rosterInvites.id, invite.id))
       .run();
+
+    return alreadyOnRoster ? 'already-on-roster' : 'accepted';
   });
 
   return c.json(
@@ -314,6 +349,7 @@ publicRosterInvitesRoute.post('/:token/accept', (c) => {
           teamId: invite.teamId,
           status: 'accepted' as const,
         },
+        outcome,
       },
     },
     200,
