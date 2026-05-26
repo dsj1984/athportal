@@ -1,0 +1,157 @@
+---
+// apps/web/src/pages/app/coach/teams/[teamId]/athletes/[athleteId]/index.astro
+//
+// `/app/coach/teams/:teamId/athletes/:athleteId` — team-scoped athlete
+// profile page (Epic #11 / Story #912 / Task #922).
+//
+// The "team-scoped" half of the URL is load-bearing: an athlete may be
+// rostered on multiple teams in the same org, each row carrying a
+// different jersey number and primary position. This page MUST surface
+// the row whose `team_id` matches the URL — Tech Spec #906
+// §Authorization names this as a correctness invariant alongside the
+// cross-tenant scope check.
+//
+// SSR shell + client-side fetch follows the established admin pattern
+// (see `apps/web/src/pages/admin/teams/[id]/edit.astro`). The shell
+// renders the page chrome and the canonical `data-testid` selectors
+// so the QA suite can target stable hooks; an inline `<script>` then
+// fetches the team-scoped entry from
+// `GET /api/v1/coach/teams/:teamId/roster/entries/:entryId` and
+// populates the jersey / position cells via `textContent` (never
+// `innerHTML` — per `.agents/rules/security-baseline.md` § Output &
+// Rendering).
+//
+// Routing note: the `:athleteId` segment in the URL is the
+// `roster_entry.id` (NOT `users.id`) so the API can resolve the
+// team-scoped row by primary key. The page is mounted at
+// `/athletes/:athleteId` to match Tech Spec #906 §API; the segment's
+// semantic is "the roster entry for this athlete on this team".
+
+import PageHeader from '../../../../../../components/ui/PageHeader.astro';
+
+const { teamId, athleteId } = Astro.params;
+if (typeof teamId !== 'string' || teamId.length === 0) {
+  return new Response('Not Found', { status: 404 });
+}
+if (typeof athleteId !== 'string' || athleteId.length === 0) {
+  return new Response('Not Found', { status: 404 });
+}
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Athlete · Coach</title>
+  </head>
+  <body class="bg-surface-page text-text-primary">
+    <main
+      class="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8"
+      data-team-id={teamId}
+      data-athlete-id={athleteId}
+      data-coach-athlete-profile
+      data-testid="athlete-profile-root"
+    >
+      <PageHeader title="Athlete profile">
+        <a
+          slot="actions"
+          class="inline-flex items-center justify-center rounded-md border border-border bg-surface-card px-3 py-2 text-sm font-medium text-text-primary shadow-sm hover:bg-surface-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+          href={`/app/coach/teams/${teamId}/roster`}
+        >
+          Back to roster
+        </a>
+      </PageHeader>
+
+      <p
+        class="rounded-md border border-action-coral bg-surface-card px-4 py-3 text-sm text-action-coral"
+        data-testid="athlete-profile-error"
+        role="alert"
+        hidden
+      ></p>
+
+      <dl
+        class="grid grid-cols-1 gap-4 rounded-md border border-border bg-surface-card p-4 sm:grid-cols-2"
+      >
+        <div>
+          <dt class="text-sm font-medium text-text-secondary">Name</dt>
+          <dd
+            class="mt-1 text-base text-text-primary"
+            data-testid="athlete-profile-name"
+          >—</dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-text-secondary">Jersey</dt>
+          <dd
+            class="mt-1 text-base text-text-primary"
+            data-testid="athlete-profile-jersey"
+          >—</dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-text-secondary">Position</dt>
+          <dd
+            class="mt-1 text-base text-text-primary"
+            data-testid="athlete-profile-position"
+          >—</dd>
+        </div>
+      </dl>
+    </main>
+  </body>
+</html>
+
+<script>
+  interface ApiEntry {
+    id: string;
+    teamId: string;
+    athleteUserId: string;
+    athleteEmail: string;
+    athleteFullName: string;
+    jerseyNumber: string | null;
+    primaryPosition: string | null;
+  }
+
+  interface ApiEnvelope {
+    success: boolean;
+    data?: ApiEntry;
+    error?: { code?: string; message?: string };
+  }
+
+  function setCell(testId: string, value: string): void {
+    const el = document.querySelector<HTMLElement>(`[data-testid="${testId}"]`);
+    if (el) el.textContent = value;
+  }
+
+  async function load(): Promise<void> {
+    const root = document.querySelector<HTMLElement>('[data-coach-athlete-profile]');
+    const errorEl = document.querySelector<HTMLElement>(
+      '[data-testid="athlete-profile-error"]',
+    );
+    const teamId = root?.dataset.teamId;
+    const athleteId = root?.dataset.athleteId;
+    if (!teamId || !athleteId) return;
+    try {
+      const url = `/api/v1/coach/teams/${encodeURIComponent(teamId)}/roster/entries/${encodeURIComponent(athleteId)}`;
+      const res = await fetch(url, { headers: { accept: 'application/json' } });
+      const envelope = (await res.json().catch(() => null)) as ApiEnvelope | null;
+      if (!res.ok || envelope?.success !== true || !envelope.data) {
+        if (errorEl) {
+          errorEl.textContent =
+            envelope?.error?.message ?? 'Could not load this athlete.';
+          errorEl.hidden = false;
+        }
+        return;
+      }
+      const entry = envelope.data;
+      setCell('athlete-profile-name', entry.athleteFullName);
+      setCell('athlete-profile-jersey', entry.jerseyNumber ?? '—');
+      setCell('athlete-profile-position', entry.primaryPosition ?? '—');
+    } catch {
+      if (errorEl) {
+        errorEl.textContent = 'Could not reach the server.';
+        errorEl.hidden = false;
+      }
+    }
+  }
+
+  void load();
+</script>
