@@ -1,13 +1,13 @@
 {
   "$schema": ".agents/schemas/baselines/crap.schema.json",
+  "generatedAt": "2026-05-26T13:19:25.491Z",
   "kernelVersion": "1.0.0",
-  "generatedAt": "2026-05-26T12:00:41.935Z",
   "rollup": {
     "*": {
-      "p50": 2,
-      "p95": 42,
       "max": 506,
-      "methodsAbove20": 59
+      "methodsAbove20": 63,
+      "p50": 2,
+      "p95": 42
     }
   },
   "rows": [
@@ -2280,36 +2280,6 @@
       "startLine": 57
     },
     {
-      "crap": 2,
-      "method": "buildBadgeView",
-      "path": "apps/web/src/components/ui/_lib/badge.ts",
-      "startLine": 83
-    },
-    {
-      "crap": 12,
-      "method": "resolveTone",
-      "path": "apps/web/src/components/ui/_lib/badge.ts",
-      "startLine": 97
-    },
-    {
-      "crap": 2,
-      "method": "cn",
-      "path": "apps/web/src/components/ui/_lib/cn.ts",
-      "startLine": 14
-    },
-    {
-      "crap": 6,
-      "method": "resolveEventColor",
-      "path": "apps/web/src/components/ui/_lib/eventColors.ts",
-      "startLine": 113
-    },
-    {
-      "crap": 6,
-      "method": "resolveSidebarNav",
-      "path": "apps/web/src/components/ui/_lib/sidebarNav.ts",
-      "startLine": 67
-    },
-    {
       "crap": 30,
       "method": "buildAvatarView",
       "path": "apps/web/src/components/ui/Avatar.ts",
@@ -2538,22 +2508,88 @@
       "startLine": 36
     },
     {
-      "crap": 42,
+      "crap": 2,
+      "method": "buildBadgeView",
+      "path": "apps/web/src/components/ui/_lib/badge.ts",
+      "startLine": 83
+    },
+    {
+      "crap": 12,
+      "method": "resolveTone",
+      "path": "apps/web/src/components/ui/_lib/badge.ts",
+      "startLine": 97
+    },
+    {
+      "crap": 2,
+      "method": "cn",
+      "path": "apps/web/src/components/ui/_lib/cn.ts",
+      "startLine": 14
+    },
+    {
+      "crap": 6,
+      "method": "resolveEventColor",
+      "path": "apps/web/src/components/ui/_lib/eventColors.ts",
+      "startLine": 113
+    },
+    {
+      "crap": 6,
+      "method": "resolveSidebarNav",
+      "path": "apps/web/src/components/ui/_lib/sidebarNav.ts",
+      "startLine": 67
+    },
+    {
+      "crap": 2,
+      "method": "findMonorepoRoot",
+      "path": "apps/web/src/lib/db.ts",
+      "startLine": 41
+    },
+    {
+      "crap": 56,
       "method": "resolveDatabasePath",
       "path": "apps/web/src/lib/db.ts",
-      "startLine": 34
+      "startLine": 68
     },
     {
       "crap": 6,
       "method": "getDb",
       "path": "apps/web/src/lib/db.ts",
-      "startLine": 73
+      "startLine": 116
     },
     {
       "crap": 2,
       "method": "__resetDbForTests",
       "path": "apps/web/src/lib/db.ts",
-      "startLine": 84
+      "startLine": 127
+    },
+    {
+      "crap": 20,
+      "method": "isAllowlisted",
+      "path": "apps/web/src/middleware.ts",
+      "startLine": 99
+    },
+    {
+      "crap": 2,
+      "method": "createOnboardingGate",
+      "path": "apps/web/src/middleware.ts",
+      "startLine": 142
+    },
+    {
+      "crap": 42,
+      "method": "onboardingGate",
+      "path": "apps/web/src/middleware.ts",
+      "startLine": 145
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "apps/web/src/middleware.ts",
+      "startLine": 203
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-2>",
+      "path": "apps/web/src/middleware.ts",
+      "startLine": 217
     },
     {
       "crap": 6,
@@ -2833,6 +2869,66 @@
     },
     {
       "crap": 6,
+      "method": "applyMigrations",
+      "path": "packages/shared/scripts/reset.mjs",
+      "startLine": 30
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "packages/shared/scripts/reset.mjs",
+      "startLine": 32
+    },
+    {
+      "crap": 12,
+      "method": "main",
+      "path": "packages/shared/scripts/reset.mjs",
+      "startLine": 43
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-2>",
+      "path": "packages/shared/scripts/reset.mjs",
+      "startLine": 70
+    },
+    {
+      "crap": 72,
+      "method": "resolveClerkSubjectIds",
+      "path": "packages/shared/scripts/seed.mjs",
+      "startLine": 46
+    },
+    {
+      "crap": 2,
+      "method": "applySeed",
+      "path": "packages/shared/scripts/seed.mjs",
+      "startLine": 152
+    },
+    {
+      "crap": 6,
+      "method": "main",
+      "path": "packages/shared/scripts/seed.mjs",
+      "startLine": 224
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "packages/shared/scripts/seed.mjs",
+      "startLine": 252
+    },
+    {
+      "crap": 12,
+      "method": "resolveLocalDbPath",
+      "path": "packages/shared/scripts/seedPath.mjs",
+      "startLine": 43
+    },
+    {
+      "crap": 90,
+      "method": "assertLocalDbPath",
+      "path": "packages/shared/scripts/seedPath.mjs",
+      "startLine": 69
+    },
+    {
+      "crap": 6,
       "method": "decodeBuffer",
       "path": "packages/shared/src/csv/parse.ts",
       "startLine": 87
@@ -3012,6 +3108,24 @@
       "startLine": 374
     },
     {
+      "crap": 6,
+      "method": "getOnboardingState",
+      "path": "packages/shared/src/db/queries/users.ts",
+      "startLine": 66
+    },
+    {
+      "crap": 6,
+      "method": "getOnboardingStateBySubject",
+      "path": "packages/shared/src/db/queries/users.ts",
+      "startLine": 109
+    },
+    {
+      "crap": 6,
+      "method": "isOnboarded",
+      "path": "packages/shared/src/db/queries/users.ts",
+      "startLine": 141
+    },
+    {
       "crap": 2,
       "method": "<anon method-1>",
       "path": "packages/shared/src/db/schema/athleteMemberships.ts",
@@ -3153,7 +3267,13 @@
       "crap": 2,
       "method": "seedLegalDocuments",
       "path": "packages/shared/src/db/seed.ts",
-      "startLine": 55
+      "startLine": 72
+    },
+    {
+      "crap": 2,
+      "method": "seedFixtures",
+      "path": "packages/shared/src/db/seedFixtures.ts",
+      "startLine": 130
     },
     {
       "crap": 2,
@@ -3334,6 +3454,42 @@
       "method": "signInAs",
       "path": "packages/shared/src/testing/auth.ts",
       "startLine": 231
+    },
+    {
+      "crap": 12,
+      "method": "isPlainObject",
+      "path": "packages/shared/src/testing/clerkPersonas.ts",
+      "startLine": 83
+    },
+    {
+      "crap": 56,
+      "method": "loadRaw",
+      "path": "packages/shared/src/testing/clerkPersonas.ts",
+      "startLine": 87
+    },
+    {
+      "crap": 20,
+      "method": "readPersonaClerkIds",
+      "path": "packages/shared/src/testing/clerkPersonas.ts",
+      "startLine": 154
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "packages/shared/src/testing/clerkPersonas.ts",
+      "startLine": 166
+    },
+    {
+      "crap": 20,
+      "method": "assertClerkTestSecretKey",
+      "path": "packages/shared/src/testing/clerkTickets.ts",
+      "startLine": 93
+    },
+    {
+      "crap": 2,
+      "method": "mintSignInTicket",
+      "path": "packages/shared/src/testing/clerkTickets.ts",
+      "startLine": 135
     },
     {
       "crap": 6,
