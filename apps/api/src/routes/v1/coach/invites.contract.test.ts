@@ -323,6 +323,36 @@ describe('POST /api/v1/coach/teams/:teamId/roster/invites — happy path', () =>
     expect(body.error?.code).toBe('INVALID_BODY');
   });
 
+  it('returns 503 MAIL_TRANSPORT_UNBOUND when no transport is wired and persists no row', async () => {
+    const db = freshCoachDb();
+    seedOrg(db, ORG_A);
+    const team = seedTeam(db, ORG_A, 't_unbound');
+    const coach = actor(ORG_A);
+    seedUser(db, ORG_A, coach.userId, coach.email);
+    seedCoachAssignment(db, ORG_A, team, coach.userId);
+
+    // `null` → no `rosterInviteMailTransport` var is set on the
+    // Hono context, mirroring production wiring that has not bound
+    // a provider yet.
+    const res = await buildApp(db, coach, null).request(
+      `/api/v1/coach/teams/${team}/roster/invites`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email: 'r@x.test' }),
+      },
+      STUB_ENV,
+    );
+
+    expect(res.status).toBe(503);
+    const body = (await res.json()) as CreateBody;
+    expect(body.error?.code).toBe('MAIL_TRANSPORT_UNBOUND');
+
+    // Fail-closed: no `roster_invite` row was persisted.
+    const rows = db.select().from(rosterInvites).all();
+    expect(rows).toHaveLength(0);
+  });
+
   it('returns 502 MAIL_SEND_FAILED when the transport throws', async () => {
     const db = freshCoachDb();
     seedOrg(db, ORG_A);

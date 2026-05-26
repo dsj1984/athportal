@@ -66,7 +66,8 @@ type CoachInvitesErrorCode =
   | 'MISSING_ORG_SCOPE'
   | 'INVALID_BODY'
   | 'INVITE_NOT_PENDING'
-  | 'MAIL_SEND_FAILED';
+  | 'MAIL_SEND_FAILED'
+  | 'MAIL_TRANSPORT_UNBOUND';
 
 interface CoachInvitesErrorBody {
   readonly success: false;
@@ -171,9 +172,10 @@ function deriveBaseUrl(requestUrl: string): string {
  * inject a transport stub via `c.set('rosterInviteMailTransport',
  * stub)`; the production wiring will hydrate this lazily once a
  * provider is selected (Tech Spec #906 §Core Components defers the
- * choice). When no transport is bound the route refuses with 500
- * `MAIL_SEND_FAILED` rather than silently accepting an invite that
- * was never delivered.
+ * choice). When no transport is bound the POST handler refuses with
+ * 503 `MAIL_TRANSPORT_UNBOUND` BEFORE writing any row, so an
+ * unwired environment cannot silently accept invites that will
+ * never be delivered.
  */
 interface CoachInvitesRouterVariables {
   rosterInviteMailTransport?: RosterInviteMailTransport;
@@ -223,9 +225,20 @@ export const coachInvitesRoute = new Hono<CoachInvitesRouterEnv>();
 /**
  * POST /api/v1/coach/teams/:teamId/roster/invites
  *
- * Create a roster invite. Generates the plaintext token, hashes it,
+ * Create a roster invite. Verifies a mail transport is bound BEFORE
+ * any DB write — if none is bound, refuses with 503
+ * `MAIL_TRANSPORT_UNBOUND` and persists nothing (fail-closed). When
+ * the transport is bound, generates the plaintext token, hashes it,
  * persists the row, dispatches the email, and returns the canonical
  * envelope. Plaintext token is never persisted or returned.
+ *
+ * Error envelope summary:
+ *   - 400 MISSING_ORG_SCOPE / INVALID_BODY — request-shape failures.
+ *   - 404 NOT_FOUND                        — team-not-found (cross-tenant safe).
+ *   - 502 MAIL_SEND_FAILED                 — transport threw; row IS persisted.
+ *   - 503 MAIL_TRANSPORT_UNBOUND           — no transport wired for this
+ *                                            environment (e.g. MAILER_TRANSPORT
+ *                                            unset). NO row is created.
  */
 coachInvitesRoute.post('/', async (c) => {
   const auth = c.get('auth');
@@ -266,6 +279,23 @@ coachInvitesRoute.post('/', async (c) => {
   }
   const input = parsed.data;
 
+  // Fail closed when no mail transport is wired for this environment.
+  // Without a transport the invite email can never be delivered; we
+  // refuse BEFORE writing a `roster_invite` row so the coach never
+  // sees a silent no-op success. Production wiring sets the variable
+  // from `MAILER_TRANSPORT` (or equivalent) at request entry; tests
+  // inject a recording/failing stub.
+  const transport = c.get('rosterInviteMailTransport');
+  if (!transport) {
+    return c.json(
+      errorBody(
+        'MAIL_TRANSPORT_UNBOUND',
+        'Roster invite cannot be sent — no transactional-mail transport is configured for this environment. Set MAILER_TRANSPORT or equivalent.',
+      ),
+      503,
+    );
+  }
+
   // 7-day TTL per Tech Spec §Data Models. Calculated relative to
   // server time — clock skew between API and DB is bounded by the
   // server's own NTP discipline.
@@ -297,13 +327,10 @@ coachInvitesRoute.post('/', async (c) => {
     .run();
 
   // Dispatch the email. The transport is contributed via Hono var
-  // by the host's wiring (test or production). When no transport is
-  // bound, return 500 — the row is already inserted, but a follow-on
-  // Story will add a retry/resend surface; for MVP the coach sees
-  // the error and the invite shows up in the strip on next refresh
-  // so they can revoke and re-issue.
-  const transport = c.get('rosterInviteMailTransport');
-  if (transport) {
+  // by the host's wiring (test or production). A throw from the
+  // provider surfaces as 502 — the row is persisted so the coach
+  // can revoke + re-issue.
+  {
     const inviteForMail: RosterInviteForMail = {
       id,
       teamId,
