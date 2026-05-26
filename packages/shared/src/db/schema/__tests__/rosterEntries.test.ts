@@ -8,8 +8,8 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { rosterEntries } from '../rosterEntries';
 import { schema } from '../index';
+import { rosterEntries } from '../rosterEntries';
 
 describe('rosterEntries — Drizzle table shape', () => {
   it('declares every column nominated by Tech Spec #906 §Data Models', () => {

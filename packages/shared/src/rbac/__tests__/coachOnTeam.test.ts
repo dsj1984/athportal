@@ -18,13 +18,13 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { freshSchemaDb } from '../../db/schema/__tests__/freshSchemaDb';
 import { coachAssignments } from '../../db/schema/coachAssignments';
 import { organizations } from '../../db/schema/organizations';
 import { teams } from '../../db/schema/teams';
 import { users } from '../../db/schema/users';
-import { freshSchemaDb } from '../../db/schema/__tests__/freshSchemaDb';
-import type { AuthContext } from '../types';
 import { HttpError, requireCoachOnTeam } from '../coachOnTeam';
+import type { AuthContext } from '../types';
 
 interface World {
   db: ReturnType<typeof freshSchemaDb>;
