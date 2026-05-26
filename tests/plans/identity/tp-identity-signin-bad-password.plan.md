@@ -10,8 +10,8 @@ route_prefixes:
 est_minutes: 5
 prerequisites:
   - "local stack running (pnpm dev)"
-  - "DB seeded via pnpm --filter @repo/shared run db:seed so the seeded athlete fixture exists"
-  - "the seeded athlete's email is known; the password used in this plan is intentionally wrong"
+  - "DB seeded (pnpm db:seed)"
+  - "persona users bootstrapped in Clerk per docs/runbooks/clerk-persona-bootstrap.md"
 ---
 
 ## Setup

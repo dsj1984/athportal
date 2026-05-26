@@ -10,9 +10,8 @@ route_prefixes:
 est_minutes: 12
 prerequisites:
   - "local stack running (pnpm dev)"
-  - "DB seeded with a fresh org via pnpm --filter @repo/shared run db:reset && pnpm --filter @repo/shared run db:seed"
-  - "signed in as a seeded org-admin against the seeded fixture org"
-  - "seeded org has at least two teams from a prior season with athletes and coaches assigned so the rollover preview surface is non-empty"
+  - "DB seeded (pnpm db:seed)"
+  - "persona users bootstrapped in Clerk per docs/runbooks/clerk-persona-bootstrap.md"
 ---
 
 ## Setup

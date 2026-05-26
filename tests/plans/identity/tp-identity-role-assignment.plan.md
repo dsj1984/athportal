@@ -12,8 +12,8 @@ route_prefixes:
 est_minutes: 12
 prerequisites:
   - "local stack running (pnpm dev)"
-  - "DB freshly reset and reseeded via pnpm --filter @repo/shared run db:reset && pnpm --filter @repo/shared run db:seed"
-  - "three fresh test email addresses available — one per persona under test (athlete, coach, org-admin)"
+  - "DB seeded (pnpm db:seed)"
+  - "persona users bootstrapped in Clerk per docs/runbooks/clerk-persona-bootstrap.md"
 ---
 
 ## Setup

@@ -12,8 +12,8 @@ route_prefixes:
 est_minutes: 7
 prerequisites:
   - "local stack running (pnpm dev)"
-  - "DB freshly reset and reseeded via pnpm --filter @repo/shared run db:reset && pnpm --filter @repo/shared run db:seed"
-  - "no existing user matches the e2e email"
+  - "DB seeded (pnpm db:seed)"
+  - "persona users bootstrapped in Clerk per docs/runbooks/clerk-persona-bootstrap.md"
 ---
 
 ## Setup

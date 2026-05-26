@@ -9,10 +9,9 @@ route_prefixes:
   - /internal/styleguide
 est_minutes: 10
 prerequisites:
-  - "local stack running (pnpm dev) — api on http://localhost:8787, web on http://localhost:4321"
-  - "DB seeded via pnpm --filter @repo/shared run db:seed so the internal users table is populated"
-  - "operator's local user promoted to dev_admin via pnpm --filter @repo/shared exec scripts/seed-dev-admin.mjs — decideStyleguideAccess (apps/web/src/pages/internal/styleguide.ts) denies every non-dev_admin caller with a 302 to /; an org-admin or coach session is bounced even though they are signed in"
-  - "browser session signed in (via /sign-in) as the dev_admin-promoted user; no separate org-admin session is required to walk the page"
+  - "local stack running (pnpm dev)"
+  - "DB seeded (pnpm db:seed)"
+  - "persona users bootstrapped in Clerk per docs/runbooks/clerk-persona-bootstrap.md"
 ---
 
 ## Setup
