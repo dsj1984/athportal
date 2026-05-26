@@ -30,13 +30,26 @@
  * handle produces no duplicate rows (asserted by the unit test).
  */
 
-import { PERSONA_FIXTURES } from '../testing/auth';
 import { athleteMemberships } from './schema/athleteMemberships';
 import { coachAssignments } from './schema/coachAssignments';
 import { organizations } from './schema/organizations';
 import { teams } from './schema/teams';
 import { users } from './schema/users';
-import { SEED_BOOTSTRAP_EFFECTIVE_AT } from './seed';
+
+/**
+ * The bootstrap `effective_at` timestamp for the persona-fixture rows.
+ * Pinned to a calendar date (not "now") so re-running the seed
+ * produces byte-stable rows and contract tests can assert against a
+ * deterministic value without fake-timers boilerplate.
+ *
+ * The same Date literal lives in `./seed.ts § SEED_BOOTSTRAP_EFFECTIVE_AT`
+ * — duplicated here rather than imported because importing from `seed.ts`
+ * would form a circular dependency once `seed.ts` re-exports
+ * `seedFixtures` for the canonical `@repo/shared/db/seed` subpath. The
+ * two literals are intentionally identical; if one moves, move both in
+ * the same PR.
+ */
+const SEED_FIXTURE_EFFECTIVE_AT = new Date('2026-01-01T00:00:00.000Z');
 
 /**
  * Static IDs for the persona-graph rows. Pinned constants (not
@@ -44,8 +57,13 @@ import { SEED_BOOTSTRAP_EFFECTIVE_AT } from './seed';
  * rows and contract tests can assert against deterministic values.
  *
  * The org / team IDs match the `PERSONA_FIXTURES.coach.orgId` and
- * `PERSONA_FIXTURES.coach.teamId` values verbatim — single source of
- * truth lives in `@repo/shared/testing/auth`.
+ * `PERSONA_FIXTURES.coach.teamId` values verbatim — those values live
+ * in `@repo/shared/testing/auth` but are *intentionally not imported*
+ * here. `seedFixtures.ts` is production code (it gets bundled with the
+ * Worker on a real `pnpm db:seed` run), and the dependency-cruiser
+ * `test-helpers-only-in-tests` rule forbids production-side imports
+ * into `src/testing/**`. The literals are duplicated; if `PERSONA_FIXTURES`
+ * moves, move them here too.
  */
 export const SEED_FIXTURE_ORG_ID = 'org_test_a' as const;
 export const SEED_FIXTURE_TEAM_ID = 'team_test_a_1' as const;
@@ -54,6 +72,29 @@ export const SEED_FIXTURE_COACH_USER_ID = 'user_seed_coach' as const;
 export const SEED_FIXTURE_ORG_ADMIN_USER_ID = 'user_seed_org_admin' as const;
 export const SEED_FIXTURE_ATHLETE_MEMBERSHIP_ID = 'am_seed_athlete' as const;
 export const SEED_FIXTURE_COACH_ASSIGNMENT_ID = 'ca_seed_coach' as const;
+
+/**
+ * The Clerk subject IDs and persona emails the seed writes into `users`.
+ * These are the same values exposed by `PERSONA_FIXTURES` in
+ * `@repo/shared/testing/auth` — duplicated here (and kept in lockstep)
+ * to satisfy the architecture rule that forbids production-side imports
+ * from `src/testing/**`.
+ */
+const SEED_FIXTURE_ATHLETE = {
+  clerkSubjectId: 'user_test_athlete',
+  email: 'athlete@example.com',
+  role: 'member',
+} as const;
+const SEED_FIXTURE_COACH = {
+  clerkSubjectId: 'user_test_coach',
+  email: 'coach@example.com',
+  role: 'team_admin',
+} as const;
+const SEED_FIXTURE_ORG_ADMIN = {
+  clerkSubjectId: 'user_test_org_admin',
+  email: 'org-admin@example.com',
+  role: 'org_admin',
+} as const;
 
 /**
  * Minimal structural shape for the Drizzle handle this seed uses. The
@@ -89,10 +130,6 @@ interface InsertChain {
 export function seedFixtures(db: unknown): void {
   const handle = db as InsertChain;
 
-  const athlete = PERSONA_FIXTURES.athlete;
-  const coach = PERSONA_FIXTURES.coach;
-  const orgAdmin = PERSONA_FIXTURES['org-admin'];
-
   handle
     .insert(organizations)
     .values([
@@ -125,30 +162,30 @@ export function seedFixtures(db: unknown): void {
     .values([
       {
         id: SEED_FIXTURE_ATHLETE_USER_ID,
-        clerkSubjectId: athlete.clerkSubjectId,
-        email: athlete.email,
-        role: athlete.role ?? 'member',
+        clerkSubjectId: SEED_FIXTURE_ATHLETE.clerkSubjectId,
+        email: SEED_FIXTURE_ATHLETE.email,
+        role: SEED_FIXTURE_ATHLETE.role,
         orgId: SEED_FIXTURE_ORG_ID,
         teamId: null,
-        onboardedAt: SEED_BOOTSTRAP_EFFECTIVE_AT,
+        onboardedAt: SEED_FIXTURE_EFFECTIVE_AT,
       },
       {
         id: SEED_FIXTURE_COACH_USER_ID,
-        clerkSubjectId: coach.clerkSubjectId,
-        email: coach.email,
-        role: coach.role ?? 'member',
+        clerkSubjectId: SEED_FIXTURE_COACH.clerkSubjectId,
+        email: SEED_FIXTURE_COACH.email,
+        role: SEED_FIXTURE_COACH.role,
         orgId: SEED_FIXTURE_ORG_ID,
         teamId: SEED_FIXTURE_TEAM_ID,
-        onboardedAt: SEED_BOOTSTRAP_EFFECTIVE_AT,
+        onboardedAt: SEED_FIXTURE_EFFECTIVE_AT,
       },
       {
         id: SEED_FIXTURE_ORG_ADMIN_USER_ID,
-        clerkSubjectId: orgAdmin.clerkSubjectId,
-        email: orgAdmin.email,
-        role: orgAdmin.role ?? 'member',
+        clerkSubjectId: SEED_FIXTURE_ORG_ADMIN.clerkSubjectId,
+        email: SEED_FIXTURE_ORG_ADMIN.email,
+        role: SEED_FIXTURE_ORG_ADMIN.role,
         orgId: SEED_FIXTURE_ORG_ID,
         teamId: null,
-        onboardedAt: SEED_BOOTSTRAP_EFFECTIVE_AT,
+        onboardedAt: SEED_FIXTURE_EFFECTIVE_AT,
       },
     ])
     .onConflictDoNothing()
