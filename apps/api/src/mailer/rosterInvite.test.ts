@@ -18,13 +18,13 @@
 
 import { describe, expect, it, vi } from 'vitest';
 import {
+  type RosterInviteEmailMessage,
+  type RosterInviteForMail,
+  type RosterInviteMailTransport,
   buildAcceptUrl,
   buildDeclineUrl,
   buildLogEvent,
   hashToken,
-  type RosterInviteEmailMessage,
-  type RosterInviteForMail,
-  type RosterInviteMailTransport,
   sendRosterInviteEmail,
 } from './rosterInvite';
 
@@ -230,9 +230,11 @@ function occurrences(haystack: string, needle: string): number {
   if (needle.length === 0) return 0;
   let count = 0;
   let idx = 0;
-  while ((idx = haystack.indexOf(needle, idx)) !== -1) {
+  while (true) {
+    const found = haystack.indexOf(needle, idx);
+    if (found === -1) break;
     count += 1;
-    idx += needle.length;
+    idx = found + needle.length;
   }
   return count;
 }
