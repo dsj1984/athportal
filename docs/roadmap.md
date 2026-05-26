@@ -8,7 +8,7 @@
 >
 > Companion: [`testing-strategy.md`](testing-strategy.md) defines the automated test pyramid, quality baselines, and the **Manual QA gate** referenced in each capability's exit gates below (see [§ Manual Testing](testing-strategy.md#manual-testing) and [§ Phase gates](testing-strategy.md#phase-gates)).
 
-### See also
+## See also
 
 - [`architecture.md`](architecture.md) — tech stack, workspace boundaries, cross-cutting flows.
 - [`personas.md`](personas.md) — the canonical persona taxonomy and the trust-chain graph.
@@ -103,7 +103,7 @@ flowchart TD
 
 Toolchain, CI, observability, baselines, the three-tier test infrastructure, the design system, and the agent-driveable QA corpus. Not user-visible, but every later capability is built on it.
 
-**Epics**
+##### Epics
 
 - ✅ [#2](https://github.com/dsj1984/athportal/issues/2) — Monorepo, workspace tooling, and code quality baseline
 - ✅ [#3](https://github.com/dsj1984/athportal/issues/3) — CI pipelines, two-environment deploy promotion, and secret management
@@ -117,7 +117,7 @@ Toolchain, CI, observability, baselines, the three-tier test infrastructure, the
 - ✅ [#828](https://github.com/dsj1984/athportal/issues/828) — Web UI styling completion — eliminate orphan BEM, lock in the convention
 - ⬜ [#869](https://github.com/dsj1984/athportal/issues/869) — Drive the QA-corpus agent runner to green against every generated Test Plan and Charter
 
-**Feature files**
+##### Feature files
 
 - [`design-system/badge.feature`](../tests/features/design-system/badge.feature)
 - [`design-system/btn.feature`](../tests/features/design-system/btn.feature)
@@ -139,11 +139,11 @@ Toolchain, CI, observability, baselines, the three-tier test infrastructure, the
 - [`observability/synthetic-failure-rehearsal.feature`](../tests/features/observability/synthetic-failure-rehearsal.feature)
 - [`observability/uptime-probe-alerts.feature`](../tests/features/observability/uptime-probe-alerts.feature)
 
-**Test plans**
+##### Test plans
 
 - [`tp-design-system-styleguide-walkthrough`](../tests/plans/design-system/tp-design-system-styleguide-walkthrough.plan.md)
 
-**Shared exploratory heuristics** (reused across charters in every capability)
+##### Shared exploratory heuristics (reused across charters in every capability)
 
 - [`auth-fuzz.md`](../tests/charters/_heuristics/auth-fuzz.md)
 - [`boundary-values.md`](../tests/charters/_heuristics/boundary-values.md)
@@ -160,11 +160,11 @@ Toolchain, CI, observability, baselines, the three-tier test infrastructure, the
 
 Authentication, session management, and the `(role, resource, action)` policy module every protected route runs through. Clerk-backed; test-auth seam for CI personas.
 
-**Epics**
+##### Epics
 
 - ✅ [#7](https://github.com/dsj1984/athportal/issues/7) — Authentication, session, and RBAC policy
 
-**Feature files**
+##### Feature files
 
 - [`identity/auth/anonymous-redirect.feature`](../tests/features/identity/auth/anonymous-redirect.feature)
 - [`identity/auth/protected-route-smoke.feature`](../tests/features/identity/auth/protected-route-smoke.feature)
@@ -175,7 +175,7 @@ Authentication, session management, and the `(role, resource, action)` policy mo
 - [`identity/rbac/last-admin.feature`](../tests/features/identity/rbac/last-admin.feature)
 - [`identity/rbac/matrix-publication.feature`](../tests/features/identity/rbac/matrix-publication.feature)
 
-**Test plans**
+##### Test plans
 
 - [`tp-identity-signin-happy`](../tests/plans/identity/tp-identity-signin-happy.plan.md)
 - [`tp-identity-signin-bad-password`](../tests/plans/identity/tp-identity-signin-bad-password.plan.md)
@@ -184,7 +184,7 @@ Authentication, session management, and the `(role, resource, action)` policy mo
 - [`tp-identity-jit-provisioning`](../tests/plans/identity/tp-identity-jit-provisioning.plan.md)
 - [`tp-identity-role-assignment`](../tests/plans/identity/tp-identity-role-assignment.plan.md)
 
-**Charters**
+##### Charters
 
 - [`ec-identity-auth-fuzz`](../tests/charters/identity/ec-identity-auth-fuzz.charter.md)
 
@@ -192,7 +192,7 @@ Authentication, session management, and the `(role, resource, action)` policy mo
 
 The multi-tenant data model and the server-enforced gate every authenticated user clears before any feature surface unlocks. Nothing else is safe to build until tenant isolation and onboarding hold server-side.
 
-**Epics**
+##### Epics
 
 - ✅ [#8](https://github.com/dsj1984/athportal/issues/8) — Server-enforced onboarding gate and ToS acceptance
 - ✅ [#9](https://github.com/dsj1984/athportal/issues/9) — Org / team / coach / athlete data model and multi-tenant isolation
@@ -200,18 +200,18 @@ The multi-tenant data model and the server-enforced gate every authenticated use
 - ⬜ [#11](https://github.com/dsj1984/athportal/issues/11) — Digital roster, athlete invitations, and team-scoped access
 - ⬜ [#23](https://github.com/dsj1984/athportal/issues/23) — Versioned legal documents — ToS, Privacy Policy, cookie consent
 
-**Dependencies**
+##### Dependencies
 
 - #8, #9 → #7 (auth)
 - #23 → #8 (onboarding owns the ToS acceptance moment)
 - #10, #11 → #9 (need the org/team graph)
 
-**Cross-cutting work**
+##### Cross-cutting work
 
 - Publish the `(role, resource, action)` matrix in [`data-dictionary.md`](data-dictionary.md). The policy module already exists in [`packages/shared/src/rbac/`](../packages/shared/src/rbac/) (landed with #7); the open work is keeping the published table current as #9–#11 expand the surface.
 - First exercise of the cross-tenant isolation property tests against a real Clerk test instance.
 
-**Feature files**
+##### Feature files
 
 - [`identity/onboarding/age-gate.feature`](../tests/features/identity/onboarding/age-gate.feature)
 - [`identity/onboarding/complete-onboarding.feature`](../tests/features/identity/onboarding/complete-onboarding.feature)
@@ -237,7 +237,7 @@ The multi-tenant data model and the server-enforced gate every authenticated use
 - [`org-admin/season-rollover.feature`](../tests/features/org-admin/season-rollover.feature)
 - [`org-admin/verified-achievement-report.feature`](../tests/features/org-admin/verified-achievement-report.feature)
 
-**Test plans**
+##### Test plans
 
 - [`tp-identity-onboarding-gate`](../tests/plans/identity/tp-identity-onboarding-gate.plan.md)
 - [`tp-identity-signup-happy-path`](../tests/plans/identity/tp-identity-signup-happy-path.plan.md)
@@ -250,14 +250,14 @@ The multi-tenant data model and the server-enforced gate every authenticated use
 - [`tp-org-admin-season-rollover`](../tests/plans/org-admin/tp-org-admin-season-rollover.plan.md)
 - [`tp-org-admin-reporting`](../tests/plans/org-admin/tp-org-admin-reporting.plan.md)
 
-**Charters**
+##### Charters
 
 - [`ec-identity-cross-tenant`](../tests/charters/identity/ec-identity-cross-tenant.charter.md)
 - [`ec-org-admin-csv-import`](../tests/charters/org-admin/ec-org-admin-csv-import.charter.md)
 - [`ec-org-admin-invitation-flow`](../tests/charters/org-admin/ec-org-admin-invitation-flow.charter.md)
 - [`ec-org-admin-season-rollover`](../tests/charters/org-admin/ec-org-admin-season-rollover.charter.md)
 
-**Exit gates**
+##### Exit gates
 
 - A coach can sign up, accept ToS, create an org, create a team, invite an athlete, and have that athlete appear on the roster.
 - Manual QA gate: tenancy-isolation charter (see [`testing-strategy.md` § Phase gates](testing-strategy.md#phase-gates)).
@@ -267,23 +267,23 @@ The multi-tenant data model and the server-enforced gate every authenticated use
 
 The canonical athlete profile is the wedge artifact. The calendar is the recurring touchpoint that brings users back. These are the two private surfaces every later feature decorates. The **public** projection of the profile is deferred to the next capability because it depends on the verified-stat badges that land there.
 
-**Epics**
+##### Epics
 
 - ⬜ [#12](https://github.com/dsj1984/athportal/issues/12) — Canonical athlete profile (attributes, academic, vanity URL, privacy, completion)
 - ⬜ [#13](https://github.com/dsj1984/athportal/issues/13) — Core calendar UI, expanded event types, RSVP, and outbound iCal feed
 
-**Dependencies**
+##### Dependencies
 
 - #12 → #9 (athlete entity comes from the org/team graph)
 - #13 → #11 (events scope to teams / rosters)
 
-**Cross-cutting work**
+##### Cross-cutting work
 
 - Vanity-URL collision policy decision recorded in [`decisions/`](decisions/).
 
 **Feature files / test plans:** authored as Epics ship.
 
-**Exit gates**
+##### Exit gates
 
 - An athlete can complete their canonical profile to 100%, and a coach can publish an event the athlete RSVPs to.
 - Manual QA gate: profile-completion + calendar charters.
@@ -292,21 +292,21 @@ The canonical athlete profile is the wedge artifact. The calendar is the recurri
 
 What makes the profile defensible versus a generic team-management app. Stats and media both have safety pipelines that must be exercised before any user-generated content surface opens. The public projection of the athlete profile lands here too — it renders the verified badges produced by #14, so it can't ship before them.
 
-**Epics**
+##### Epics
 
 - ⬜ [#14](https://github.com/dsj1984/athportal/issues/14) — Verified statistics (sideline collection, coach signature, badging — soccer-first)
 - ⬜ [#17](https://github.com/dsj1984/athportal/issues/17) — Media capture, processing, playback, and pre-publish safety pipeline
 - ⬜ [#20](https://github.com/dsj1984/athportal/issues/20) — Block, report, MAAPP plumbing, and PII safety guardrails
 - ⬜ [#15](https://github.com/dsj1984/athportal/issues/15) — Public athlete profile with verification badges and SEO
 
-**Dependencies**
+##### Dependencies
 
 - #14 → #11, #12, #13 (needs roster, profile, and event context)
 - #17 → #12 (media attaches to the athlete profile)
 - #20 → #7 (auth)
 - #15 → #12 **and** #14 (public profile renders verified badges)
 
-**Cross-cutting work**
+##### Cross-cutting work
 
 - Cloudflare R2 bucket + Mux account provisioned for staging *and* production; secrets in env, never in code.
 - Media moderation policy (what the safety pipeline blocks vs. flags) recorded in [`decisions/`](decisions/).
@@ -315,7 +315,7 @@ What makes the profile defensible versus a generic team-management app. Stats an
 
 **Feature files / test plans:** authored as Epics ship.
 
-**Exit gates**
+##### Exit gates
 
 - A coach can record a stat, sign it, and the athlete's public profile reflects the verified badge.
 - A media upload survives the full pipeline (capture → process → safety check → publish) on staging.
@@ -326,19 +326,19 @@ What makes the profile defensible versus a generic team-management app. Stats an
 
 Push, email, the team feed, and the mobile-web PWA close the engagement loop. Nothing here ships before the safety guardrails from the prior capability are exercised — comms surfaces are where harassment and PII leaks materialize.
 
-**Epics**
+##### Epics
 
 - ⬜ [#18](https://github.com/dsj1984/athportal/issues/18) — Push, email transactional, event reminders, and preference center
 - ⬜ [#21](https://github.com/dsj1984/athportal/issues/21) — Native team feed — posts, sharing, reactions within the team
 - ⬜ [#19](https://github.com/dsj1984/athportal/issues/19) — Mobile-web Progressive Web App — service worker, manifest, install prompt, Web Push
 
-**Dependencies**
+##### Dependencies
 
 - #18 → #7 (auth), #13 (calendar — reminders fire off events)
 - #21 → #11, #12, #17, #20 (every prerequisite for a moderated content surface)
 - #19 → #17 (media), #18 (notifications — Web Push rides on the notification stack)
 
-**Cross-cutting work**
+##### Cross-cutting work
 
 - Transactional email sender domain verified (SPF, DKIM, DMARC) in production DNS.
 - Push notification credentials (APNs, FCM) provisioned for the PWA; native push waits for the native-apps Epic.
@@ -346,7 +346,7 @@ Push, email, the team feed, and the mobile-web PWA close the engagement loop. No
 
 **Feature files / test plans:** authored as Epics ship.
 
-**Exit gates**
+##### Exit gates
 
 - An event publication triggers a push and an email; the preference center can mute both.
 - A team-feed post is visible only to roster members, never cross-tenant.
@@ -356,24 +356,24 @@ Push, email, the team feed, and the mobile-web PWA close the engagement loop. No
 
 Operator tooling for running the trust chain (onboarding, lookup, impersonation, audit) and the data-rights surface required for launch (DSAR, deletion, retention).
 
-**Epics**
+##### Epics
 
 - ⬜ [#25](https://github.com/dsj1984/athportal/issues/25) — Platform admin dashboard — onboarding, lookup, impersonation, support actions
 - ⬜ [#24](https://github.com/dsj1984/athportal/issues/24) — DSAR, account deletion, and standard retention enforcement
 
-**Dependencies**
+##### Dependencies
 
 - #25 → #7 (auth), #9 (org/team graph)
 - #24 → #23 (legal documents — retention policy is anchored to the published privacy policy)
 
-**Cross-cutting work**
+##### Cross-cutting work
 
 - Privacy review of the public profile surface against the published Privacy Policy.
 - Admin-impersonation audit trail validated end-to-end (every action logged, no silent bypasses).
 
 **Feature files / test plans:** authored as Epics ship.
 
-**Exit gates**
+##### Exit gates
 
 - A user can submit a DSAR and a deletion request; both flow through the admin dashboard.
 - An admin-impersonation session leaves a complete audit trail in the log sink.
@@ -383,15 +383,15 @@ Operator tooling for running the trust chain (onboarding, lookup, impersonation,
 
 First time anonymous traffic reaches the platform. Opens the public-discovery directories that aggregate the public surfaces produced in Capabilities 4–5. The public *signup* funnel itself is deferred to v1.0 ([#58](https://github.com/dsj1984/athportal/issues/58)); MVP remains invite-only.
 
-**Epics**
+##### Epics
 
 - ⬜ [#16](https://github.com/dsj1984/athportal/issues/16) — Public-discovery directories (athletes, clubs, teams, events, tournaments)
 
-**Dependencies**
+##### Dependencies
 
 - #16 → #13 (calendar), #15 (public profile — directories aggregate the public surfaces)
 
-**Cross-cutting work**
+##### Cross-cutting work
 
 - Production domain DNS cutover plan, including the apex and `www` redirect.
 - Crawler rate-limit policy and `robots.txt` final state recorded in [`decisions/`](decisions/).
@@ -399,7 +399,7 @@ First time anonymous traffic reaches the platform. Opens the public-discovery di
 
 **Feature files / test plans:** authored as Epics ship.
 
-**Exit gates**
+##### Exit gates
 
 - Anonymous traffic can land on a club page, see a public roster, and click through to an athlete profile.
 - Manual QA gate: public-directory charter.
@@ -408,17 +408,17 @@ First time anonymous traffic reaches the platform. Opens the public-discovery di
 
 Production cutover, beta cohort onboarding, the launch runbook, and the supporting help/analytics surfaces that ship alongside. The last capability before MVP is declared done.
 
-**Epics**
+##### Epics
 
 - ⬜ [#27](https://github.com/dsj1984/athportal/issues/27) — Production environment, beta cohort, store submission, and launch runbook
 - ⬜ [#22](https://github.com/dsj1984/athportal/issues/22) — Help center, support tickets, contextual tooltips, and error pages
 - ⬜ [#26](https://github.com/dsj1984/athportal/issues/26) — Event-level product analytics and in-app feedback channel
 
-**Dependencies**
+##### Dependencies
 
 - #27 → every preceding MVP capability (it is the integration / launch gate for the whole MVP path — see its `Depends on` block)
 
-**Cross-cutting work**
+##### Cross-cutting work
 
 - Production secrets inventory: every key in `.env.example` has a real value in the production secret store and a documented rotation owner.
 - On-call rotation and incident runbook published in [`runbooks/`](runbooks/).
@@ -427,7 +427,7 @@ Production cutover, beta cohort onboarding, the launch runbook, and the supporti
 
 **Feature files / test plans:** authored as Epics ship.
 
-**Exit gates**
+##### Exit gates
 
 - The full pre-release manual regression sweep passes against the production environment with seeded beta data.
 - The launch runbook is rehearsed end-to-end against staging with the on-call rotation in the loop.

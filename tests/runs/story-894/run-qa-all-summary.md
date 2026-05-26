@@ -67,6 +67,7 @@ Story #881, and reframed + resolved the five pre-existing
 ## Per-plan disposition
 
 See the per-task run logs for honest evidence per plan:
+
 - `tests/runs/story-894/identity.md`
 - `tests/runs/story-894/design-system.md`
 - `tests/runs/story-894/org-admin.md`
