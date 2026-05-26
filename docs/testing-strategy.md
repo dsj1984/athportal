@@ -335,6 +335,8 @@ The scenario asserts what the **user sees**. It does not mention HTTP status, ta
 
 Gherkin authoring rules live in [`.agents/rules/gherkin-standards.md`](../.agents/rules/gherkin-standards.md).
 
+**Coach roster feature bundle (Epic #11).** The three feature files under [`tests/features/coach/roster/`](../tests/features/coach/roster/) — `digital-roster.feature`, `roster-invites.feature`, and `team-scoped-access.feature` — assert the user-visible outcomes for AC-1…AC-14 of the coach roster surface. Scenarios are tagged `@pending` until the matching step library lands; the wire-shape contract for every assertion in those files lives at the contract tier under `apps/api/src/routes/v1/coach/roster*.contract.test.ts` and `apps/api/src/routes/v1/public/roster-invites.contract.test.ts`.
+
 ---
 
 ## Forbidden Patterns
