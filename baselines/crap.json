@@ -1,13 +1,13 @@
 {
   "$schema": ".agents/schemas/baselines/crap.schema.json",
-  "kernelVersion": "1.0.0",
-  "generatedAt": "2026-05-25T21:15:38.409Z",
+  "kernelVersion": "0.1.0",
+  "generatedAt": "2026-05-26T12:00:41.935Z",
   "rollup": {
     "*": {
       "p50": 2,
       "p95": 42,
       "max": 506,
-      "methodsAbove20": 60
+      "methodsAbove20": 59
     }
   },
   "rows": [
@@ -2556,36 +2556,6 @@
       "startLine": 84
     },
     {
-      "crap": 20,
-      "method": "isAllowlisted",
-      "path": "apps/web/src/middleware.ts",
-      "startLine": 97
-    },
-    {
-      "crap": 2,
-      "method": "createOnboardingGate",
-      "path": "apps/web/src/middleware.ts",
-      "startLine": 140
-    },
-    {
-      "crap": 42,
-      "method": "onboardingGate",
-      "path": "apps/web/src/middleware.ts",
-      "startLine": 143
-    },
-    {
-      "crap": 2,
-      "method": "<anon method-1>",
-      "path": "apps/web/src/middleware.ts",
-      "startLine": 187
-    },
-    {
-      "crap": 2,
-      "method": "<anon method-2>",
-      "path": "apps/web/src/middleware.ts",
-      "startLine": 200
-    },
-    {
       "crap": 6,
       "method": "buildTeamsListView",
       "path": "apps/web/src/pages/admin/teams/index.ts",
@@ -3040,18 +3010,6 @@
       "method": "readNode",
       "path": "packages/shared/src/db/queries/scopedDb.ts",
       "startLine": 374
-    },
-    {
-      "crap": 6,
-      "method": "getOnboardingState",
-      "path": "packages/shared/src/db/queries/users.ts",
-      "startLine": 66
-    },
-    {
-      "crap": 6,
-      "method": "isOnboarded",
-      "path": "packages/shared/src/db/queries/users.ts",
-      "startLine": 95
     },
     {
       "crap": 2,
