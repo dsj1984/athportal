@@ -98,8 +98,9 @@ describe('sendRosterInviteEmail', () => {
     const sent: RosterInviteEmailMessage[] = [];
     return {
       sent,
-      async send(msg) {
+      send(msg) {
         sent.push(msg);
+        return Promise.resolve();
       },
     };
   }

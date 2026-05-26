@@ -181,8 +181,9 @@ function recordingTransport(): RosterInviteMailTransport & { sent: unknown[] } {
   const sent: unknown[] = [];
   return {
     sent,
-    async send(message) {
+    send(message) {
       sent.push(message);
+      return Promise.resolve();
     },
   };
 }
@@ -190,8 +191,8 @@ function recordingTransport(): RosterInviteMailTransport & { sent: unknown[] } {
 /** A transport stub that always throws — to exercise the 502 path. */
 function failingTransport(): RosterInviteMailTransport {
   return {
-    async send() {
-      throw new Error('Provider unavailable');
+    send() {
+      return Promise.reject(new Error('Provider unavailable'));
     },
   };
 }
@@ -586,10 +587,9 @@ describe('re-issue after expiry creates a new pending row', () => {
 
 /**
  * Local helper — Drizzle eq predicate against rosterInvites.email,
- * declared as a function so the type narrows inside the test file
- * without a separate import block.
+ * declared as a function so the predicate stays colocated with the
+ * tests that consume it.
  */
 function eqInviteEmail(email: string) {
-  const { eq } = require('drizzle-orm') as typeof import('drizzle-orm');
   return eq(rosterInvites.email, email);
 }
