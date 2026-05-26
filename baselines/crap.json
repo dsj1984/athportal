@@ -1,13 +1,13 @@
 {
   "$schema": ".agents/schemas/baselines/crap.schema.json",
-  "kernelVersion": "0.1.0",
-  "generatedAt": "2026-05-26T00:38:52.001Z",
+  "kernelVersion": "1.0.0",
+  "generatedAt": "2026-05-25T21:15:38.409Z",
   "rollup": {
     "*": {
       "p50": 2,
       "p95": 42,
       "max": 506,
-      "methodsAbove20": 59
+      "methodsAbove20": 60
     }
   },
   "rows": [
@@ -2538,28 +2538,52 @@
       "startLine": 36
     },
     {
-      "crap": 2,
-      "method": "findMonorepoRoot",
-      "path": "apps/web/src/lib/db.ts",
-      "startLine": 41
-    },
-    {
-      "crap": 56,
+      "crap": 42,
       "method": "resolveDatabasePath",
       "path": "apps/web/src/lib/db.ts",
-      "startLine": 68
+      "startLine": 34
     },
     {
       "crap": 6,
       "method": "getDb",
       "path": "apps/web/src/lib/db.ts",
-      "startLine": 116
+      "startLine": 73
     },
     {
       "crap": 2,
       "method": "__resetDbForTests",
       "path": "apps/web/src/lib/db.ts",
-      "startLine": 127
+      "startLine": 84
+    },
+    {
+      "crap": 20,
+      "method": "isAllowlisted",
+      "path": "apps/web/src/middleware.ts",
+      "startLine": 97
+    },
+    {
+      "crap": 2,
+      "method": "createOnboardingGate",
+      "path": "apps/web/src/middleware.ts",
+      "startLine": 140
+    },
+    {
+      "crap": 42,
+      "method": "onboardingGate",
+      "path": "apps/web/src/middleware.ts",
+      "startLine": 143
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "apps/web/src/middleware.ts",
+      "startLine": 187
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-2>",
+      "path": "apps/web/src/middleware.ts",
+      "startLine": 200
     },
     {
       "crap": 6,
@@ -3166,6 +3190,12 @@
       "method": "<anon method-3>",
       "path": "packages/shared/src/db/schema/users.ts",
       "startLine": 43
+    },
+    {
+      "crap": 2,
+      "method": "seedLegalDocuments",
+      "path": "packages/shared/src/db/seed.ts",
+      "startLine": 55
     },
     {
       "crap": 2,

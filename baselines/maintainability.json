@@ -1,11 +1,11 @@
 {
   "$schema": ".agents/schemas/baselines/maintainability.schema.json",
   "kernelVersion": "0.1.0",
-  "generatedAt": "2026-05-26T00:38:51.793Z",
+  "generatedAt": "2026-05-26T01:16:14.915Z",
   "rollup": {
     "*": {
       "min": 70.515,
-      "p50": 107.296,
+      "p50": 106.74,
       "p95": 171
     }
   },
@@ -303,10 +303,6 @@
       "path": "apps/web/src/components/ui/Card.ts"
     },
     {
-      "mi": 86.556,
-      "path": "apps/web/src/components/ui/DataTable.ts"
-    },
-    {
       "mi": 99.6,
       "path": "apps/web/src/components/ui/EmptyState.ts"
     },
@@ -371,8 +367,12 @@
       "path": "apps/web/src/index.ts"
     },
     {
-      "mi": 110.532,
+      "mi": 114.561,
       "path": "apps/web/src/lib/db.ts"
+    },
+    {
+      "mi": 107.898,
+      "path": "apps/web/src/middleware.ts"
     },
     {
       "mi": 131.444,
@@ -515,6 +515,10 @@
       "path": "packages/shared/src/db/schema/users.ts"
     },
     {
+      "mi": 106.619,
+      "path": "packages/shared/src/db/seed.ts"
+    },
+    {
       "mi": 171,
       "path": "packages/shared/src/index.ts"
     },
@@ -599,10 +603,6 @@
       "path": "packages/shared/src/testing/examples/sum.ts"
     },
     {
-      "mi": 171,
-      "path": "packages/shared/src/testing/index.ts"
-    },
-    {
       "mi": 108.708,
       "path": "packages/shared/src/testing/safety.ts"
     },
@@ -613,6 +613,10 @@
     {
       "mi": 96.979,
       "path": "packages/shared/src/testing/seeds.ts"
+    },
+    {
+      "mi": 83.831,
+      "path": "packages/shared/vitest.config.ts"
     }
   ]
 }
