@@ -192,8 +192,15 @@ export function createOnboardingGate(
  * without re-reading the field outside the sanctioned accessor.
  *
  * Story #878 / Task #889 — Web runtime DB binding cutover.
+ *
+ * Exported (rather than module-local) so the production-lookup unit
+ * test (Task #890) can mock `./lib/db` + `@repo/shared/db/queries/users`
+ * and drive this function directly, asserting both that `getDb()` is
+ * called and that the lookup's return value flows through verbatim.
+ * Without the export the cutover regression would only be observable
+ * via an integration test, which is the wrong tier for this contract.
  */
-const productionLookup: OnboardingLookup = (clerkSubjectId) =>
+export const productionLookup: OnboardingLookup = (clerkSubjectId) =>
   getOnboardingState(getDb(), clerkSubjectId);
 
 /**
