@@ -1,11 +1,41 @@
 {
   "$schema": ".agents/schemas/baselines/maintainability.schema.json",
+  "generatedAt": "2026-05-26T20:45:37.981Z",
   "kernelVersion": "1.0.0",
-  "generatedAt": "2026-05-26T15:33:24.909Z",
   "rollup": {
     "*": {
       "min": 70.515,
+      "p50": 104.761,
+      "p95": 171
+    },
+    "apps/api": {
+      "min": 78.354,
+      "p50": 106.463,
+      "p95": 171
+    },
+    "apps/mobile": {
+      "min": 96.11,
+      "p50": 96.11,
+      "p95": 121.195
+    },
+    "apps/web": {
+      "min": 80.074,
+      "p50": 106.74,
+      "p95": 163.185
+    },
+    "packages/baselines": {
+      "min": 98.311,
+      "p50": 104.945,
+      "p95": 171
+    },
+    "packages/config": {
+      "min": 104.952,
       "p50": 104.952,
+      "p95": 115.627
+    },
+    "packages/shared": {
+      "min": 70.515,
+      "p50": 99.315,
       "p95": 171
     }
   },
@@ -15,12 +45,20 @@
       "path": "apps/api/src/env.ts"
     },
     {
+      "mi": 106.463,
+      "path": "apps/api/src/index.ts"
+    },
+    {
       "mi": 120.696,
       "path": "apps/api/src/lib/clerk-invitations.ts"
     },
     {
       "mi": 103.9,
       "path": "apps/api/src/lib/r2.ts"
+    },
+    {
+      "mi": 108.172,
+      "path": "apps/api/src/mailer/rosterInvite.ts"
     },
     {
       "mi": 138.232,
@@ -99,8 +137,24 @@
       "path": "apps/api/src/routes/v1/auth/onboard.ts"
     },
     {
+      "mi": 134.62,
+      "path": "apps/api/src/routes/v1/coach/index.ts"
+    },
+    {
+      "mi": 81.432,
+      "path": "apps/api/src/routes/v1/coach/invites.ts"
+    },
+    {
+      "mi": 84.627,
+      "path": "apps/api/src/routes/v1/coach/roster.ts"
+    },
+    {
       "mi": 115.469,
       "path": "apps/api/src/routes/v1/me.ts"
+    },
+    {
+      "mi": 81.087,
+      "path": "apps/api/src/routes/v1/public/roster-invites.ts"
     },
     {
       "mi": 111.461,
@@ -243,6 +297,14 @@
       "path": "apps/web/src/components/admin/teams/TeamForm.ts"
     },
     {
+      "mi": 98.392,
+      "path": "apps/web/src/components/coach/InviteAthleteDialog.ts"
+    },
+    {
+      "mi": 90.392,
+      "path": "apps/web/src/components/coach/RosterTable.ts"
+    },
+    {
       "mi": 133.747,
       "path": "apps/web/src/components/onboarding/AgeAttestation.ts"
     },
@@ -261,34 +323,6 @@
     {
       "mi": 106.74,
       "path": "apps/web/src/components/onboarding/ProfilePhotoUploader.ts"
-    },
-    {
-      "mi": 96.375,
-      "path": "apps/web/src/components/ui/_lib/badge.ts"
-    },
-    {
-      "mi": 99.377,
-      "path": "apps/web/src/components/ui/_lib/btn.ts"
-    },
-    {
-      "mi": 147.376,
-      "path": "apps/web/src/components/ui/_lib/cn.ts"
-    },
-    {
-      "mi": 94.178,
-      "path": "apps/web/src/components/ui/_lib/eventColors.ts"
-    },
-    {
-      "mi": 109.991,
-      "path": "apps/web/src/components/ui/_lib/form.ts"
-    },
-    {
-      "mi": 81.443,
-      "path": "apps/web/src/components/ui/_lib/sidebarNav.ts"
-    },
-    {
-      "mi": 171,
-      "path": "apps/web/src/components/ui/_lib/toast.ts"
     },
     {
       "mi": 105.724,
@@ -361,6 +395,34 @@
     {
       "mi": 119.789,
       "path": "apps/web/src/components/ui/VerifiedTick.ts"
+    },
+    {
+      "mi": 96.375,
+      "path": "apps/web/src/components/ui/_lib/badge.ts"
+    },
+    {
+      "mi": 99.377,
+      "path": "apps/web/src/components/ui/_lib/btn.ts"
+    },
+    {
+      "mi": 147.376,
+      "path": "apps/web/src/components/ui/_lib/cn.ts"
+    },
+    {
+      "mi": 94.178,
+      "path": "apps/web/src/components/ui/_lib/eventColors.ts"
+    },
+    {
+      "mi": 109.991,
+      "path": "apps/web/src/components/ui/_lib/form.ts"
+    },
+    {
+      "mi": 81.443,
+      "path": "apps/web/src/components/ui/_lib/sidebarNav.ts"
+    },
+    {
+      "mi": 171,
+      "path": "apps/web/src/components/ui/_lib/toast.ts"
     },
     {
       "mi": 171,
@@ -465,6 +527,10 @@
     {
       "mi": 97.857,
       "path": "packages/shared/src/csv/parse.ts"
+    },
+    {
+      "mi": 88.147,
+      "path": "packages/shared/src/db/queries/coach/roster.ts"
     },
     {
       "mi": 94.082,
