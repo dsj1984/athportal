@@ -27,7 +27,7 @@
 // `/athletes/:athleteId` to match Tech Spec #906 §API; the segment's
 // semantic is "the roster entry for this athlete on this team".
 
-import PageHeader from '../../../../../../components/ui/PageHeader.astro';
+import PageHeader from '../../../../../../../components/ui/PageHeader.astro';
 
 const { teamId, athleteId } = Astro.params;
 if (typeof teamId !== 'string' || teamId.length === 0) {
