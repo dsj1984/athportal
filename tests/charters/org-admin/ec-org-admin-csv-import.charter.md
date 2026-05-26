@@ -22,8 +22,8 @@ safety_constraints:
   required_reset: "pnpm --filter @repo/shared run db:reset && pnpm --filter @repo/shared run db:seed"
 prerequisites:
   - "local stack running (pnpm dev)"
-  - "DB seeded with a fresh org via pnpm --filter @repo/shared run db:seed"
-  - "signed in as a seeded org-admin against the seeded fixture org"
+  - "DB seeded (pnpm db:seed)"
+  - "persona users bootstrapped in Clerk per docs/runbooks/clerk-persona-bootstrap.md"
 ---
 
 ## Mission

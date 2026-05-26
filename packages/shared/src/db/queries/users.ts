@@ -83,6 +83,52 @@ export function getOnboardingState(db: unknown, userId: string): OnboardingState
 }
 
 /**
+ * Read the onboarding state for the user matching `clerkSubjectId`.
+ *
+ * Sibling of `getOnboardingState` (which queries `users.id`). The web
+ * runtime's Astro middleware only sees the Clerk `sub` claim — not the
+ * internal `users.id` — because no JIT-provisioner runs on the web side
+ * (the API edge owns JIT). The middleware therefore needs a read that
+ * keys on `clerk_subject_id`.
+ *
+ * Returns `null` when no row exists with that subject — the gate treats
+ * `null` as un-onboarded and 302s to `/onboarding`, which is the safe
+ * default for a signed-in subject without an internal row (the JIT path
+ * hasn't run yet, or the row was deleted out-of-band).
+ *
+ * The lint-baseline sentinel that pins `users.onboarded_at` reads to
+ * this module applies here too — keep this accessor in lockstep with
+ * `getOnboardingState` and never inline the `clerk_subject_id` lookup
+ * at a call site.
+ *
+ * Introduced by Epic #869 (web DB binding cutover hotfix). Story #878
+ * shipped `productionLookup` against the existing `getOnboardingState`,
+ * but that accessor keys on `users.id`; passing a Clerk subject was a
+ * silent miss that 302'd every signed-in user back to `/onboarding`.
+ */
+export function getOnboardingStateBySubject(
+  db: unknown,
+  clerkSubjectId: string,
+): OnboardingState | null {
+  const handle = db as SelectOnboardingDb;
+  const rows = handle
+    .select({
+      onboardedAt: users.onboardedAt,
+      ageAttestedAt: users.ageAttestedAt,
+    })
+    .from(users)
+    .where(eq(users.clerkSubjectId, clerkSubjectId))
+    .limit(1)
+    .all();
+  const row = rows[0];
+  if (!row) return null;
+  return {
+    onboardedAt: row.onboardedAt ?? null,
+    ageAttestedAt: row.ageAttestedAt ?? null,
+  };
+}
+
+/**
  * Sanctioned predicate: does `state` represent a fully-onboarded user?
  *
  * Returns `false` for both `null` (no user row) and a state whose

@@ -11,8 +11,8 @@ route_prefixes:
 est_minutes: 7
 prerequisites:
   - "local stack running (pnpm dev)"
-  - "DB freshly reset and reseeded via pnpm --filter @repo/shared run db:reset && pnpm --filter @repo/shared run db:seed"
-  - "no existing user matches the e2e email"
+  - "DB seeded (pnpm db:seed)"
+  - "persona users bootstrapped in Clerk per docs/runbooks/clerk-persona-bootstrap.md"
 ---
 
 ## Setup
@@ -47,6 +47,6 @@ prerequisites:
 
 ## Cleanup
 
-- Sign out via `/sign-out` (or close the browser session without completing onboarding).
+- Sign out via the `<UserButton/>` menu in the header (the menu posts to `/sign-out`), or close the browser session without completing onboarding. Never GET `/sign-out` — the route returns 405 Method Not Allowed by design; see `docs/testing-strategy.md` § QA Corpus → Sign-out pattern.
 - Reset the local DB to the deterministic baseline: `pnpm --filter @repo/shared run db:reset && pnpm --filter @repo/shared run db:seed`.
 - Delete the Clerk test-instance user created by this plan from the Clerk dashboard so the test email can be reused.

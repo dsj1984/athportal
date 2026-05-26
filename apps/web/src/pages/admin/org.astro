@@ -2,22 +2,32 @@
 // apps/web/src/pages/admin/org.astro
 //
 // `/admin/org` — admin org-config landing page (Epic #10 / Story #656
-// / Task #674). Composes the `OrgConfigForm` island which loads from
-// `GET /api/v1/admin/org` on mount, persists via `PATCH /api/v1/admin/org`,
-// and routes logo uploads through the R2 signed-URL + finalize endpoints.
+// / Task #674). Composes the `OrgConfigForm` island which persists via
+// `PATCH /api/v1/admin/org`, and routes logo uploads through the R2
+// signed-URL + finalize endpoints.
 //
-// Loader placeholder: the web runtime does not yet carry a DB handle or
-// a server-side fetch helper (same shape as the onboarding page —
-// Story #574 / Task #580). Until the binding lands the page renders a
-// minimal placeholder payload so the form skeleton is exercised
-// end-to-end against the real Zod contract. The island's inline script
-// re-fetches `GET /api/v1/admin/org` on mount in a follow-up patch
-// (deferred to the binding-cutover Story) so live data populates the
-// fields once the runtime can serve it.
+// The page renders an empty-loader skeleton server-side; the inline
+// script block below fetches `GET /api/v1/admin/org` on mount and
+// hydrates every controlled input by its `data-testid` selector, then
+// fires an `input` event so the form's existing
+// `evaluateOrgConfigFormState` re-runs against the hydrated values.
 //
-// The PRD-defined data-testid surface is fully present here so the
-// acceptance scenario (`tests/features/org-admin/org-config.feature`)
-// targets stable selectors across the placeholder-to-live-data swap.
+// This mirrors the inline-fetch pattern used by every other admin
+// page (`/admin/teams`, `/admin/reports`, `/admin/roster`,
+// `/admin/rollover`, `/admin/import`, `/admin/invitations`) so the
+// `/admin/*` surface is uniformly client-driven for its initial data
+// load. Story #878 / Task #892 — Web runtime DB binding cutover.
+//
+// The PRD-defined data-testid surface is preserved verbatim — every
+// id declared in `OrgConfigForm.ts` (`form`, `status`, `submit`,
+// `name`, `primaryColor`, `logo`, `formError`) is still emitted by
+// the form component below.
+//
+// Authentication & authorization: every `/admin/*` route is gated by
+// Clerk's middleware (signed-in users only) AND the API edge's
+// `requireRole('org_admin')` gate (the Worker rejects non-admins with
+// 403 FORBIDDEN). The page itself does not re-check the role — the
+// fetch will surface an error envelope if the actor is not an admin.
 //
 // Styling follows the Tailwind-utility-first convention codified by
 // ADR-0007 (docs/decisions/0007-ui-styling-convention.md) — utility
@@ -30,26 +40,20 @@ import type { OrgConfigLoaderPayload } from '../../components/admin/OrgConfigFor
 import PageHeader from '../../components/ui/PageHeader.astro';
 
 /**
- * Placeholder loader. Production wires the real DB-backed reader once
- * the web runtime carries a DB handle; today the placeholder mirrors
- * the canonical `OrgConfigOutput` shape from
- * `@repo/shared/schemas/admin/org` so the form skeleton renders
- * end-to-end against the same contract the API edge re-validates
- * against.
+ * Server-side skeleton loader — every nullable field starts null and
+ * the inputs render with empty defaults. The inline script block
+ * below fetches the real values from `GET /api/v1/admin/org` and
+ * hydrates the inputs on mount.
  */
-function readOrgConfigPlaceholder(): OrgConfigLoaderPayload {
-  return {
-    id: 'org-placeholder',
-    name: 'My Organization',
-    sports: [],
-    contactEmail: null,
-    contactPhone: null,
-    primaryColorHex: null,
-    logoUrl: null,
-  };
-}
-
-const loader = readOrgConfigPlaceholder();
+const skeletonLoader: OrgConfigLoaderPayload = {
+  id: '',
+  name: '',
+  sports: [],
+  contactEmail: null,
+  contactPhone: null,
+  primaryColorHex: null,
+  logoUrl: null,
+};
 ---
 
 <html lang="en">
@@ -64,7 +68,123 @@ const loader = readOrgConfigPlaceholder();
         title="Organization configuration"
         intro="Update your organization’s public profile, brand colour, and logo."
       />
-      <OrgConfigForm loader={loader} />
+      <OrgConfigForm loader={skeletonLoader} />
     </main>
   </body>
 </html>
+
+<script lang="ts">
+  import { ORG_CONFIG_FORM_TEST_IDS as TEST_IDS } from '../../components/admin/OrgConfigForm.ts';
+
+  interface ApiOrgConfig {
+    id: string;
+    name: string;
+    sports: ReadonlyArray<string>;
+    contactEmail: string | null;
+    contactPhone: string | null;
+    primaryColorHex: string | null;
+    logoUrl: string | null;
+  }
+
+  interface ApiEnvelope {
+    success: boolean;
+    data?: ApiOrgConfig;
+    error?: { code?: string; message?: string };
+  }
+
+  const nameInput = document.querySelector<HTMLInputElement>(
+    `[data-testid="${TEST_IDS.name}"]`,
+  );
+  const primaryColorInput = document.querySelector<HTMLInputElement>(
+    `[data-testid="${TEST_IDS.primaryColor}"]`,
+  );
+  const contactEmailInput = document.querySelector<HTMLInputElement>(
+    '[data-testid="admin-org-contact-email-input"]',
+  );
+  const contactPhoneInput = document.querySelector<HTMLInputElement>(
+    '[data-testid="admin-org-contact-phone-input"]',
+  );
+  const sportsList = document.querySelector<HTMLElement>(
+    '[data-testid="admin-org-sports-list"]',
+  );
+  const formError = document.querySelector<HTMLElement>(
+    `[data-testid="${TEST_IDS.formError}"]`,
+  );
+  const form = document.querySelector<HTMLFormElement>(
+    `[data-testid="${TEST_IDS.form}"]`,
+  );
+
+  function showFormError(message: string): void {
+    if (!formError) return;
+    formError.textContent = message;
+    formError.hidden = false;
+  }
+
+  function clearFormError(): void {
+    if (!formError) return;
+    formError.textContent = '';
+    formError.hidden = true;
+  }
+
+  function escapeHtml(value: string): string {
+    return value.replace(/[&<>"']/g, (ch) => {
+      switch (ch) {
+        case '&': return '&amp;';
+        case '<': return '&lt;';
+        case '>': return '&gt;';
+        case '"': return '&quot;';
+        case "'": return '&#39;';
+        default: return ch;
+      }
+    });
+  }
+
+  function hydrateSports(sports: ReadonlyArray<string>): void {
+    if (!sportsList) return;
+    if (sports.length === 0) {
+      sportsList.innerHTML = '<li class="text-text-tertiary">No sports configured.</li>';
+      return;
+    }
+    sportsList.innerHTML = sports.map((s) => `<li>${escapeHtml(s)}</li>`).join('');
+  }
+
+  async function loadOrgConfig(): Promise<void> {
+    clearFormError();
+    let res: Response;
+    try {
+      res = await fetch('/api/v1/admin/org', {
+        credentials: 'same-origin',
+        headers: { accept: 'application/json' },
+      });
+    } catch {
+      showFormError('Could not reach the server.');
+      return;
+    }
+    let body: ApiEnvelope | null;
+    try {
+      body = (await res.json()) as ApiEnvelope;
+    } catch {
+      showFormError('Unexpected server response.');
+      return;
+    }
+    if (!res.ok || body?.success !== true || !body.data) {
+      showFormError(body?.error?.message ?? 'Could not load organization configuration.');
+      return;
+    }
+    const cfg = body.data;
+    if (nameInput) nameInput.value = cfg.name;
+    if (primaryColorInput) primaryColorInput.value = cfg.primaryColorHex ?? '';
+    if (contactEmailInput) contactEmailInput.value = cfg.contactEmail ?? '';
+    if (contactPhoneInput) contactPhoneInput.value = cfg.contactPhone ?? '';
+    hydrateSports(cfg.sports);
+    // Fire an `input` event so the form's own evaluator (bound on
+    // `form.addEventListener('input', update)`) recomputes the
+    // submit-enabled gate and field-error surface against the
+    // hydrated values rather than the empty skeleton defaults.
+    if (form) {
+      form.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  }
+
+  void loadOrgConfig();
+</script>

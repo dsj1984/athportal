@@ -1,8 +1,6 @@
 # Athlete Portal — System Architecture
 
-> **Forward-looking target.** This is the architecture the corpus Epics will deliver. Sections below describe the intended shape; each becomes canonical as the corresponding foundation Epic lands. Until then, treat concrete paths as planned, not current.
->
-> Source corpus: [`docs/corpus.json`](./corpus.json). Foundation Epics: `foundation-monorepo-and-tooling`, `foundation-cicd-and-deploy`, `foundation-testing-infrastructure`, `foundation-observability`, `foundation-quality-baselines`.
+> **Current state.** Foundation is shipped (see [Capability 1 in `roadmap.md`](./roadmap.md#1-foundation--quality-bar-shipped) — toolchain, CI/CD, observability, three-tier testing, quality baselines, design system, QA corpus). Identity / RBAC ([Capability 2](./roadmap.md#2-sign-in-identity-and-rbac-shipped)) is shipped. Tenancy & onboarding ([Capability 3](./roadmap.md#3-tenancy-and-onboarding-in-progress)) is in flight; remaining capabilities are planned. Forward-looking surfaces (capabilities 4–9 and the v1.0 milestone) are tracked in [`roadmap.md`](./roadmap.md); the per-capability sections in that file list the Epics that govern each surface.
 
 ## 1. Tech Stack
 
@@ -56,9 +54,9 @@ Astro 5 SSR on Cloudflare Pages with React islands.
 - `src/lib/api/useApiClient.ts` — Hono RPC client typed against `@repo/api`'s `AppType`.
 - PWA manifest + service worker — mobile-web installability is the MVP mobile surface.
 
-### `@repo/mobile` — `apps/mobile/` *(v1.0)*
+### `@repo/mobile` — `apps/mobile/` *(scaffolded; activated at v1.0)*
 
-Expo (React Native) workspace. Does not exist at MVP. Wired in as part of the v1.0 native-apps Epic.
+Expo (React Native) workspace. The package is scaffolded on disk so type-checks, lints, and the `@repo/*` boundary rule cover it from day one, but the production native iOS / Android surfaces wait for [v1.0 Capability 9 — Native apps](./roadmap.md#9-native-ios--android-apps) ([#48](https://github.com/dsj1984/athportal/issues/48)). MVP's mobile surface is the PWA shipped from `apps/web/`.
 
 ## 3. Cross-Cutting Flows
 
@@ -128,4 +126,4 @@ Per `AGENTS.md`:
 
 ## 6. Post-MVP Roadmap
 
-Forward-looking surfaces are tracked as Epics on the **v1.0** and **Someday** milestones in this repo. Run `gh issue list --milestone "v1.0"` (or `Someday`) for the current bookmark set — there is no `roadmap.md`.
+Forward-looking surfaces — both the remaining MVP capabilities and the v1.0 / Someday Epics — are tracked in [`roadmap.md`](./roadmap.md). That file is the canonical capability-ordered view; GitHub Issues hold each Epic's live state. The [MVP](https://github.com/dsj1984/athportal/milestone/1), [v1.0](https://github.com/dsj1984/athportal/milestone/2), and [Someday](https://github.com/dsj1984/athportal/milestone/3) milestones group the Epic set on the GitHub side.

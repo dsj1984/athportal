@@ -520,7 +520,7 @@ These gates do not belong to a pyramid tier — they enforce structural and poli
 
 > Human-driven testing is the counterpart to the automated pyramid above. Automation covers regression — that a known behavior still works. Manual testing covers the things humans notice that machines don't: visual polish, copy tone, real-device feel, the "does this flow actually feel right" question, and the edge cases nobody thought to encode in a `.feature` file yet.
 >
-> This section defines **when** to test manually, **what** to test, and **where** the artifacts live. The cadence is referenced from [`docs/path-to-mvp.md`](path-to-mvp.md) as the manual-QA gate between phases, and is the ongoing rhythm after MVP.
+> This section defines **when** to test manually, **what** to test, and **where** the artifacts live. The cadence is referenced from [`docs/roadmap.md`](roadmap.md) as the manual-QA gate between MVP capabilities, and is the ongoing rhythm after MVP.
 >
 > The **scripted artifacts** that drive manual sessions (Test Plans, Exploratory Charters, the shared heuristic library) live in the [§ QA Corpus](#qa-corpus) section below. The Manual Testing section here governs the **cadence and judgment calls**; the QA Corpus section governs the **on-disk shape, the lint gates, and the agent-runner contract** that lets a human session and an agent-driven session ride the same artifacts.
 
@@ -587,10 +587,10 @@ Pre-release sweep specifics:
 
 ### Phase gates
 
-Each phase in [`docs/path-to-mvp.md`](path-to-mvp.md) has a **Manual QA gate** as part of its exit criteria. The gate is satisfied when:
+Each MVP capability in [`docs/roadmap.md`](roadmap.md) has a **Manual QA gate** as part of its exit criteria. The gate is satisfied when:
 
-1. Every Story in the phase has a charter appended to its issue.
-2. The phase's incremental section of the regression checklist (the rows added during this phase) passes end-to-end against staging.
+1. Every Story in the capability has a charter appended to its issue.
+2. The capability's incremental section of the regression checklist (the rows added during this capability) passes end-to-end against staging.
 3. Any open findings are either fixed or have a documented operator decision to defer.
 
 Specific charters called out by phase below are the minimum — Stories may add more.
@@ -787,7 +787,7 @@ route_prefixes:
 est_minutes: 8
 prerequisites:
   - "local stack running (pnpm dev)"
-  - "DB seeded with a fresh org via pnpm --filter @repo/shared run db:seed"
+  - "DB seeded with a fresh org via pnpm db:seed"
 ---
 
 ## Setup
@@ -806,10 +806,39 @@ prerequisites:
 ## Cleanup
 
 - Sign out by visiting `/sign-out` …
-- Reset the local DB: `pnpm --filter @repo/shared run db:reset && pnpm --filter @repo/shared run db:seed`.
+- Reset the local DB: `pnpm db:reset && pnpm db:seed`.
 ````
 
 The live pilot lives at [`tests/plans/identity/tp-identity-signup-happy-path.plan.md`](../tests/plans/identity/tp-identity-signup-happy-path.plan.md) — copy its shape verbatim when authoring a new plan.
+
+### Sign-out pattern
+
+`/sign-out` is **POST-only**. The route handler at [`apps/web/src/pages/sign-out.ts`](../apps/web/src/pages/sign-out.ts) returns `405 Method Not Allowed` on any GET request by design — sign-out is a state-changing action and a GET would be CSRF-vulnerable via a stray link or image tag. Authoring a plan or charter step that tells the operator to "visit", "navigate to", or otherwise GET `/sign-out` is therefore forbidden: the step would fail every time, both for a human operator (the browser renders the 405) and for the agent runner (the assertion against the post-step snapshot never matches).
+
+Every corpus artifact MUST drive sign-out through one of the two patterns below.
+
+**Default — `<UserButton/>` menu (preferred).** The Clerk-provided header avatar at `apps/web/src/components/header/UserButton.astro` (or the equivalent `<UserButton/>` slot rendered by `@clerk/astro`) contains a **Sign out** menu item that posts to `/sign-out` for the caller. Every authenticated layout in the corpus renders this control, so this is the canonical path:
+
+```markdown
+- Sign out via the `<UserButton/>` menu in the header (the menu posts to `/sign-out`).
+```
+
+**Fallback — `<form method="POST" action="/sign-out">` shim.** When a plan or charter exercises a surface that intentionally hides the header (e.g. an onboarding step before the chrome renders, or a charter probing an unauthenticated landing surface), drive sign-out via an explicit POST form shim from the browser devtools console:
+
+```html
+<form method="POST" action="/sign-out"><button type="submit">Sign out</button></form>
+```
+
+Paste the form into the page, click submit, and observe the same `303 → /` redirect the menu produces. The shim is the documented escape hatch; it MUST NOT be used as the default — the menu is what real users have.
+
+**Forbidden.** Do not author any of the following in a plan, charter, or step:
+
+- "Visit `/sign-out`."
+- "Navigate to `/sign-out`."
+- "Sign out via `/sign-out`."
+- Any link, anchor, or address-bar entry that issues a GET against `/sign-out`.
+
+The `lint:qa` gate does not (yet) scan for these strings, but Story #876 § Plan-content fixes migrated every existing offender to the patterns above — new authors are expected to follow the same convention. A reviewer who spots a GET-shape sign-out instruction in a PR MUST request changes before approving.
 
 ### Exploratory Charter format
 
@@ -894,7 +923,7 @@ The `safety_constraints` block on every charter is the corpus's load-bearing sec
 
 - **`environment`** — one of `local`, `preview`, `staging`. The literal `prod` is **denylisted at the schema layer**: the Zod error message reads "safety_constraints.environment must not be \"prod\" — charters that target production are denylisted at the lint layer" so the operator immediately understands a denylist, not a typo, is the cause. The `lint:qa` gate therefore refuses to merge a prod-targeted charter onto `main`. The agent-runner gate is the second line of defense — `environment: local` runs without ceremony; anything else requires the operator to pass `--allow-non-local` explicitly.
 - **`mutation_surface`** — a non-empty list of natural-language identifiers naming every persisted surface the charter is allowed to mutate (e.g. `"csv_import_batches table"`, `"athlete_memberships table"`). The list is documentation for the operator and a checklist for the cleanup step — it does NOT grant runtime capability; the runner does not enforce a per-table allow-list. The list's load-bearing role is review: a charter that mutates a surface not declared here is a defect in the charter, caught at PR review.
-- **`required_reset`** — a single string naming the command (or sequence) that returns the named mutation surface to a clean state. Example: `"pnpm --filter @repo/shared run db:reset && pnpm --filter @repo/shared run db:seed"`. The runner displays this string at the end of every charter session as a reminder; the human operator runs it before the next charter.
+- **`required_reset`** — a single string naming the command (or sequence) that returns the named mutation surface to a clean state. Example: `"pnpm db:reset && pnpm db:seed"`. The runner displays this string at the end of every charter session as a reminder; the human operator runs it before the next charter.
 
 A charter that omits any of the three fields fails `lint:qa` with a path-prefixed error (e.g. `safety_constraints.environment: Required`) so the operator sees the missing field by name.
 

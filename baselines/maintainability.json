@@ -1,11 +1,41 @@
 {
   "$schema": ".agents/schemas/baselines/maintainability.schema.json",
+  "generatedAt": "2026-05-26T13:19:28.017Z",
   "kernelVersion": "1.0.0",
-  "generatedAt": "2026-05-25T18:04:58.028Z",
   "rollup": {
     "*": {
       "min": 70.515,
-      "p50": 107.296,
+      "p50": 106.15,
+      "p95": 171
+    },
+    "apps/api": {
+      "min": 78.354,
+      "p50": 109.31,
+      "p95": 171
+    },
+    "apps/mobile": {
+      "min": 96.11,
+      "p50": 96.11,
+      "p95": 121.195
+    },
+    "apps/web": {
+      "min": 80.074,
+      "p50": 108.206,
+      "p95": 163.185
+    },
+    "packages/baselines": {
+      "min": 98.311,
+      "p50": 104.945,
+      "p95": 171
+    },
+    "packages/config": {
+      "min": 104.952,
+      "p50": 104.952,
+      "p95": 115.627
+    },
+    "packages/shared": {
+      "min": 70.515,
+      "p50": 97.857,
       "p95": 171
     }
   },
@@ -267,40 +297,16 @@
       "path": "apps/web/src/components/onboarding/ProfilePhotoUploader.ts"
     },
     {
-      "mi": 96.375,
-      "path": "apps/web/src/components/ui/_lib/badge.ts"
-    },
-    {
-      "mi": 99.377,
-      "path": "apps/web/src/components/ui/_lib/btn.ts"
-    },
-    {
-      "mi": 147.376,
-      "path": "apps/web/src/components/ui/_lib/cn.ts"
-    },
-    {
-      "mi": 94.178,
-      "path": "apps/web/src/components/ui/_lib/eventColors.ts"
-    },
-    {
-      "mi": 109.991,
-      "path": "apps/web/src/components/ui/_lib/form.ts"
-    },
-    {
-      "mi": 81.443,
-      "path": "apps/web/src/components/ui/_lib/sidebarNav.ts"
-    },
-    {
-      "mi": 171,
-      "path": "apps/web/src/components/ui/_lib/toast.ts"
-    },
-    {
       "mi": 105.724,
       "path": "apps/web/src/components/ui/Avatar.ts"
     },
     {
       "mi": 127.412,
       "path": "apps/web/src/components/ui/Card.ts"
+    },
+    {
+      "mi": 86.556,
+      "path": "apps/web/src/components/ui/DataTable.ts"
     },
     {
       "mi": 99.6,
@@ -363,15 +369,43 @@
       "path": "apps/web/src/components/ui/VerifiedTick.ts"
     },
     {
+      "mi": 96.375,
+      "path": "apps/web/src/components/ui/_lib/badge.ts"
+    },
+    {
+      "mi": 99.377,
+      "path": "apps/web/src/components/ui/_lib/btn.ts"
+    },
+    {
+      "mi": 147.376,
+      "path": "apps/web/src/components/ui/_lib/cn.ts"
+    },
+    {
+      "mi": 94.178,
+      "path": "apps/web/src/components/ui/_lib/eventColors.ts"
+    },
+    {
+      "mi": 109.991,
+      "path": "apps/web/src/components/ui/_lib/form.ts"
+    },
+    {
+      "mi": 81.443,
+      "path": "apps/web/src/components/ui/_lib/sidebarNav.ts"
+    },
+    {
+      "mi": 171,
+      "path": "apps/web/src/components/ui/_lib/toast.ts"
+    },
+    {
       "mi": 171,
       "path": "apps/web/src/index.ts"
     },
     {
-      "mi": 114.561,
+      "mi": 110.532,
       "path": "apps/web/src/lib/db.ts"
     },
     {
-      "mi": 107.898,
+      "mi": 107.177,
       "path": "apps/web/src/middleware.ts"
     },
     {
@@ -451,6 +485,18 @@
       "path": "packages/shared/drizzle.config.ts"
     },
     {
+      "mi": 103.696,
+      "path": "packages/shared/scripts/reset.mjs"
+    },
+    {
+      "mi": 86.896,
+      "path": "packages/shared/scripts/seed.mjs"
+    },
+    {
+      "mi": 101.306,
+      "path": "packages/shared/scripts/seedPath.mjs"
+    },
+    {
       "mi": 97.857,
       "path": "packages/shared/src/csv/parse.ts"
     },
@@ -467,7 +513,7 @@
       "path": "packages/shared/src/db/queries/scopedDb.ts"
     },
     {
-      "mi": 112.464,
+      "mi": 104.761,
       "path": "packages/shared/src/db/queries/users.ts"
     },
     {
@@ -517,6 +563,10 @@
     {
       "mi": 106.619,
       "path": "packages/shared/src/db/seed.ts"
+    },
+    {
+      "mi": 78.863,
+      "path": "packages/shared/src/db/seedFixtures.ts"
     },
     {
       "mi": 171,
@@ -591,6 +641,14 @@
       "path": "packages/shared/src/testing/auth.ts"
     },
     {
+      "mi": 96.445,
+      "path": "packages/shared/src/testing/clerkPersonas.ts"
+    },
+    {
+      "mi": 97.75,
+      "path": "packages/shared/src/testing/clerkTickets.ts"
+    },
+    {
       "mi": 111.005,
       "path": "packages/shared/src/testing/db.ts"
     },
@@ -619,7 +677,7 @@
       "path": "packages/shared/src/testing/seeds.ts"
     },
     {
-      "mi": 83.831,
+      "mi": 80.118,
       "path": "packages/shared/vitest.config.ts"
     }
   ]

@@ -13,60 +13,30 @@
 // of the legal versions, which keeps the form's payload deterministic
 // for the round-trip.
 //
-// Why an injectable accessor (`__readActiveLegalDocuments`)? The web
-// runtime does not yet carry a DB handle — the production binding
-// lands alongside the matching cutover in a later Wave (Tech Spec
-// #490 §Architecture & Design). Until the binding exists the
-// placeholder mirrors the canonical seed exports from
-// `@repo/shared/db/seed` so the page renders end-to-end against the
-// real OnboardInputSchema contract AND every onboarding submission
-// matches the rows the API edge re-validates against. A future
-// binding-cutover replaces this accessor with a real DB read; the
-// seed exports stay the single source of truth for the MVP defaults.
-// Tests inject a stubbed accessor; the production composition stays
-// untouched.
+// Reads the active Terms-of-Service / Privacy-Policy rows from the
+// runtime DB at SSR time via the sanctioned `getActiveLegalDocuments`
+// accessor in `@repo/shared/db/queries/legalDocuments`. The page wires
+// the row versions into the `OnboardingForm` so the client submission
+// carries the exact version strings the API edge re-validates against —
+// there is no client-side fetch of the legal versions, which keeps the
+// payload deterministic for the round-trip.
 //
-// Story #574 / Task #580. Tech Spec #490. PRD #489.
+// Story #878 / Task #891 — Web runtime DB binding cutover replaces the
+// previous `readActiveLegalDocumentsPlaceholder()` (which mirrored the
+// `SEED_*` constants verbatim) with a live DB read. The page now tracks
+// any future legal-documents row update without a code change. The
+// underlying accessor still throws when either active row is missing —
+// an un-seeded environment is a configuration error, not a runtime
+// condition. Story #574 / Task #580 (PRD #489 / Tech Spec #490)
+// introduced the original placeholder.
 
 import { buildOnboardingPageView } from './onboarding.ts';
-import type { ActiveLegalDocuments } from '@repo/shared/db/queries/legalDocuments';
-import {
-  SEED_BOOTSTRAP_EFFECTIVE_AT,
-  SEED_PRIVACY_ID,
-  SEED_PRIVACY_VERSION,
-  SEED_TOS_ID,
-  SEED_TOS_VERSION,
-} from '@repo/shared/db/seed';
+import { getActiveLegalDocuments } from '@repo/shared/db/queries/legalDocuments';
 import OnboardingForm from '../components/onboarding/OnboardingForm.astro';
 import RootLayout from '../layouts/RootLayout.astro';
+import { getDb } from '../lib/db';
 
-/**
- * Injectable accessor. Production wires the real DB-backed reader
- * once the web runtime carries a DB handle; today the placeholder
- * mirrors the canonical seed exports (`SEED_*` from
- * `@repo/shared/db/seed`) verbatim so the version strings the form
- * submits match the rows the API edge re-validates against.
- */
-function readActiveLegalDocumentsPlaceholder(): ActiveLegalDocuments {
-  return {
-    termsOfService: {
-      id: SEED_TOS_ID,
-      kind: 'terms_of_service',
-      version: SEED_TOS_VERSION,
-      effectiveAt: SEED_BOOTSTRAP_EFFECTIVE_AT,
-      bodyUrl: '/legal/tos',
-    },
-    privacyPolicy: {
-      id: SEED_PRIVACY_ID,
-      kind: 'privacy_policy',
-      version: SEED_PRIVACY_VERSION,
-      effectiveAt: SEED_BOOTSTRAP_EFFECTIVE_AT,
-      bodyUrl: '/legal/privacy',
-    },
-  };
-}
-
-const activeLegalDocuments = readActiveLegalDocumentsPlaceholder();
+const activeLegalDocuments = getActiveLegalDocuments(getDb());
 const view = buildOnboardingPageView(activeLegalDocuments);
 
 // Invite token is carried on the URL as `/onboarding?invite=<token>`

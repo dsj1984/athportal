@@ -25,7 +25,8 @@ safety_constraints:
   required_reset: "pnpm --filter @repo/shared run db:reset && pnpm --filter @repo/shared run db:seed"
 prerequisites:
   - "local stack running (pnpm dev)"
-  - "DB freshly reset and reseeded via pnpm --filter @repo/shared run db:reset && pnpm --filter @repo/shared run db:seed so the seed contract holds"
+  - "DB seeded (pnpm db:seed)"
+  - "persona users bootstrapped in Clerk per docs/runbooks/clerk-persona-bootstrap.md"
   - "the seeded fixture declares TWO deterministic tenants (org-a and org-b) with disjoint membership; the exact ids are read from the seed-fixture export at packages/shared/src/seed/fixture.ts (or the project's equivalent) — DO NOT discover ids by probing the surface"
   - "tenant org-a has at least one seeded org-admin user whose credentials are known so the session is authenticated as org-a's admin"
   - "tenant org-b has at least one seeded resource per probed surface (a team, a coach, an athlete membership) whose id is read from the seed fixture and used verbatim in the probes"
