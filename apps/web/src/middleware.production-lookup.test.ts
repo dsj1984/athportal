@@ -3,7 +3,7 @@
 // Unit test pinning the `productionLookup` wiring landed in Task #889 of
 // Story #878 (web runtime DB binding cutover). The lookup MUST call
 // `getDb()` from `./lib/db` and pass the resulting handle to
-// `getOnboardingState()` from `@repo/shared/db/queries/users` with the
+// `getOnboardingStateBySubject()` from `@repo/shared/db/queries/users` with the
 // Clerk subject id verbatim, then return whatever the accessor returns.
 //
 // This is the load-bearing test for the cutover: a future regression
@@ -33,7 +33,7 @@ vi.mock('astro:middleware', () => ({
 // hatch for sharing references between a factory and the test body.
 const mocks = vi.hoisted(() => ({
   getDb: vi.fn(() => ({ __tag: 'db-handle-stub' })),
-  getOnboardingState: vi.fn<(db: unknown, userId: string) => OnboardingState | null>(),
+  getOnboardingStateBySubject: vi.fn<(db: unknown, userId: string) => OnboardingState | null>(),
 }));
 
 vi.mock('./lib/db', () => ({
@@ -44,22 +44,22 @@ vi.mock('./lib/db', () => ({
 }));
 
 vi.mock('@repo/shared/db/queries/users', () => ({
-  getOnboardingState: mocks.getOnboardingState,
+  getOnboardingStateBySubject: mocks.getOnboardingStateBySubject,
 }));
 
 describe('productionLookup', () => {
   beforeEach(() => {
     mocks.getDb.mockClear();
-    mocks.getOnboardingState.mockReset();
+    mocks.getOnboardingStateBySubject.mockReset();
   });
 
-  it('passes the DB handle from getDb() and the subject id to getOnboardingState, and returns its result', async () => {
+  it('passes the DB handle from getDb() and the subject id to getOnboardingStateBySubject, and returns its result', async () => {
     // Arrange
     const stamped: OnboardingState = {
       onboardedAt: new Date('2026-04-01T12:00:00.000Z'),
       ageAttestedAt: new Date('2026-04-01T12:00:05.000Z'),
     };
-    mocks.getOnboardingState.mockReturnValue(stamped);
+    mocks.getOnboardingStateBySubject.mockReturnValue(stamped);
 
     // Act
     const { productionLookup } = await import('./middleware');
@@ -67,8 +67,8 @@ describe('productionLookup', () => {
 
     // Assert
     expect(mocks.getDb).toHaveBeenCalledTimes(1);
-    expect(mocks.getOnboardingState).toHaveBeenCalledTimes(1);
-    expect(mocks.getOnboardingState).toHaveBeenCalledWith(
+    expect(mocks.getOnboardingStateBySubject).toHaveBeenCalledTimes(1);
+    expect(mocks.getOnboardingStateBySubject).toHaveBeenCalledWith(
       { __tag: 'db-handle-stub' },
       'clerk_sub_user_42',
     );
@@ -77,7 +77,7 @@ describe('productionLookup', () => {
 
   it('forwards a null return from the accessor verbatim (no internal users row)', async () => {
     // Arrange
-    mocks.getOnboardingState.mockReturnValue(null);
+    mocks.getOnboardingStateBySubject.mockReturnValue(null);
 
     // Act
     const { productionLookup } = await import('./middleware');
@@ -85,7 +85,7 @@ describe('productionLookup', () => {
 
     // Assert
     expect(result).toBeNull();
-    expect(mocks.getOnboardingState).toHaveBeenCalledWith(
+    expect(mocks.getOnboardingStateBySubject).toHaveBeenCalledWith(
       { __tag: 'db-handle-stub' },
       'clerk_sub_missing',
     );
@@ -103,7 +103,7 @@ describe('productionLookup', () => {
       onboardedAt: new Date('2026-05-01T00:00:00.000Z'),
       ageAttestedAt: null,
     };
-    mocks.getOnboardingState.mockReturnValue(stamped);
+    mocks.getOnboardingStateBySubject.mockReturnValue(stamped);
 
     const { productionLookup } = await import('./middleware');
     const result = productionLookup('clerk_sub_onboarded');
