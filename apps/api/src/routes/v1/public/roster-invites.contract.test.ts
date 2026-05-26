@@ -416,7 +416,7 @@ describe('POST /api/v1/public/roster-invites/:token/decline', () => {
 // ── Token-at-rest invariant ────────────────────────────────────────────────
 
 describe('plaintext token never persists', () => {
-  it('only `token_hash` is stored — never the raw token', async () => {
+  it('only `token_hash` is stored — never the raw token', () => {
     const db = freshDb();
     seedOrg(db, ORG_A);
     const team = seedTeam(db, ORG_A, 't_no_plain');

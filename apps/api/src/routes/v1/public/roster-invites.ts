@@ -190,7 +190,7 @@ export const publicRosterInvitesRoute = new Hono<RequireInternalUserEnv>();
  * Tokenized public accept handshake. See module docstring for the
  * complete contract.
  */
-publicRosterInvitesRoute.post('/:token/accept', async (c) => {
+publicRosterInvitesRoute.post('/:token/accept', (c) => {
   const token = c.req.param('token');
   if (!isValidTokenShape(token)) {
     return c.json(errorBody('NOT_FOUND', 'invite-not-found'), 404);
@@ -326,7 +326,7 @@ publicRosterInvitesRoute.post('/:token/accept', async (c) => {
  * Tokenized public decline handshake. Flips the invite to `declined`
  * and creates no roster artefacts.
  */
-publicRosterInvitesRoute.post('/:token/decline', async (c) => {
+publicRosterInvitesRoute.post('/:token/decline', (c) => {
   const token = c.req.param('token');
   if (!isValidTokenShape(token)) {
     return c.json(errorBody('NOT_FOUND', 'invite-not-found'), 404);
