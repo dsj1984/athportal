@@ -57,6 +57,29 @@ if (typeof teamId !== 'string' || teamId.length === 0) {
       ></p>
 
       <RosterTable />
+
+      <dialog
+        data-testid="coach-roster-remove-confirm"
+        class="rounded-md border border-border bg-surface-card p-4 text-sm text-text-primary shadow-md"
+      >
+        <p class="mb-3">Remove this athlete from the roster?</p>
+        <div class="flex justify-end gap-2">
+          <button
+            type="button"
+            data-testid="coach-roster-remove-confirm-cancel"
+            class="rounded-md border border-border bg-surface-card px-3 py-1 text-sm font-medium hover:bg-surface-subtle"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            data-testid="coach-roster-remove-confirm-yes"
+            class="rounded-md border border-action-coral bg-action-coral px-3 py-1 text-sm font-medium text-white hover:opacity-90"
+          >
+            Remove
+          </button>
+        </div>
+      </dialog>
     </main>
   </body>
 </html>
@@ -64,9 +87,18 @@ if (typeof teamId !== 'string' || teamId.length === 0) {
 <script>
   import {
     type CoachRosterEntry,
+    type PatchEnvelope,
     COACH_ROSTER_TEST_IDS,
+    buildEntryUrl,
+    buildPatchPayload,
     buildRosterUrl,
+    enterEditMode,
+    exitEditMode,
+    hideJerseyWarning,
+    readEditValues,
+    removeRow,
     renderRosterRows,
+    showJerseyWarning,
   } from '../../../../../components/coach/RosterTable.ts';
 
   interface ListEnvelope {
@@ -75,12 +107,154 @@ if (typeof teamId !== 'string' || teamId.length === 0) {
     error?: { code?: string; message?: string };
   }
 
+  function findRow(target: EventTarget | null): HTMLTableRowElement | null {
+    if (!(target instanceof Element)) return null;
+    return target.closest<HTMLTableRowElement>(`tr[data-testid="${COACH_ROSTER_TEST_IDS.row}"]`);
+  }
+
+  function setError(errorEl: HTMLElement | null, message: string): void {
+    if (!errorEl) return;
+    errorEl.textContent = message;
+    errorEl.hidden = false;
+  }
+
+  function clearError(errorEl: HTMLElement | null): void {
+    if (!errorEl) return;
+    errorEl.hidden = true;
+    errorEl.textContent = '';
+  }
+
+  async function handleSave(
+    tr: HTMLTableRowElement,
+    errorEl: HTMLElement | null,
+  ): Promise<void> {
+    const teamId = tr.dataset.rosterTeamId;
+    const entryId = tr.dataset.rosterEntryId;
+    if (!teamId || !entryId) return;
+    const values = readEditValues(tr);
+    const patch = buildPatchPayload(tr, values);
+    if (!patch) {
+      // No changes — just exit edit mode without a fetch.
+      exitEditMode(tr);
+      return;
+    }
+    clearError(errorEl);
+    try {
+      const res = await fetch(buildEntryUrl(teamId, entryId), {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json', accept: 'application/json' },
+        body: JSON.stringify(patch),
+      });
+      const envelope = (await res.json().catch(() => null)) as PatchEnvelope | null;
+      if (!res.ok || envelope?.success !== true || !envelope.data) {
+        setError(errorEl, envelope?.error?.message ?? 'Could not save the changes.');
+        return;
+      }
+      exitEditMode(tr, {
+        jerseyNumber: envelope.data.entry.jerseyNumber,
+        primaryPosition: envelope.data.entry.primaryPosition,
+      });
+      if (envelope.data.warnings?.duplicateJerseyNumber === true && envelope.data.entry.jerseyNumber) {
+        showJerseyWarning(tr, envelope.data.entry.jerseyNumber);
+      } else {
+        hideJerseyWarning(tr);
+      }
+    } catch {
+      setError(errorEl, 'Could not reach the server.');
+    }
+  }
+
+  async function handleRemove(
+    tr: HTMLTableRowElement,
+    errorEl: HTMLElement | null,
+  ): Promise<void> {
+    const teamId = tr.dataset.rosterTeamId;
+    const entryId = tr.dataset.rosterEntryId;
+    if (!teamId || !entryId) return;
+    clearError(errorEl);
+    try {
+      const res = await fetch(buildEntryUrl(teamId, entryId), {
+        method: 'DELETE',
+        headers: { accept: 'application/json' },
+      });
+      if (res.status !== 204 && !res.ok) {
+        setError(errorEl, 'Could not remove the athlete.');
+        return;
+      }
+      removeRow(tr);
+    } catch {
+      setError(errorEl, 'Could not reach the server.');
+    }
+  }
+
+  function bindRosterActions(
+    tbody: HTMLTableSectionElement,
+    confirmDialog: HTMLDialogElement | null,
+    errorEl: HTMLElement | null,
+  ): void {
+    let pendingRemoveRow: HTMLTableRowElement | null = null;
+
+    tbody.addEventListener('click', (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const testId = target.getAttribute('data-testid');
+      const tr = findRow(target);
+      if (!tr) return;
+      if (testId === COACH_ROSTER_TEST_IDS.editBtn) {
+        clearError(errorEl);
+        enterEditMode(tr);
+        return;
+      }
+      if (testId === COACH_ROSTER_TEST_IDS.cancelBtn) {
+        exitEditMode(tr);
+        return;
+      }
+      if (testId === COACH_ROSTER_TEST_IDS.saveBtn) {
+        void handleSave(tr, errorEl);
+        return;
+      }
+      if (testId === COACH_ROSTER_TEST_IDS.removeBtn) {
+        pendingRemoveRow = tr;
+        if (confirmDialog && typeof confirmDialog.showModal === 'function') {
+          confirmDialog.showModal();
+        } else {
+          // Fallback for environments without <dialog> support — go
+          // straight to the remove.
+          void handleRemove(tr, errorEl);
+        }
+        return;
+      }
+    });
+
+    if (confirmDialog) {
+      confirmDialog.addEventListener('click', (event) => {
+        const target = event.target;
+        if (!(target instanceof Element)) return;
+        const testId = target.getAttribute('data-testid');
+        if (testId === COACH_ROSTER_TEST_IDS.removeConfirmCancel) {
+          confirmDialog.close();
+          pendingRemoveRow = null;
+          return;
+        }
+        if (testId === COACH_ROSTER_TEST_IDS.removeConfirmYes) {
+          confirmDialog.close();
+          const tr = pendingRemoveRow;
+          pendingRemoveRow = null;
+          if (tr) void handleRemove(tr, errorEl);
+        }
+      });
+    }
+  }
+
   async function load(): Promise<void> {
     const root = document.querySelector<HTMLElement>('[data-coach-roster-page]');
     const errorEl = document.querySelector<HTMLElement>(
       `[data-testid="${COACH_ROSTER_TEST_IDS.error}"]`,
     );
     const tbody = document.querySelector<HTMLTableSectionElement>('[data-coach-roster-tbody]');
+    const confirmDialog = document.querySelector<HTMLDialogElement>(
+      `dialog[data-testid="${COACH_ROSTER_TEST_IDS.removeConfirm}"]`,
+    );
     const teamId = root?.dataset.teamId;
     if (!teamId || !tbody) return;
     try {
@@ -89,10 +263,7 @@ if (typeof teamId !== 'string' || teamId.length === 0) {
       });
       const envelope = (await res.json().catch(() => null)) as ListEnvelope | null;
       if (!res.ok || envelope?.success !== true || !envelope.data) {
-        if (errorEl) {
-          errorEl.textContent = envelope?.error?.message ?? 'Could not load the roster.';
-          errorEl.hidden = false;
-        }
+        setError(errorEl, envelope?.error?.message ?? 'Could not load the roster.');
         return;
       }
       const items = envelope.data.items;
@@ -102,14 +273,13 @@ if (typeof teamId !== 'string' || teamId.length === 0) {
       if (items.length === 0) {
         // No athletes — keep the seeded empty row but show it.
         if (emptyRow) emptyRow.hidden = false;
+        bindRosterActions(tbody, confirmDialog, errorEl);
         return;
       }
       renderRosterRows(tbody, items);
+      bindRosterActions(tbody, confirmDialog, errorEl);
     } catch {
-      if (errorEl) {
-        errorEl.textContent = 'Could not reach the server.';
-        errorEl.hidden = false;
-      }
+      setError(errorEl, 'Could not reach the server.');
     }
   }
 

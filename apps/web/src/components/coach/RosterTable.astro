@@ -29,11 +29,12 @@ import { COACH_ROSTER_TEST_IDS } from './RosterTable.ts';
       <th class="px-4 py-2 font-medium">
         <Badge tone="slate">Status</Badge>
       </th>
+      <th class="px-4 py-2 font-medium">Actions</th>
     </tr>
   </thead>
   <tbody data-coach-roster-tbody>
     <tr data-testid={COACH_ROSTER_TEST_IDS.emptyState} hidden>
-      <td class="px-4 py-3 text-sm text-text-secondary" colspan="4">
+      <td class="px-4 py-3 text-sm text-text-secondary" colspan="5">
         No athletes on this roster yet.
       </td>
     </tr>
