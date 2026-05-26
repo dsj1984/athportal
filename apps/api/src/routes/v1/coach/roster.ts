@@ -41,8 +41,8 @@ import {
   getTeamScopedAthlete,
   listRosterEntries,
 } from '@repo/shared/db/queries/coach/roster';
-import { HttpError, requireCoachOnTeam } from '@repo/shared/rbac/coachOnTeam';
 import type { AuthContext as RbacAuthContext, Role } from '@repo/shared/rbac';
+import { HttpError, requireCoachOnTeam } from '@repo/shared/rbac/coachOnTeam';
 import { RosterEntryOutput } from '@repo/shared/schemas/coach/roster';
 import { Hono } from 'hono';
 import type {
