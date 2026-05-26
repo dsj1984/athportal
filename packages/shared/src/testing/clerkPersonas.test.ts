@@ -153,9 +153,7 @@ describe('readPersonaClerkIds — actionable error when unpopulated', () => {
     // path even when only the file-content seam is injected, so we
     // stub the reader to return the unpopulated shape and let the
     // module compute the path itself.
-    const readFile = stubReader(
-      JSON.stringify({ athlete: null, coach: null, 'org-admin': null }),
-    );
+    const readFile = stubReader(JSON.stringify({ athlete: null, coach: null, 'org-admin': null }));
     expect(() => readPersonaClerkIds({ readFile })).toThrow(
       new RegExp(personaClerkIdsPath.replace(/[\\/]/g, '[\\\\/]')),
     );
