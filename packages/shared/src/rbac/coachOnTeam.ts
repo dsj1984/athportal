@@ -58,8 +58,7 @@ export class HttpError extends Error {
  * Production callers pass `BetterSQLite3Database` or an equivalent
  * Drizzle handle; both shapes satisfy the structural typing below.
  */
-// biome-ignore lint/suspicious/noExplicitAny: structural Drizzle handle - see jsdoc above
-export type CoachOnTeamDb = BetterSQLite3Database<any> | DrizzleSelectShape;
+export type CoachOnTeamDb = BetterSQLite3Database<Record<string, never>> | DrizzleSelectShape;
 
 /**
  * Structural shape sufficient for the single query this helper issues.

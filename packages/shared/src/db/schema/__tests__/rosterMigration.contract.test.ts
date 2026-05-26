@@ -10,6 +10,7 @@
  * dropped or renamed in a future Story) this test fails before merge.
  */
 
+import { sql } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 import { freshSchemaDb } from './freshSchemaDb';
 
@@ -20,24 +21,19 @@ interface SqliteMasterRow {
 }
 
 /**
- * Read the SQLite catalogue directly via the underlying better-sqlite3
- * handle. Drizzle's relational query API does not expose the master
- * table, so this test reaches into the session — acceptable for an
- * introspection assertion that is by definition implementation-level.
+ * Read the SQLite catalogue via Drizzle's `sql` template + `.all()` —
+ * the typed surface that Drizzle exposes for raw queries. Returning
+ * rows from `sqlite_master` is by definition implementation-level
+ * introspection, so the test bypasses the relational query API.
  */
 function listObjects(
   db: ReturnType<typeof freshSchemaDb>,
   type: string,
   tblName: string,
 ): SqliteMasterRow[] {
-  // biome-ignore lint/suspicious/noExplicitAny: Drizzle session typings hide the raw all() surface
-  const session = (db as any).session;
-  const client = session?.client as {
-    prepare: (sql: string) => { all: (...p: unknown[]) => unknown[] };
-  };
-  const rows = client
-    .prepare(`SELECT type, name, tbl_name FROM sqlite_master WHERE type = ? AND tbl_name = ?`)
-    .all(type, tblName) as SqliteMasterRow[];
+  const rows = db.all<SqliteMasterRow>(
+    sql`SELECT type, name, tbl_name FROM sqlite_master WHERE type = ${type} AND tbl_name = ${tblName}`,
+  );
   return rows;
 }
 
