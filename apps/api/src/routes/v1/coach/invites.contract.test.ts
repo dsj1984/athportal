@@ -1,0 +1,595 @@
+// apps/api/src/routes/v1/coach/invites.contract.test.ts
+//
+// Contract test for the coach roster-invite send path (Epic #11 /
+// Story #920 / Task #925).
+//
+// Pins the wire shape AND the authorization / state invariants the
+// Tech Spec and Task ACs nominate as load-bearing:
+//
+//   - POST  /api/v1/coach/teams/:teamId/roster/invites
+//       · 201 happy path returns the invite row (no plaintext token).
+//       · The persisted row carries a SHA-256 of the plaintext token;
+//         the plaintext is NEVER in the response body, NEVER in the DB.
+//       · Forged extra fields (`role`, `orgId`) are refused at the
+//         boundary (`.strict()` rejection → 400 INVALID_BODY).
+//       · Cross-team coach gets 404 (no existence oracle).
+//       · Mail-transport failure surfaces 502; the row is still
+//         persisted so the coach can revoke + re-issue.
+//   - GET   /api/v1/coach/teams/:teamId/roster/invites
+//       · Returns pending + non-pending invites for the team.
+//       · Cross-team coach gets 404.
+//   - POST  /api/v1/coach/teams/:teamId/roster/invites/:inviteId/revoke
+//       · Pending → revoked transition.
+//       · Already-accepted invite refuses with 409 INVITE_NOT_PENDING.
+//       · Cross-team coach gets 404.
+//
+// The harness reuses the `createTestApp` seam from `@repo/shared/
+// testing` and mounts only the invites router — every other middleware
+// (the `requireCoachOnTeam` predicate, the per-row org scope inside
+// the handler) is the real production module.
+
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import {
+  coachAssignments,
+  organizations,
+  rosterInvites,
+  teams,
+  users,
+} from '@repo/shared/db/schema';
+import { type AuthContext, createTestApp } from '@repo/shared/testing';
+import Database from 'better-sqlite3';
+import { eq } from 'drizzle-orm';
+import { drizzle } from 'drizzle-orm/better-sqlite3';
+import type { Hono } from 'hono';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { type RosterInviteMailTransport, hashToken } from '../../../mailer/rosterInvite';
+import type { RequireInternalUserEnv } from '../../../middleware/auth';
+import { coachInvitesRoute } from './invites';
+
+const MIGRATIONS_DIR = join(__dirname, '../../../../../../packages/shared/src/db/migrations');
+
+function freshCoachDb() {
+  const sqlite = new Database(':memory:');
+  sqlite.pragma('foreign_keys = ON');
+  for (const file of [
+    '0000_auth_and_rbac.sql',
+    '0001_onboarding_schema.sql',
+    '0002_org_team_graph.sql',
+    '0003_invitations.sql',
+    '0004_org_branding.sql',
+    '0005_team_metadata.sql',
+    '0006_csv_import_batches.sql',
+    '0007_roster.sql',
+  ]) {
+    const sql = readFileSync(join(MIGRATIONS_DIR, file), 'utf8');
+    for (const stmt of sql.split('--> statement-breakpoint').map((s) => s.trim())) {
+      if (stmt.length > 0) sqlite.exec(stmt);
+    }
+  }
+  return drizzle(sqlite, {
+    schema: { organizations, teams, users, coachAssignments, rosterInvites },
+  });
+}
+
+type CoachDb = ReturnType<typeof freshCoachDb>;
+
+const ORG_A = 'org_a_test';
+const ORG_B = 'org_b_test';
+
+function actor(orgId: string, overrides: Partial<AuthContext> = {}): AuthContext {
+  return {
+    userId: `u_coach_${orgId}`,
+    clerkSubjectId: `user_test_${orgId}`,
+    email: `coach-${orgId}@test.invalid`,
+    role: 'member',
+    orgId,
+    teamId: null,
+    ...overrides,
+  };
+}
+
+function seedOrg(db: CoachDb, id: string): void {
+  db.insert(organizations)
+    .values({ id, name: `Org ${id}`, organizationType: 'CLUB' })
+    .onConflictDoNothing()
+    .run();
+}
+
+function seedTeam(db: CoachDb, orgId: string, id: string): string {
+  db.insert(teams)
+    .values({
+      id,
+      orgId,
+      name: `Team ${id}`,
+      sport: 'Volleyball',
+      season: 'Fall 2026',
+      ageGroup: 'U14',
+    })
+    .run();
+  return id;
+}
+
+function seedUser(db: CoachDb, orgId: string, id: string, email?: string): string {
+  db.insert(users)
+    .values({
+      id,
+      clerkSubjectId: `clerk_${id}`,
+      email: email ?? `${id}@test.invalid`,
+      role: 'member',
+      orgId,
+      teamId: null,
+    })
+    .run();
+  return id;
+}
+
+function seedCoachAssignment(
+  db: CoachDb,
+  orgId: string,
+  teamId: string,
+  coachUserId: string,
+  opts: { id?: string; endedAt?: Date | null } = {},
+): string {
+  const id = opts.id ?? `ca_${orgId}_${teamId}_${coachUserId}`;
+  db.insert(coachAssignments)
+    .values({
+      id,
+      orgId,
+      teamId,
+      coachUserId,
+      endedAt: opts.endedAt ?? null,
+    })
+    .run();
+  return id;
+}
+
+function seedInvite(
+  db: CoachDb,
+  orgId: string,
+  teamId: string,
+  invitedByUserId: string,
+  opts: {
+    id?: string;
+    email?: string;
+    status?: 'pending' | 'accepted' | 'declined' | 'expired' | 'revoked';
+    expiresAt?: Date;
+  } = {},
+): string {
+  const id = opts.id ?? `rinv_${teamId}_${invitedByUserId}`;
+  db.insert(rosterInvites)
+    .values({
+      id,
+      orgId,
+      teamId,
+      email: opts.email ?? `recipient-${id}@test.invalid`,
+      firstName: null,
+      lastName: null,
+      tokenHash: hashToken(`token_${id}`),
+      status: opts.status ?? 'pending',
+      expiresAt: opts.expiresAt ?? new Date(Date.now() + 7 * 86_400_000),
+      acceptedAt: null,
+      declinedAt: null,
+      invitedByUserId,
+    })
+    .run();
+  return id;
+}
+
+/** A transport stub that records sent messages — and never throws. */
+function recordingTransport(): RosterInviteMailTransport & { sent: unknown[] } {
+  const sent: unknown[] = [];
+  return {
+    sent,
+    async send(message) {
+      sent.push(message);
+    },
+  };
+}
+
+/** A transport stub that always throws — to exercise the 502 path. */
+function failingTransport(): RosterInviteMailTransport {
+  return {
+    async send() {
+      throw new Error('Provider unavailable');
+    },
+  };
+}
+
+function buildApp(db: CoachDb, a: AuthContext, transport: RosterInviteMailTransport | null) {
+  const harness = createTestApp(db, { actor: a }) as unknown as Hono<RequireInternalUserEnv>;
+  if (transport) {
+    harness.use('*', async (c, next) => {
+      (c as unknown as { set: (k: string, v: unknown) => void }).set(
+        'rosterInviteMailTransport',
+        transport,
+      );
+      await next();
+    });
+  }
+  harness.route('/api/v1/coach/teams/:teamId/roster/invites', coachInvitesRoute);
+  return harness;
+}
+
+const STUB_ENV = { ANALYTICS: { writeDataPoint: () => undefined } };
+
+interface InviteWire {
+  readonly id: string;
+  readonly teamId: string;
+  readonly email: string;
+  readonly status: 'pending' | 'accepted' | 'declined' | 'expired' | 'revoked';
+  readonly invitedByUserId: string;
+  readonly expiresAt: string;
+}
+
+interface CreateBody {
+  success: boolean;
+  data?: { invite: InviteWire };
+  error?: { code: string; message: string };
+}
+
+interface ListBody {
+  success: boolean;
+  data?: { items: InviteWire[] };
+  error?: { code: string; message: string };
+}
+
+interface RevokeBody {
+  success: boolean;
+  data?: { invite: InviteWire };
+  error?: { code: string; message: string };
+}
+
+beforeEach(() => {
+  // Each test owns its own DB via `freshCoachDb()`.
+});
+
+// ──────────────────────────────────────────────────────────────────────────
+// POST — create
+// ──────────────────────────────────────────────────────────────────────────
+
+describe('POST /api/v1/coach/teams/:teamId/roster/invites — happy path', () => {
+  it('returns 201 with the persisted invite and persists a SHA-256 token hash', async () => {
+    // Arrange
+    const db = freshCoachDb();
+    seedOrg(db, ORG_A);
+    const team = seedTeam(db, ORG_A, 't_one');
+    const coach = actor(ORG_A);
+    seedUser(db, ORG_A, coach.userId, coach.email);
+    seedCoachAssignment(db, ORG_A, team, coach.userId);
+    const transport = recordingTransport();
+
+    // Act
+    const res = await buildApp(db, coach, transport).request(
+      `/api/v1/coach/teams/${team}/roster/invites`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email: 'Recruit@example.test', firstName: 'Re' }),
+      },
+      STUB_ENV,
+    );
+
+    // Assert — wire shape
+    expect(res.status).toBe(201);
+    const body = (await res.json()) as CreateBody;
+    expect(body.success).toBe(true);
+    expect(body.data?.invite).toMatchObject({
+      teamId: team,
+      email: 'recruit@example.test', // lowercased by Zod transform
+      status: 'pending',
+      invitedByUserId: coach.userId,
+    });
+    // The response MUST NOT carry the plaintext token.
+    const serialized = JSON.stringify(body);
+    expect(serialized).not.toMatch(/token/i);
+
+    // Assert — DB shape: the persisted row has a token_hash (64-char
+    // hex) and no plaintext column. The row's email is lowercased.
+    const rows = db.select().from(rosterInvites).where(eqInviteEmail('recruit@example.test')).all();
+    expect(rows).toHaveLength(1);
+    const row = rows[0];
+    expect(row).toBeDefined();
+    if (!row) return;
+    expect(row.tokenHash).toMatch(/^[0-9a-f]{64}$/);
+    expect(row.email).toBe('recruit@example.test');
+    expect(row.status).toBe('pending');
+
+    // The transport recorded one message addressed to the recipient.
+    expect(transport.sent).toHaveLength(1);
+  });
+
+  it('refuses extra fields at the boundary (.strict())', async () => {
+    const db = freshCoachDb();
+    seedOrg(db, ORG_A);
+    const team = seedTeam(db, ORG_A, 't_one');
+    const coach = actor(ORG_A);
+    seedUser(db, ORG_A, coach.userId, coach.email);
+    seedCoachAssignment(db, ORG_A, team, coach.userId);
+
+    const res = await buildApp(db, coach, recordingTransport()).request(
+      `/api/v1/coach/teams/${team}/roster/invites`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email: 'r@x.test', role: 'admin' }),
+      },
+      STUB_ENV,
+    );
+
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as CreateBody;
+    expect(body.error?.code).toBe('INVALID_BODY');
+  });
+
+  it('returns 502 MAIL_SEND_FAILED when the transport throws', async () => {
+    const db = freshCoachDb();
+    seedOrg(db, ORG_A);
+    const team = seedTeam(db, ORG_A, 't_one');
+    const coach = actor(ORG_A);
+    seedUser(db, ORG_A, coach.userId, coach.email);
+    seedCoachAssignment(db, ORG_A, team, coach.userId);
+
+    const res = await buildApp(db, coach, failingTransport()).request(
+      `/api/v1/coach/teams/${team}/roster/invites`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email: 'r@x.test' }),
+      },
+      STUB_ENV,
+    );
+
+    expect(res.status).toBe(502);
+    const body = (await res.json()) as CreateBody;
+    expect(body.error?.code).toBe('MAIL_SEND_FAILED');
+    // The row IS still persisted so the coach can revoke + re-issue.
+    const rows = db.select().from(rosterInvites).all();
+    expect(rows).toHaveLength(1);
+  });
+});
+
+describe('POST /api/v1/coach/teams/:teamId/roster/invites — authorization', () => {
+  it('returns 404 when the coach is on a different team in the same org', async () => {
+    const db = freshCoachDb();
+    seedOrg(db, ORG_A);
+    const teamMine = seedTeam(db, ORG_A, 't_mine');
+    const teamOther = seedTeam(db, ORG_A, 't_other');
+    const coach = actor(ORG_A);
+    seedUser(db, ORG_A, coach.userId, coach.email);
+    seedCoachAssignment(db, ORG_A, teamMine, coach.userId);
+
+    const res = await buildApp(db, coach, recordingTransport()).request(
+      `/api/v1/coach/teams/${teamOther}/roster/invites`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email: 'r@x.test' }),
+      },
+      STUB_ENV,
+    );
+
+    expect(res.status).toBe(404);
+    const body = (await res.json()) as CreateBody;
+    expect(body.error?.code).toBe('NOT_FOUND');
+  });
+
+  it('returns 404 when the coach is on a team in a different org', async () => {
+    const db = freshCoachDb();
+    seedOrg(db, ORG_A);
+    seedOrg(db, ORG_B);
+    const teamA = seedTeam(db, ORG_A, 't_a');
+    const teamB = seedTeam(db, ORG_B, 't_b');
+    const coachA = actor(ORG_A);
+    seedUser(db, ORG_A, coachA.userId, coachA.email);
+    seedCoachAssignment(db, ORG_A, teamA, coachA.userId);
+
+    const res = await buildApp(db, coachA, recordingTransport()).request(
+      `/api/v1/coach/teams/${teamB}/roster/invites`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email: 'r@x.test' }),
+      },
+      STUB_ENV,
+    );
+
+    expect(res.status).toBe(404);
+  });
+});
+
+// ──────────────────────────────────────────────────────────────────────────
+// GET — list
+// ──────────────────────────────────────────────────────────────────────────
+
+describe('GET /api/v1/coach/teams/:teamId/roster/invites — happy path', () => {
+  it('returns pending and non-pending invites for the team', async () => {
+    const db = freshCoachDb();
+    seedOrg(db, ORG_A);
+    const team = seedTeam(db, ORG_A, 't_one');
+    const coach = actor(ORG_A);
+    seedUser(db, ORG_A, coach.userId, coach.email);
+    seedCoachAssignment(db, ORG_A, team, coach.userId);
+
+    seedInvite(db, ORG_A, team, coach.userId, { id: 'rinv_p', status: 'pending' });
+    seedInvite(db, ORG_A, team, coach.userId, { id: 'rinv_r', status: 'revoked' });
+
+    const res = await buildApp(db, coach, recordingTransport()).request(
+      `/api/v1/coach/teams/${team}/roster/invites`,
+      { method: 'GET' },
+      STUB_ENV,
+    );
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as ListBody;
+    expect(body.success).toBe(true);
+    const statuses = body.data?.items.map((i) => i.status).sort();
+    expect(statuses).toEqual(['pending', 'revoked']);
+  });
+
+  it('returns 404 when the coach is on a different team', async () => {
+    const db = freshCoachDb();
+    seedOrg(db, ORG_A);
+    const teamMine = seedTeam(db, ORG_A, 't_mine');
+    const teamOther = seedTeam(db, ORG_A, 't_other');
+    const coach = actor(ORG_A);
+    seedUser(db, ORG_A, coach.userId, coach.email);
+    seedCoachAssignment(db, ORG_A, teamMine, coach.userId);
+
+    const res = await buildApp(db, coach, recordingTransport()).request(
+      `/api/v1/coach/teams/${teamOther}/roster/invites`,
+      { method: 'GET' },
+      STUB_ENV,
+    );
+
+    expect(res.status).toBe(404);
+  });
+});
+
+// ──────────────────────────────────────────────────────────────────────────
+// POST — revoke
+// ──────────────────────────────────────────────────────────────────────────
+
+describe('POST /api/v1/coach/teams/:teamId/roster/invites/:inviteId/revoke', () => {
+  it('transitions a pending invite to status=revoked', async () => {
+    const db = freshCoachDb();
+    seedOrg(db, ORG_A);
+    const team = seedTeam(db, ORG_A, 't_one');
+    const coach = actor(ORG_A);
+    seedUser(db, ORG_A, coach.userId, coach.email);
+    seedCoachAssignment(db, ORG_A, team, coach.userId);
+    const inviteId = seedInvite(db, ORG_A, team, coach.userId, { status: 'pending' });
+
+    const res = await buildApp(db, coach, recordingTransport()).request(
+      `/api/v1/coach/teams/${team}/roster/invites/${inviteId}/revoke`,
+      { method: 'POST' },
+      STUB_ENV,
+    );
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as RevokeBody;
+    expect(body.data?.invite.status).toBe('revoked');
+
+    // DB confirms the transition.
+    const rows = db.select().from(rosterInvites).all();
+    expect(rows[0]?.status).toBe('revoked');
+  });
+
+  it('refuses to revoke an already-accepted invite with 409 INVITE_NOT_PENDING', async () => {
+    const db = freshCoachDb();
+    seedOrg(db, ORG_A);
+    const team = seedTeam(db, ORG_A, 't_one');
+    const coach = actor(ORG_A);
+    seedUser(db, ORG_A, coach.userId, coach.email);
+    seedCoachAssignment(db, ORG_A, team, coach.userId);
+    const inviteId = seedInvite(db, ORG_A, team, coach.userId, { status: 'accepted' });
+
+    const res = await buildApp(db, coach, recordingTransport()).request(
+      `/api/v1/coach/teams/${team}/roster/invites/${inviteId}/revoke`,
+      { method: 'POST' },
+      STUB_ENV,
+    );
+
+    expect(res.status).toBe(409);
+    const body = (await res.json()) as RevokeBody;
+    expect(body.error?.code).toBe('INVITE_NOT_PENDING');
+  });
+
+  it('returns 404 when the invite belongs to a different team', async () => {
+    const db = freshCoachDb();
+    seedOrg(db, ORG_A);
+    const teamMine = seedTeam(db, ORG_A, 't_mine');
+    const teamOther = seedTeam(db, ORG_A, 't_other');
+    const coach = actor(ORG_A);
+    seedUser(db, ORG_A, coach.userId, coach.email);
+    seedCoachAssignment(db, ORG_A, teamMine, coach.userId);
+    seedCoachAssignment(db, ORG_A, teamOther, coach.userId);
+    const inviteId = seedInvite(db, ORG_A, teamMine, coach.userId, {
+      id: 'rinv_mine',
+      status: 'pending',
+    });
+
+    // The coach IS on teamOther — predicate passes — but the invite
+    // lives on teamMine, so the team-scoped lookup returns 404.
+    const res = await buildApp(db, coach, recordingTransport()).request(
+      `/api/v1/coach/teams/${teamOther}/roster/invites/${inviteId}/revoke`,
+      { method: 'POST' },
+      STUB_ENV,
+    );
+
+    expect(res.status).toBe(404);
+  });
+
+  it('returns 404 when the coach is on a different team in the same org', async () => {
+    const db = freshCoachDb();
+    seedOrg(db, ORG_A);
+    const teamMine = seedTeam(db, ORG_A, 't_mine');
+    const teamOther = seedTeam(db, ORG_A, 't_other');
+    const coach = actor(ORG_A);
+    seedUser(db, ORG_A, coach.userId, coach.email);
+    seedCoachAssignment(db, ORG_A, teamMine, coach.userId);
+    const inviteId = seedInvite(db, ORG_A, teamOther, coach.userId, {
+      id: 'rinv_other',
+      status: 'pending',
+    });
+
+    const res = await buildApp(db, coach, recordingTransport()).request(
+      `/api/v1/coach/teams/${teamOther}/roster/invites/${inviteId}/revoke`,
+      { method: 'POST' },
+      STUB_ENV,
+    );
+
+    expect(res.status).toBe(404);
+  });
+});
+
+// ──────────────────────────────────────────────────────────────────────────
+// Re-issue after expiry — covered by AC #4 ("re-issue after expiry creates
+// a new pending row")
+// ──────────────────────────────────────────────────────────────────────────
+
+describe('re-issue after expiry creates a new pending row', () => {
+  it('inserts a new row alongside the expired one', async () => {
+    const db = freshCoachDb();
+    seedOrg(db, ORG_A);
+    const team = seedTeam(db, ORG_A, 't_one');
+    const coach = actor(ORG_A);
+    seedUser(db, ORG_A, coach.userId, coach.email);
+    seedCoachAssignment(db, ORG_A, team, coach.userId);
+    // An expired row exists for this email.
+    seedInvite(db, ORG_A, team, coach.userId, {
+      id: 'rinv_old',
+      email: 'reissue@x.test',
+      status: 'expired',
+      expiresAt: new Date(Date.now() - 86_400_000),
+    });
+
+    const res = await buildApp(db, coach, recordingTransport()).request(
+      `/api/v1/coach/teams/${team}/roster/invites`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email: 'reissue@x.test' }),
+      },
+      STUB_ENV,
+    );
+
+    expect(res.status).toBe(201);
+    const rows = db.select().from(rosterInvites).all();
+    // The original (expired) row remains; the new pending row is
+    // alongside it.
+    expect(rows).toHaveLength(2);
+    const statuses = rows.map((r) => r.status).sort();
+    expect(statuses).toEqual(['expired', 'pending']);
+  });
+});
+
+/**
+ * Local helper — Drizzle eq predicate against rosterInvites.email,
+ * declared as a function so the type narrows inside the test file
+ * without a separate import block.
+ */
+function eqInviteEmail(email: string) {
+  const { eq } = require('drizzle-orm') as typeof import('drizzle-orm');
+  return eq(rosterInvites.email, email);
+}
