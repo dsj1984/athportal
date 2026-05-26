@@ -1,13 +1,13 @@
 {
   "$schema": ".agents/schemas/baselines/crap.schema.json",
-  "kernelVersion": "1.0.0",
-  "generatedAt": "2026-05-25T21:15:38.409Z",
+  "kernelVersion": "0.1.0",
+  "generatedAt": "2026-05-26T00:13:18.289Z",
   "rollup": {
     "*": {
       "p50": 2,
       "p95": 42,
       "max": 506,
-      "methodsAbove20": 60
+      "methodsAbove20": 59
     }
   },
   "rows": [
@@ -2536,24 +2536,6 @@
       "method": "resolvePositive",
       "path": "apps/web/src/components/ui/VerifiedTick.ts",
       "startLine": 36
-    },
-    {
-      "crap": 42,
-      "method": "resolveDatabasePath",
-      "path": "apps/web/src/lib/db.ts",
-      "startLine": 34
-    },
-    {
-      "crap": 6,
-      "method": "getDb",
-      "path": "apps/web/src/lib/db.ts",
-      "startLine": 73
-    },
-    {
-      "crap": 2,
-      "method": "__resetDbForTests",
-      "path": "apps/web/src/lib/db.ts",
-      "startLine": 84
     },
     {
       "crap": 20,

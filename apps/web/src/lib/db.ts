@@ -20,9 +20,35 @@
 // the DB (a test that mocks the module, a build-time evaluation) does
 // not touch the filesystem.
 
+import { dirname, isAbsolute, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import * as schema from '@repo/shared/db/schema';
 import Database from 'better-sqlite3';
 import { type BetterSQLite3Database, drizzle } from 'drizzle-orm/better-sqlite3';
+
+/**
+ * Walk up from this module's URL to the monorepo root (the directory
+ * containing `pnpm-workspace.yaml`). This anchor is stable regardless
+ * of `process.cwd()` — the Astro SSR worker can be launched from any
+ * directory and the resolver still returns the same absolute path.
+ *
+ * Story #877 / Task #882 — fixes charter finding f-auth-fuzz-001
+ * (tests/charters/identity/ec-identity-auth-fuzz.charter.md), where a
+ * relative `TURSO_URL` mis-resolved against the SSR worker's CWD and
+ * crashed `/internal/styleguide` with "Cannot open database because the
+ * directory does not exist".
+ */
+function findMonorepoRoot(): string {
+  // This module lives at apps/web/src/lib/db.ts. Climb four directories
+  // (lib → src → web → apps) to reach the monorepo root. The Vite build
+  // preserves this depth (the compiled bundle is loaded by Astro from
+  // the same workspace tree), so the climb is correct at both dev and
+  // production runtime.
+  const here = dirname(fileURLToPath(import.meta.url));
+  return resolve(here, '..', '..', '..', '..');
+}
+
+const MONOREPO_ROOT = findMonorepoRoot();
 
 /**
  * Resolve the SQLite file path from `TURSO_URL`. The env contract
@@ -30,6 +56,14 @@ import { type BetterSQLite3Database, drizzle } from 'drizzle-orm/better-sqlite3'
  * `libsql://` URL for staging/production. Until the libSQL driver lands
  * (Epic #27) we strip the `file:` prefix and refuse a `libsql://`
  * caller loudly rather than silently opening the wrong DB.
+ *
+ * Relative `file:` paths are anchored against the monorepo root (the
+ * directory containing `pnpm-workspace.yaml`) so the resolver returns a
+ * stable absolute path regardless of `process.cwd()`. Absolute `file:`
+ * paths are returned verbatim. Non-`file:` strings (legacy callers that
+ * already passed an absolute or bare path) are returned unchanged so
+ * this change cannot regress production callers that already supplied
+ * an absolute URL.
  */
 function resolveDatabasePath(): string {
   // Astro/Vite auto-loads .env into import.meta.env for the SSR runtime;
@@ -53,7 +87,16 @@ function resolveDatabasePath(): string {
         'Epic #27. Use a file: URL for local dev.',
     );
   }
-  return raw.startsWith('file:') ? raw.slice('file:'.length) : raw;
+  if (!raw.startsWith('file:')) {
+    // Bare path — preserve historical behaviour for callers that already
+    // pass an absolute filesystem path without the `file:` prefix.
+    return raw;
+  }
+  const stripped = raw.slice('file:'.length);
+  // Absolute `file:` URLs are honoured as-is. Relative `file:` URLs are
+  // anchored against the monorepo root so the same env value resolves
+  // identically from every CWD.
+  return isAbsolute(stripped) ? stripped : resolve(MONOREPO_ROOT, stripped);
 }
 
 export type WebDb = BetterSQLite3Database<typeof schema>;
