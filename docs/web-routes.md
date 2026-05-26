@@ -33,6 +33,7 @@ Read that ADR for the why; this table is the operational what.
 | `/about`, `/pricing`, `/legal/*` (static marketing) | **allow** | None. |
 | `/o/<orgSlug>`, `/t/<teamSlug>`, `/e/<eventSlug>` (public discovery) | **allow** | Resource may flip to **noindex** by setting its `isPublic` flag to `false` (filtered at the query layer per [ADR-008](./decisions.md#adr-008--slug-first-public-discovery-surface)) or by setting an explicit per-resource `indexable = false` flag while remaining publicly viewable. |
 | `/share/<token>` (anonymous share links) | **noindex** | Share-link surfaces are unguessable tokens; they are never indexed even though they are reachable without auth. No per-resource override. |
+| `/r/roster-invite/<token>/{accept,decline}` (Epic #11 roster-invite public handshake) | **noindex** | Tokenized public-handshake landing pages reached only from a coach-issued invite email. Unguessable token, no enumeration surface, never indexed. No per-resource override. |
 | `/sign-in`, `/sign-up`, `/sign-out` (auth entry points) | **noindex** | None — auth surfaces are noindex by policy. |
 | `/onboarding` (post-auth onboarding gate per [ADR-005](./decisions.md#adr-005--jit-user-provisioning--mandatory-onboarding-gate)) | **noindex** | None. |
 | `/app/*` (signed-in dashboards, owner-only management UI) | **noindex** | None — all `/app/*` routes require auth and are always noindex. |

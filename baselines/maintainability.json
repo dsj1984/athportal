@@ -1,16 +1,16 @@
 {
   "$schema": ".agents/schemas/baselines/maintainability.schema.json",
-  "generatedAt": "2026-05-26T14:27:22.197Z",
+  "generatedAt": "2026-05-26T20:45:37.981Z",
   "kernelVersion": "1.0.0",
   "rollup": {
     "*": {
       "min": 70.515,
-      "p50": 104.952,
+      "p50": 104.761,
       "p95": 171
     },
     "apps/api": {
       "min": 78.354,
-      "p50": 109.31,
+      "p50": 106.463,
       "p95": 171
     },
     "apps/mobile": {
@@ -20,7 +20,7 @@
     },
     "apps/web": {
       "min": 80.074,
-      "p50": 107.296,
+      "p50": 106.74,
       "p95": 163.185
     },
     "packages/baselines": {
@@ -35,7 +35,7 @@
     },
     "packages/shared": {
       "min": 70.515,
-      "p50": 97.857,
+      "p50": 99.315,
       "p95": 171
     }
   },
@@ -45,7 +45,7 @@
       "path": "apps/api/src/env.ts"
     },
     {
-      "mi": 109.31,
+      "mi": 106.463,
       "path": "apps/api/src/index.ts"
     },
     {
@@ -55,6 +55,10 @@
     {
       "mi": 103.9,
       "path": "apps/api/src/lib/r2.ts"
+    },
+    {
+      "mi": 108.172,
+      "path": "apps/api/src/mailer/rosterInvite.ts"
     },
     {
       "mi": 138.232,
@@ -133,8 +137,24 @@
       "path": "apps/api/src/routes/v1/auth/onboard.ts"
     },
     {
+      "mi": 134.62,
+      "path": "apps/api/src/routes/v1/coach/index.ts"
+    },
+    {
+      "mi": 81.432,
+      "path": "apps/api/src/routes/v1/coach/invites.ts"
+    },
+    {
+      "mi": 84.627,
+      "path": "apps/api/src/routes/v1/coach/roster.ts"
+    },
+    {
       "mi": 115.469,
       "path": "apps/api/src/routes/v1/me.ts"
+    },
+    {
+      "mi": 81.087,
+      "path": "apps/api/src/routes/v1/public/roster-invites.ts"
     },
     {
       "mi": 111.461,
@@ -275,6 +295,14 @@
     {
       "mi": 95.889,
       "path": "apps/web/src/components/admin/teams/TeamForm.ts"
+    },
+    {
+      "mi": 98.392,
+      "path": "apps/web/src/components/coach/InviteAthleteDialog.ts"
+    },
+    {
+      "mi": 90.392,
+      "path": "apps/web/src/components/coach/RosterTable.ts"
     },
     {
       "mi": 133.747,
@@ -501,6 +529,10 @@
       "path": "packages/shared/src/csv/parse.ts"
     },
     {
+      "mi": 88.147,
+      "path": "packages/shared/src/db/queries/coach/roster.ts"
+    },
+    {
       "mi": 94.082,
       "path": "packages/shared/src/db/queries/legalDocuments.ts"
     },
@@ -529,7 +561,7 @@
       "path": "packages/shared/src/db/schema/csvImportBatches.ts"
     },
     {
-      "mi": 113.115,
+      "mi": 109.687,
       "path": "packages/shared/src/db/schema/index.ts"
     },
     {
@@ -547,6 +579,14 @@
     {
       "mi": 108.651,
       "path": "packages/shared/src/db/schema/parentAthleteLinks.ts"
+    },
+    {
+      "mi": 106.649,
+      "path": "packages/shared/src/db/schema/rosterEntries.ts"
+    },
+    {
+      "mi": 100.03,
+      "path": "packages/shared/src/db/schema/rosterInvites.ts"
     },
     {
       "mi": 93.939,
@@ -579,6 +619,10 @@
     {
       "mi": 99.315,
       "path": "packages/shared/src/observability/redaction.ts"
+    },
+    {
+      "mi": 114.82,
+      "path": "packages/shared/src/rbac/coachOnTeam.ts"
     },
     {
       "mi": 171,
@@ -631,6 +675,10 @@
     {
       "mi": 70.515,
       "path": "packages/shared/src/schemas/auth.ts"
+    },
+    {
+      "mi": 81.368,
+      "path": "packages/shared/src/schemas/coach/roster.ts"
     },
     {
       "mi": 122.795,

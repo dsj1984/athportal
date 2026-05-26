@@ -1,0 +1,170 @@
+---
+// apps/web/src/pages/r/roster-invite/[token]/accept.astro
+//
+// `/r/roster-invite/:token/accept` — public tokenized roster-invite
+// accept landing page (Epic #11 / Story #926 / Task #930).
+//
+// The recipient clicks the accept link in their invite email and
+// lands here. The page renders an in-progress shell server-side
+// (so prerendered HTML is meaningful for screen readers and email
+// clients that follow links into a preview pane); the inline script
+// then POSTs to `/api/v1/public/roster-invites/:token/accept` and
+// flips one of two pre-rendered panels visible based on the response.
+//
+// Indexing: every `/r/*` route emits `<meta name="robots"
+// content="noindex, nofollow">` per `docs/web-routes.md` policy.
+// The plaintext token in the URL is sensitive — search engines must
+// not crawl, archive, or follow these links.
+//
+// security-baseline.md compliance:
+//   - The token is NEVER embedded in HTML attributes or visible page
+//     content. The client-side script reads it from
+//     `window.location.pathname` at runtime — the token is already in
+//     the URL the browser sees, so this adds no new exposure surface
+//     and keeps the static markup free of the secret.
+//   - The token is forwarded to the API only via a fetch URL.
+//   - Error envelopes from the API are surfaced via `textContent`
+//     (no innerHTML / dangerouslySetInnerHTML).
+//   - No PII or token material is rendered into the static markup.
+
+const { token } = Astro.params;
+if (typeof token !== 'string' || token.length === 0) {
+  return new Response('Not Found', { status: 404 });
+}
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Accept roster invite</title>
+  </head>
+  <body class="bg-surface-page text-text-primary">
+    <main
+      class="mx-auto flex w-full max-w-xl flex-col gap-6 px-4 py-12 sm:px-6"
+      data-roster-invite-action="accept"
+    >
+      <h1 class="text-2xl font-semibold">Joining the team</h1>
+
+      <p
+        class="rounded-md border border-border bg-surface-card px-4 py-3 text-sm"
+        data-testid="roster-invite-pending"
+      >
+        Confirming your invitation…
+      </p>
+
+      <section
+        class="rounded-md border border-border bg-surface-card px-4 py-3 text-sm"
+        data-testid="roster-invite-accept-confirm"
+        hidden
+      >
+        <h2 class="text-lg font-semibold">You’re on the roster</h2>
+        <p class="mt-2">
+          Your coach has been notified. You can close this tab — your team
+          will appear the next time you sign in.
+        </p>
+      </section>
+
+      <section
+        class="rounded-md border border-action-coral bg-surface-card px-4 py-3 text-sm text-action-coral"
+        data-testid="roster-invite-error"
+        role="alert"
+        hidden
+      >
+        <h2 class="text-lg font-semibold">We couldn’t accept this invite</h2>
+        <p class="mt-2" data-roster-invite-error-message>
+          Something went wrong.
+        </p>
+      </section>
+    </main>
+
+    <script>
+      interface AcceptEnvelope {
+        success: boolean;
+        data?: { invite: { id: string; teamId: string; status: string } };
+        error?: { code?: string; message?: string };
+      }
+
+      function messageForError(code: string | undefined): string {
+        switch (code) {
+          case 'NOT_FOUND':
+            return 'This invitation link is not valid. Ask your coach to send a new one.';
+          case 'INVITE_EXPIRED':
+            return 'This invitation has expired. Ask your coach to send a new one.';
+          case 'INVITE_REVOKED':
+            return 'Your coach cancelled this invitation.';
+          case 'INVITE_NOT_PENDING':
+            return 'This invitation has already been responded to.';
+          case 'RECIPIENT_NOT_FOUND':
+            return 'We could not find your account. Sign up first, then ask your coach to re-send the invite.';
+          default:
+            return 'We could not accept this invitation. Please try again later.';
+        }
+      }
+
+      /**
+       * Extract the token from the URL path. The route shape is
+       * `/r/roster-invite/:token/accept` so the token is the
+       * second-to-last non-empty segment. Reading from the URL
+       * avoids round-tripping the token through an HTML attribute
+       * where it could leak to extensions or DOM scrapers.
+       */
+      function tokenFromPath(): string | null {
+        const segments = window.location.pathname.split('/').filter((s) => s.length > 0);
+        // ['r', 'roster-invite', '<token>', 'accept']
+        if (segments.length < 4) return null;
+        const candidate = segments[segments.length - 2];
+        if (typeof candidate !== 'string' || candidate.length === 0) return null;
+        return candidate;
+      }
+
+      async function run(): Promise<void> {
+        const pendingEl = document.querySelector<HTMLElement>(
+          '[data-testid="roster-invite-pending"]',
+        );
+        const confirmEl = document.querySelector<HTMLElement>(
+          '[data-testid="roster-invite-accept-confirm"]',
+        );
+        const errorEl = document.querySelector<HTMLElement>(
+          '[data-testid="roster-invite-error"]',
+        );
+        const errorMsgEl = document.querySelector<HTMLElement>(
+          '[data-roster-invite-error-message]',
+        );
+        const token = tokenFromPath();
+        if (!token || !pendingEl || !confirmEl || !errorEl) return;
+
+        try {
+          const res = await fetch(
+            `/api/v1/public/roster-invites/${encodeURIComponent(token)}/accept`,
+            {
+              method: 'POST',
+              headers: { accept: 'application/json' },
+            },
+          );
+          const envelope = (await res
+            .json()
+            .catch(() => null)) as AcceptEnvelope | null;
+          pendingEl.hidden = true;
+          if (res.ok && envelope?.success === true) {
+            confirmEl.hidden = false;
+            return;
+          }
+          if (errorMsgEl) {
+            errorMsgEl.textContent = messageForError(envelope?.error?.code);
+          }
+          errorEl.hidden = false;
+        } catch {
+          pendingEl.hidden = true;
+          if (errorMsgEl) {
+            errorMsgEl.textContent = 'We could not reach the server. Try again in a moment.';
+          }
+          errorEl.hidden = false;
+        }
+      }
+
+      void run();
+    </script>
+  </body>
+</html>

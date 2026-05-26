@@ -1,0 +1,106 @@
+---
+// apps/web/src/components/coach/InviteAthleteDialog.astro
+//
+// "Invite athlete" dialog for the coach roster surface (Epic #11 /
+// Story #920 / Task #923). Composes only primitives from
+// `apps/web/src/components/ui/*` (Btn, FormField) — no bespoke
+// buttons or inputs per Tech Spec #906 §Core Components.
+//
+// The dialog uses the native `<dialog>` element so focus management,
+// the modal scrim, and Escape-to-close ship for free. The parent
+// page's inline `script` wires open/cancel/submit handlers and on
+// 201 closes the dialog and refetches the pending-invites strip.
+//
+// Copy follows `docs/style-guide.md` (voice & tone): direct, second
+// person, short sentences. The labels and button copy are pinned by
+// AC #4 — any change is a coordinated cross-tier edit with the
+// acceptance suite.
+
+import Btn from '../ui/Btn.astro';
+import FormField from '../ui/FormField.astro';
+import { COACH_INVITE_TEST_IDS } from './InviteAthleteDialog.ts';
+---
+
+<dialog
+  class="rounded-md border border-border bg-surface-card p-0 shadow-lg backdrop:bg-text-primary/40 open:flex open:flex-col"
+  data-testid={COACH_INVITE_TEST_IDS.dialog}
+  aria-labelledby="coach-invite-dialog-title"
+>
+  <form
+    class="flex w-full max-w-md flex-col gap-4 p-6"
+    method="dialog"
+    data-coach-invite-form
+    novalidate
+  >
+    <header class="flex flex-col gap-1">
+      <h2 id="coach-invite-dialog-title" class="text-lg font-semibold text-text-primary">
+        Invite an athlete
+      </h2>
+      <p class="text-sm text-text-secondary">
+        Send an email invitation. The athlete confirms with one click.
+      </p>
+    </header>
+
+    <p
+      class="rounded-md border border-action-coral bg-surface-card px-3 py-2 text-sm text-action-coral"
+      data-testid={COACH_INVITE_TEST_IDS.error}
+      role="alert"
+      hidden
+    ></p>
+
+    <FormField label="Email" htmlFor="coach-invite-email" required>
+      <input
+        id="coach-invite-email"
+        name="email"
+        type="email"
+        autocomplete="off"
+        required
+        data-testid={COACH_INVITE_TEST_IDS.emailInput}
+        class="w-full rounded-md border border-border bg-surface-page px-3 py-2 text-sm text-text-primary shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+      />
+    </FormField>
+
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <FormField label="First name" htmlFor="coach-invite-first-name">
+        <input
+          id="coach-invite-first-name"
+          name="firstName"
+          type="text"
+          autocomplete="off"
+          maxlength="80"
+          data-testid={COACH_INVITE_TEST_IDS.firstNameInput}
+          class="w-full rounded-md border border-border bg-surface-page px-3 py-2 text-sm text-text-primary shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+        />
+      </FormField>
+      <FormField label="Last name" htmlFor="coach-invite-last-name">
+        <input
+          id="coach-invite-last-name"
+          name="lastName"
+          type="text"
+          autocomplete="off"
+          maxlength="80"
+          data-testid={COACH_INVITE_TEST_IDS.lastNameInput}
+          class="w-full rounded-md border border-border bg-surface-page px-3 py-2 text-sm text-text-primary shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+        />
+      </FormField>
+    </div>
+
+    <footer class="flex items-center justify-end gap-2">
+      <Btn
+        kind="ghost"
+        type="button"
+        data-testid={COACH_INVITE_TEST_IDS.cancelBtn}
+        data-coach-invite-cancel
+      >
+        Cancel
+      </Btn>
+      <Btn
+        kind="primary"
+        type="submit"
+        data-testid={COACH_INVITE_TEST_IDS.submitBtn}
+      >
+        Send invite
+      </Btn>
+    </footer>
+  </form>
+</dialog>

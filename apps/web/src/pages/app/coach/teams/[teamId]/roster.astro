@@ -1,0 +1,311 @@
+---
+// apps/web/src/pages/app/coach/teams/[teamId]/roster.astro
+//
+// `/app/coach/teams/:teamId/roster` — coach roster page (Epic #11 /
+// Story #912 / Task #918).
+//
+// Renders the empty table shell (the `RosterTable.astro` primitive)
+// and binds an inline `script` that fetches the team's roster from
+// `GET /api/v1/coach/teams/:teamId/roster` and populates the table
+// via `renderRosterRows`. The page chrome composes only existing UI
+// primitives (PageHeader, Btn, Badge) per AC #2.
+//
+// SSR + client-fetch follows the same pattern as the admin pages
+// (see `apps/web/src/pages/admin/teams/[id]/edit.astro`) — `@repo/web`
+// does not wire `@astrojs/react` for the coach surface, so a React
+// island would be foundation-level scope. The Task ACs are
+// behavioural (one row per athlete, `data-testid` selectors, no
+// innerHTML) and are satisfied by the `.astro` + `.ts` pair.
+
+import PageHeader from '../../../../../components/ui/PageHeader.astro';
+import InviteAthleteDialog from '../../../../../components/coach/InviteAthleteDialog.astro';
+import PendingInvitesStrip from '../../../../../components/coach/PendingInvitesStrip.astro';
+import RosterTable from '../../../../../components/coach/RosterTable.astro';
+
+const { teamId } = Astro.params;
+if (typeof teamId !== 'string' || teamId.length === 0) {
+  return new Response('Not Found', { status: 404 });
+}
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Team roster · Coach</title>
+  </head>
+  <body class="bg-surface-page text-text-primary">
+    <main
+      class="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8"
+      data-team-id={teamId}
+      data-coach-roster-page
+    >
+      <PageHeader title="Team roster">
+        <a
+          slot="actions"
+          class="inline-flex items-center justify-center rounded-md border border-border bg-surface-card px-3 py-2 text-sm font-medium text-text-primary shadow-sm hover:bg-surface-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+          href="/dashboard"
+        >
+          Back to dashboard
+        </a>
+      </PageHeader>
+
+      <p
+        class="rounded-md border border-action-coral bg-surface-card px-4 py-3 text-sm text-action-coral"
+        data-testid="coach-roster-error"
+        role="alert"
+        hidden
+      ></p>
+
+      <PendingInvitesStrip />
+
+      <RosterTable />
+
+      <InviteAthleteDialog />
+    </main>
+  </body>
+</html>
+
+<script>
+  import {
+    type CoachRosterEntry,
+    COACH_ROSTER_TEST_IDS,
+    buildRosterUrl,
+    renderRosterRows,
+  } from '../../../../../components/coach/RosterTable.ts';
+  import {
+    type CoachInviteEntry,
+    COACH_INVITE_TEST_IDS,
+    buildInvitesUrl,
+    buildRevokeUrl,
+    readInvitePayload,
+    renderPendingInvites,
+  } from '../../../../../components/coach/InviteAthleteDialog.ts';
+
+  interface ListEnvelope {
+    success: boolean;
+    data?: { items: CoachRosterEntry[] };
+    error?: { code?: string; message?: string };
+  }
+
+  interface InvitesListEnvelope {
+    success: boolean;
+    data?: { items: CoachInviteEntry[] };
+    error?: { code?: string; message?: string };
+  }
+
+  interface InviteCreateEnvelope {
+    success: boolean;
+    data?: { invite: CoachInviteEntry };
+    error?: { code?: string; message?: string };
+  }
+
+  async function load(): Promise<void> {
+    const root = document.querySelector<HTMLElement>('[data-coach-roster-page]');
+    const errorEl = document.querySelector<HTMLElement>(
+      `[data-testid="${COACH_ROSTER_TEST_IDS.error}"]`,
+    );
+    const tbody = document.querySelector<HTMLTableSectionElement>('[data-coach-roster-tbody]');
+    const teamId = root?.dataset.teamId;
+    if (!teamId || !tbody) return;
+    try {
+      const res = await fetch(buildRosterUrl(teamId), {
+        headers: { accept: 'application/json' },
+      });
+      const envelope = (await res.json().catch(() => null)) as ListEnvelope | null;
+      if (!res.ok || envelope?.success !== true || !envelope.data) {
+        if (errorEl) {
+          errorEl.textContent = envelope?.error?.message ?? 'Could not load the roster.';
+          errorEl.hidden = false;
+        }
+        return;
+      }
+      const items = envelope.data.items;
+      const emptyRow = tbody.querySelector<HTMLElement>(
+        `[data-testid="${COACH_ROSTER_TEST_IDS.emptyState}"]`,
+      );
+      if (items.length === 0) {
+        // No athletes — keep the seeded empty row but show it.
+        if (emptyRow) emptyRow.hidden = false;
+        return;
+      }
+      renderRosterRows(tbody, items);
+    } catch {
+      if (errorEl) {
+        errorEl.textContent = 'Could not reach the server.';
+        errorEl.hidden = false;
+      }
+    }
+  }
+
+  /**
+   * Fetch the pending invites for the team and repopulate the strip.
+   * Filters to `status === 'pending'` client-side as defence-in-depth
+   * — the server returns every status, the strip only renders the
+   * pending subset (AC #3).
+   */
+  async function loadInvites(teamId: string): Promise<void> {
+    const listEl = document.querySelector<HTMLElement>('[data-coach-pending-invites-list]');
+    const emptyEl = document.querySelector<HTMLElement>(
+      `[data-testid="${COACH_INVITE_TEST_IDS.stripEmpty}"]`,
+    );
+    const errorEl = document.querySelector<HTMLElement>(
+      '[data-testid="coach-pending-invites-error"]',
+    );
+    if (!listEl) return;
+    try {
+      const res = await fetch(buildInvitesUrl(teamId), {
+        headers: { accept: 'application/json' },
+      });
+      const envelope = (await res.json().catch(() => null)) as InvitesListEnvelope | null;
+      if (!res.ok || envelope?.success !== true || !envelope.data) {
+        if (errorEl) {
+          errorEl.textContent = envelope?.error?.message ?? 'Could not load pending invites.';
+          errorEl.hidden = false;
+        }
+        return;
+      }
+      if (errorEl) errorEl.hidden = true;
+      const pending = envelope.data.items.filter((i) => i.status === 'pending');
+      renderPendingInvites(listEl, pending);
+      if (emptyEl) emptyEl.hidden = pending.length !== 0;
+    } catch {
+      if (errorEl) {
+        errorEl.textContent = 'Could not reach the server.';
+        errorEl.hidden = false;
+      }
+    }
+  }
+
+  /**
+   * Wire the dialog open/cancel buttons and the submit handler. The
+   * dialog form uses `method="dialog"` so a default Submit closes
+   * the dialog — we intercept with `event.preventDefault()`, issue
+   * the POST, and on 201 close the dialog and refresh the strip.
+   */
+  function wireDialog(teamId: string): void {
+    const dialog = document.querySelector<HTMLDialogElement>(
+      `[data-testid="${COACH_INVITE_TEST_IDS.dialog}"]`,
+    );
+    const openBtn = document.querySelector<HTMLButtonElement>(
+      `[data-testid="${COACH_INVITE_TEST_IDS.openBtn}"]`,
+    );
+    const cancelBtn = document.querySelector<HTMLButtonElement>(
+      `[data-testid="${COACH_INVITE_TEST_IDS.cancelBtn}"]`,
+    );
+    const form = document.querySelector<HTMLFormElement>('[data-coach-invite-form]');
+    const errorEl = document.querySelector<HTMLElement>(
+      `[data-testid="${COACH_INVITE_TEST_IDS.error}"]`,
+    );
+    if (!dialog || !openBtn || !cancelBtn || !form) return;
+
+    openBtn.addEventListener('click', () => {
+      if (errorEl) errorEl.hidden = true;
+      form.reset();
+      dialog.showModal();
+    });
+
+    cancelBtn.addEventListener('click', () => {
+      dialog.close();
+    });
+
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      void submitInvite(teamId, form, dialog, errorEl);
+    });
+  }
+
+  async function submitInvite(
+    teamId: string,
+    form: HTMLFormElement,
+    dialog: HTMLDialogElement,
+    errorEl: HTMLElement | null,
+  ): Promise<void> {
+    const payload = readInvitePayload(form);
+    if (!payload) {
+      if (errorEl) {
+        errorEl.textContent = 'Enter the athlete’s email.';
+        errorEl.hidden = false;
+      }
+      return;
+    }
+    try {
+      const res = await fetch(buildInvitesUrl(teamId), {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', accept: 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const envelope = (await res.json().catch(() => null)) as InviteCreateEnvelope | null;
+      if (res.status !== 201 || envelope?.success !== true) {
+        if (errorEl) {
+          errorEl.textContent = envelope?.error?.message ?? 'Could not send the invite.';
+          errorEl.hidden = false;
+        }
+        return;
+      }
+      dialog.close();
+      await loadInvites(teamId);
+    } catch {
+      if (errorEl) {
+        errorEl.textContent = 'Could not reach the server.';
+        errorEl.hidden = false;
+      }
+    }
+  }
+
+  /**
+   * Delegate revoke clicks via the list container so newly rendered
+   * rows pick up the handler without re-attaching after each refresh.
+   */
+  function wireRevokeDelegation(teamId: string): void {
+    const listEl = document.querySelector<HTMLElement>('[data-coach-pending-invites-list]');
+    if (!listEl) return;
+    listEl.addEventListener('click', (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      const btn = target.closest<HTMLButtonElement>(
+        `[data-testid="${COACH_INVITE_TEST_IDS.revokeBtn}"]`,
+      );
+      if (!btn) return;
+      const inviteId = btn.getAttribute('data-invite-id');
+      if (!inviteId) return;
+      void revokeInvite(teamId, inviteId);
+    });
+  }
+
+  async function revokeInvite(teamId: string, inviteId: string): Promise<void> {
+    const errorEl = document.querySelector<HTMLElement>(
+      '[data-testid="coach-pending-invites-error"]',
+    );
+    try {
+      const res = await fetch(buildRevokeUrl(teamId, inviteId), {
+        method: 'POST',
+        headers: { accept: 'application/json' },
+      });
+      if (!res.ok) {
+        const envelope = (await res.json().catch(() => null)) as InvitesListEnvelope | null;
+        if (errorEl) {
+          errorEl.textContent = envelope?.error?.message ?? 'Could not revoke the invite.';
+          errorEl.hidden = false;
+        }
+        return;
+      }
+      await loadInvites(teamId);
+    } catch {
+      if (errorEl) {
+        errorEl.textContent = 'Could not reach the server.';
+        errorEl.hidden = false;
+      }
+    }
+  }
+
+  void load();
+  const rootEl = document.querySelector<HTMLElement>('[data-coach-roster-page]');
+  const pageTeamId = rootEl?.dataset.teamId;
+  if (pageTeamId) {
+    wireDialog(pageTeamId);
+    wireRevokeDelegation(pageTeamId);
+    void loadInvites(pageTeamId);
+  }
+</script>

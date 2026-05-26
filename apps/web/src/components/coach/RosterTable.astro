@@ -1,0 +1,42 @@
+---
+// apps/web/src/components/coach/RosterTable.astro
+//
+// Renders the empty table shell for the coach roster page (Epic #11 /
+// Story #912 / Task #918). Composes ONLY primitives from
+// `apps/web/src/components/ui/*` (Badge for the position chip; the
+// page-level Back button is a Btn) — no bespoke buttons or chips per
+// AC #2.
+//
+// The table body is populated by the parent page's inline `script`,
+// which imports `renderRosterRows` from `./RosterTable.ts` and writes
+// into the `<tbody>` identified by `data-coach-roster-tbody`. The
+// initial markup carries only the empty-state row so the QA suite can
+// target `coach-roster-empty` before the fetch completes.
+
+import Badge from '../ui/Badge.astro';
+import { COACH_ROSTER_TEST_IDS } from './RosterTable.ts';
+---
+
+<table
+  class="w-full border-collapse rounded-md border border-border bg-surface-card text-left text-sm"
+  data-testid={COACH_ROSTER_TEST_IDS.root}
+>
+  <thead>
+    <tr class="border-b border-border bg-surface-subtle text-text-secondary">
+      <th class="px-4 py-2 font-medium">Athlete</th>
+      <th class="px-4 py-2 font-medium">Jersey</th>
+      <th class="px-4 py-2 font-medium">Position</th>
+      <th class="px-4 py-2 font-medium">
+        <Badge tone="slate">Status</Badge>
+      </th>
+      <th class="px-4 py-2 font-medium">Actions</th>
+    </tr>
+  </thead>
+  <tbody data-coach-roster-tbody>
+    <tr data-testid={COACH_ROSTER_TEST_IDS.emptyState} hidden>
+      <td class="px-4 py-3 text-sm text-text-secondary" colspan="5">
+        No athletes on this roster yet.
+      </td>
+    </tr>
+  </tbody>
+</table>

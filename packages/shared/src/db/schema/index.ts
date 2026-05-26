@@ -51,6 +51,18 @@ export {
   type ParentAthleteLink,
   type NewParentAthleteLink,
 } from './parentAthleteLinks';
+export {
+  rosterEntries,
+  type RosterEntry,
+  type NewRosterEntry,
+} from './rosterEntries';
+export {
+  rosterInvites,
+  ROSTER_INVITE_STATUSES,
+  type RosterInvite,
+  type RosterInviteStatus,
+  type NewRosterInvite,
+} from './rosterInvites';
 export { teams, type Team, type NewTeam } from './teams';
 export {
   userLegalAgreements,
@@ -66,6 +78,8 @@ import { invitations } from './invitations';
 import { legalDocuments } from './legalDocuments';
 import { organizations } from './organizations';
 import { parentAthleteLinks } from './parentAthleteLinks';
+import { rosterEntries } from './rosterEntries';
+import { rosterInvites } from './rosterInvites';
 import { teams } from './teams';
 import { userLegalAgreements } from './userLegalAgreements';
 import { users } from './users';
@@ -78,6 +92,8 @@ export const schema = {
   legalDocuments,
   organizations,
   parentAthleteLinks,
+  rosterEntries,
+  rosterInvites,
   teams,
   userLegalAgreements,
   users,

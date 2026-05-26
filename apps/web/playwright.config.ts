@@ -39,7 +39,12 @@ const testDir = defineBddConfig({
   // on features-first scaffolds whose step definitions have not landed
   // yet. Remove the tag from a scenario once its matching step library
   // lands; the scenario then generates and runs on the next CI cycle.
-  tags: 'not @pending',
+  //
+  // Also skip @meta-acceptance scenarios — these document runner-level
+  // acceptance criteria (e.g. "feature bundle reaches SMOKE-PASS",
+  // "canonical docs are updated by Epic close") and intentionally do
+  // not have executable step glue; verification happens out-of-band.
+  tags: 'not @pending and not @meta-acceptance',
 });
 
 const E2E_PORT = Number(process.env.E2E_PORT ?? 4317);

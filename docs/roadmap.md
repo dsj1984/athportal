@@ -197,7 +197,7 @@ The multi-tenant data model and the server-enforced gate every authenticated use
 - ✅ [#8](https://github.com/dsj1984/athportal/issues/8) — Server-enforced onboarding gate and ToS acceptance
 - ✅ [#9](https://github.com/dsj1984/athportal/issues/9) — Org / team / coach / athlete data model and multi-tenant isolation
 - ✅ [#10](https://github.com/dsj1984/athportal/issues/10) — Org configuration, team creation, invitations, and bulk import
-- ⬜ [#11](https://github.com/dsj1984/athportal/issues/11) — Digital roster, athlete invitations, and team-scoped access
+- ✅ [#11](https://github.com/dsj1984/athportal/issues/11) — Digital roster, athlete invitations, and team-scoped access
 - ⬜ [#23](https://github.com/dsj1984/athportal/issues/23) — Versioned legal documents — ToS, Privacy Policy, cookie consent
 
 ##### Dependencies
@@ -236,6 +236,9 @@ The multi-tenant data model and the server-enforced gate every authenticated use
 - [`org-admin/csv-import.feature`](../tests/features/org-admin/csv-import.feature)
 - [`org-admin/season-rollover.feature`](../tests/features/org-admin/season-rollover.feature)
 - [`org-admin/verified-achievement-report.feature`](../tests/features/org-admin/verified-achievement-report.feature)
+- [`coach/roster/digital-roster.feature`](../tests/features/coach/roster/digital-roster.feature)
+- [`coach/roster/roster-invites.feature`](../tests/features/coach/roster/roster-invites.feature)
+- [`coach/roster/team-scoped-access.feature`](../tests/features/coach/roster/team-scoped-access.feature)
 
 ##### Test plans
 
