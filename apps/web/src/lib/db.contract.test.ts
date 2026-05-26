@@ -51,14 +51,21 @@ const CANONICAL_DB_DIR = join(REPO_ROOT, 'packages', 'shared', 'data');
 const CANONICAL_DB_PATH = join(CANONICAL_DB_DIR, 'local.db');
 
 /**
- * Canonical relative URL — the form a developer would write inside
- * apps/web/.env. The leading `../../` traverses out of apps/web/ to the
- * repo root, then `packages/shared/data/local.db` is the canonical file.
- * The bug is that this string is returned verbatim to better-sqlite3,
- * which then resolves it against `process.cwd()` rather than against a
- * stable monorepo anchor.
+ * Canonical relative URL straight from `.env.example`. The bug is that
+ * this string was being returned verbatim to better-sqlite3, which then
+ * resolved it against `process.cwd()` — only the repo root happened to
+ * line up with the value. The fix anchors relative `file:` URLs against
+ * the monorepo root (the directory containing pnpm-workspace.yaml) so
+ * the resolver returns the same absolute path from every CWD.
+ *
+ * The charter finding (f-auth-fuzz-001) reproduces the same bug with
+ * the `file:../../packages/shared/data/local.db` form (the way a
+ * developer would write it from inside apps/web/); both forms exhibit
+ * the same CWD-sensitivity. We test the canonical `.env.example` form
+ * because that is the value every consumer ships with by default and
+ * therefore the value the fix MUST keep working.
  */
-const RELATIVE_TURSO_URL = 'file:../../packages/shared/data/local.db';
+const RELATIVE_TURSO_URL = 'file:packages/shared/data/local.db';
 
 let originalCwd: string;
 let originalTursoUrl: string | undefined;
