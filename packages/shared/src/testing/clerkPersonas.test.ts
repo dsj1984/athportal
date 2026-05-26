@@ -146,10 +146,17 @@ describe('readPersonaClerkIds — actionable error when unpopulated', () => {
     );
   });
 
-  it('uses the tracked clerk-personas.json path by default', () => {
-    // When called with no options, the error must reference the real
-    // file location next to the module so operators can find it.
-    expect(() => readPersonaClerkIds()).toThrow(
+  it('uses the tracked clerk-personas.json path by default in error messages', () => {
+    // When the default-path file is in its unpopulated shape, the
+    // thrown error must reference the real file location next to the
+    // module so operators can find it. The reader uses the tracked
+    // path even when only the file-content seam is injected, so we
+    // stub the reader to return the unpopulated shape and let the
+    // module compute the path itself.
+    const readFile = stubReader(
+      JSON.stringify({ athlete: null, coach: null, 'org-admin': null }),
+    );
+    expect(() => readPersonaClerkIds({ readFile })).toThrow(
       new RegExp(personaClerkIdsPath.replace(/[\\/]/g, '[\\\\/]')),
     );
   });
