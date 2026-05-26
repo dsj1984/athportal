@@ -59,13 +59,13 @@ Feature: Coach views and curates their team's digital roster
     Then I see the athlete's profile scoped to my team
     And the jersey number and primary position match the values from my team's roster
 
-  @pending @ac-13 @persona-coach @smoke
+  @ac-13 @persona-coach @smoke @meta-acceptance
   Scenario: Coach roster feature files reach SMOKE-PASS
     Given the QA-corpus agent runner has loaded the coach roster feature bundle
     When the runner discovers the coach roster feature files
     Then the runner reports a deterministic verdict for every coach roster scenario
 
-  @pending @ac-14 @persona-coach
+  @ac-14 @persona-coach @meta-acceptance
   Scenario: Canonical docs are confirmed or updated by Epic close
     Given the Epic touches the data model, the routing surface, and the testing strategy
     When the Epic reaches close
