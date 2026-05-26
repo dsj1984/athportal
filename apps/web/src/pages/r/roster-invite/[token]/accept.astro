@@ -17,10 +17,12 @@
 // not crawl, archive, or follow these links.
 //
 // security-baseline.md compliance:
-//   - The token is read as a path param (Astro.params) — never
-//     embedded in HTML attributes that could leak via DOM scraping.
-//   - The token is forwarded to the API only via a fetch URL; never
-//     rendered into the visible page content.
+//   - The token is NEVER embedded in HTML attributes or visible page
+//     content. The client-side script reads it from
+//     `window.location.pathname` at runtime — the token is already in
+//     the URL the browser sees, so this adds no new exposure surface
+//     and keeps the static markup free of the secret.
+//   - The token is forwarded to the API only via a fetch URL.
 //   - Error envelopes from the API are surfaced via `textContent`
 //     (no innerHTML / dangerouslySetInnerHTML).
 //   - No PII or token material is rendered into the static markup.
@@ -41,7 +43,6 @@ if (typeof token !== 'string' || token.length === 0) {
   <body class="bg-surface-page text-text-primary">
     <main
       class="mx-auto flex w-full max-w-xl flex-col gap-6 px-4 py-12 sm:px-6"
-      data-roster-invite-token={token}
       data-roster-invite-action="accept"
     >
       <h1 class="text-2xl font-semibold">Joining the team</h1>
@@ -102,8 +103,23 @@ if (typeof token !== 'string' || token.length === 0) {
         }
       }
 
+      /**
+       * Extract the token from the URL path. The route shape is
+       * `/r/roster-invite/:token/accept` so the token is the
+       * second-to-last non-empty segment. Reading from the URL
+       * avoids round-tripping the token through an HTML attribute
+       * where it could leak to extensions or DOM scrapers.
+       */
+      function tokenFromPath(): string | null {
+        const segments = window.location.pathname.split('/').filter((s) => s.length > 0);
+        // ['r', 'roster-invite', '<token>', 'accept']
+        if (segments.length < 4) return null;
+        const candidate = segments[segments.length - 2];
+        if (typeof candidate !== 'string' || candidate.length === 0) return null;
+        return candidate;
+      }
+
       async function run(): Promise<void> {
-        const root = document.querySelector<HTMLElement>('[data-roster-invite-token]');
         const pendingEl = document.querySelector<HTMLElement>(
           '[data-testid="roster-invite-pending"]',
         );
@@ -116,7 +132,7 @@ if (typeof token !== 'string' || token.length === 0) {
         const errorMsgEl = document.querySelector<HTMLElement>(
           '[data-roster-invite-error-message]',
         );
-        const token = root?.dataset.rosterInviteToken;
+        const token = tokenFromPath();
         if (!token || !pendingEl || !confirmEl || !errorEl) return;
 
         try {

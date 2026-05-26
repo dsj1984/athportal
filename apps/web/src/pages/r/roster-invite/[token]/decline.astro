@@ -13,8 +13,9 @@
 // content="noindex, nofollow">` per `docs/web-routes.md` policy.
 //
 // security-baseline.md compliance — see accept.astro for the full
-// rationale (token only flows through the fetch URL, no innerHTML,
-// `textContent` for error messages).
+// rationale. The token is read client-side from
+// `window.location.pathname` rather than embedded in an HTML
+// attribute, so the static markup never carries the secret.
 
 const { token } = Astro.params;
 if (typeof token !== 'string' || token.length === 0) {
@@ -32,7 +33,6 @@ if (typeof token !== 'string' || token.length === 0) {
   <body class="bg-surface-page text-text-primary">
     <main
       class="mx-auto flex w-full max-w-xl flex-col gap-6 px-4 py-12 sm:px-6"
-      data-roster-invite-token={token}
       data-roster-invite-action="decline"
     >
       <h1 class="text-2xl font-semibold">Declining the invite</h1>
@@ -91,8 +91,22 @@ if (typeof token !== 'string' || token.length === 0) {
         }
       }
 
+      /**
+       * Extract the token from the URL path. The route shape is
+       * `/r/roster-invite/:token/decline` so the token is the
+       * second-to-last non-empty segment. See accept.astro for the
+       * security rationale.
+       */
+      function tokenFromPath(): string | null {
+        const segments = window.location.pathname.split('/').filter((s) => s.length > 0);
+        // ['r', 'roster-invite', '<token>', 'decline']
+        if (segments.length < 4) return null;
+        const candidate = segments[segments.length - 2];
+        if (typeof candidate !== 'string' || candidate.length === 0) return null;
+        return candidate;
+      }
+
       async function run(): Promise<void> {
-        const root = document.querySelector<HTMLElement>('[data-roster-invite-token]');
         const pendingEl = document.querySelector<HTMLElement>(
           '[data-testid="roster-invite-pending"]',
         );
@@ -105,7 +119,7 @@ if (typeof token !== 'string' || token.length === 0) {
         const errorMsgEl = document.querySelector<HTMLElement>(
           '[data-roster-invite-error-message]',
         );
-        const token = root?.dataset.rosterInviteToken;
+        const token = tokenFromPath();
         if (!token || !pendingEl || !confirmEl || !errorEl) return;
 
         try {
