@@ -74,6 +74,22 @@ export default mergeConfig(
             testTimeout: 30_000,
           },
         },
+        {
+          extends: false,
+          // Story #875 / Task #885 — the seed / reset CLI entrypoints are
+          // `.mjs` (so plain `node` can execute them, mirroring the
+          // scripts/seed-dev-admin.mjs precedent). Their unit tests live
+          // alongside them under packages/shared/scripts/ and need their
+          // own vitest project because the `shared-unit` project only
+          // picks up `src/**/*.test.{ts,tsx}`.
+          test: {
+            name: 'shared-scripts',
+            environment: 'node',
+            globals: false,
+            include: ['scripts/**/*.test.mjs'],
+            exclude: ['**/dist/**', '**/node_modules/**'],
+          },
+        },
       ],
     },
   }),
