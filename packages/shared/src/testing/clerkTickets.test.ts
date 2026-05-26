@@ -109,13 +109,16 @@ describe('assertClerkTestSecretKey — sk_test_ guard (load-bearing)', () => {
 });
 
 describe('mintSignInTicket — guard refuses to run without sk_test_', () => {
-  it('throws BEFORE calling the Clerk factory when secretKey is missing', async () => {
+  it('throws BEFORE calling the Clerk factory when secretKey is empty', async () => {
+    // Passing '' bypasses the destructuring default (`secretKey = process.env[...]`)
+    // and exercises the "missing key" branch deterministically — regardless
+    // of whether the test runner has CLERK_SECRET_KEY exported.
     const { factory } = fakeFactory({ token: 'unused', userId: 'unused' });
 
     await expect(
       mintSignInTicket({
         persona: 'athlete',
-        secretKey: undefined,
+        secretKey: '',
         clerkFactory: factory,
         personaIdsReader: stubPersonaReader('user_test_athlete'),
       }),
