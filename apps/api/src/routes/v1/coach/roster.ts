@@ -26,24 +26,33 @@
 //     audit timestamps) ride the projection but the schema strips
 //     anything not nominated for the public surface.
 //
-// Endpoints (this Story):
+// Endpoints:
 //
-//   GET /                                — list active roster entries
-//                                          for the team
-//   GET /entries/:entryId                — one team-scoped roster
-//                                          entry (Task #922)
+//   GET    /                              — list active roster entries
+//                                           for the team (Story #912)
+//   GET    /entries/:entryId              — one team-scoped roster
+//                                           entry (Story #912)
+//   PATCH  /entries/:entryId              — edit jersey + position with
+//                                           soft duplicate-jersey warning
+//                                           (Story #917 / Task #924)
+//   DELETE /entries/:entryId              — soft-delete via ended_at,
+//                                           idempotent (Story #917 / Task #924)
 //
 // Tier: contract. Cross-tenant isolation and the requireCoachOnTeam
-// gate are pinned in `./roster.contract.test.ts`.
+// gate are pinned in `./roster.contract.test.ts` (read surface) and
+// `./roster-entries.contract.test.ts` (mutation surface).
 
 import {
   type RosterEntryRow,
+  endRosterEntry,
   getTeamScopedAthlete,
+  jerseyNumberInUse,
   listRosterEntries,
+  updateRosterEntry,
 } from '@repo/shared/db/queries/coach/roster';
 import type { AuthContext as RbacAuthContext, Role } from '@repo/shared/rbac';
 import { HttpError, requireCoachOnTeam } from '@repo/shared/rbac/coachOnTeam';
-import { RosterEntryOutput } from '@repo/shared/schemas/coach/roster';
+import { EditRosterEntryInput, RosterEntryOutput } from '@repo/shared/schemas/coach/roster';
 import { Hono } from 'hono';
 import type {
   AuthContext as ApiAuthContext,
@@ -52,7 +61,7 @@ import type {
 
 // ── Error taxonomy ─────────────────────────────────────────────────────────
 
-type CoachRosterErrorCode = 'NOT_FOUND' | 'MISSING_ORG_SCOPE';
+type CoachRosterErrorCode = 'NOT_FOUND' | 'MISSING_ORG_SCOPE' | 'INVALID_INPUT';
 
 interface CoachRosterErrorBody {
   readonly success: false;
@@ -226,4 +235,151 @@ coachRosterRoute.get('/entries/:entryId', async (c) => {
     return c.json(errorBody('NOT_FOUND', 'entry-not-found'), 404);
   }
   return c.json({ success: true, data: projectEntry(row) }, 200);
+});
+
+/**
+ * PATCH /api/v1/coach/teams/:teamId/roster/entries/:entryId
+ *
+ * Edit `jerseyNumber` and/or `primaryPosition` on one team-scoped
+ * roster entry. Both fields are independently optional; at least one
+ * must be supplied (enforced by `EditRosterEntryInput.refine`).
+ *
+ * Soft-warning surface: when the new `jerseyNumber` collides with
+ * another active entry on the same team, the response carries
+ * `data.warnings.duplicateJerseyNumber = true`. No DB-level unique
+ * constraint enforces uniqueness (Tech Spec #906 §UX Behaviors); the
+ * coach decides whether to fix it.
+ *
+ * Responses:
+ *   200 — { success: true, data: { entry, warnings? } }
+ *   400 — { success: false, error: { code: 'INVALID_INPUT', ... } }
+ *   401 — clerkAuth refused upstream
+ *   404 — actor does not coach this team, or entry not found on the
+ *         URL-bound team for this org (the predicate refuses without
+ *         confirming which of those is true)
+ */
+coachRosterRoute.patch('/entries/:entryId', async (c) => {
+  const auth = c.get('auth');
+  const teamId = c.req.param('teamId');
+  const entryId = c.req.param('entryId');
+
+  if (!auth.orgId) {
+    return c.json(errorBody('MISSING_ORG_SCOPE', 'Actor has no orgId in scope.'), 400);
+  }
+  if (!teamId || !entryId) {
+    return c.json(errorBody('NOT_FOUND', 'entry-not-found'), 404);
+  }
+
+  // Parse the body BEFORE the auth check so a malformed payload returns
+  // 400 deterministically. The auth predicate runs inside the same
+  // handler so an attacker probing this surface still cannot tell the
+  // difference between "team not yours" and "team doesn't exist".
+  let parsed: import('@repo/shared/schemas/coach/roster').EditRosterEntryInput;
+  try {
+    const raw = (await c.req.json()) as unknown;
+    parsed = EditRosterEntryInput.parse(raw);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'invalid-input';
+    return c.json(errorBody('INVALID_INPUT', message), 400);
+  }
+
+  const db = c.get('db');
+
+  try {
+    await requireCoachOnTeam(
+      toRbacActor(auth),
+      teamId,
+      db as Parameters<typeof requireCoachOnTeam>[2],
+    );
+  } catch (err) {
+    if (err instanceof HttpError) {
+      return c.json(errorBody('NOT_FOUND', err.message), 404);
+    }
+    throw err;
+  }
+
+  const updated = updateRosterEntry(
+    db,
+    { orgId: auth.orgId },
+    teamId,
+    entryId,
+    parsed,
+  );
+  if (!updated) {
+    return c.json(errorBody('NOT_FOUND', 'entry-not-found'), 404);
+  }
+
+  // Probe for a soft-warning duplicate-jersey-number collision. Only
+  // surfaces when the caller actually wrote a non-null jersey value
+  // (clearing it can never collide).
+  let duplicateJerseyNumber = false;
+  if (parsed.jerseyNumber !== undefined && parsed.jerseyNumber !== null) {
+    duplicateJerseyNumber = jerseyNumberInUse(
+      db,
+      { orgId: auth.orgId },
+      teamId,
+      parsed.jerseyNumber,
+      entryId,
+    );
+  }
+
+  const body = {
+    success: true as const,
+    data: {
+      entry: projectEntry(updated),
+      ...(duplicateJerseyNumber ? { warnings: { duplicateJerseyNumber: true } } : {}),
+    },
+  };
+  return c.json(body, 200);
+});
+
+/**
+ * DELETE /api/v1/coach/teams/:teamId/roster/entries/:entryId
+ *
+ * Soft-delete one roster entry by setting `ended_at = now()`. The
+ * audit row stays in place; subsequent reads (via `listRosterEntries`
+ * or `getTeamScopedAthlete`) filter it out.
+ *
+ * Idempotent: re-running on an already-ended row succeeds with 204
+ * the same as the first call. The same row id can be re-used on a
+ * future invitation (the partial unique index on `(team_id,
+ * athlete_user_id) WHERE ended_at IS NULL` allows reuse).
+ *
+ * Responses:
+ *   204 — entry was removed (or already removed)
+ *   401 — clerkAuth refused upstream
+ *   404 — actor does not coach this team
+ */
+coachRosterRoute.delete('/entries/:entryId', async (c) => {
+  const auth = c.get('auth');
+  const teamId = c.req.param('teamId');
+  const entryId = c.req.param('entryId');
+
+  if (!auth.orgId) {
+    return c.json(errorBody('MISSING_ORG_SCOPE', 'Actor has no orgId in scope.'), 400);
+  }
+  if (!teamId || !entryId) {
+    return c.json(errorBody('NOT_FOUND', 'entry-not-found'), 404);
+  }
+
+  const db = c.get('db');
+
+  try {
+    await requireCoachOnTeam(
+      toRbacActor(auth),
+      teamId,
+      db as Parameters<typeof requireCoachOnTeam>[2],
+    );
+  } catch (err) {
+    if (err instanceof HttpError) {
+      return c.json(errorBody('NOT_FOUND', err.message), 404);
+    }
+    throw err;
+  }
+
+  // The mutation refuses to touch already-ended rows; the boolean
+  // return is informational. We respond 204 in both cases so DELETE
+  // is idempotent from the client's perspective.
+  endRosterEntry(db, { orgId: auth.orgId }, teamId, entryId);
+  return c.body(null, 204);
 });
