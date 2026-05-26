@@ -85,7 +85,9 @@
     "lint": "pnpm exec biome check src && pnpm exec eslint src",
     "typecheck": "pnpm exec tsc --noEmit -p tsconfig.json",
     "test": "pnpm exec vitest run",
-    "build": "exit 0"
+    "build": "exit 0",
+    "db:seed": "node scripts/seed.mjs",
+    "db:reset": "node scripts/reset.mjs"
   },
   "dependencies": {
     "better-sqlite3": "^12.10.0",
