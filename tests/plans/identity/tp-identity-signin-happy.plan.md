@@ -11,8 +11,8 @@ route_prefixes:
 est_minutes: 5
 prerequisites:
   - "local stack running (pnpm dev)"
-  - "DB seeded via pnpm --filter @repo/shared run db:seed so the seeded athlete fixture exists with onboardingCompleted=true"
-  - "the seeded athlete's email + password are known (typically declared in the seed script or in .env.test.local)"
+  - "DB seeded (pnpm db:seed)"
+  - "persona users bootstrapped in Clerk per docs/runbooks/clerk-persona-bootstrap.md"
 ---
 
 ## Setup
@@ -44,5 +44,5 @@ prerequisites:
 
 ## Cleanup
 
-- Sign out via `/sign-out` (or the sign-out control in the header). The browser should redirect to the unauthenticated landing surface.
+- Sign out via the `<UserButton/>` menu in the header (the menu posts to `/sign-out`). The browser should redirect to the unauthenticated landing surface. Never GET `/sign-out` — the route returns 405 Method Not Allowed by design; see `docs/testing-strategy.md` § QA Corpus → Sign-out pattern.
 - No DB reset is required — this plan reads only the seeded fixture and writes no new rows. If a future iteration adds a write, add the reset here.

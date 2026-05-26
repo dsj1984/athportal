@@ -12,8 +12,8 @@ route_prefixes:
 est_minutes: 12
 prerequisites:
   - "local stack running (pnpm dev)"
-  - "DB freshly reset and reseeded via pnpm --filter @repo/shared run db:reset && pnpm --filter @repo/shared run db:seed"
-  - "three fresh test email addresses available — one per persona under test (athlete, coach, org-admin)"
+  - "DB seeded (pnpm db:seed)"
+  - "persona users bootstrapped in Clerk per docs/runbooks/clerk-persona-bootstrap.md"
 ---
 
 ## Setup
@@ -29,13 +29,13 @@ prerequisites:
 1. In a fresh browser session, complete sign-up at `/sign-up` with the **athlete** test email and a strong password; verify via Clerk; reach `/onboarding`. Select the `athlete` persona at the persona-selection prompt and submit. Complete any remaining required fields with safe placeholders.
    **Expected:** after the final onboarding step, the browser lands on `/dashboard` (the athlete's default authenticated surface). The signed-in identity in the header corresponds to the athlete test email. The page is not the admin surface and not the coach surface.
 
-2. Sign out via `/sign-out`.
+2. Sign out via the `<UserButton/>` menu in the header (the menu posts to `/sign-out`). Never GET `/sign-out` — the route returns 405 Method Not Allowed by design; see `docs/testing-strategy.md` § QA Corpus → Sign-out pattern.
    **Expected:** the browser returns to the unauthenticated landing surface and the session cookie is cleared.
 
 3. Open a second fresh browser session (or clear cookies), then complete sign-up with the **coach** test email and a strong password; verify; reach `/onboarding`. Select the `coach` persona and submit. Complete remaining coach-specific onboarding fields with safe placeholders.
    **Expected:** after the final onboarding step, the browser lands on the coach's default authenticated landing surface (coach dashboard or `/dashboard` per the current build). The header shows the coach test email's identity. The surface is recognisably coach-scoped — not the athlete dashboard's athlete-only widgets, not the admin surface.
 
-4. Sign out via `/sign-out`.
+4. Sign out via the `<UserButton/>` menu in the header (the menu posts to `/sign-out`). Never GET `/sign-out` — the route returns 405 Method Not Allowed by design; see `docs/testing-strategy.md` § QA Corpus → Sign-out pattern.
    **Expected:** the browser returns to the unauthenticated landing surface and the session cookie is cleared.
 
 5. Open a third fresh browser session, complete sign-up with the **org-admin** test email, verify, reach `/onboarding`. Select the `org-admin` persona (and paste the seeded invitation token if the build requires it). Complete remaining org-admin onboarding fields with safe placeholders.
@@ -49,6 +49,6 @@ prerequisites:
 
 ## Cleanup
 
-- Sign out via `/sign-out` from whichever session is active.
+- Sign out via the `<UserButton/>` menu in the header from whichever session is active (the menu posts to `/sign-out`). Never GET `/sign-out` — the route returns 405 Method Not Allowed by design; see `docs/testing-strategy.md` § QA Corpus → Sign-out pattern.
 - Reset the local DB so the next plan starts from a clean baseline: `pnpm --filter @repo/shared run db:reset && pnpm --filter @repo/shared run db:seed`.
 - Delete any Clerk test-instance users that were partially created if the run aborted midway, so the test emails can be reused.

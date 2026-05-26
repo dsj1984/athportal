@@ -25,7 +25,8 @@ safety_constraints:
   required_reset: "pnpm --filter @repo/shared run db:reset && pnpm --filter @repo/shared run db:seed"
 prerequisites:
   - "local stack running (pnpm dev)"
-  - "DB freshly reset and reseeded via pnpm --filter @repo/shared run db:reset && pnpm --filter @repo/shared run db:seed so the users table contains only the seeded baseline"
+  - "DB seeded (pnpm db:seed)"
+  - "persona users bootstrapped in Clerk per docs/runbooks/clerk-persona-bootstrap.md"
   - "the seeded athlete fixture's email is known so the timing-oracle probes can compare existing vs non-existent email shapes"
   - "browser devtools open to the network and storage panels for cookie inspection"
 ---

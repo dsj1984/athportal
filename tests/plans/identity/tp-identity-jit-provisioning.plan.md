@@ -11,8 +11,8 @@ route_prefixes:
 est_minutes: 8
 prerequisites:
   - "local stack running (pnpm dev)"
-  - "DB freshly reset and reseeded via pnpm --filter @repo/shared run db:reset && pnpm --filter @repo/shared run db:seed so the users table contains only the seeded baseline"
-  - "no existing user matches the e2e email"
+  - "DB seeded (pnpm db:seed)"
+  - "persona users bootstrapped in Clerk per docs/runbooks/clerk-persona-bootstrap.md"
 ---
 
 ## Setup
@@ -40,7 +40,7 @@ prerequisites:
 5. Complete the onboarding flow with the `athlete` persona and safe placeholder values.
    **Expected:** the browser lands on the post-onboarding surface (`/dashboard`). The `users` row for the test email now has `onboardingCompleted=true` (verifiable via the DB-inspection side-channel).
 
-6. Sign out via `/sign-out`, then sign back in with the same credentials.
+6. Sign out via the `<UserButton/>` menu in the header (the menu posts to `/sign-out`), then sign back in with the same credentials. Never GET `/sign-out` — the route returns 405 Method Not Allowed by design; see `docs/testing-strategy.md` § QA Corpus → Sign-out pattern.
    **Expected:** sign-in succeeds and the browser redirects directly to `/dashboard` (not `/onboarding`) because the internal user row already exists with `onboardingCompleted=true`. The `users` table still contains exactly one row for the test email — re-authentication does not create a second internal user.
 
 7. Inspect the response from a protected API endpoint (any authenticated route the web app calls from `/dashboard`).
@@ -48,6 +48,6 @@ prerequisites:
 
 ## Cleanup
 
-- Sign out via `/sign-out`.
+- Sign out via the `<UserButton/>` menu in the header (the menu posts to `/sign-out`). Never GET `/sign-out` — the route returns 405 Method Not Allowed by design; see `docs/testing-strategy.md` § QA Corpus → Sign-out pattern.
 - Reset the local DB to the deterministic baseline so the next plan starts from the same state: `pnpm --filter @repo/shared run db:reset && pnpm --filter @repo/shared run db:seed`.
 - If the run failed midway and left a Clerk user without a matching internal `users` row (or vice versa), delete the Clerk user via the Clerk dashboard before retrying.

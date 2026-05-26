@@ -10,8 +10,8 @@ route_prefixes:
 est_minutes: 5
 prerequisites:
   - "local stack running (pnpm dev)"
-  - "DB seeded via pnpm --filter @repo/shared run db:seed so the seeded athlete fixture exists"
-  - "the seeded athlete's email is known; the password used in this plan is intentionally wrong"
+  - "DB seeded (pnpm db:seed)"
+  - "persona users bootstrapped in Clerk per docs/runbooks/clerk-persona-bootstrap.md"
 ---
 
 ## Setup
@@ -43,6 +43,6 @@ prerequisites:
 
 ## Cleanup
 
-- Sign out via `/sign-out`. The browser should redirect to the unauthenticated landing surface.
+- Sign out via the `<UserButton/>` menu in the header (the menu posts to `/sign-out`). The browser should redirect to the unauthenticated landing surface. Never GET `/sign-out` — the route returns 405 Method Not Allowed by design; see `docs/testing-strategy.md` § QA Corpus → Sign-out pattern.
 - No DB reset is required — this plan does not mutate persistent state.
 - If a rate-limit was reached during repeated wrong-password attempts (the auth endpoint is rate-limited per the security baseline), wait the configured cool-down before rerunning, or reset the local rate-limit store per the project's documented procedure.

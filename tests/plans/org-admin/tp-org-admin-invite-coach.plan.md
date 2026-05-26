@@ -11,10 +11,8 @@ route_prefixes:
 est_minutes: 12
 prerequisites:
   - "local stack running (pnpm dev)"
-  - "DB seeded with a fresh org via pnpm --filter @repo/shared run db:reset && pnpm --filter @repo/shared run db:seed"
-  - "signed in as a seeded org-admin against the seeded fixture org"
-  - "seeded org has at least one team so the coach assignment selector has a non-empty option set"
-  - "a fresh test email that is not yet registered with Clerk and not yet a member of the seeded org"
+  - "DB seeded (pnpm db:seed)"
+  - "persona users bootstrapped in Clerk per docs/runbooks/clerk-persona-bootstrap.md"
 ---
 
 ## Setup
@@ -52,6 +50,6 @@ prerequisites:
 
 ## Cleanup
 
-- Sign out of both browser sessions by visiting `/sign-out` in each.
+- Sign out of both browser sessions via the `<UserButton/>` menu in the header (the menu posts to `/sign-out`). Never GET `/sign-out` — the route returns 405 Method Not Allowed by design; see `docs/testing-strategy.md` § QA Corpus → Sign-out pattern.
 - Delete the Clerk test user for the invited email via the Clerk dashboard (Clerk Test instance) so the plan can be re-run against the same address.
 - Reset the DB so the next run starts from a known-clean state: `pnpm --filter @repo/shared run db:reset && pnpm --filter @repo/shared run db:seed`.
