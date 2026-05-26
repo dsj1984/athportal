@@ -1,7 +1,7 @@
 {
   "$schema": ".agents/schemas/baselines/maintainability.schema.json",
   "kernelVersion": "0.1.0",
-  "generatedAt": "2026-05-26T15:01:41.158Z",
+  "generatedAt": "2026-05-26T15:33:24.909Z",
   "rollup": {
     "*": {
       "min": 70.515,
@@ -13,10 +13,6 @@
     {
       "mi": 171,
       "path": "apps/api/src/env.ts"
-    },
-    {
-      "mi": 109.31,
-      "path": "apps/api/src/index.ts"
     },
     {
       "mi": 120.696,
@@ -499,6 +495,10 @@
       "path": "packages/shared/src/db/schema/csvImportBatches.ts"
     },
     {
+      "mi": 109.687,
+      "path": "packages/shared/src/db/schema/index.ts"
+    },
+    {
       "mi": 99.947,
       "path": "packages/shared/src/db/schema/invitations.ts"
     },
@@ -513,6 +513,14 @@
     {
       "mi": 108.651,
       "path": "packages/shared/src/db/schema/parentAthleteLinks.ts"
+    },
+    {
+      "mi": 106.649,
+      "path": "packages/shared/src/db/schema/rosterEntries.ts"
+    },
+    {
+      "mi": 100.03,
+      "path": "packages/shared/src/db/schema/rosterInvites.ts"
     },
     {
       "mi": 93.939,
@@ -545,6 +553,10 @@
     {
       "mi": 99.315,
       "path": "packages/shared/src/observability/redaction.ts"
+    },
+    {
+      "mi": 114.82,
+      "path": "packages/shared/src/rbac/coachOnTeam.ts"
     },
     {
       "mi": 171,
@@ -597,6 +609,10 @@
     {
       "mi": 70.515,
       "path": "packages/shared/src/schemas/auth.ts"
+    },
+    {
+      "mi": 81.368,
+      "path": "packages/shared/src/schemas/coach/roster.ts"
     },
     {
       "mi": 122.795,

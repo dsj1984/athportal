@@ -50,6 +50,7 @@ import { withDb } from './middleware/withDb';
 import { type SyntheticFailureEnv, syntheticFailureRoute } from './routes/debug/synthetic-failure';
 import { adminRoute } from './routes/v1/admin';
 import { authRoute } from './routes/v1/auth';
+import { coachRoute } from './routes/v1/coach';
 import { meRoute } from './routes/v1/me';
 import { signOutRoute } from './routes/v1/sign-out';
 import { userRoleRoute } from './routes/v1/users/role';
@@ -122,6 +123,11 @@ app.route('/api/v1/users', userRoleRoute);
 // downstream Stories swap individual placeholder sub-routers for real
 // handlers without re-editing this entrypoint.
 app.route('/api/v1/admin', adminRoute);
+// Coach router tree (Epic #11 / Story #912). Each handler under
+// `/api/v1/coach/*` enforces `requireCoachOnTeam(actor, teamId)` per
+// route — there is no role gate at the mount layer because coach
+// permissions are per-team, not per-role (see `./routes/v1/coach/index.ts`).
+app.route('/api/v1/coach', coachRoute);
 
 export default app.fetch;
 export { app };

@@ -1,7 +1,7 @@
 {
   "$schema": ".agents/schemas/baselines/crap.schema.json",
   "kernelVersion": "0.1.0",
-  "generatedAt": "2026-05-26T15:01:41.411Z",
+  "generatedAt": "2026-05-26T15:33:25.806Z",
   "rollup": {
     "*": {
       "p50": 2,
@@ -11,18 +11,6 @@
     }
   },
   "rows": [
-    {
-      "crap": 2,
-      "method": "<anon method-1>",
-      "path": "apps/api/src/index.ts",
-      "startLine": 68
-    },
-    {
-      "crap": 2,
-      "method": "<anon method-2>",
-      "path": "apps/api/src/index.ts",
-      "startLine": 69
-    },
     {
       "crap": 2,
       "method": "createInvitation",
@@ -3224,6 +3212,54 @@
     {
       "crap": 2,
       "method": "<anon method-1>",
+      "path": "packages/shared/src/db/schema/rosterEntries.ts",
+      "startLine": 46
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-2>",
+      "path": "packages/shared/src/db/schema/rosterEntries.ts",
+      "startLine": 49
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-3>",
+      "path": "packages/shared/src/db/schema/rosterEntries.ts",
+      "startLine": 52
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-4>",
+      "path": "packages/shared/src/db/schema/rosterEntries.ts",
+      "startLine": 65
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "packages/shared/src/db/schema/rosterInvites.ts",
+      "startLine": 65
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-2>",
+      "path": "packages/shared/src/db/schema/rosterInvites.ts",
+      "startLine": 68
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-3>",
+      "path": "packages/shared/src/db/schema/rosterInvites.ts",
+      "startLine": 82
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-4>",
+      "path": "packages/shared/src/db/schema/rosterInvites.ts",
+      "startLine": 86
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
       "path": "packages/shared/src/db/schema/teams.ts",
       "startLine": 31
     },
@@ -3298,6 +3334,12 @@
       "method": "<anon method-2>",
       "path": "packages/shared/src/observability/redaction.ts",
       "startLine": 106
+    },
+    {
+      "crap": 6,
+      "method": "requireCoachOnTeam",
+      "path": "packages/shared/src/rbac/coachOnTeam.ts",
+      "startLine": 94
     },
     {
       "crap": 6,
@@ -3400,6 +3442,18 @@
       "method": "<anon method-1>",
       "path": "packages/shared/src/schemas/admin/teams.ts",
       "startLine": 62
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "packages/shared/src/schemas/coach/roster.ts",
+      "startLine": 45
+    },
+    {
+      "crap": 6,
+      "method": "<anon method-2>",
+      "path": "packages/shared/src/schemas/coach/roster.ts",
+      "startLine": 79
     },
     {
       "crap": 6,
