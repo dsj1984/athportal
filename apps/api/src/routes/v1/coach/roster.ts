@@ -298,13 +298,7 @@ coachRosterRoute.patch('/entries/:entryId', async (c) => {
     throw err;
   }
 
-  const updated = updateRosterEntry(
-    db,
-    { orgId: auth.orgId },
-    teamId,
-    entryId,
-    parsed,
-  );
+  const updated = updateRosterEntry(db, { orgId: auth.orgId }, teamId, entryId, parsed);
   if (!updated) {
     return c.json(errorBody('NOT_FOUND', 'entry-not-found'), 404);
   }

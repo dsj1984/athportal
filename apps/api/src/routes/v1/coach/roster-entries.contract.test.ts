@@ -225,11 +225,7 @@ describe('PATCH /api/v1/coach/teams/:teamId/roster/entries/:entryId', () => {
     expect(body.data.warnings).toBeUndefined();
 
     // DB assertion: the persisted row matches the response.
-    const rows = db
-      .select()
-      .from(rosterEntries)
-      .where(eq(rosterEntries.id, entryId))
-      .all();
+    const rows = db.select().from(rosterEntries).where(eq(rosterEntries.id, entryId)).all();
     expect(rows[0]?.jerseyNumber).toBe('11');
     expect(rows[0]?.primaryPosition).toBe('Libero');
   });
@@ -259,11 +255,7 @@ describe('PATCH /api/v1/coach/teams/:teamId/roster/entries/:entryId', () => {
     // Critical: the value MUST be the string "07", not coerced to 7.
     expect(body.data.entry.jerseyNumber).toBe('07');
 
-    const rows = db
-      .select()
-      .from(rosterEntries)
-      .where(eq(rosterEntries.id, entryId))
-      .all();
+    const rows = db.select().from(rosterEntries).where(eq(rosterEntries.id, entryId)).all();
     expect(rows[0]?.jerseyNumber).toBe('07');
   });
 
@@ -347,11 +339,7 @@ describe('PATCH /api/v1/coach/teams/:teamId/roster/entries/:entryId', () => {
     expect(res.status).toBe(404);
 
     // Defense-in-depth: the row was untouched.
-    const rows = db
-      .select()
-      .from(rosterEntries)
-      .where(eq(rosterEntries.id, entryId))
-      .all();
+    const rows = db.select().from(rosterEntries).where(eq(rosterEntries.id, entryId)).all();
     expect(rows[0]?.jerseyNumber).toBe('7');
   });
 
@@ -378,11 +366,7 @@ describe('PATCH /api/v1/coach/teams/:teamId/roster/entries/:entryId', () => {
     );
 
     expect(res.status).toBe(404);
-    const rows = db
-      .select()
-      .from(rosterEntries)
-      .where(eq(rosterEntries.id, entryB))
-      .all();
+    const rows = db.select().from(rosterEntries).where(eq(rosterEntries.id, entryB)).all();
     expect(rows[0]?.jerseyNumber).toBe('7');
   });
 });
@@ -408,11 +392,7 @@ describe('DELETE /api/v1/coach/teams/:teamId/roster/entries/:entryId', () => {
     expect(res.status).toBe(204);
 
     // DB assertion: ended_at is now set on the row.
-    const rows = db
-      .select()
-      .from(rosterEntries)
-      .where(eq(rosterEntries.id, entryId))
-      .all();
+    const rows = db.select().from(rosterEntries).where(eq(rosterEntries.id, entryId)).all();
     expect(rows[0]?.endedAt).not.toBeNull();
 
     // Behavioural assertion: the entry no longer surfaces in the list.
@@ -476,11 +456,7 @@ describe('DELETE /api/v1/coach/teams/:teamId/roster/entries/:entryId', () => {
     expect(res.status).toBe(404);
 
     // Defense-in-depth: the row was untouched.
-    const rows = db
-      .select()
-      .from(rosterEntries)
-      .where(eq(rosterEntries.id, entryB))
-      .all();
+    const rows = db.select().from(rosterEntries).where(eq(rosterEntries.id, entryB)).all();
     expect(rows[0]?.endedAt).toBeNull();
   });
 });

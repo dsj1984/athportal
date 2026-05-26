@@ -206,11 +206,7 @@ export function renderRosterRows(
   }
 }
 
-function buildButton(
-  type: 'button',
-  testId: string,
-  label: string,
-): HTMLButtonElement {
+function buildButton(type: 'button', testId: string, label: string): HTMLButtonElement {
   const btn = document.createElement('button');
   btn.type = type;
   btn.setAttribute('data-testid', testId);
@@ -226,17 +222,17 @@ function buildButton(
  * Find the row's per-column cell. Centralised so future renames of
  * the `data-col` markers happen once.
  */
-function rowCell(tr: HTMLTableRowElement, col: 'jersey' | 'position' | 'actions'): HTMLElement | null {
+function rowCell(
+  tr: HTMLTableRowElement,
+  col: 'jersey' | 'position' | 'actions',
+): HTMLElement | null {
   return tr.querySelector<HTMLElement>(`td[data-col="${col}"]`);
 }
 
 /**
  * Find a button inside an action cell by its testid.
  */
-function actionButton(
-  tr: HTMLTableRowElement,
-  testId: string,
-): HTMLButtonElement | null {
+function actionButton(tr: HTMLTableRowElement, testId: string): HTMLButtonElement | null {
   return tr.querySelector<HTMLButtonElement>(`button[data-testid="${testId}"]`);
 }
 
@@ -309,11 +305,11 @@ export function exitEditMode(
   if (!jerseyTd || !positionTd) return;
 
   const jerseyValue = updated
-    ? updated.jerseyNumber ?? '—'
-    : jerseyTd.getAttribute('data-original') ?? '—';
+    ? (updated.jerseyNumber ?? '—')
+    : (jerseyTd.getAttribute('data-original') ?? '—');
   const positionValue = updated
-    ? updated.primaryPosition ?? '—'
-    : positionTd.getAttribute('data-original') ?? '—';
+    ? (updated.primaryPosition ?? '—')
+    : (positionTd.getAttribute('data-original') ?? '—');
 
   while (jerseyTd.firstChild) jerseyTd.removeChild(jerseyTd.firstChild);
   jerseyTd.textContent = jerseyValue;

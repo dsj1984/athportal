@@ -159,8 +159,12 @@ describe('renderRosterRows', () => {
     renderRosterRows(tbody, [row()]);
     const tr = tbody.querySelector('tr');
     expect(tr).not.toBeNull();
-    expect(tr?.querySelector(`button[data-testid="${COACH_ROSTER_TEST_IDS.editBtn}"]`)).not.toBeNull();
-    expect(tr?.querySelector(`button[data-testid="${COACH_ROSTER_TEST_IDS.removeBtn}"]`)).not.toBeNull();
+    expect(
+      tr?.querySelector(`button[data-testid="${COACH_ROSTER_TEST_IDS.editBtn}"]`),
+    ).not.toBeNull();
+    expect(
+      tr?.querySelector(`button[data-testid="${COACH_ROSTER_TEST_IDS.removeBtn}"]`),
+    ).not.toBeNull();
     const save = tr?.querySelector<HTMLButtonElement>(
       `button[data-testid="${COACH_ROSTER_TEST_IDS.saveBtn}"]`,
     );
@@ -255,9 +259,7 @@ describe('enterEditMode / exitEditMode', () => {
 
     const jerseyTd = tr.querySelector<HTMLElement>('td[data-col="jersey"]');
     const positionTd = tr.querySelector<HTMLElement>('td[data-col="position"]');
-    const badgeTd = tr.querySelector<HTMLElement>(
-      `[data-testid="${COACH_ROSTER_TEST_IDS.badge}"]`,
-    );
+    const badgeTd = tr.querySelector<HTMLElement>(`[data-testid="${COACH_ROSTER_TEST_IDS.badge}"]`);
     expect(jerseyTd?.textContent).toBe('11');
     expect(positionTd?.textContent).toBe('Libero');
     expect(badgeTd?.textContent).toBe('Libero');

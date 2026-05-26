@@ -291,12 +291,7 @@ export function updateRosterEntry(
   if (patch.primaryPosition !== undefined) {
     values.primaryPosition = patch.primaryPosition;
   }
-  const rows = handle
-    .update(rosterEntries)
-    .set(values)
-    .where(predicate)
-    .returning()
-    .all();
+  const rows = handle.update(rosterEntries).set(values).where(predicate).returning().all();
   if (rows.length === 0) return null;
   // The `RETURNING *` shape includes every column but not the joined
   // athlete email. Re-read through the existing accessor so callers
