@@ -1,0 +1,55 @@
+---
+// apps/web/src/components/coach/PendingInvitesStrip.astro
+//
+// Pending-invites strip for the coach roster page (Epic #11 / Story
+// #920 / Task #923). Renders the empty shell + header + "Invite
+// athlete" trigger button; the rendered list is populated by the
+// parent page's inline `<script>` via `renderPendingInvites` from
+// `./InviteAthleteDialog.ts`.
+//
+// Composes only primitives from `apps/web/src/components/ui/*` (Btn).
+// Per-row revoke buttons are rendered inside `renderPendingInvites`
+// as plain `<button>` elements styled with the same utility classes
+// the Btn primitive uses — keeping the runtime-rendered rows out of
+// Astro lets the inline `<script>` own the full lifecycle.
+
+import Btn from '../ui/Btn.astro';
+import { COACH_INVITE_TEST_IDS } from './InviteAthleteDialog.ts';
+---
+
+<section
+  class="flex flex-col gap-3"
+  data-testid={COACH_INVITE_TEST_IDS.strip}
+  aria-labelledby="coach-pending-invites-heading"
+>
+  <header class="flex items-center justify-between gap-3">
+    <h2 id="coach-pending-invites-heading" class="text-base font-semibold text-text-primary">
+      Pending invites
+    </h2>
+    <Btn
+      kind="primary"
+      type="button"
+      data-testid={COACH_INVITE_TEST_IDS.openBtn}
+      data-coach-invite-open
+    >
+      Invite athlete
+    </Btn>
+  </header>
+
+  <p
+    class="rounded-md border border-action-coral bg-surface-card px-4 py-3 text-sm text-action-coral"
+    data-testid="coach-pending-invites-error"
+    role="alert"
+    hidden
+  ></p>
+
+  <ul class="flex flex-col gap-2" data-coach-pending-invites-list></ul>
+
+  <p
+    class="text-sm text-text-secondary"
+    data-testid={COACH_INVITE_TEST_IDS.stripEmpty}
+    hidden
+  >
+    No pending invites. Click "Invite athlete" to send one.
+  </p>
+</section>
