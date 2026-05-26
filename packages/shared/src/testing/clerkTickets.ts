@@ -132,9 +132,7 @@ export function assertClerkTestSecretKey(rawKey: string | undefined): string {
  * @throws `Error` propagated from `createSignInToken` when Clerk returns
  *   a non-2xx (e.g. unknown user ID, rate limited).
  */
-export async function mintSignInTicket(
-  options: MintSignInTicketOptions,
-): Promise<SignInTicket> {
+export async function mintSignInTicket(options: MintSignInTicketOptions): Promise<SignInTicket> {
   const {
     persona,
     expiresInSeconds = DEFAULT_SIGN_IN_TICKET_TTL_SECONDS,

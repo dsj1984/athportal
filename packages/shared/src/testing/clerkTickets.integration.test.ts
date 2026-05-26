@@ -30,10 +30,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import {
-  DEFAULT_SIGN_IN_TICKET_TTL_SECONDS,
-  mintSignInTicket,
-} from './clerkTickets';
+import { DEFAULT_SIGN_IN_TICKET_TTL_SECONDS, mintSignInTicket } from './clerkTickets';
 
 const CLERK_SECRET_KEY_PRESENT = Boolean(process.env.CLERK_SECRET_KEY);
 
@@ -46,9 +43,7 @@ describe('mintSignInTicket — integration against real Clerk Test instance', ()
       expect(typeof result.ticket).toBe('string');
       expect(result.ticket.length).toBeGreaterThan(0);
       expect(result.userId).toMatch(/^user_/);
-      expect(result.expiresInSeconds).toBe(
-        DEFAULT_SIGN_IN_TICKET_TTL_SECONDS,
-      );
+      expect(result.expiresInSeconds).toBe(DEFAULT_SIGN_IN_TICKET_TTL_SECONDS);
     },
     30_000,
   );

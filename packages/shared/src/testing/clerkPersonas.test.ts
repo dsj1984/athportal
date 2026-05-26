@@ -59,9 +59,7 @@ describe('personaClerkIdsPath', () => {
 
 describe('personaClerkIdsRunbookPath', () => {
   it('points at the bootstrap runbook', () => {
-    expect(personaClerkIdsRunbookPath).toBe(
-      'docs/runbooks/clerk-persona-bootstrap.md',
-    );
+    expect(personaClerkIdsRunbookPath).toBe('docs/runbooks/clerk-persona-bootstrap.md');
   });
 });
 
@@ -101,13 +99,11 @@ describe('readPersonaClerkIds — happy path', () => {
 
 describe('readPersonaClerkIds — actionable error when unpopulated', () => {
   it('throws when all three personas are null', () => {
-    const readFile = stubReader(
-      JSON.stringify({ athlete: null, coach: null, 'org-admin': null }),
-    );
+    const readFile = stubReader(JSON.stringify({ athlete: null, coach: null, 'org-admin': null }));
 
-    expect(() =>
-      readPersonaClerkIds({ jsonPath: FAKE_JSON_PATH, readFile }),
-    ).toThrow(/'athlete', 'coach', 'org-admin'/);
+    expect(() => readPersonaClerkIds({ jsonPath: FAKE_JSON_PATH, readFile })).toThrow(
+      /'athlete', 'coach', 'org-admin'/,
+    );
   });
 
   it('throws when only one persona is still null', () => {
@@ -119,9 +115,7 @@ describe('readPersonaClerkIds — actionable error when unpopulated', () => {
       }),
     );
 
-    expect(() =>
-      readPersonaClerkIds({ jsonPath: FAKE_JSON_PATH, readFile }),
-    ).toThrow(/'coach'/);
+    expect(() => readPersonaClerkIds({ jsonPath: FAKE_JSON_PATH, readFile })).toThrow(/'coach'/);
   });
 
   it('throws when a persona is the empty string (treated as unpopulated)', () => {
@@ -133,29 +127,23 @@ describe('readPersonaClerkIds — actionable error when unpopulated', () => {
       }),
     );
 
-    expect(() =>
-      readPersonaClerkIds({ jsonPath: FAKE_JSON_PATH, readFile }),
-    ).toThrow(/'coach'/);
+    expect(() => readPersonaClerkIds({ jsonPath: FAKE_JSON_PATH, readFile })).toThrow(/'coach'/);
   });
 
   it('the thrown error names the operator runbook by path', () => {
-    const readFile = stubReader(
-      JSON.stringify({ athlete: null, coach: null, 'org-admin': null }),
-    );
+    const readFile = stubReader(JSON.stringify({ athlete: null, coach: null, 'org-admin': null }));
 
-    expect(() =>
-      readPersonaClerkIds({ jsonPath: FAKE_JSON_PATH, readFile }),
-    ).toThrow(/docs\/runbooks\/clerk-persona-bootstrap\.md/);
+    expect(() => readPersonaClerkIds({ jsonPath: FAKE_JSON_PATH, readFile })).toThrow(
+      /docs\/runbooks\/clerk-persona-bootstrap\.md/,
+    );
   });
 
   it('the thrown error includes the JSON file path so operators can locate it', () => {
-    const readFile = stubReader(
-      JSON.stringify({ athlete: null, coach: null, 'org-admin': null }),
-    );
+    const readFile = stubReader(JSON.stringify({ athlete: null, coach: null, 'org-admin': null }));
 
-    expect(() =>
-      readPersonaClerkIds({ jsonPath: FAKE_JSON_PATH, readFile }),
-    ).toThrow(/\/tmp\/fake\/clerk-personas\.json/);
+    expect(() => readPersonaClerkIds({ jsonPath: FAKE_JSON_PATH, readFile })).toThrow(
+      /\/tmp\/fake\/clerk-personas\.json/,
+    );
   });
 
   it('uses the tracked clerk-personas.json path by default', () => {
@@ -171,35 +159,33 @@ describe('readPersonaClerkIds — malformed file errors', () => {
   it('throws when the file cannot be read', () => {
     const readFile = throwingReader('ENOENT: no such file');
 
-    expect(() =>
-      readPersonaClerkIds({ jsonPath: FAKE_JSON_PATH, readFile }),
-    ).toThrow(/cannot read/);
+    expect(() => readPersonaClerkIds({ jsonPath: FAKE_JSON_PATH, readFile })).toThrow(
+      /cannot read/,
+    );
   });
 
   it('throws when the file is not valid JSON', () => {
     const readFile = stubReader('not json at all');
 
-    expect(() =>
-      readPersonaClerkIds({ jsonPath: FAKE_JSON_PATH, readFile }),
-    ).toThrow(/not valid JSON/);
+    expect(() => readPersonaClerkIds({ jsonPath: FAKE_JSON_PATH, readFile })).toThrow(
+      /not valid JSON/,
+    );
   });
 
   it('throws when the JSON root is not an object', () => {
     const readFile = stubReader(JSON.stringify(['athlete', 'coach']));
 
-    expect(() =>
-      readPersonaClerkIds({ jsonPath: FAKE_JSON_PATH, readFile }),
-    ).toThrow(/must be a JSON object/);
+    expect(() => readPersonaClerkIds({ jsonPath: FAKE_JSON_PATH, readFile })).toThrow(
+      /must be a JSON object/,
+    );
   });
 
   it('throws when a required key is missing', () => {
-    const readFile = stubReader(
-      JSON.stringify({ athlete: 'user_a', coach: 'user_b' }),
-    );
+    const readFile = stubReader(JSON.stringify({ athlete: 'user_a', coach: 'user_b' }));
 
-    expect(() =>
-      readPersonaClerkIds({ jsonPath: FAKE_JSON_PATH, readFile }),
-    ).toThrow(/missing the 'org-admin' key/);
+    expect(() => readPersonaClerkIds({ jsonPath: FAKE_JSON_PATH, readFile })).toThrow(
+      /missing the 'org-admin' key/,
+    );
   });
 
   it('throws when a value is the wrong type', () => {
@@ -211,8 +197,8 @@ describe('readPersonaClerkIds — malformed file errors', () => {
       }),
     );
 
-    expect(() =>
-      readPersonaClerkIds({ jsonPath: FAKE_JSON_PATH, readFile }),
-    ).toThrow(/'coach' must be a string or null/);
+    expect(() => readPersonaClerkIds({ jsonPath: FAKE_JSON_PATH, readFile })).toThrow(
+      /'coach' must be a string or null/,
+    );
   });
 });

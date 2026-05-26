@@ -151,9 +151,7 @@ function loadRaw(
  * and includes the absolute path to `clerk-personas.json` so the
  * operator can locate the file from the error alone.
  */
-export function readPersonaClerkIds(
-  options: ReadPersonaClerkIdsOptions = {},
-): PersonaClerkIds {
+export function readPersonaClerkIds(options: ReadPersonaClerkIdsOptions = {}): PersonaClerkIds {
   const jsonPath = options.jsonPath ?? PERSONAS_JSON_PATH;
   const readFile = options.readFile ?? nodeReadFileSync;
   const raw = loadRaw(jsonPath, readFile);

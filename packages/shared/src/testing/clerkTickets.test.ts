@@ -39,7 +39,9 @@ function fakeFactory(returned: { token: string; userId: string }) {
   // The real createClerkClient returns a much larger object; we cast to
   // any here only because narrowing the return type to "signInTokens"
   // suffices for these tests.
-  const factory = vi.fn(() => client as unknown as ReturnType<typeof import('@clerk/backend').createClerkClient>);
+  const factory = vi.fn(
+    () => client as unknown as ReturnType<typeof import('@clerk/backend').createClerkClient>,
+  );
   return { factory, client };
 }
 
@@ -64,15 +66,11 @@ describe('assertClerkTestSecretKey — sk_test_ guard (load-bearing)', () => {
   });
 
   it('throws when the key is undefined', () => {
-    expect(() => assertClerkTestSecretKey(undefined)).toThrow(
-      /CLERK_SECRET_KEY is not set/,
-    );
+    expect(() => assertClerkTestSecretKey(undefined)).toThrow(/CLERK_SECRET_KEY is not set/);
   });
 
   it('throws when the key is the empty string', () => {
-    expect(() => assertClerkTestSecretKey('')).toThrow(
-      /CLERK_SECRET_KEY is not set/,
-    );
+    expect(() => assertClerkTestSecretKey('')).toThrow(/CLERK_SECRET_KEY is not set/);
   });
 
   it('throws when the key starts with sk_live_', () => {
