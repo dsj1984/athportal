@@ -24,6 +24,8 @@
 
 import { defineMiddleware, sequence } from 'astro:middleware';
 import { clerkMiddleware } from '@clerk/astro/server';
+import { getOnboardingState } from '@repo/shared/db/queries/users';
+import { getDb } from './lib/db';
 
 /**
  * Public shape returned by the sanctioned `getOnboardingState` accessor.
@@ -173,18 +175,33 @@ export function createOnboardingGate(
 }
 
 /**
- * Production lookup. The web runtime does not yet carry a DB handle —
- * Tech Spec #490 lands the production binding alongside the `/onboarding`
- * page in a later Wave. Until that binding exists this placeholder
- * returns `null` for every subject, which the gate treats as the safe
- * default "un-onboarded → 302 to /onboarding" (see
- * `createOnboardingGate` above). This preserves PRD G1 / AC-15 during
- * the binding gap: every signed-in user is bounced to the onboarding
- * page; once they complete the flow the API-side `requireOnboarded`
- * stamps `users.onboarded_at`, and the gate becomes a true read once
- * the DB binding lands.
+ * Production lookup. Reads `users.onboarded_at` for the authenticated
+ * Clerk subject via the sanctioned `getOnboardingState` accessor in
+ * `@repo/shared/db/queries/users` — the SINGLE module permitted to read
+ * the column per the lint-baseline sentinel rule (Story #555 / Task #570).
+ * The DB handle is supplied by the lazy-singleton `getDb()` accessor in
+ * `./lib/db` (Story #749 / Task #752), which opens the SQLite file the
+ * first time the gate fires and reuses the same handle across requests.
+ *
+ * Returns `null` when no internal `users` row exists for the Clerk
+ * subject id (the JIT path hasn't run yet, or the row was deleted
+ * out-of-band). The gate (see `createOnboardingGate` above) treats that
+ * `null` as the safe default "un-onboarded → 302 to /onboarding" per
+ * PRD G1 / AC-15. Returns the full `OnboardingState` otherwise; the gate
+ * destructures `onboardedAt` to satisfy the lint-baseline sentinel scan
+ * without re-reading the field outside the sanctioned accessor.
+ *
+ * Story #878 / Task #889 — Web runtime DB binding cutover.
+ *
+ * Exported (rather than module-local) so the production-lookup unit
+ * test (Task #890) can mock `./lib/db` + `@repo/shared/db/queries/users`
+ * and drive this function directly, asserting both that `getDb()` is
+ * called and that the lookup's return value flows through verbatim.
+ * Without the export the cutover regression would only be observable
+ * via an integration test, which is the wrong tier for this contract.
  */
-const productionLookup: OnboardingLookup = () => null;
+export const productionLookup: OnboardingLookup = (clerkSubjectId) =>
+  getOnboardingState(getDb(), clerkSubjectId);
 
 /**
  * Adapter that lifts the gate (typed against the minimal `GateContext`)
