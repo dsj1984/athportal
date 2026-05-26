@@ -1,11 +1,11 @@
 {
   "$schema": ".agents/schemas/baselines/maintainability.schema.json",
   "kernelVersion": "0.1.0",
-  "generatedAt": "2026-05-26T01:16:14.915Z",
+  "generatedAt": "2026-05-26T12:00:41.715Z",
   "rollup": {
     "*": {
       "min": 70.515,
-      "p50": 106.74,
+      "p50": 106.619,
       "p95": 171
     }
   },
@@ -371,10 +371,6 @@
       "path": "apps/web/src/lib/db.ts"
     },
     {
-      "mi": 107.898,
-      "path": "apps/web/src/middleware.ts"
-    },
-    {
       "mi": 131.444,
       "path": "apps/web/src/pages/admin/teams/index.ts"
     },
@@ -465,10 +461,6 @@
     {
       "mi": 95.558,
       "path": "packages/shared/src/db/queries/scopedDb.ts"
-    },
-    {
-      "mi": 112.464,
-      "path": "packages/shared/src/db/queries/users.ts"
     },
     {
       "mi": 110.893,
