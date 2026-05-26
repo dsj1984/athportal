@@ -25,10 +25,59 @@
 // produces no duplicate rows. Story #875 / Task #885.
 
 import Database from 'better-sqlite3';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, resolve as resolvePath } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { assertLocalDbPath, resolveLocalDbPath } from './seedPath.mjs';
+
+/**
+ * Resolve persona Clerk subject IDs from the tracked
+ * `src/testing/clerk-personas.json` file. When the operator has
+ * completed the runbook at `docs/runbooks/clerk-persona-bootstrap.md`
+ * the JSON carries real `user_*` IDs and we use those; otherwise
+ * we fall back to the synthetic `user_test_*` placeholders so unit
+ * tests and a fresh checkout still seed a runnable graph.
+ *
+ * Reads via `fs.readFileSync` instead of importing the TS reader
+ * (`src/testing/clerkPersonas.ts`) because this is a `.mjs` Node
+ * entry point and per the architecture rule no production code
+ * imports from `src/testing/**` anyway.
+ */
+function resolveClerkSubjectIds() {
+  const fallbacks = {
+    athlete: 'user_test_athlete',
+    coach: 'user_test_coach',
+    'org-admin': 'user_test_org_admin',
+  };
+  try {
+    const __filename = fileURLToPath(import.meta.url);
+    const personasPath = resolvePath(
+      dirname(__filename),
+      '..',
+      'src',
+      'testing',
+      'clerk-personas.json',
+    );
+    if (!existsSync(personasPath)) return fallbacks;
+    const parsed = JSON.parse(readFileSync(personasPath, 'utf8'));
+    return {
+      athlete:
+        typeof parsed.athlete === 'string' && parsed.athlete.length > 0
+          ? parsed.athlete
+          : fallbacks.athlete,
+      coach:
+        typeof parsed.coach === 'string' && parsed.coach.length > 0
+          ? parsed.coach
+          : fallbacks.coach,
+      'org-admin':
+        typeof parsed['org-admin'] === 'string' && parsed['org-admin'].length > 0
+          ? parsed['org-admin']
+          : fallbacks['org-admin'],
+    };
+  } catch {
+    return fallbacks;
+  }
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const REPO_ROOT = resolvePath(dirname(__filename), '..', '..', '..');
@@ -62,24 +111,29 @@ const LEGAL_DOCUMENTS = [
 // Persona-graph seed (mirrors src/db/seedFixtures.ts § seedFixtures).
 const SEED_ORG_ID = 'org_test_a';
 const SEED_TEAM_ID = 'team_test_a_1';
+// Clerk subject IDs are resolved at runtime from
+// src/testing/clerk-personas.json (when populated by the operator
+// per docs/runbooks/clerk-persona-bootstrap.md) — otherwise fall back
+// to the synthetic `user_test_*` placeholders.
+const CLERK_SUBJECT_IDS = resolveClerkSubjectIds();
 const SEED_USERS = [
   {
     id: 'user_seed_athlete',
-    clerkSubjectId: 'user_test_athlete',
+    clerkSubjectId: CLERK_SUBJECT_IDS.athlete,
     email: 'athlete@example.com',
     role: 'member',
     teamId: null,
   },
   {
     id: 'user_seed_coach',
-    clerkSubjectId: 'user_test_coach',
+    clerkSubjectId: CLERK_SUBJECT_IDS.coach,
     email: 'coach@example.com',
     role: 'team_admin',
     teamId: SEED_TEAM_ID,
   },
   {
     id: 'user_seed_org_admin',
-    clerkSubjectId: 'user_test_org_admin',
+    clerkSubjectId: CLERK_SUBJECT_IDS['org-admin'],
     email: 'org-admin@example.com',
     role: 'org_admin',
     teamId: null,
