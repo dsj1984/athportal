@@ -53,12 +53,7 @@
 //     envelope without provider error detail.
 
 import { randomBytes, timingSafeEqual } from 'node:crypto';
-import {
-  athleteMemberships,
-  rosterEntries,
-  rosterInvites,
-  users,
-} from '@repo/shared/db/schema';
+import { athleteMemberships, rosterEntries, rosterInvites, users } from '@repo/shared/db/schema';
 import { and, eq } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { hashToken } from '../../../mailer/rosterInvite';
@@ -238,10 +233,7 @@ publicRosterInvitesRoute.post('/:token/accept', async (c) => {
     return c.json(errorBody('INVITE_REVOKED', 'invite-revoked'), 409);
   }
   if (invite.status !== 'pending') {
-    return c.json(
-      errorBody('INVITE_NOT_PENDING', `invite-is-${invite.status}`),
-      409,
-    );
+    return c.json(errorBody('INVITE_NOT_PENDING', `invite-is-${invite.status}`), 409);
   }
 
   // Resolve the recipient by email. For MVP we refuse when no `users`
@@ -371,10 +363,7 @@ publicRosterInvitesRoute.post('/:token/decline', async (c) => {
     return c.json(errorBody('INVITE_REVOKED', 'invite-revoked'), 409);
   }
   if (invite.status !== 'pending') {
-    return c.json(
-      errorBody('INVITE_NOT_PENDING', `invite-is-${invite.status}`),
-      409,
-    );
+    return c.json(errorBody('INVITE_NOT_PENDING', `invite-is-${invite.status}`), 409);
   }
 
   db.update(rosterInvites)

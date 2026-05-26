@@ -201,11 +201,7 @@ describe('POST /api/v1/public/roster-invites/:token/accept — happy path', () =
     expect(body.data?.invite).toMatchObject({ id: invite.id, teamId: team, status: 'accepted' });
 
     // Assert — invite row transitioned
-    const inviteRows = db
-      .select()
-      .from(rosterInvites)
-      .where(eq(rosterInvites.id, invite.id))
-      .all();
+    const inviteRows = db.select().from(rosterInvites).where(eq(rosterInvites.id, invite.id)).all();
     expect(inviteRows[0]?.status).toBe('accepted');
     expect(inviteRows[0]?.acceptedAt).toBeInstanceOf(Date);
 
@@ -353,10 +349,9 @@ describe('POST /api/v1/public/roster-invites/:token/accept — lifecycle guards'
     seedOrg(db, ORG_A);
     seedTeam(db, ORG_A, 't_bad_token');
 
-    const res = await buildApp(db).request(
-      `/api/v1/public/roster-invites/NOT-A-HEX-TOKEN/accept`,
-      { method: 'POST' },
-    );
+    const res = await buildApp(db).request(`/api/v1/public/roster-invites/NOT-A-HEX-TOKEN/accept`, {
+      method: 'POST',
+    });
     expect(res.status).toBe(404);
   });
 });
