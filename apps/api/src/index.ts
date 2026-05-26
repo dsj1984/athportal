@@ -52,6 +52,7 @@ import { adminRoute } from './routes/v1/admin';
 import { authRoute } from './routes/v1/auth';
 import { coachRoute } from './routes/v1/coach';
 import { meRoute } from './routes/v1/me';
+import { publicRosterInvitesRoute } from './routes/v1/public/roster-invites';
 import { signOutRoute } from './routes/v1/sign-out';
 import { userRoleRoute } from './routes/v1/users/role';
 import { clerkInvitationAcceptedRoute } from './routes/webhooks/clerk-invitation-accepted';
@@ -81,6 +82,14 @@ app.route('/api/v1/_debug/synthetic-failure', syntheticFailureRoute);
 //      the security boundary for this endpoint (Epic #10 / Story #655
 //      / Task #666).
 app.route('/webhooks/clerk/invitation-accepted', clerkInvitationAcceptedRoute);
+
+// 3.6) Public tokenized roster-invite handshake (Epic #11 / Story #926).
+//      Mounted BEFORE clerkAuth because the plaintext token in the URL
+//      is the sole authorization — the route refuses sessions and
+//      accepts anonymous callers by design. `withDb` runs only on this
+//      sub-tree so the handler has a Drizzle handle on `c.var.db`.
+app.use('/api/v1/public/*', withDb());
+app.route('/api/v1/public/roster-invites', publicRosterInvitesRoute);
 
 // 4) Clerk JWT validation. Runs on every remaining request.
 app.use('*', clerkAuth());
