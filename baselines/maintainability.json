@@ -1,7 +1,7 @@
 {
   "$schema": ".agents/schemas/baselines/maintainability.schema.json",
-  "kernelVersion": "1.0.0",
-  "generatedAt": "2026-05-25T18:04:58.028Z",
+  "kernelVersion": "0.1.0",
+  "generatedAt": "2026-05-26T00:23:08.655Z",
   "rollup": {
     "*": {
       "min": 70.515,
@@ -367,10 +367,6 @@
       "path": "apps/web/src/index.ts"
     },
     {
-      "mi": 114.561,
-      "path": "apps/web/src/lib/db.ts"
-    },
-    {
       "mi": 107.898,
       "path": "apps/web/src/middleware.ts"
     },
@@ -515,10 +511,6 @@
       "path": "packages/shared/src/db/schema/users.ts"
     },
     {
-      "mi": 106.619,
-      "path": "packages/shared/src/db/seed.ts"
-    },
-    {
       "mi": 171,
       "path": "packages/shared/src/index.ts"
     },
@@ -617,10 +609,6 @@
     {
       "mi": 96.979,
       "path": "packages/shared/src/testing/seeds.ts"
-    },
-    {
-      "mi": 83.831,
-      "path": "packages/shared/vitest.config.ts"
     }
   ]
 }
