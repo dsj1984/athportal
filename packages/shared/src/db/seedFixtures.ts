@@ -30,13 +30,13 @@
  * handle produces no duplicate rows (asserted by the unit test).
  */
 
+import { PERSONA_FIXTURES } from '../testing/auth';
 import { athleteMemberships } from './schema/athleteMemberships';
 import { coachAssignments } from './schema/coachAssignments';
 import { organizations } from './schema/organizations';
 import { teams } from './schema/teams';
 import { users } from './schema/users';
 import { SEED_BOOTSTRAP_EFFECTIVE_AT } from './seed';
-import { PERSONA_FIXTURES } from '../testing/auth';
 
 /**
  * Static IDs for the persona-graph rows. Pinned constants (not
