@@ -55,3 +55,12 @@ export {
   type PersonaRole,
   type SignInAsParams,
 } from './auth';
+export {
+  CLERK_PERSONAS,
+  personaClerkIdsPath,
+  personaClerkIdsRunbookPath,
+  readPersonaClerkIds,
+  type ClerkPersona,
+  type PersonaClerkIds,
+  type PersonaClerkIdsRaw,
+} from './clerkPersonas';
