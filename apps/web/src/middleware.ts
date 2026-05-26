@@ -24,7 +24,7 @@
 
 import { defineMiddleware, sequence } from 'astro:middleware';
 import { clerkMiddleware } from '@clerk/astro/server';
-import { getOnboardingState } from '@repo/shared/db/queries/users';
+import { getOnboardingStateBySubject } from '@repo/shared/db/queries/users';
 import { getDb } from './lib/db';
 
 /**
@@ -201,7 +201,7 @@ export function createOnboardingGate(
  * via an integration test, which is the wrong tier for this contract.
  */
 export const productionLookup: OnboardingLookup = (clerkSubjectId) =>
-  getOnboardingState(getDb(), clerkSubjectId);
+  getOnboardingStateBySubject(getDb(), clerkSubjectId);
 
 /**
  * Adapter that lifts the gate (typed against the minimal `GateContext`)

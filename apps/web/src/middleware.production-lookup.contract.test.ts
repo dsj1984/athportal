@@ -156,7 +156,11 @@ describe('productionLookup + onboarding gate — contract', () => {
     let nextCalled = 0;
     const ctx = {
       url: new URL('https://app.example.invalid/admin/teams'),
-      locals: { auth: () => ({ userId: 'u_admin_42' }) },
+      // `auth().userId` carries the Clerk subject id in production (the
+      // `sub` JWT claim), NOT the internal `users.id`. The web-side
+      // middleware never sees the internal id because no JIT-provisioner
+      // runs there. The lookup keys on `clerk_subject_id`.
+      locals: { auth: () => ({ userId: 'clerk_sub_admin_42' }) },
       redirect: (path: string, status?: number) => {
         redirectCalls.push({ path, status });
         return new Response(null, { status: status ?? 302, headers: { Location: path } });
@@ -197,7 +201,8 @@ describe('productionLookup + onboarding gate — contract', () => {
     let nextCalled = 0;
     const ctx = {
       url: new URL('https://app.example.invalid/admin/teams'),
-      locals: { auth: () => ({ userId: 'u_pending_99' }) },
+      // `auth().userId` is the Clerk subject id in production.
+      locals: { auth: () => ({ userId: 'clerk_sub_pending_99' }) },
       redirect: (path: string, status?: number) => {
         redirectCalls.push({ path, status });
         return new Response(null, { status: status ?? 302, headers: { Location: path } });
