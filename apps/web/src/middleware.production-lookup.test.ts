@@ -18,6 +18,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { OnboardingState } from './middleware';
 
+// `astro:middleware` is a virtual module resolved by the Astro runtime.
+// The per-workspace `apps/web/vitest.config.ts` aliases it to a shim
+// for `web-unit` runs, but the root workspace `unit` project (used by
+// `npm run test:coverage`) does not — so stub the two functions the
+// SUT actually imports.
+vi.mock('astro:middleware', () => ({
+  defineMiddleware: (fn: unknown) => fn,
+  sequence: (...fns: ReadonlyArray<unknown>) => fns,
+}));
+
 // Hoisted mock handles so the factory closures below can reach them
 // without TDZ surprises. `vi.hoisted` is the Vitest-sanctioned escape
 // hatch for sharing references between a factory and the test body.

@@ -37,6 +37,16 @@ import Database, { type Database as SqliteDatabase } from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+// `astro:middleware` is a virtual module resolved by the Astro runtime.
+// The per-workspace `apps/web/vitest.config.ts` aliases it to a shim
+// for `web-unit` / `web-contract` runs, but the root workspace
+// `contract` project (used by `npm run test:coverage`) does not — so
+// stub the two functions the SUT actually imports.
+vi.mock('astro:middleware', () => ({
+  defineMiddleware: (fn: unknown) => fn,
+  sequence: (...fns: ReadonlyArray<unknown>) => fns,
+}));
+
 // Module under test imports `./lib/db.getDb` at module-load time, so we
 // mock it BEFORE the dynamic import inside each test. `vi.hoisted`
 // shares the mock handle between the factory and the test bodies.
