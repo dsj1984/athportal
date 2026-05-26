@@ -1,13 +1,13 @@
 {
   "$schema": ".agents/schemas/baselines/crap.schema.json",
-  "kernelVersion": "0.1.0",
-  "generatedAt": "2026-05-26T15:01:41.411Z",
+  "generatedAt": "2026-05-26T15:31:20.633Z",
+  "kernelVersion": "1.0.0",
   "rollup": {
     "*": {
-      "p50": 2,
-      "p95": 42,
       "max": 506,
-      "methodsAbove20": 64
+      "methodsAbove20": 65,
+      "p50": 2,
+      "p95": 42
     }
   },
   "rows": [
@@ -15,13 +15,13 @@
       "crap": 2,
       "method": "<anon method-1>",
       "path": "apps/api/src/index.ts",
-      "startLine": 68
+      "startLine": 69
     },
     {
       "crap": 2,
       "method": "<anon method-2>",
       "path": "apps/api/src/index.ts",
-      "startLine": 69
+      "startLine": 70
     },
     {
       "crap": 2,
@@ -868,6 +868,54 @@
       "method": "<anon method-4>",
       "path": "apps/api/src/routes/v1/auth/onboard.ts",
       "startLine": 477
+    },
+    {
+      "crap": 2,
+      "method": "errorBody",
+      "path": "apps/api/src/routes/v1/coach/roster.ts",
+      "startLine": 65
+    },
+    {
+      "crap": 20,
+      "method": "deriveFullName",
+      "path": "apps/api/src/routes/v1/coach/roster.ts",
+      "startLine": 78
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "apps/api/src/routes/v1/coach/roster.ts",
+      "startLine": 84
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-2>",
+      "path": "apps/api/src/routes/v1/coach/roster.ts",
+      "startLine": 85
+    },
+    {
+      "crap": 12,
+      "method": "toRbacActor",
+      "path": "apps/api/src/routes/v1/coach/roster.ts",
+      "startLine": 97
+    },
+    {
+      "crap": 6,
+      "method": "projectEntry",
+      "path": "apps/api/src/routes/v1/coach/roster.ts",
+      "startLine": 112
+    },
+    {
+      "crap": 20,
+      "method": "<anon method-3>",
+      "path": "apps/api/src/routes/v1/coach/roster.ts",
+      "startLine": 142
+    },
+    {
+      "crap": 42,
+      "method": "<anon method-4>",
+      "path": "apps/api/src/routes/v1/coach/roster.ts",
+      "startLine": 197
     },
     {
       "crap": 2,
@@ -2155,6 +2203,18 @@
     },
     {
       "crap": 2,
+      "method": "buildRosterUrl",
+      "path": "apps/web/src/components/coach/RosterTable.ts",
+      "startLine": 64
+    },
+    {
+      "crap": 6,
+      "method": "renderRosterRows",
+      "path": "apps/web/src/components/coach/RosterTable.ts",
+      "startLine": 82
+    },
+    {
+      "crap": 2,
       "method": "buildAgeAttestationView",
       "path": "apps/web/src/components/onboarding/AgeAttestation.ts",
       "startLine": 27
@@ -2278,36 +2338,6 @@
       "method": "validateProfilePhotoFile",
       "path": "apps/web/src/components/onboarding/ProfilePhotoUploader.ts",
       "startLine": 57
-    },
-    {
-      "crap": 2,
-      "method": "buildBadgeView",
-      "path": "apps/web/src/components/ui/_lib/badge.ts",
-      "startLine": 83
-    },
-    {
-      "crap": 12,
-      "method": "resolveTone",
-      "path": "apps/web/src/components/ui/_lib/badge.ts",
-      "startLine": 97
-    },
-    {
-      "crap": 2,
-      "method": "cn",
-      "path": "apps/web/src/components/ui/_lib/cn.ts",
-      "startLine": 14
-    },
-    {
-      "crap": 6,
-      "method": "resolveEventColor",
-      "path": "apps/web/src/components/ui/_lib/eventColors.ts",
-      "startLine": 113
-    },
-    {
-      "crap": 6,
-      "method": "resolveSidebarNav",
-      "path": "apps/web/src/components/ui/_lib/sidebarNav.ts",
-      "startLine": 67
     },
     {
       "crap": 30,
@@ -2536,6 +2566,36 @@
       "method": "resolvePositive",
       "path": "apps/web/src/components/ui/VerifiedTick.ts",
       "startLine": 36
+    },
+    {
+      "crap": 2,
+      "method": "buildBadgeView",
+      "path": "apps/web/src/components/ui/_lib/badge.ts",
+      "startLine": 83
+    },
+    {
+      "crap": 12,
+      "method": "resolveTone",
+      "path": "apps/web/src/components/ui/_lib/badge.ts",
+      "startLine": 97
+    },
+    {
+      "crap": 2,
+      "method": "cn",
+      "path": "apps/web/src/components/ui/_lib/cn.ts",
+      "startLine": 14
+    },
+    {
+      "crap": 6,
+      "method": "resolveEventColor",
+      "path": "apps/web/src/components/ui/_lib/eventColors.ts",
+      "startLine": 113
+    },
+    {
+      "crap": 6,
+      "method": "resolveSidebarNav",
+      "path": "apps/web/src/components/ui/_lib/sidebarNav.ts",
+      "startLine": 67
     },
     {
       "crap": 30,
@@ -3006,6 +3066,24 @@
       "startLine": 237
     },
     {
+      "crap": 6,
+      "method": "combinePredicates",
+      "path": "packages/shared/src/db/queries/coach/roster.ts",
+      "startLine": 119
+    },
+    {
+      "crap": 2,
+      "method": "listRosterEntries",
+      "path": "packages/shared/src/db/queries/coach/roster.ts",
+      "startLine": 138
+    },
+    {
+      "crap": 2,
+      "method": "getTeamScopedAthlete",
+      "path": "packages/shared/src/db/queries/coach/roster.ts",
+      "startLine": 181
+    },
+    {
       "crap": 2,
       "method": "findActiveByKind",
       "path": "packages/shared/src/db/queries/legalDocuments.ts",
@@ -3224,6 +3302,54 @@
     {
       "crap": 2,
       "method": "<anon method-1>",
+      "path": "packages/shared/src/db/schema/rosterEntries.ts",
+      "startLine": 46
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-2>",
+      "path": "packages/shared/src/db/schema/rosterEntries.ts",
+      "startLine": 49
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-3>",
+      "path": "packages/shared/src/db/schema/rosterEntries.ts",
+      "startLine": 52
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-4>",
+      "path": "packages/shared/src/db/schema/rosterEntries.ts",
+      "startLine": 65
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "packages/shared/src/db/schema/rosterInvites.ts",
+      "startLine": 65
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-2>",
+      "path": "packages/shared/src/db/schema/rosterInvites.ts",
+      "startLine": 68
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-3>",
+      "path": "packages/shared/src/db/schema/rosterInvites.ts",
+      "startLine": 82
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-4>",
+      "path": "packages/shared/src/db/schema/rosterInvites.ts",
+      "startLine": 86
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
       "path": "packages/shared/src/db/schema/teams.ts",
       "startLine": 31
     },
@@ -3298,6 +3424,12 @@
       "method": "<anon method-2>",
       "path": "packages/shared/src/observability/redaction.ts",
       "startLine": 106
+    },
+    {
+      "crap": 6,
+      "method": "requireCoachOnTeam",
+      "path": "packages/shared/src/rbac/coachOnTeam.ts",
+      "startLine": 94
     },
     {
       "crap": 6,
@@ -3400,6 +3532,18 @@
       "method": "<anon method-1>",
       "path": "packages/shared/src/schemas/admin/teams.ts",
       "startLine": 62
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "packages/shared/src/schemas/coach/roster.ts",
+      "startLine": 45
+    },
+    {
+      "crap": 6,
+      "method": "<anon method-2>",
+      "path": "packages/shared/src/schemas/coach/roster.ts",
+      "startLine": 79
     },
     {
       "crap": 6,
