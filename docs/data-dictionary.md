@@ -92,6 +92,47 @@ deleted_at: text('deleted_at'),  // nullable, ISO-8601 when set
 - Migration files are append-only — a column rename is a **new migration** that adds the new column, backfills, then drops the old one in a follow-up migration once consumers have caught up.
 - Destructive migrations (drop column, drop table, rename with data loss) are flagged by the planning risk-heuristics and require explicit `agent::blocked` resume before running in any non-local environment.
 
+## Roster tables (Epic #11)
+
+The two persisted entities introduced by Epic #11's coach-roster surface. Both follow the cross-tenant pattern established by migration `0002` for `coach_assignments` / `athlete_memberships` (denormalised `org_id`, indexed FKs, ABORT triggers on org-id mismatch). See migration [`packages/shared/src/db/migrations/0007_roster.sql`](../packages/shared/src/db/migrations/0007_roster.sql) for the authoritative DDL.
+
+### `roster_entry`
+
+One row per athlete-on-this-team. Created when a roster invite is accepted; soft-deleted via `ended_at` when the coach removes the athlete.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | text PK | |
+| `org_id` | text NOT NULL | Denormalised for `scopedDb(actor)`; FK → `organizations.id`. |
+| `team_id` | text NOT NULL | FK → `teams.id`. |
+| `athlete_user_id` | text NOT NULL | FK → `users.id`. |
+| `jersey_number` | text NULL | CHECK matches `^[0-9]{1,3}$` (keeps `"00"` and leading zeros representable); soft uniqueness — same number can be reused across teams. |
+| `primary_position` | text NULL | CHECK `length <= 32`. |
+| `ended_at` | integer NULL | Soft-delete tombstone (unixepoch). |
+| `created_at`, `updated_at` | integer NOT NULL | Audit fields per § Timestamps. |
+
+Indexes: `(org_id, team_id)`, `(team_id, ended_at)`, and a **partial unique** `(team_id, athlete_user_id) WHERE ended_at IS NULL` — an athlete is on a team at most once while the membership is active.
+
+### `roster_invite`
+
+One row per outstanding coach-issued invitation. Distinct from `invitations` (Clerk-mediated org-admin invites) per [ADR-021](./decisions.md#adr-021--roster-invites-are-separate-from-clerk-org-admin-invitations).
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | text PK | |
+| `org_id` | text NOT NULL | Denormalised; FK → `organizations.id`. |
+| `team_id` | text NOT NULL | FK → `teams.id`. |
+| `email` | text NOT NULL | Lowercased application-side; CHECK refuses obvious junk and caps length at 254. |
+| `first_name`, `last_name` | text NULL | Optional pre-fill for the public accept page. |
+| `token_hash` | text NOT NULL | The only authorization on the public accept route; UNIQUE indexed for constant-time lookup. The raw token is never persisted. |
+| `status` | text NOT NULL | One of `pending` / `accepted` / `declined` / `expired` / `revoked`; default `'pending'`. Expiry is **lazy** — a row stays `pending` until a read or accept attempt finds `expires_at < now()` and updates `status` to `'expired'` in the same transaction. No nightly cron. |
+| `expires_at` | integer NOT NULL | Unixepoch; the 7-day TTL is set application-side at invite creation. |
+| `accepted_at`, `declined_at` | integer NULL | Set on the corresponding lifecycle transition. |
+| `invited_by_user_id` | text NOT NULL | FK → `users.id`. |
+| `created_at`, `updated_at` | integer NOT NULL | Audit fields per § Timestamps. |
+
+Indexes: `(org_id)`, `(team_id, status)`, `(email)`, and the unique `(token_hash)`.
+
 <!-- rbac-matrix:start -->
 
 ## RBAC matrix

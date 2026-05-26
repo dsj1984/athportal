@@ -1665,3 +1665,68 @@ script and no runtime DB binding — every admin route under
 `/api/v1/admin/*` would crash on the first `c.var.db` access if hit by
 a real client. Tests passed because they injected the handle via
 `createTestApp(db)`; the production composition is now equivalent.
+
+## Coach-on-team scoping predicate {#coach-on-team-scoping-predicate}
+
+Every coach-scoped route under `/api/v1/coach/*` and every coach-scoped
+page under `/app/coach/teams/[teamId]/**` runs the **`requireCoachOnTeam`**
+predicate before any team-scoped read or write. The predicate checks
+the actor's `coach_assignments` for an active row matching the requested
+`team_id`. The team's `org_id` is fetched in the same query so the
+predicate can refuse cross-org access without a second round-trip.
+
+The predicate's refusal contract is **404, not 403** per
+[ADR-021](./decisions.md#adr-021--roster-invites-are-separate-from-clerk-org-admin-invitations) —
+disclosing the existence of a team to an unauthorized coach is itself
+an information leak across tenants. The user-visible refusal (a
+not-found page on the roster route) is asserted in
+[`tests/features/coach/roster/team-scoped-access.feature`](../tests/features/coach/roster/team-scoped-access.feature);
+the wire-shape (404 envelope, no body leakage) is pinned at the
+contract tier in
+[`apps/api/src/routes/v1/coach/roster.contract.test.ts`](../apps/api/src/routes/v1/coach/roster.contract.test.ts).
+
+New team-scoped routes — coach- or athlete-facing — SHOULD reuse
+`requireCoachOnTeam` (or its athlete equivalent) and the 404-on-refusal
+shape. Hand-rolled team membership checks fragment the contract and
+make a cross-tenant audit more expensive than it should be.
+
+## Tokenized public-handshake pattern {#tokenized-public-handshake}
+
+A handful of surfaces in the product mint an unguessable token that a
+**recipient who is not signed in** clicks to act on a specific
+persisted row — accept a roster invite (Epic #11), decline an org-admin
+invitation (Epic #10), open a share link, etc. Every such surface
+follows the same shape:
+
+1. **Token shape.** A cryptographically random base64url string of at
+   least 128 bits of entropy, minted with `crypto.getRandomValues`. The
+   token is never stored in plaintext: a `token_hash` column on the
+   row carries `sha256(token)`, indexed `UNIQUE` for a constant-time
+   point-read lookup. The unhashed token leaves the server exactly
+   once, in the link delivered to the recipient (typically via email).
+2. **Route shape.** A `/r/<surface>/<token>/<action>` path under the
+   `/r/*` prefix in [`docs/web-routes.md`](./web-routes.md). The prefix
+   is **noindex** by policy (an unguessable token in a URL must not
+   leak through search). The route handler is the only reader of the
+   `token_hash` column.
+3. **Lifecycle invariants.** The row carries a TTL (`expires_at`) and
+   a status (`pending` → `accepted` / `declined` / `expired` /
+   `revoked`). Expiry is **lazy** — the row transitions to `'expired'`
+   in the same transaction that observes it past its TTL, with no
+   nightly cron. A token is single-use: accept and decline both move
+   the row to a terminal state and subsequent clicks render a
+   "no longer acceptable" surface.
+4. **Refusal surface.** A token that does not resolve, has already been
+   consumed, or has expired renders a user-visible "this link is no
+   longer acceptable" page. The page does **not** disclose which of
+   those conditions applied — the four refusal classes collapse to one
+   surface to avoid a probing oracle.
+
+The Epic #11 roster-invite handshake is the live exemplar:
+[`apps/web/src/pages/r/roster-invite/[token]/`](../apps/web/src/pages/r/roster-invite),
+[`apps/api/src/routes/v1/public/roster-invites.ts`](../apps/api/src/routes/v1/public/roster-invites.ts),
+schema in
+[`packages/shared/src/db/schema/rosterInvites.ts`](../packages/shared/src/db/schema/rosterInvites.ts).
+New surfaces that mint a public-handshake token (a one-click
+unsubscribe, an opt-out link, a parental-consent confirmation) SHOULD
+reuse this shape rather than inventing a new token grammar.
