@@ -45,7 +45,10 @@ import { HttpError, requireCoachOnTeam } from '@repo/shared/rbac/coachOnTeam';
 import type { AuthContext as RbacAuthContext, Role } from '@repo/shared/rbac';
 import { RosterEntryOutput } from '@repo/shared/schemas/coach/roster';
 import { Hono } from 'hono';
-import type { AuthContext as ApiAuthContext, RequireInternalUserEnv } from '../../../middleware/auth';
+import type {
+  AuthContext as ApiAuthContext,
+  RequireInternalUserEnv,
+} from '../../../middleware/auth';
 
 // ── Error taxonomy ─────────────────────────────────────────────────────────
 
@@ -163,7 +166,11 @@ coachRosterRoute.get('/', async (c) => {
     // `requireCoachOnTeam` predicate narrows it via its own structural
     // type (`CoachOnTeamDb`); cast through `unknown` to satisfy that
     // boundary without leaking the assertion into the shared module.
-    await requireCoachOnTeam(toRbacActor(auth), teamId, db as Parameters<typeof requireCoachOnTeam>[2]);
+    await requireCoachOnTeam(
+      toRbacActor(auth),
+      teamId,
+      db as Parameters<typeof requireCoachOnTeam>[2],
+    );
   } catch (err) {
     if (err instanceof HttpError) {
       return c.json(errorBody('NOT_FOUND', err.message), 404);
@@ -202,7 +209,11 @@ coachRosterRoute.get('/entries/:entryId', async (c) => {
   const db = c.get('db');
 
   try {
-    await requireCoachOnTeam(toRbacActor(auth), teamId, db as Parameters<typeof requireCoachOnTeam>[2]);
+    await requireCoachOnTeam(
+      toRbacActor(auth),
+      teamId,
+      db as Parameters<typeof requireCoachOnTeam>[2],
+    );
   } catch (err) {
     if (err instanceof HttpError) {
       return c.json(errorBody('NOT_FOUND', err.message), 404);

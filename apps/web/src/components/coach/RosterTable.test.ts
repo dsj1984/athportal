@@ -82,35 +82,21 @@ describe('renderRosterRows', () => {
   });
 
   it('attaches per-cell testids for jersey, position, and badge', () => {
-    renderRosterRows(tbody, [
-      row({ id: 're_one', jerseyNumber: '07', primaryPosition: 'Setter' }),
-    ]);
+    renderRosterRows(tbody, [row({ id: 're_one', jerseyNumber: '07', primaryPosition: 'Setter' })]);
 
     const tr = tbody.querySelector('tr');
     expect(tr).not.toBeNull();
-    expect(
-      tr?.querySelector('[data-testid="coach-roster-jersey"]')?.textContent,
-    ).toBe('07');
-    expect(
-      tr?.querySelector('[data-testid="coach-roster-position"]')?.textContent,
-    ).toBe('Setter');
-    expect(
-      tr?.querySelector('[data-testid="coach-roster-badge"]')?.textContent,
-    ).toBe('Setter');
+    expect(tr?.querySelector('[data-testid="coach-roster-jersey"]')?.textContent).toBe('07');
+    expect(tr?.querySelector('[data-testid="coach-roster-position"]')?.textContent).toBe('Setter');
+    expect(tr?.querySelector('[data-testid="coach-roster-badge"]')?.textContent).toBe('Setter');
   });
 
   it('substitutes an em-dash when jersey or position is null', () => {
-    renderRosterRows(tbody, [
-      row({ jerseyNumber: null, primaryPosition: null }),
-    ]);
+    renderRosterRows(tbody, [row({ jerseyNumber: null, primaryPosition: null })]);
 
     const tr = tbody.querySelector('tr');
-    expect(
-      tr?.querySelector('[data-testid="coach-roster-jersey"]')?.textContent,
-    ).toBe('—');
-    expect(
-      tr?.querySelector('[data-testid="coach-roster-position"]')?.textContent,
-    ).toBe('—');
+    expect(tr?.querySelector('[data-testid="coach-roster-jersey"]')?.textContent).toBe('—');
+    expect(tr?.querySelector('[data-testid="coach-roster-position"]')?.textContent).toBe('—');
   });
 
   it('uses textContent, never innerHTML, for cell values', () => {
