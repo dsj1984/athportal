@@ -34,10 +34,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { readPersonaClerkIds } from './clerkPersonas';
-import {
-  DEFAULT_SIGN_IN_TICKET_TTL_SECONDS,
-  mintSignInTicket,
-} from './clerkTickets';
+import { DEFAULT_SIGN_IN_TICKET_TTL_SECONDS, mintSignInTicket } from './clerkTickets';
 
 /**
  * Compute the skip gate once at module-load time. The gate is true (skip)
