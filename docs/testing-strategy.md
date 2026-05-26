@@ -520,7 +520,7 @@ These gates do not belong to a pyramid tier — they enforce structural and poli
 
 > Human-driven testing is the counterpart to the automated pyramid above. Automation covers regression — that a known behavior still works. Manual testing covers the things humans notice that machines don't: visual polish, copy tone, real-device feel, the "does this flow actually feel right" question, and the edge cases nobody thought to encode in a `.feature` file yet.
 >
-> This section defines **when** to test manually, **what** to test, and **where** the artifacts live. The cadence is referenced from [`docs/path-to-mvp.md`](path-to-mvp.md) as the manual-QA gate between phases, and is the ongoing rhythm after MVP.
+> This section defines **when** to test manually, **what** to test, and **where** the artifacts live. The cadence is referenced from [`docs/roadmap.md`](roadmap.md) as the manual-QA gate between MVP capabilities, and is the ongoing rhythm after MVP.
 >
 > The **scripted artifacts** that drive manual sessions (Test Plans, Exploratory Charters, the shared heuristic library) live in the [§ QA Corpus](#qa-corpus) section below. The Manual Testing section here governs the **cadence and judgment calls**; the QA Corpus section governs the **on-disk shape, the lint gates, and the agent-runner contract** that lets a human session and an agent-driven session ride the same artifacts.
 
@@ -587,10 +587,10 @@ Pre-release sweep specifics:
 
 ### Phase gates
 
-Each phase in [`docs/path-to-mvp.md`](path-to-mvp.md) has a **Manual QA gate** as part of its exit criteria. The gate is satisfied when:
+Each MVP capability in [`docs/roadmap.md`](roadmap.md) has a **Manual QA gate** as part of its exit criteria. The gate is satisfied when:
 
-1. Every Story in the phase has a charter appended to its issue.
-2. The phase's incremental section of the regression checklist (the rows added during this phase) passes end-to-end against staging.
+1. Every Story in the capability has a charter appended to its issue.
+2. The capability's incremental section of the regression checklist (the rows added during this capability) passes end-to-end against staging.
 3. Any open findings are either fixed or have a documented operator decision to defer.
 
 Specific charters called out by phase below are the minimum — Stories may add more.
