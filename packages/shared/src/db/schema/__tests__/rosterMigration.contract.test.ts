@@ -32,11 +32,11 @@ function listObjects(
 ): SqliteMasterRow[] {
   // biome-ignore lint/suspicious/noExplicitAny: Drizzle session typings hide the raw all() surface
   const session = (db as any).session;
-  const client = session?.client as { prepare: (sql: string) => { all: (...p: unknown[]) => unknown[] } };
+  const client = session?.client as {
+    prepare: (sql: string) => { all: (...p: unknown[]) => unknown[] };
+  };
   const rows = client
-    .prepare(
-      `SELECT type, name, tbl_name FROM sqlite_master WHERE type = ? AND tbl_name = ?`,
-    )
+    .prepare(`SELECT type, name, tbl_name FROM sqlite_master WHERE type = ? AND tbl_name = ?`)
     .all(type, tblName) as SqliteMasterRow[];
   return rows;
 }

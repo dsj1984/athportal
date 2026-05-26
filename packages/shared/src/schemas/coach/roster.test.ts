@@ -41,9 +41,7 @@ describe('InviteAthleteInput', () => {
   });
 
   it('rejects unknown keys (strict)', () => {
-    expect(() =>
-      InviteAthleteInput.parse({ email: 'a@b.co', role: 'admin' }),
-    ).toThrow();
+    expect(() => InviteAthleteInput.parse({ email: 'a@b.co', role: 'admin' })).toThrow();
   });
 
   it('rejects firstName longer than 80 chars', () => {
@@ -93,9 +91,7 @@ describe('EditRosterEntryInput', () => {
   });
 
   it('rejects primaryPosition longer than 32 chars', () => {
-    expect(() =>
-      EditRosterEntryInput.parse({ primaryPosition: 'x'.repeat(33) }),
-    ).toThrow();
+    expect(() => EditRosterEntryInput.parse({ primaryPosition: 'x'.repeat(33) })).toThrow();
   });
 
   it('accepts null primaryPosition (clear)', () => {
@@ -108,9 +104,7 @@ describe('EditRosterEntryInput', () => {
   });
 
   it('rejects unknown keys (strict)', () => {
-    expect(() =>
-      EditRosterEntryInput.parse({ jerseyNumber: '7', position: 'pitcher' }),
-    ).toThrow();
+    expect(() => EditRosterEntryInput.parse({ jerseyNumber: '7', position: 'pitcher' })).toThrow();
   });
 });
 

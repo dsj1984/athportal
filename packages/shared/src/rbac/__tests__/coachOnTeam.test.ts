@@ -152,9 +152,9 @@ describe('requireCoachOnTeam — refusals', () => {
 
   it('throws when the team does not exist', async () => {
     const { db, coachActor } = await seedWorld();
-    await expect(
-      requireCoachOnTeam(coachActor, 'team_nonexistent', db),
-    ).rejects.toBeInstanceOf(HttpError);
+    await expect(requireCoachOnTeam(coachActor, 'team_nonexistent', db)).rejects.toBeInstanceOf(
+      HttpError,
+    );
   });
 });
 
