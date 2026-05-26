@@ -79,6 +79,18 @@
     "./rbac": {
       "types": "./dist/rbac/index.d.ts",
       "import": "./src/rbac/index.ts"
+    },
+    "./rbac/coachOnTeam": {
+      "types": "./dist/rbac/coachOnTeam.d.ts",
+      "import": "./src/rbac/coachOnTeam.ts"
+    },
+    "./schemas/coach/roster": {
+      "types": "./dist/schemas/coach/roster.d.ts",
+      "import": "./src/schemas/coach/roster.ts"
+    },
+    "./db/queries/coach/roster": {
+      "types": "./dist/db/queries/coach/roster.d.ts",
+      "import": "./src/db/queries/coach/roster.ts"
     }
   },
   "scripts": {
