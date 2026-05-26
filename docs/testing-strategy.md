@@ -811,6 +811,35 @@ prerequisites:
 
 The live pilot lives at [`tests/plans/identity/tp-identity-signup-happy-path.plan.md`](../tests/plans/identity/tp-identity-signup-happy-path.plan.md) — copy its shape verbatim when authoring a new plan.
 
+### Sign-out pattern
+
+`/sign-out` is **POST-only**. The route handler at [`apps/web/src/pages/sign-out.ts`](../apps/web/src/pages/sign-out.ts) returns `405 Method Not Allowed` on any GET request by design — sign-out is a state-changing action and a GET would be CSRF-vulnerable via a stray link or image tag. Authoring a plan or charter step that tells the operator to "visit", "navigate to", or otherwise GET `/sign-out` is therefore forbidden: the step would fail every time, both for a human operator (the browser renders the 405) and for the agent runner (the assertion against the post-step snapshot never matches).
+
+Every corpus artifact MUST drive sign-out through one of the two patterns below.
+
+**Default — `<UserButton/>` menu (preferred).** The Clerk-provided header avatar at `apps/web/src/components/header/UserButton.astro` (or the equivalent `<UserButton/>` slot rendered by `@clerk/astro`) contains a **Sign out** menu item that posts to `/sign-out` for the caller. Every authenticated layout in the corpus renders this control, so this is the canonical path:
+
+```markdown
+- Sign out via the `<UserButton/>` menu in the header (the menu posts to `/sign-out`).
+```
+
+**Fallback — `<form method="POST" action="/sign-out">` shim.** When a plan or charter exercises a surface that intentionally hides the header (e.g. an onboarding step before the chrome renders, or a charter probing an unauthenticated landing surface), drive sign-out via an explicit POST form shim from the browser devtools console:
+
+```html
+<form method="POST" action="/sign-out"><button type="submit">Sign out</button></form>
+```
+
+Paste the form into the page, click submit, and observe the same `303 → /` redirect the menu produces. The shim is the documented escape hatch; it MUST NOT be used as the default — the menu is what real users have.
+
+**Forbidden.** Do not author any of the following in a plan, charter, or step:
+
+- "Visit `/sign-out`."
+- "Navigate to `/sign-out`."
+- "Sign out via `/sign-out`."
+- Any link, anchor, or address-bar entry that issues a GET against `/sign-out`.
+
+The `lint:qa` gate does not (yet) scan for these strings, but Story #876 § Plan-content fixes migrated every existing offender to the patterns above — new authors are expected to follow the same convention. A reviewer who spots a GET-shape sign-out instruction in a PR MUST request changes before approving.
+
 ### Exploratory Charter format
 
 Exploratory Charter front-matter is validated by [`scripts/qa/schema/charter.front-matter.zod.ts`](../scripts/qa/schema/charter.front-matter.zod.ts). The required fields are:
