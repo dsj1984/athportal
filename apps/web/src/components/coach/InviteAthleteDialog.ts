@@ -184,10 +184,15 @@ export interface InviteAthletePayload {
  */
 export function readInvitePayload(form: HTMLFormElement): InviteAthletePayload | null {
   const data = new FormData(form);
-  const email = (data.get('email') ?? '').toString().trim();
+  // FormData.get returns `FormDataEntryValue | null` (i.e. `string | File | null`).
+  // The invite form only carries text inputs, but the typesystem doesn't know
+  // that — coerce explicitly so a File never round-trips through `.toString()`
+  // as the literal `[object Object]` (eslint no-base-to-string).
+  const asString = (v: FormDataEntryValue | null): string => (typeof v === 'string' ? v : '');
+  const email = asString(data.get('email')).trim();
   if (email.length === 0) return null;
-  const firstNameRaw = (data.get('firstName') ?? '').toString().trim();
-  const lastNameRaw = (data.get('lastName') ?? '').toString().trim();
+  const firstNameRaw = asString(data.get('firstName')).trim();
+  const lastNameRaw = asString(data.get('lastName')).trim();
   const payload: InviteAthletePayload = {
     email,
     ...(firstNameRaw.length > 0 ? { firstName: firstNameRaw } : {}),
