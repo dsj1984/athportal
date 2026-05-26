@@ -248,10 +248,7 @@ describe('/onboarding SSR data path — contract', () => {
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     let activeLegalDocuments;
     try {
-      activeLegalDocuments = getActiveLegalDocuments(
-        getDb(),
-        new Date('2026-05-01T00:00:00.000Z'),
-      );
+      activeLegalDocuments = getActiveLegalDocuments(getDb(), new Date('2026-05-01T00:00:00.000Z'));
     } catch {
       activeLegalDocuments = {
         termsOfService: {
