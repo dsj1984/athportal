@@ -137,7 +137,8 @@ describe('productionLookup', () => {
     // The error message MUST name the gate so operators can grep logs;
     // it MUST NOT echo any secret-key material (the helper's own error
     // surface is responsible for redaction; the catch only forwards).
-    const logged = errorSpy.mock.calls[0]?.[0] ?? '';
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- vitest's mock.calls type widens to any[][]; the runtime value here is a string from the catch's console.error template
+    const logged: string = errorSpy.mock.calls[0]?.[0] ?? '';
     expect(logged).toMatch(/onboarding-gate/);
     expect(logged).toMatch(/productionLookup/);
     expect(logged).not.toMatch(/sk_test_/);
@@ -167,7 +168,8 @@ describe('productionLookup', () => {
 
     expect(result).toBeNull();
     expect(errorSpy).toHaveBeenCalledTimes(1);
-    const logged = errorSpy.mock.calls[0]?.[0] ?? '';
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- vitest's mock.calls type widens to any[][]; the runtime value here is a string from the catch's console.error template
+    const logged: string = errorSpy.mock.calls[0]?.[0] ?? '';
     expect(logged).toMatch(/SQLITE_ERROR/);
 
     errorSpy.mockRestore();

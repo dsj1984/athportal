@@ -31,6 +31,7 @@
 // introduced the original placeholder.
 
 import { buildOnboardingPageView } from './onboarding.ts';
+import type { ActiveLegalDocuments } from '@repo/shared/db/queries/legalDocuments';
 import { getActiveLegalDocuments } from '@repo/shared/db/queries/legalDocuments';
 import {
   SEED_BOOTSTRAP_EFFECTIVE_AT,
@@ -56,7 +57,7 @@ import { getDb } from '../lib/db';
 // verbatim and rendered cleanly even on an unseeded DB; the live read
 // propagated the accessor's throw and trapped the user in a
 // redirect-to-500 loop with no escape.
-let activeLegalDocuments;
+let activeLegalDocuments: ActiveLegalDocuments;
 try {
   activeLegalDocuments = getActiveLegalDocuments(getDb());
 } catch (cause) {

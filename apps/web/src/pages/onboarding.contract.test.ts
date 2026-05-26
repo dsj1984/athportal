@@ -89,7 +89,11 @@ function freshOnboardingDb(): {
   client.pragma('foreign_keys = ON');
   applyMigration(client, '0000_auth_and_rbac.sql');
   applyMigration(client, '0001_onboarding_schema.sql');
-  const drizzleDb = drizzle(client);
+  // drizzle()'s return type resolves to `any` in some workspace
+  // configurations; cast through `unknown` once at the helper boundary
+  // so callers can pass it to mockReturnValue without per-call lint
+  // suppressions.
+  const drizzleDb = drizzle(client) as unknown as ReturnType<typeof drizzle>;
   return { drizzleDb, client };
 }
 
@@ -246,7 +250,7 @@ describe('/onboarding SSR data path — contract', () => {
     // Suppress the expected console.error so the test output stays
     // clean; assert it fired on the next line.
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-    let activeLegalDocuments;
+    let activeLegalDocuments: import('@repo/shared/db/queries/legalDocuments').ActiveLegalDocuments;
     try {
       activeLegalDocuments = getActiveLegalDocuments(getDb(), new Date('2026-05-01T00:00:00.000Z'));
     } catch {
