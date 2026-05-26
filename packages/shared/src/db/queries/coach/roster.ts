@@ -40,7 +40,7 @@
  * statically separable.
  */
 
-import { type SQL, and, asc, eq, isNull } from 'drizzle-orm';
+import { type SQL, and, asc, eq, isNull, ne, sql } from 'drizzle-orm';
 import { rosterEntries } from '../../schema/rosterEntries';
 import { users } from '../../schema/users';
 
@@ -210,4 +210,162 @@ export function getTeamScopedAthlete(
     .orderBy(asc(rosterEntries.createdAt))
     .all();
   return rows[0] ?? null;
+}
+
+// ── Mutations (Story #917 / Task #924) ─────────────────────────────────────
+
+/**
+ * Structural shape of the Drizzle `update(table)` chain this module uses.
+ * Kept tiny so the test handles (in-memory better-sqlite3) and the
+ * production handle satisfy it without explicit casts at the call sites.
+ */
+interface RosterUpdateChain {
+  set: (values: Record<string, unknown>) => {
+    where: (predicate: SQL) => {
+      returning: () => { all: () => RosterEntryRow[] };
+    };
+  };
+}
+
+interface RosterMutateDbHandle extends RosterDbHandle {
+  update: (table: typeof rosterEntries) => RosterUpdateChain;
+}
+
+interface RosterCountSelectChain {
+  from: (table: typeof rosterEntries) => {
+    where: (predicate: SQL) => {
+      all: () => ReadonlyArray<{ readonly count: number }>;
+    };
+  };
+}
+
+interface RosterCountDbHandle {
+  select: (projection: Record<string, unknown>) => RosterCountSelectChain;
+}
+
+/**
+ * Patch input. Both fields are independently optional; the route layer's
+ * `EditRosterEntryInput` Zod schema rejects empty patches before they
+ * reach this function. `null` clears the column.
+ */
+export interface UpdateRosterEntryPatch {
+  readonly jerseyNumber?: string | null;
+  readonly primaryPosition?: string | null;
+}
+
+/**
+ * Apply a coach-scoped PATCH to one roster entry. Org + team + active
+ * predicates are pinned in the WHERE clause so the update refuses to
+ * touch:
+ *
+ *   - another tenant's row (cross-org via forged `entryId`),
+ *   - a row on another team in the same org (cross-team via forged
+ *     `entryId`),
+ *   - a row that has been end-dated (idempotency: DELETE then PATCH
+ *     resolves to a no-op rather than a resurrect).
+ *
+ * Returns the updated row, or `null` when no row matched. `updatedAt`
+ * is bumped on every write — the column has a default at insert time
+ * only.
+ */
+export function updateRosterEntry(
+  db: unknown,
+  actor: RosterQueryActor,
+  teamId: string,
+  entryId: string,
+  patch: UpdateRosterEntryPatch,
+): RosterEntryRow | null {
+  const handle = db as RosterMutateDbHandle;
+  const predicate = combinePredicates([
+    eq(rosterEntries.orgId, actor.orgId),
+    eq(rosterEntries.teamId, teamId),
+    eq(rosterEntries.id, entryId),
+    isNull(rosterEntries.endedAt),
+  ]);
+  const values: Record<string, unknown> = {
+    updatedAt: sql`(unixepoch())`,
+  };
+  if (patch.jerseyNumber !== undefined) {
+    values.jerseyNumber = patch.jerseyNumber;
+  }
+  if (patch.primaryPosition !== undefined) {
+    values.primaryPosition = patch.primaryPosition;
+  }
+  const rows = handle.update(rosterEntries).set(values).where(predicate).returning().all();
+  if (rows.length === 0) return null;
+  // The `RETURNING *` shape includes every column but not the joined
+  // athlete email. Re-read through the existing accessor so callers
+  // get the consistent `RosterEntryRow` shape (email + projection).
+  return getTeamScopedAthlete(db, actor, teamId, entryId);
+}
+
+/**
+ * Soft-delete a roster entry by setting `ended_at = now()`. Scoped the
+ * same way as {@link updateRosterEntry}. Idempotent: re-running on an
+ * already-ended row matches zero rows and returns `false`, which the
+ * route layer treats as "already removed" (HTTP 204 either way).
+ *
+ * Returns `true` when a row was end-dated by this call; `false` when
+ * no row matched (already ended, wrong team, wrong org, or
+ * non-existent).
+ */
+export function endRosterEntry(
+  db: unknown,
+  actor: RosterQueryActor,
+  teamId: string,
+  entryId: string,
+): boolean {
+  const handle = db as RosterMutateDbHandle;
+  const predicate = combinePredicates([
+    eq(rosterEntries.orgId, actor.orgId),
+    eq(rosterEntries.teamId, teamId),
+    eq(rosterEntries.id, entryId),
+    isNull(rosterEntries.endedAt),
+  ]);
+  const rows = handle
+    .update(rosterEntries)
+    .set({
+      endedAt: sql`(unixepoch())`,
+      updatedAt: sql`(unixepoch())`,
+    })
+    .where(predicate)
+    .returning()
+    .all();
+  return rows.length > 0;
+}
+
+/**
+ * Probe for another active roster entry on the same team carrying the
+ * same `jerseyNumber`. Returns `true` when a collision exists — the
+ * route layer surfaces this as a SOFT warning in the PATCH response
+ * (Tech Spec #906 §UX Behaviors). No DB-level unique constraint
+ * enforces uniqueness because two athletes legitimately can share a
+ * number across leagues; the coach decides whether to fix it.
+ *
+ * `exceptEntryId` excludes the row currently being edited so that a
+ * coach who PATCHes the same row twice doesn't see the warning on the
+ * second write.
+ */
+export function jerseyNumberInUse(
+  db: unknown,
+  actor: RosterQueryActor,
+  teamId: string,
+  jerseyNumber: string,
+  exceptEntryId: string,
+): boolean {
+  const handle = db as RosterCountDbHandle;
+  const predicate = combinePredicates([
+    eq(rosterEntries.orgId, actor.orgId),
+    eq(rosterEntries.teamId, teamId),
+    eq(rosterEntries.jerseyNumber, jerseyNumber),
+    ne(rosterEntries.id, exceptEntryId),
+    isNull(rosterEntries.endedAt),
+  ]);
+  const rows = handle
+    .select({ count: sql<number>`count(*)`.as('count') })
+    .from(rosterEntries)
+    .where(predicate)
+    .all();
+  const first = rows[0];
+  return first !== undefined && first.count > 0;
 }
