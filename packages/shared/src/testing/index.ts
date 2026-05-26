@@ -63,4 +63,12 @@ export {
   type ClerkPersona,
   type PersonaClerkIds,
   type PersonaClerkIdsRaw,
+  type ReadPersonaClerkIdsOptions,
 } from './clerkPersonas';
+export {
+  DEFAULT_SIGN_IN_TICKET_TTL_SECONDS,
+  assertClerkTestSecretKey,
+  mintSignInTicket,
+  type MintSignInTicketOptions,
+  type SignInTicket,
+} from './clerkTickets';

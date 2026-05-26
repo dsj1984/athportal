@@ -98,6 +98,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@clerk/backend": "^3.4.13",
     "@clerk/testing": "^2.0.31",
     "@playwright/test": "^1.60.0",
     "@repo/config": "workspace:*",
