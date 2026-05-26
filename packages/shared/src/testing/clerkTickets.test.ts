@@ -21,15 +21,17 @@ function fakeClerkClient(returned: {
 }) {
   return {
     signInTokens: {
-      createSignInToken: vi.fn(async () => ({
-        id: 'sit_test_1',
-        token: returned.token,
-        userId: returned.userId,
-        status: 'pending',
-        url: '',
-        createdAt: 0,
-        updatedAt: 0,
-      })),
+      createSignInToken: vi.fn(() =>
+        Promise.resolve({
+          id: 'sit_test_1',
+          token: returned.token,
+          userId: returned.userId,
+          status: 'pending',
+          url: '',
+          createdAt: 0,
+          updatedAt: 0,
+        }),
+      ),
     },
   };
 }
