@@ -146,7 +146,10 @@ describe('/onboarding SSR data path — contract', () => {
     const { getDb } = await import('../lib/db');
     const { buildOnboardingPageView } = await import('./onboarding');
 
-    const activeLegalDocuments = getActiveLegalDocuments(getDb(), new Date('2026-05-01T00:00:00.000Z'));
+    const activeLegalDocuments = getActiveLegalDocuments(
+      getDb(),
+      new Date('2026-05-01T00:00:00.000Z'),
+    );
     const view = buildOnboardingPageView(activeLegalDocuments);
 
     // Assert — the rendered version strings come straight from the DB
@@ -200,7 +203,10 @@ describe('/onboarding SSR data path — contract', () => {
     const { getDb } = await import('../lib/db');
     const { buildOnboardingPageView } = await import('./onboarding');
 
-    const activeLegalDocuments = getActiveLegalDocuments(getDb(), new Date('2026-05-01T00:00:00.000Z'));
+    const activeLegalDocuments = getActiveLegalDocuments(
+      getDb(),
+      new Date('2026-05-01T00:00:00.000Z'),
+    );
     const view = buildOnboardingPageView(activeLegalDocuments);
 
     expect(view.legalAcceptances.termsOfServiceVersion).toBe('tos-v2.0.0');
