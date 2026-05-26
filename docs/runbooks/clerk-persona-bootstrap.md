@@ -53,6 +53,29 @@ If you ever find yourself about to paste a `sk_test_…` or `sk_live_…` value 
 
 ---
 
+## Repo-visibility assumption
+
+**This runbook assumes the project is a private repository.** Committing real Clerk subject IDs to `clerk-personas.json` is safe under that assumption: subject IDs are public identifiers in Clerk's threat model (the `sub` JWT claim, visible in dashboard URLs) and they cannot be used to authenticate as the persona. The `sk_test_` boundary on `mintSignInTicket()` ensures the IDs only resolve against the Clerk **test** instance.
+
+The committed IDs become a privacy concern only if the threat model widens — for example, if the repo becomes public. Clerk's API permits `users.lookupByIdentifier` against the issuing instance, which can map a subject ID to its email; a fully-public repo therefore exposes the test-instance personas' emails to anyone who can clone the repo. For this project's `@example.com` synthetic emails the impact is bounded, but the same pattern applied to real PII would be a leak.
+
+### Before any visibility change to public
+
+Rotate the test-instance personas before flipping the repo's visibility:
+
+1. **Create new personas in the Clerk dashboard.** Use the same three canonical emails (`athlete@example.com`, `coach@example.com`, `org-admin@example.com`), but mark the OLD personas inactive first so Clerk's uniqueness check accepts the new ones. (Clerk's email-uniqueness rules treat the synthetic `@example.com` addresses as unique; rotation through soft-delete is the supported path.) Set a fresh strong password on each new persona; verify each email manually.
+2. **Delete the old personas** from the Clerk dashboard. Clerk hard-deletes test-instance users; no soft-delete revival is possible afterwards.
+3. **Replace the subject IDs** in `packages/shared/src/testing/clerk-personas.json` with the new `user_…` values, following Step 2 of the Procedure below.
+4. **Reset the local DB** so seeded rows align with the new subject IDs: `pnpm db:reset` (or `pnpm db:seed` if migrations are already current).
+5. **Commit the new IDs** to a branch and merge to `main` BEFORE the visibility flip. After the visibility flip, the old IDs are publicly visible in git history — at minimum they should no longer resolve to active Clerk users.
+6. **If the repo has had public exposure already** (e.g. accidental leak, prior public state), treat the rotation as urgent and rotate the Clerk **test-instance secret key** (`CLERK_SECRET_KEY`) in the same step — the key never appears in the repo, but a leaked subject ID combined with an attacker who can guess or reuse the secret-key value would be an escalation path.
+
+### If the runbook reader is contributing from a fork
+
+A fork of a private repo is also private (GitHub mirrors the original visibility). A fork of a public version of this repo would inherit the leaked subject IDs but would not have the matching `CLERK_SECRET_KEY` — meaning a fork-based attacker cannot mint tickets. The rotation procedure above is the operator's mitigation for the original-repo visibility flip; forks inherit the rotated IDs at the next pull.
+
+---
+
 ## Procedure
 
 ### Step 1 — Create the three personas in the Clerk dashboard
