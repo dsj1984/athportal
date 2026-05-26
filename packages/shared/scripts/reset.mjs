@@ -16,10 +16,10 @@
 // This is the destructive entry point in the seed harness, so the
 // guard fires before any unlink runs. Story #875 / Task #885.
 
-import Database from 'better-sqlite3';
 import { existsSync, mkdirSync, readFileSync, readdirSync, unlinkSync } from 'node:fs';
 import { dirname, join, resolve as resolvePath } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import Database from 'better-sqlite3';
 import { applySeed } from './seed.mjs';
 import { assertLocalDbPath, resolveLocalDbPath } from './seedPath.mjs';
 

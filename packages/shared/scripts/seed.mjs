@@ -24,10 +24,10 @@
 // NOTHING` clause on the primary key, so running the script twice
 // produces no duplicate rows. Story #875 / Task #885.
 
-import Database from 'better-sqlite3';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, resolve as resolvePath } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import Database from 'better-sqlite3';
 import { assertLocalDbPath, resolveLocalDbPath } from './seedPath.mjs';
 
 /**
