@@ -1,7 +1,7 @@
 {
   "$schema": ".agents/schemas/baselines/crap.schema.json",
   "kernelVersion": "0.1.0",
-  "generatedAt": "2026-05-26T00:16:04.567Z",
+  "generatedAt": "2026-05-26T00:23:08.864Z",
   "rollup": {
     "*": {
       "p50": 2,
@@ -3172,12 +3172,6 @@
       "method": "<anon method-3>",
       "path": "packages/shared/src/db/schema/users.ts",
       "startLine": 43
-    },
-    {
-      "crap": 2,
-      "method": "seedLegalDocuments",
-      "path": "packages/shared/src/db/seed.ts",
-      "startLine": 55
     },
     {
       "crap": 2,

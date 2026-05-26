@@ -787,7 +787,7 @@ route_prefixes:
 est_minutes: 8
 prerequisites:
   - "local stack running (pnpm dev)"
-  - "DB seeded with a fresh org via pnpm --filter @repo/shared run db:seed"
+  - "DB seeded with a fresh org via pnpm db:seed"
 ---
 
 ## Setup
@@ -806,7 +806,7 @@ prerequisites:
 ## Cleanup
 
 - Sign out by visiting `/sign-out` …
-- Reset the local DB: `pnpm --filter @repo/shared run db:reset && pnpm --filter @repo/shared run db:seed`.
+- Reset the local DB: `pnpm db:reset && pnpm db:seed`.
 ````
 
 The live pilot lives at [`tests/plans/identity/tp-identity-signup-happy-path.plan.md`](../tests/plans/identity/tp-identity-signup-happy-path.plan.md) — copy its shape verbatim when authoring a new plan.
@@ -923,7 +923,7 @@ The `safety_constraints` block on every charter is the corpus's load-bearing sec
 
 - **`environment`** — one of `local`, `preview`, `staging`. The literal `prod` is **denylisted at the schema layer**: the Zod error message reads "safety_constraints.environment must not be \"prod\" — charters that target production are denylisted at the lint layer" so the operator immediately understands a denylist, not a typo, is the cause. The `lint:qa` gate therefore refuses to merge a prod-targeted charter onto `main`. The agent-runner gate is the second line of defense — `environment: local` runs without ceremony; anything else requires the operator to pass `--allow-non-local` explicitly.
 - **`mutation_surface`** — a non-empty list of natural-language identifiers naming every persisted surface the charter is allowed to mutate (e.g. `"csv_import_batches table"`, `"athlete_memberships table"`). The list is documentation for the operator and a checklist for the cleanup step — it does NOT grant runtime capability; the runner does not enforce a per-table allow-list. The list's load-bearing role is review: a charter that mutates a surface not declared here is a defect in the charter, caught at PR review.
-- **`required_reset`** — a single string naming the command (or sequence) that returns the named mutation surface to a clean state. Example: `"pnpm --filter @repo/shared run db:reset && pnpm --filter @repo/shared run db:seed"`. The runner displays this string at the end of every charter session as a reminder; the human operator runs it before the next charter.
+- **`required_reset`** — a single string naming the command (or sequence) that returns the named mutation surface to a clean state. Example: `"pnpm db:reset && pnpm db:seed"`. The runner displays this string at the end of every charter session as a reminder; the human operator runs it before the next charter.
 
 A charter that omits any of the three fields fails `lint:qa` with a path-prefixed error (e.g. `safety_constraints.environment: Required`) so the operator sees the missing field by name.
 
