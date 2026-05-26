@@ -23,6 +23,23 @@
 import { legalDocuments } from './schema/legalDocuments';
 
 /**
+ * Re-export the persona-graph seed alongside `seedLegalDocuments` so a
+ * single `import { seedLegalDocuments, seedFixtures } from
+ * '@repo/shared/db/seed'` picks up both inserters. The package-level
+ * `./db/seed` subpath export remains the canonical surface for both.
+ */
+export {
+  seedFixtures,
+  SEED_FIXTURE_ATHLETE_MEMBERSHIP_ID,
+  SEED_FIXTURE_ATHLETE_USER_ID,
+  SEED_FIXTURE_COACH_ASSIGNMENT_ID,
+  SEED_FIXTURE_COACH_USER_ID,
+  SEED_FIXTURE_ORG_ADMIN_USER_ID,
+  SEED_FIXTURE_ORG_ID,
+  SEED_FIXTURE_TEAM_ID,
+} from './seedFixtures';
+
+/**
  * The bootstrap `effective_at` timestamp for the seeded rows. Pinned to
  * a calendar date (not "now") so re-running the seed produces a
  * byte-stable row in `effective_at`, and so contract tests can assert
