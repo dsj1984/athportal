@@ -1,0 +1,117 @@
+---
+// apps/web/src/pages/app/coach/teams/[teamId]/roster.astro
+//
+// `/app/coach/teams/:teamId/roster` — coach roster page (Epic #11 /
+// Story #912 / Task #918).
+//
+// Renders the empty table shell (the `RosterTable.astro` primitive)
+// and binds an inline `<script>` that fetches the team's roster from
+// `GET /api/v1/coach/teams/:teamId/roster` and populates the table
+// via `renderRosterRows`. The page chrome composes only existing UI
+// primitives (PageHeader, Btn, Badge) per AC #2.
+//
+// SSR + client-fetch follows the same pattern as the admin pages
+// (see `apps/web/src/pages/admin/teams/[id]/edit.astro`) — `@repo/web`
+// does not wire `@astrojs/react` for the coach surface, so a React
+// island would be foundation-level scope. The Task ACs are
+// behavioural (one row per athlete, `data-testid` selectors, no
+// innerHTML) and are satisfied by the `.astro` + `.ts` pair.
+
+import PageHeader from '../../../../../components/ui/PageHeader.astro';
+import RosterTable from '../../../../../components/coach/RosterTable.astro';
+
+const { teamId } = Astro.params;
+if (typeof teamId !== 'string' || teamId.length === 0) {
+  return new Response('Not Found', { status: 404 });
+}
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Team roster · Coach</title>
+  </head>
+  <body class="bg-surface-page text-text-primary">
+    <main
+      class="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8"
+      data-team-id={teamId}
+      data-coach-roster-page
+    >
+      <PageHeader title="Team roster">
+        <a
+          slot="actions"
+          class="inline-flex items-center justify-center rounded-md border border-border bg-surface-card px-3 py-2 text-sm font-medium text-text-primary shadow-sm hover:bg-surface-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+          href="/dashboard"
+        >
+          Back to dashboard
+        </a>
+      </PageHeader>
+
+      <p
+        class="rounded-md border border-action-coral bg-surface-card px-4 py-3 text-sm text-action-coral"
+        data-testid="coach-roster-error"
+        role="alert"
+        hidden
+      ></p>
+
+      <RosterTable />
+    </main>
+  </body>
+</html>
+
+<script>
+  import {
+    type CoachRosterEntry,
+    COACH_ROSTER_TEST_IDS,
+    buildRosterUrl,
+    renderRosterRows,
+  } from '../../../../../components/coach/RosterTable.ts';
+
+  interface ListEnvelope {
+    success: boolean;
+    data?: { items: CoachRosterEntry[] };
+    error?: { code?: string; message?: string };
+  }
+
+  async function load(): Promise<void> {
+    const root = document.querySelector<HTMLElement>('[data-coach-roster-page]');
+    const errorEl = document.querySelector<HTMLElement>(
+      `[data-testid="${COACH_ROSTER_TEST_IDS.error}"]`,
+    );
+    const tbody = document.querySelector<HTMLTableSectionElement>('[data-coach-roster-tbody]');
+    const teamId = root?.dataset.teamId;
+    if (!teamId || !tbody) return;
+    try {
+      const res = await fetch(buildRosterUrl(teamId), {
+        headers: { accept: 'application/json' },
+      });
+      const envelope = (await res.json().catch(() => null)) as ListEnvelope | null;
+      if (!res.ok || envelope?.success !== true || !envelope.data) {
+        if (errorEl) {
+          errorEl.textContent = envelope?.error?.message ?? 'Could not load the roster.';
+          errorEl.hidden = false;
+        }
+        return;
+      }
+      const items = envelope.data.items;
+      const emptyRow = tbody.querySelector<HTMLElement>(
+        `[data-testid="${COACH_ROSTER_TEST_IDS.emptyState}"]`,
+      );
+      if (items.length === 0) {
+        // No athletes — keep the seeded empty row but show it.
+        if (emptyRow) emptyRow.hidden = false;
+        return;
+      }
+      renderRosterRows(tbody, items);
+    } catch {
+      if (errorEl) {
+        errorEl.textContent = 'Could not reach the server.';
+        errorEl.hidden = false;
+      }
+    }
+  }
+
+  void load();
+</script>
