@@ -78,9 +78,10 @@ export function assertLocalDbPath(resolvedPath, { repoRoot }) {
   const absolute = resolvePath(resolvedPath);
   // Append a separator before the prefix check so `/a/b` does not match
   // an allowedDir of `/a/bc`.
-  const allowedPrefix = allowedDir.endsWith('/') || allowedDir.endsWith('\\')
-    ? allowedDir
-    : `${allowedDir}${process.platform === 'win32' ? '\\' : '/'}`;
+  const allowedPrefix =
+    allowedDir.endsWith('/') || allowedDir.endsWith('\\')
+      ? allowedDir
+      : `${allowedDir}${process.platform === 'win32' ? '\\' : '/'}`;
   const candidate = absolute.endsWith('/') || absolute.endsWith('\\') ? absolute : `${absolute}`;
   if (candidate !== allowedDir && !candidate.startsWith(allowedPrefix)) {
     throw new Error(

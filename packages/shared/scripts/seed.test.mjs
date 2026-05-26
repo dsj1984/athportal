@@ -10,8 +10,7 @@
 import { describe, expect, it } from 'vitest';
 import { assertLocalDbPath, resolveLocalDbPath } from './seedPath.mjs';
 
-const FAKE_REPO_ROOT =
-  process.platform === 'win32' ? 'C:\\fake\\repo' : '/fake/repo';
+const FAKE_REPO_ROOT = process.platform === 'win32' ? 'C:\\fake\\repo' : '/fake/repo';
 
 const expectedLocalDb =
   process.platform === 'win32'
@@ -54,9 +53,7 @@ describe('resolveLocalDbPath', () => {
 
 describe('assertLocalDbPath', () => {
   it('passes for the canonical local.db path', () => {
-    expect(() =>
-      assertLocalDbPath(expectedLocalDb, { repoRoot: FAKE_REPO_ROOT }),
-    ).not.toThrow();
+    expect(() => assertLocalDbPath(expectedLocalDb, { repoRoot: FAKE_REPO_ROOT })).not.toThrow();
   });
 
   it('rejects a libsql:// URL', () => {
@@ -66,14 +63,13 @@ describe('assertLocalDbPath', () => {
   });
 
   it('rejects an http:// URL', () => {
-    expect(() =>
-      assertLocalDbPath('http://example.com/db', { repoRoot: FAKE_REPO_ROOT }),
-    ).toThrow(/refuse to run against a non-file URL/);
+    expect(() => assertLocalDbPath('http://example.com/db', { repoRoot: FAKE_REPO_ROOT })).toThrow(
+      /refuse to run against a non-file URL/,
+    );
   });
 
   it('rejects an absolute path outside packages/shared/data/', () => {
-    const outside =
-      process.platform === 'win32' ? 'C:\\tmp\\local.db' : '/tmp/local.db';
+    const outside = process.platform === 'win32' ? 'C:\\tmp\\local.db' : '/tmp/local.db';
     expect(() => assertLocalDbPath(outside, { repoRoot: FAKE_REPO_ROOT })).toThrow(
       /Only paths under .* are allowed/,
     );

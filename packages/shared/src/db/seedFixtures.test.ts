@@ -97,11 +97,7 @@ describe('seedFixtures', () => {
       .from(users)
       .where(eq(users.id, SEED_FIXTURE_ATHLETE_USER_ID))
       .all()[0];
-    const coach = db
-      .select()
-      .from(users)
-      .where(eq(users.id, SEED_FIXTURE_COACH_USER_ID))
-      .all()[0];
+    const coach = db.select().from(users).where(eq(users.id, SEED_FIXTURE_COACH_USER_ID)).all()[0];
     const orgAdmin = db
       .select()
       .from(users)
