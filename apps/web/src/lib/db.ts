@@ -20,7 +20,8 @@
 // the DB (a test that mocks the module, a build-time evaluation) does
 // not touch the filesystem.
 
-import { dirname, isAbsolute, resolve } from 'node:path';
+import { existsSync } from 'node:fs';
+import { dirname, isAbsolute, parse as parsePath, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as schema from '@repo/shared/db/schema';
 import Database from 'better-sqlite3';
@@ -37,18 +38,48 @@ import { type BetterSQLite3Database, drizzle } from 'drizzle-orm/better-sqlite3'
  * relative `TURSO_URL` mis-resolved against the SSR worker's CWD and
  * crashed `/internal/styleguide` with "Cannot open database because the
  * directory does not exist".
+ *
+ * Story #903 hardening — the prior implementation hard-coded a four-
+ * directory climb that assumed Vite/Astro emitted SSR chunks at the
+ * same depth as the source (`apps/web/src/lib/db.ts`). In production
+ * the bundled chunk may land at `apps/web/dist/server/chunks/<hash>.mjs`
+ * (six levels deep) or `apps/web/dist/server/entry.mjs` (four levels —
+ * which would coincidentally pass the fixed climb), making the depth
+ * unreliable. We now search upward for the first directory containing
+ * `pnpm-workspace.yaml` (the canonical monorepo-root marker, declared
+ * at the repo root since Epic #2). Throws when the marker cannot be
+ * located within reasonable upward distance — a missing marker means
+ * the runtime was bundled in a way the resolver cannot anchor against,
+ * which is operator-facing rather than user-facing.
  */
-function findMonorepoRoot(): string {
-  // This module lives at apps/web/src/lib/db.ts. Climb four directories
-  // (lib → src → web → apps) to reach the monorepo root. The Vite build
-  // preserves this depth (the compiled bundle is loaded by Astro from
-  // the same workspace tree), so the climb is correct at both dev and
-  // production runtime.
-  const here = dirname(fileURLToPath(import.meta.url));
-  return resolve(here, '..', '..', '..', '..');
+export function findMonorepoRoot(startDir: string): string {
+  const root = parsePath(startDir).root;
+  let current = startDir;
+  // Bound the walk to avoid infinite loops on weird mount points; 32
+  // levels is well above any realistic depth (Vite chunks ~6 levels;
+  // a deeply nested test fixture < 16).
+  for (let i = 0; i < 32; i += 1) {
+    if (existsSync(resolve(current, 'pnpm-workspace.yaml'))) {
+      return current;
+    }
+    if (current === root) {
+      break;
+    }
+    const parent = dirname(current);
+    if (parent === current) {
+      break;
+    }
+    current = parent;
+  }
+  throw new Error(
+    `findMonorepoRoot: walked upward from '${startDir}' but could not locate ` +
+      `pnpm-workspace.yaml. The web runtime resolves relative TURSO_URL paths ` +
+      `against the monorepo root; this resolver requires the marker file to be ` +
+      `discoverable from the running module's directory.`,
+  );
 }
 
-const MONOREPO_ROOT = findMonorepoRoot();
+const MONOREPO_ROOT = findMonorepoRoot(dirname(fileURLToPath(import.meta.url)));
 
 /**
  * Resolve the SQLite file path from `TURSO_URL`. The env contract

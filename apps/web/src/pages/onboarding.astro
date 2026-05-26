@@ -31,12 +31,58 @@
 // introduced the original placeholder.
 
 import { buildOnboardingPageView } from './onboarding.ts';
+import type { ActiveLegalDocuments } from '@repo/shared/db/queries/legalDocuments';
 import { getActiveLegalDocuments } from '@repo/shared/db/queries/legalDocuments';
+import {
+  SEED_BOOTSTRAP_EFFECTIVE_AT,
+  SEED_PRIVACY_BODY_URL,
+  SEED_PRIVACY_ID,
+  SEED_PRIVACY_VERSION,
+  SEED_TOS_BODY_URL,
+  SEED_TOS_ID,
+  SEED_TOS_VERSION,
+} from '@repo/shared/db/seed';
 import OnboardingForm from '../components/onboarding/OnboardingForm.astro';
 import RootLayout from '../layouts/RootLayout.astro';
 import { getDb } from '../lib/db';
 
-const activeLegalDocuments = getActiveLegalDocuments(getDb());
+// Story #903 hardening — wrap the live DB read in try/catch so a fresh
+// deploy that has run migrations but not yet `pnpm db:seed` does not
+// 500 the /onboarding page (the only route an un-onboarded user can
+// reach per the gate's allowlist). The fallback mirrors the canonical
+// SEED_* constants — the same values the API edge re-validates against
+// — so the form continues to function end-to-end on an unseeded DB.
+// Before this guard, Story #878's cutover regressed the pre-Epic-#869
+// placeholder behaviour: the placeholder returned the SEED_* constants
+// verbatim and rendered cleanly even on an unseeded DB; the live read
+// propagated the accessor's throw and trapped the user in a
+// redirect-to-500 loop with no escape.
+let activeLegalDocuments: ActiveLegalDocuments;
+try {
+  activeLegalDocuments = getActiveLegalDocuments(getDb());
+} catch (cause) {
+  const message = cause instanceof Error ? cause.message : String(cause);
+  console.error(
+    `[onboarding] getActiveLegalDocuments failed; falling back to SEED_* constants. ` +
+      `An operator should run \`pnpm db:seed\` on this deploy. Cause: ${message}`,
+  );
+  activeLegalDocuments = {
+    termsOfService: {
+      id: SEED_TOS_ID,
+      kind: 'terms_of_service' as const,
+      version: SEED_TOS_VERSION,
+      effectiveAt: SEED_BOOTSTRAP_EFFECTIVE_AT,
+      bodyUrl: SEED_TOS_BODY_URL,
+    },
+    privacyPolicy: {
+      id: SEED_PRIVACY_ID,
+      kind: 'privacy_policy' as const,
+      version: SEED_PRIVACY_VERSION,
+      effectiveAt: SEED_BOOTSTRAP_EFFECTIVE_AT,
+      bodyUrl: SEED_PRIVACY_BODY_URL,
+    },
+  };
+}
 const view = buildOnboardingPageView(activeLegalDocuments);
 
 // Invite token is carried on the URL as `/onboarding?invite=<token>`

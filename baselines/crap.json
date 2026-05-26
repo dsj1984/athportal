@@ -1,11 +1,11 @@
 {
   "$schema": ".agents/schemas/baselines/crap.schema.json",
-  "generatedAt": "2026-05-26T13:19:25.491Z",
+  "generatedAt": "2026-05-26T14:08:39.825Z",
   "kernelVersion": "1.0.0",
   "rollup": {
     "*": {
       "max": 506,
-      "methodsAbove20": 63,
+      "methodsAbove20": 64,
       "p50": 2,
       "p95": 42
     }
@@ -2538,28 +2538,28 @@
       "startLine": 67
     },
     {
-      "crap": 2,
+      "crap": 30,
       "method": "findMonorepoRoot",
       "path": "apps/web/src/lib/db.ts",
-      "startLine": 41
+      "startLine": 55
     },
     {
       "crap": 56,
       "method": "resolveDatabasePath",
       "path": "apps/web/src/lib/db.ts",
-      "startLine": 68
+      "startLine": 99
     },
     {
       "crap": 6,
       "method": "getDb",
       "path": "apps/web/src/lib/db.ts",
-      "startLine": 116
+      "startLine": 147
     },
     {
       "crap": 2,
       "method": "__resetDbForTests",
       "path": "apps/web/src/lib/db.ts",
-      "startLine": 127
+      "startLine": 158
     },
     {
       "crap": 20,
@@ -2580,16 +2580,16 @@
       "startLine": 145
     },
     {
-      "crap": 2,
+      "crap": 6,
       "method": "<anon method-1>",
       "path": "apps/web/src/middleware.ts",
-      "startLine": 203
+      "startLine": 220
     },
     {
       "crap": 2,
       "method": "<anon method-2>",
       "path": "apps/web/src/middleware.ts",
-      "startLine": 217
+      "startLine": 243
     },
     {
       "crap": 6,
@@ -3267,7 +3267,7 @@
       "crap": 2,
       "method": "seedLegalDocuments",
       "path": "packages/shared/src/db/seed.ts",
-      "startLine": 72
+      "startLine": 84
     },
     {
       "crap": 2,

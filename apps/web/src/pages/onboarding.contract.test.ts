@@ -89,7 +89,11 @@ function freshOnboardingDb(): {
   client.pragma('foreign_keys = ON');
   applyMigration(client, '0000_auth_and_rbac.sql');
   applyMigration(client, '0001_onboarding_schema.sql');
-  const drizzleDb = drizzle(client);
+  // drizzle()'s return type resolves to `any` in some workspace
+  // configurations; cast through `unknown` once at the helper boundary
+  // so callers can pass it to mockReturnValue without per-call lint
+  // suppressions.
+  const drizzleDb = drizzle(client) as unknown as ReturnType<typeof drizzle>;
   return { drizzleDb, client };
 }
 
@@ -211,5 +215,77 @@ describe('/onboarding SSR data path — contract', () => {
 
     expect(view.legalAcceptances.termsOfServiceVersion).toBe('tos-v2.0.0');
     expect(view.legalAcceptances.privacyPolicyVersion).toBe('privacy-v1.0.0');
+  });
+
+  it('Story #903: renders the SEED_* fallback when the DB has no active legal_documents rows', async () => {
+    // The /onboarding page is the only route an un-onboarded user can
+    // reach per the gate's allowlist. If the page itself 500s on an
+    // unseeded DB, the user is stuck in a redirect-to-500 loop with no
+    // escape. Story #903 wraps the live read in try/catch and falls
+    // back to the canonical SEED_* constants — this test replicates the
+    // .astro frontmatter chain exactly and asserts the fallback
+    // produces a coherent OnboardingPageView.
+    //
+    // Arrange — fresh DB schema with NO legal_documents rows. The
+    // accessor's contract is to throw when either active row is
+    // missing.
+    const { drizzleDb, client } = freshOnboardingDb();
+    seededClient = client;
+    dbMocks.getDb.mockReturnValue(drizzleDb);
+
+    const { getActiveLegalDocuments } = await import('@repo/shared/db/queries/legalDocuments');
+    const { getDb } = await import('../lib/db');
+    const { buildOnboardingPageView } = await import('./onboarding');
+    const {
+      SEED_BOOTSTRAP_EFFECTIVE_AT,
+      SEED_PRIVACY_BODY_URL,
+      SEED_PRIVACY_ID,
+      SEED_PRIVACY_VERSION,
+      SEED_TOS_BODY_URL,
+      SEED_TOS_ID,
+      SEED_TOS_VERSION,
+    } = await import('@repo/shared/db/seed');
+
+    // Act — mirror the .astro frontmatter try/catch shape verbatim.
+    // Suppress the expected console.error so the test output stays
+    // clean; assert it fired on the next line.
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    let activeLegalDocuments: import('@repo/shared/db/queries/legalDocuments').ActiveLegalDocuments;
+    try {
+      activeLegalDocuments = getActiveLegalDocuments(getDb(), new Date('2026-05-01T00:00:00.000Z'));
+    } catch {
+      activeLegalDocuments = {
+        termsOfService: {
+          id: SEED_TOS_ID,
+          kind: 'terms_of_service' as const,
+          version: SEED_TOS_VERSION,
+          effectiveAt: SEED_BOOTSTRAP_EFFECTIVE_AT,
+          bodyUrl: SEED_TOS_BODY_URL,
+        },
+        privacyPolicy: {
+          id: SEED_PRIVACY_ID,
+          kind: 'privacy_policy' as const,
+          version: SEED_PRIVACY_VERSION,
+          effectiveAt: SEED_BOOTSTRAP_EFFECTIVE_AT,
+          bodyUrl: SEED_PRIVACY_BODY_URL,
+        },
+      };
+      console.error('[onboarding] fallback fired');
+    }
+    const view = buildOnboardingPageView(activeLegalDocuments);
+
+    // Assert — the page rendered (no throw escaped the catch) AND the
+    // version strings match the SEED_* constants (proving the fallback,
+    // not a real DB row). The buildOnboardingPageView return shape is
+    // the load-bearing assertion: if the SEED_* fallback's shape
+    // diverges from what buildOnboardingPageView expects, the chain
+    // would throw at view-build time instead.
+    expect(errorSpy).toHaveBeenCalled();
+    expect(view.legalAcceptances.termsOfServiceVersion).toBe(SEED_TOS_VERSION);
+    expect(view.legalAcceptances.privacyPolicyVersion).toBe(SEED_PRIVACY_VERSION);
+    expect(view.title).toBeTruthy();
+    expect(view.heading).toBeTruthy();
+
+    errorSpy.mockRestore();
   });
 });

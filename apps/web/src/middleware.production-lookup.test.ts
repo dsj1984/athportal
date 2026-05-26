@@ -116,4 +116,62 @@ describe('productionLookup', () => {
     expect(result).not.toBeNull();
     expect(result?.onboardedAt?.getTime()).toBe(stamped.onboardedAt?.getTime());
   });
+
+  it('Story #903: returns null when getDb() throws (safe-default 302 instead of 500)', async () => {
+    // Production deploy race / misconfigured TURSO_URL — getDb() throws
+    // because resolveDatabasePath() refuses a libsql:// endpoint while
+    // the web runtime is still wired to better-sqlite3. Before Story
+    // #903 the throw propagated out of productionLookup → out of the
+    // middleware → 500 for every signed-in request. After Story #903
+    // the catch returns null and the gate 302s to /onboarding instead.
+    mocks.getDb.mockImplementation(() => {
+      throw new Error('TURSO_URL points to a libsql:// endpoint — fixture');
+    });
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    const { productionLookup } = await import('./middleware');
+    const result = productionLookup('clerk_sub_some_user');
+
+    expect(result).toBeNull();
+    expect(errorSpy).toHaveBeenCalledTimes(1);
+    // The error message MUST name the gate so operators can grep logs;
+    // it MUST NOT echo any secret-key material (the helper's own error
+    // surface is responsible for redaction; the catch only forwards).
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- vitest's mock.calls type widens to any[][]; the runtime value here is a string from the catch's console.error template
+    const logged: string = errorSpy.mock.calls[0]?.[0] ?? '';
+    expect(logged).toMatch(/onboarding-gate/);
+    expect(logged).toMatch(/productionLookup/);
+    expect(logged).not.toMatch(/sk_test_/);
+    expect(logged).not.toMatch(/sk_live_/);
+
+    errorSpy.mockRestore();
+  });
+
+  it('Story #903: returns null when getOnboardingStateBySubject throws (DB query error)', async () => {
+    // A second failure surface — the DB handle opens cleanly but the
+    // query throws (e.g. schema mismatch, prepared-statement error from
+    // a stale handle after a migration). Same safe-default: the catch
+    // returns null and the gate 302s.
+    //
+    // Explicitly restore getDb to the happy-path stub so this test
+    // exercises the query-time throw, not the prior test's getDb-throw.
+    // `beforeEach` clears call counts but not implementations, so a
+    // prior `mockImplementation` would otherwise leak in.
+    mocks.getDb.mockImplementation(() => ({ __tag: 'db-handle-stub' }));
+    mocks.getOnboardingStateBySubject.mockImplementation(() => {
+      throw new Error('SQLITE_ERROR: no such column: clerk_subject_id — fixture');
+    });
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    const { productionLookup } = await import('./middleware');
+    const result = productionLookup('clerk_sub_query_failure');
+
+    expect(result).toBeNull();
+    expect(errorSpy).toHaveBeenCalledTimes(1);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- vitest's mock.calls type widens to any[][]; the runtime value here is a string from the catch's console.error template
+    const logged: string = errorSpy.mock.calls[0]?.[0] ?? '';
+    expect(logged).toMatch(/SQLITE_ERROR/);
+
+    errorSpy.mockRestore();
+  });
 });
