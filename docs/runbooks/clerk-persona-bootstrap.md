@@ -121,7 +121,7 @@ Expected output:
 
 If you see an error message that begins:
 
-```
+```text
 readPersonaClerkIds: the following persona(s) are not yet populated …
 ```
 
