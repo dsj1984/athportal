@@ -1,6 +1,6 @@
 {
   "$schema": ".agents/schemas/baselines/crap.schema.json",
-  "generatedAt": "2026-05-26T14:08:39.825Z",
+  "generatedAt": "2026-05-26T14:27:20.291Z",
   "kernelVersion": "1.0.0",
   "rollup": {
     "*": {
@@ -3483,13 +3483,13 @@
       "crap": 20,
       "method": "assertClerkTestSecretKey",
       "path": "packages/shared/src/testing/clerkTickets.ts",
-      "startLine": 93
+      "startLine": 106
     },
     {
       "crap": 2,
       "method": "mintSignInTicket",
       "path": "packages/shared/src/testing/clerkTickets.ts",
-      "startLine": 135
+      "startLine": 148
     },
     {
       "crap": 6,
