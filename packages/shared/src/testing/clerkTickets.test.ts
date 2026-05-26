@@ -11,6 +11,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
   DEFAULT_SIGN_IN_TICKET_TTL_SECONDS,
+  MAX_SIGN_IN_TICKET_TTL_SECONDS,
   assertClerkTestSecretKey,
   mintSignInTicket,
 } from './clerkTickets';
@@ -193,6 +194,70 @@ describe('mintSignInTicket — happy path', () => {
     expect(client.signInTokens.createSignInToken).toHaveBeenCalledWith({
       userId: 'user_test_coach_xyz',
       expiresInSeconds: 5,
+    });
+  });
+
+  it('Story #904: clamps expiresInSeconds to MAX_SIGN_IN_TICKET_TTL_SECONDS when caller overshoots', async () => {
+    // A buggy caller passing 86400 (24h) MUST end up with a ticket
+    // bounded by the documented 300-second ceiling. The clamp is
+    // silent — no throw — so a runaway caller still gets a working
+    // ticket, just one with a sensible lifetime.
+    const { factory, client } = fakeFactory({
+      token: 'sit_token_value',
+      userId: 'user_test_athlete_xyz',
+    });
+
+    const result = await mintSignInTicket({
+      persona: 'athlete',
+      expiresInSeconds: 86400, // 24h — well above the 300-second ceiling
+      secretKey: 'sk_test_validkey',
+      clerkFactory: factory,
+      personaIdsReader: () =>
+        Object.freeze({
+          athlete: 'user_test_athlete_xyz',
+          coach: 'user_test_coach_unused',
+          'org-admin': 'user_test_orgadmin_unused',
+        }),
+    });
+
+    expect(result.expiresInSeconds).toBe(MAX_SIGN_IN_TICKET_TTL_SECONDS);
+    expect(result.expiresInSeconds).toBe(300);
+    // The clamped value MUST also be what the Clerk SDK sees — otherwise
+    // the issued ticket still carries the overshoot TTL even though the
+    // echo we return looks correct.
+    expect(client.signInTokens.createSignInToken).toHaveBeenCalledWith({
+      userId: 'user_test_athlete_xyz',
+      expiresInSeconds: MAX_SIGN_IN_TICKET_TTL_SECONDS,
+    });
+  });
+
+  it('Story #904: honours an expiresInSeconds below the ceiling verbatim (no over-clamping)', async () => {
+    // A 60-second TTL is below the 300-second ceiling. The clamp MUST
+    // NOT touch it — `Math.min(60, 300) === 60`. This pins the lower
+    // half of the boundary so a future change to the clamp shape
+    // (e.g. accidentally substituting max for min) flips this test red.
+    const { factory, client } = fakeFactory({
+      token: 'sit_token_value',
+      userId: 'user_test_coach_xyz',
+    });
+
+    const result = await mintSignInTicket({
+      persona: 'coach',
+      expiresInSeconds: 60,
+      secretKey: 'sk_test_validkey',
+      clerkFactory: factory,
+      personaIdsReader: () =>
+        Object.freeze({
+          athlete: 'user_test_athlete_unused',
+          coach: 'user_test_coach_xyz',
+          'org-admin': 'user_test_orgadmin_unused',
+        }),
+    });
+
+    expect(result.expiresInSeconds).toBe(60);
+    expect(client.signInTokens.createSignInToken).toHaveBeenCalledWith({
+      userId: 'user_test_coach_xyz',
+      expiresInSeconds: 60,
     });
   });
 

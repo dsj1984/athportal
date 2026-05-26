@@ -39,6 +39,19 @@ import { readPersonaClerkIds } from './clerkPersonas';
 /** Default ticket lifetime — long enough for the runner's sign-in step, short enough to limit blast radius if leaked. */
 export const DEFAULT_SIGN_IN_TICKET_TTL_SECONDS = 30;
 
+/**
+ * Hard upper bound on `expiresInSeconds`. A buggy or malicious caller
+ * could otherwise mint a 24-hour ticket; the `sk_test_` boundary
+ * contains the blast radius to the test instance, but five minutes is
+ * the longest TTL any real runner workflow needs. Defence-in-depth:
+ * `mintSignInTicket` clamps to this ceiling silently rather than
+ * throwing, so a caller that overshoots still gets a working ticket —
+ * just one with a sensible lifetime.
+ *
+ * Story #904 / audit-security finding #2.
+ */
+export const MAX_SIGN_IN_TICKET_TTL_SECONDS = 300;
+
 /** Required env-var prefix for Clerk test-instance secret keys. */
 const REQUIRED_SECRET_KEY_PREFIX = 'sk_test_';
 
@@ -135,11 +148,16 @@ export function assertClerkTestSecretKey(rawKey: string | undefined): string {
 export async function mintSignInTicket(options: MintSignInTicketOptions): Promise<SignInTicket> {
   const {
     persona,
-    expiresInSeconds = DEFAULT_SIGN_IN_TICKET_TTL_SECONDS,
+    expiresInSeconds: rawExpiresInSeconds = DEFAULT_SIGN_IN_TICKET_TTL_SECONDS,
     secretKey = process.env[SECRET_KEY_ENV_VAR],
     clerkFactory = createClerkClient,
     personaIdsReader = readPersonaClerkIds,
   } = options;
+
+  // Clamp the requested TTL to the documented ceiling. A caller asking
+  // for 86400 (24h) ends up with 300 (5min); a caller asking for 60
+  // gets 60 verbatim. Story #904 / audit-security finding #2.
+  const expiresInSeconds = Math.min(rawExpiresInSeconds, MAX_SIGN_IN_TICKET_TTL_SECONDS);
 
   // Step 1: validate the secret key BEFORE any other work. This is the
   // load-bearing check — every other branch in this function assumes a
