@@ -1,13 +1,13 @@
 {
   "$schema": ".agents/schemas/baselines/crap.schema.json",
-  "kernelVersion": "1.0.0",
-  "generatedAt": "2026-05-25T21:15:38.409Z",
+  "kernelVersion": "0.1.0",
+  "generatedAt": "2026-05-26T00:23:08.864Z",
   "rollup": {
     "*": {
       "p50": 2,
       "p95": 42,
       "max": 506,
-      "methodsAbove20": 60
+      "methodsAbove20": 59
     }
   },
   "rows": [
@@ -2538,24 +2538,6 @@
       "startLine": 36
     },
     {
-      "crap": 42,
-      "method": "resolveDatabasePath",
-      "path": "apps/web/src/lib/db.ts",
-      "startLine": 34
-    },
-    {
-      "crap": 6,
-      "method": "getDb",
-      "path": "apps/web/src/lib/db.ts",
-      "startLine": 73
-    },
-    {
-      "crap": 2,
-      "method": "__resetDbForTests",
-      "path": "apps/web/src/lib/db.ts",
-      "startLine": 84
-    },
-    {
       "crap": 20,
       "method": "isAllowlisted",
       "path": "apps/web/src/middleware.ts",
@@ -3190,12 +3172,6 @@
       "method": "<anon method-3>",
       "path": "packages/shared/src/db/schema/users.ts",
       "startLine": 43
-    },
-    {
-      "crap": 2,
-      "method": "seedLegalDocuments",
-      "path": "packages/shared/src/db/seed.ts",
-      "startLine": 55
     },
     {
       "crap": 2,
