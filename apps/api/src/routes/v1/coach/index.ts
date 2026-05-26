@@ -31,6 +31,7 @@
 
 import { Hono } from 'hono';
 import type { RequireInternalUserEnv } from '../../../middleware/auth';
+import { coachInvitesRoute } from './invites';
 import { coachRosterRoute } from './roster';
 
 export const coachRoute = new Hono<RequireInternalUserEnv>();
@@ -40,3 +41,9 @@ export const coachRoute = new Hono<RequireInternalUserEnv>();
 // `c.req.param('teamId')` — Hono propagates path params down the
 // composed routers.
 coachRoute.route('/teams/:teamId/roster', coachRosterRoute);
+
+// Mount the invites sub-router at the team-scoped roster path. Kept
+// as a sibling rather than nested under `coachRosterRoute` so the
+// read path (Story #912) and the send path (Story #920) live in
+// independent files — a parallel-safe split for the wave runner.
+coachRoute.route('/teams/:teamId/roster/invites', coachInvitesRoute);
