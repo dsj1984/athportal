@@ -52,4 +52,4 @@ prerequisites:
 
 - Delete the downloaded report file(s) from the downloads folder so successive runs of this plan do not accumulate stale exports.
 - Reset the DB so the next run starts from a known-clean state: `pnpm --filter @repo/shared run db:reset && pnpm --filter @repo/shared run db:seed`.
-- Sign out by visiting `/sign-out` or clicking the sign-out control in the header.
+- Sign out via the `<UserButton/>` menu in the header (the menu posts to `/sign-out`). Never GET `/sign-out` — the route returns 405 Method Not Allowed by design; see `docs/testing-strategy.md` § QA Corpus → Sign-out pattern.

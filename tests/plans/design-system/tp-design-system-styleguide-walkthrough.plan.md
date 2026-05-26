@@ -48,6 +48,6 @@ prerequisites:
 
 ## Cleanup
 
-- Sign out by visiting `/sign-out` (or clicking the sign-out control in the header). The browser should redirect to the unauthenticated landing surface.
+- Sign out via the `<UserButton/>` menu in the header (the menu posts to `/sign-out`). The browser should redirect to the unauthenticated landing surface. Never GET `/sign-out` — the route returns 405 Method Not Allowed by design; see `docs/testing-strategy.md` § QA Corpus → Sign-out pattern.
 - No DB reset is required — the plan does not mutate any rows; it is read-only against the rendered styleguide page.
 - If the operator's `dev_admin` promotion was temporary (e.g. created solely to walk this plan), revert it by running `pnpm --filter @repo/shared run db:reset && pnpm --filter @repo/shared run db:seed` so the next contributor starts from the same baseline.

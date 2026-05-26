@@ -48,6 +48,6 @@ prerequisites:
 
 ## Cleanup
 
-- Sign out via `/sign-out`.
+- Sign out via the `<UserButton/>` menu in the header (the menu posts to `/sign-out`). Never GET `/sign-out` — the route returns 405 Method Not Allowed by design; see `docs/testing-strategy.md` § QA Corpus → Sign-out pattern.
 - Reset the local DB to the deterministic baseline: `pnpm --filter @repo/shared run db:reset && pnpm --filter @repo/shared run db:seed`.
 - If a Clerk user was created without completing onboarding and the test will rerun with the same email, delete the Clerk user from the Clerk dashboard before retrying.

@@ -49,5 +49,5 @@ prerequisites:
 ## Cleanup
 
 - Reset the DB so the next run starts from a known-clean state: `pnpm --filter @repo/shared run db:reset && pnpm --filter @repo/shared run db:seed`. The CSV import directly mutates `csv_import_batches` and `athlete_memberships`, so a reset is the only reliable cleanup.
-- Sign out by visiting `/sign-out` or clicking the sign-out control in the header.
+- Sign out via the `<UserButton/>` menu in the header (the menu posts to `/sign-out`). Never GET `/sign-out` — the route returns 405 Method Not Allowed by design; see `docs/testing-strategy.md` § QA Corpus → Sign-out pattern.
 - Delete the staged CSV from the host machine if it contains values that should not be retained in the operator's working directory.

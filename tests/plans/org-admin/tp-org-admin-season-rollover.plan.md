@@ -51,4 +51,4 @@ prerequisites:
 ## Cleanup
 
 - Reset the DB so the next run starts from the same pre-rollover baseline: `pnpm --filter @repo/shared run db:reset && pnpm --filter @repo/shared run db:seed`. The rollover apply mutates `teams`, `athlete_memberships`, and `coach_assignments` simultaneously — a full reset is the only reliable cleanup.
-- Sign out by visiting `/sign-out` or clicking the sign-out control in the header.
+- Sign out via the `<UserButton/>` menu in the header (the menu posts to `/sign-out`). Never GET `/sign-out` — the route returns 405 Method Not Allowed by design; see `docs/testing-strategy.md` § QA Corpus → Sign-out pattern.

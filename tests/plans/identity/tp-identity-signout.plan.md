@@ -31,7 +31,7 @@ prerequisites:
 2. Navigate to `/dashboard` if not already there and copy down the name of the session cookie (the Clerk session cookie that authorises requests).
    **Expected:** the dashboard renders signed-in and the named cookie is present in the browser's cookie storage for the local origin.
 
-3. Visit `/sign-out` (or click the sign-out control in the header).
+3. Open the `<UserButton/>` menu in the header avatar and click **Sign out** (the menu posts to `/sign-out` on the operator's behalf — never issue a GET against `/sign-out` directly, the route returns 405 by design).
    **Expected:** the browser is redirected to the unauthenticated landing surface (typically `/` or `/sign-in`). The signed-in identity is no longer visible in the header.
 
 4. Inspect the browser cookies for the local origin.
@@ -48,5 +48,5 @@ prerequisites:
 
 ## Cleanup
 
-- Sign out via `/sign-out` to leave the browser in a clean unauthenticated state.
+- Sign out via the `<UserButton/>` menu in the header to leave the browser in a clean unauthenticated state. (If the header is not reachable, post a `<form method="POST" action="/sign-out">` shim from the devtools console — never GET `/sign-out`.)
 - No DB reset is required — this plan does not mutate persistent state.
