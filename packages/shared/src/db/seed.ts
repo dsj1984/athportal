@@ -52,6 +52,18 @@ export const SEED_PRIVACY_ID = 'seed_privacy_2026_01_01' as const;
 export const SEED_TOS_VERSION = '2026-01-01' as const;
 export const SEED_PRIVACY_VERSION = '2026-01-01' as const;
 
+/**
+ * Canonical body URLs for the bootstrap legal-documents rows. Exported
+ * so consumers (the web `/onboarding` page's Story #903 fallback path)
+ * can reuse the same URL shape that `seedLegalDocuments` writes into
+ * the DB. Single source of truth — change here, the seed and any
+ * fallback consumer move in lockstep.
+ */
+export const SEED_TOS_BODY_URL =
+  'https://athportal.example.invalid/legal/terms-of-service/2026-01-01' as const;
+export const SEED_PRIVACY_BODY_URL =
+  'https://athportal.example.invalid/legal/privacy-policy/2026-01-01' as const;
+
 interface InsertChain {
   insert: (table: typeof legalDocuments) => {
     values: (rows: Array<typeof legalDocuments.$inferInsert>) => {
@@ -79,14 +91,14 @@ export function seedLegalDocuments(db: unknown): void {
         kind: 'terms_of_service',
         version: SEED_TOS_VERSION,
         effectiveAt: SEED_BOOTSTRAP_EFFECTIVE_AT,
-        bodyUrl: 'https://athportal.example.invalid/legal/terms-of-service/2026-01-01',
+        bodyUrl: SEED_TOS_BODY_URL,
       },
       {
         id: SEED_PRIVACY_ID,
         kind: 'privacy_policy',
         version: SEED_PRIVACY_VERSION,
         effectiveAt: SEED_BOOTSTRAP_EFFECTIVE_AT,
-        bodyUrl: 'https://athportal.example.invalid/legal/privacy-policy/2026-01-01',
+        bodyUrl: SEED_PRIVACY_BODY_URL,
       },
     ])
     .onConflictDoNothing()

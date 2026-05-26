@@ -200,8 +200,34 @@ export function createOnboardingGate(
  * Without the export the cutover regression would only be observable
  * via an integration test, which is the wrong tier for this contract.
  */
-export const productionLookup: OnboardingLookup = (clerkSubjectId) =>
-  getOnboardingStateBySubject(getDb(), clerkSubjectId);
+/**
+ * Story #903 hardening — wrap the DB call in try/catch so any DB-side
+ * failure (TURSO_URL pointing at libsql:// during a deploy race, a
+ * missing SQLite file before migrations land, a schema-mismatch error
+ * from a stale handle) falls through to the gate's safe-default
+ * behaviour (302 → /onboarding) rather than 500-ing the entire signed-in
+ * surface. Before this catch, Story #878's cutover regressed the
+ * pre-Epic-#869 placeholder behaviour: the placeholder returned null on
+ * any condition, including DB unavailability; the live lookup propagated
+ * exceptions out of the middleware.
+ *
+ * The catch logs the failure once per request via `console.error` so an
+ * operator can find the root cause in their logs. The secret-key value
+ * is NEVER logged — the catch only echoes the error message produced by
+ * `getDb()` / `getOnboardingStateBySubject()`, which themselves never
+ * surface secret material per the security-baseline rule on data leakage.
+ */
+export const productionLookup: OnboardingLookup = (clerkSubjectId) => {
+  try {
+    return getOnboardingStateBySubject(getDb(), clerkSubjectId);
+  } catch (cause) {
+    const message = cause instanceof Error ? cause.message : String(cause);
+    console.error(
+      `[onboarding-gate] productionLookup: DB read failed; falling back to safe-default 302 to /onboarding. Cause: ${message}`,
+    );
+    return null;
+  }
+};
 
 /**
  * Adapter that lifts the gate (typed against the minimal `GateContext`)
