@@ -163,11 +163,7 @@ function greeting(invite: RosterInviteForMail): string {
  * their own lines so plaintext mail readers can present clickable
  * links even when the HTML part is stripped.
  */
-function plainTextBody(
-  invite: RosterInviteForMail,
-  acceptUrl: string,
-  declineUrl: string,
-): string {
+function plainTextBody(invite: RosterInviteForMail, acceptUrl: string, declineUrl: string): string {
   return [
     greeting(invite),
     '',
@@ -193,11 +189,7 @@ function plainTextBody(
  * styles are the responsibility of the production transport's
  * template engine, not this seam.
  */
-function htmlBody(
-  invite: RosterInviteForMail,
-  acceptUrl: string,
-  declineUrl: string,
-): string {
+function htmlBody(invite: RosterInviteForMail, acceptUrl: string, declineUrl: string): string {
   return [
     `<p>${escapeHtml(greeting(invite))}</p>`,
     `<p>You've been invited to join a team on Athlete Portal.</p>`,
