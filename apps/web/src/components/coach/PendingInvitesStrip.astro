@@ -4,14 +4,14 @@
 // Pending-invites strip for the coach roster page (Epic #11 / Story
 // #920 / Task #923). Renders the empty shell + header + "Invite
 // athlete" trigger button; the rendered list is populated by the
-// parent page's inline `<script>` via `renderPendingInvites` from
+// parent page's inline `script` via `renderPendingInvites` from
 // `./InviteAthleteDialog.ts`.
 //
 // Composes only primitives from `apps/web/src/components/ui/*` (Btn).
 // Per-row revoke buttons are rendered inside `renderPendingInvites`
 // as plain `<button>` elements styled with the same utility classes
 // the Btn primitive uses — keeping the runtime-rendered rows out of
-// Astro lets the inline `<script>` own the full lifecycle.
+// Astro lets the inline `script` own the full lifecycle.
 
 import Btn from '../ui/Btn.astro';
 import { COACH_INVITE_TEST_IDS } from './InviteAthleteDialog.ts';

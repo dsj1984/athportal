@@ -14,7 +14,7 @@
 // SSR shell + client-side fetch follows the established admin pattern
 // (see `apps/web/src/pages/admin/teams/[id]/edit.astro`). The shell
 // renders the page chrome and the canonical `data-testid` selectors
-// so the QA suite can target stable hooks; an inline `<script>` then
+// so the QA suite can target stable hooks; an inline `script` then
 // fetches the team-scoped entry from
 // `GET /api/v1/coach/teams/:teamId/roster/entries/:entryId` and
 // populates the jersey / position cells via `textContent` (never
