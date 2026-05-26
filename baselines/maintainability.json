@@ -1,11 +1,11 @@
 {
   "$schema": ".agents/schemas/baselines/maintainability.schema.json",
-  "kernelVersion": "1.0.0",
-  "generatedAt": "2026-05-25T18:04:58.028Z",
+  "kernelVersion": "0.1.0",
+  "generatedAt": "2026-05-26T01:16:14.915Z",
   "rollup": {
     "*": {
       "min": 70.515,
-      "p50": 107.296,
+      "p50": 106.74,
       "p95": 171
     }
   },
@@ -601,10 +601,6 @@
     {
       "mi": 159.877,
       "path": "packages/shared/src/testing/examples/sum.ts"
-    },
-    {
-      "mi": 171,
-      "path": "packages/shared/src/testing/index.ts"
     },
     {
       "mi": 108.708,
