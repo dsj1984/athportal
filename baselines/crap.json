@@ -1,13 +1,13 @@
 {
   "$schema": ".agents/schemas/baselines/crap.schema.json",
-  "kernelVersion": "0.1.0",
-  "generatedAt": "2026-05-26T00:13:18.289Z",
+  "generatedAt": "2026-05-26T00:36:59.585Z",
+  "kernelVersion": "1.0.0",
   "rollup": {
     "*": {
-      "p50": 2,
-      "p95": 42,
       "max": 506,
-      "methodsAbove20": 59
+      "methodsAbove20": 60,
+      "p50": 2,
+      "p95": 42
     }
   },
   "rows": [
@@ -2280,36 +2280,6 @@
       "startLine": 57
     },
     {
-      "crap": 2,
-      "method": "buildBadgeView",
-      "path": "apps/web/src/components/ui/_lib/badge.ts",
-      "startLine": 83
-    },
-    {
-      "crap": 12,
-      "method": "resolveTone",
-      "path": "apps/web/src/components/ui/_lib/badge.ts",
-      "startLine": 97
-    },
-    {
-      "crap": 2,
-      "method": "cn",
-      "path": "apps/web/src/components/ui/_lib/cn.ts",
-      "startLine": 14
-    },
-    {
-      "crap": 6,
-      "method": "resolveEventColor",
-      "path": "apps/web/src/components/ui/_lib/eventColors.ts",
-      "startLine": 113
-    },
-    {
-      "crap": 6,
-      "method": "resolveSidebarNav",
-      "path": "apps/web/src/components/ui/_lib/sidebarNav.ts",
-      "startLine": 67
-    },
-    {
       "crap": 30,
       "method": "buildAvatarView",
       "path": "apps/web/src/components/ui/Avatar.ts",
@@ -2538,34 +2508,88 @@
       "startLine": 36
     },
     {
+      "crap": 2,
+      "method": "buildBadgeView",
+      "path": "apps/web/src/components/ui/_lib/badge.ts",
+      "startLine": 83
+    },
+    {
+      "crap": 12,
+      "method": "resolveTone",
+      "path": "apps/web/src/components/ui/_lib/badge.ts",
+      "startLine": 97
+    },
+    {
+      "crap": 2,
+      "method": "cn",
+      "path": "apps/web/src/components/ui/_lib/cn.ts",
+      "startLine": 14
+    },
+    {
+      "crap": 6,
+      "method": "resolveEventColor",
+      "path": "apps/web/src/components/ui/_lib/eventColors.ts",
+      "startLine": 113
+    },
+    {
+      "crap": 6,
+      "method": "resolveSidebarNav",
+      "path": "apps/web/src/components/ui/_lib/sidebarNav.ts",
+      "startLine": 67
+    },
+    {
+      "crap": 2,
+      "method": "findMonorepoRoot",
+      "path": "apps/web/src/lib/db.ts",
+      "startLine": 41
+    },
+    {
+      "crap": 56,
+      "method": "resolveDatabasePath",
+      "path": "apps/web/src/lib/db.ts",
+      "startLine": 68
+    },
+    {
+      "crap": 6,
+      "method": "getDb",
+      "path": "apps/web/src/lib/db.ts",
+      "startLine": 116
+    },
+    {
+      "crap": 2,
+      "method": "__resetDbForTests",
+      "path": "apps/web/src/lib/db.ts",
+      "startLine": 127
+    },
+    {
       "crap": 20,
       "method": "isAllowlisted",
       "path": "apps/web/src/middleware.ts",
-      "startLine": 97
+      "startLine": 99
     },
     {
       "crap": 2,
       "method": "createOnboardingGate",
       "path": "apps/web/src/middleware.ts",
-      "startLine": 140
+      "startLine": 142
     },
     {
       "crap": 42,
       "method": "onboardingGate",
       "path": "apps/web/src/middleware.ts",
-      "startLine": 143
+      "startLine": 145
     },
     {
       "crap": 2,
       "method": "<anon method-1>",
       "path": "apps/web/src/middleware.ts",
-      "startLine": 187
+      "startLine": 203
     },
     {
       "crap": 2,
       "method": "<anon method-2>",
       "path": "apps/web/src/middleware.ts",
-      "startLine": 200
+      "startLine": 217
     },
     {
       "crap": 6,
