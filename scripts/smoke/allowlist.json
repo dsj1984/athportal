@@ -26,8 +26,14 @@
   {
     "path": "/dashboard",
     "method": "GET",
-    "expectedStatus": 200,
-    "note": "Same posture as /onboarding — server returns the page shell, Clerk's React island handles the client-side sign-in redirect."
+    "expectedStatus": 302,
+    "note": "Anonymous → 302 /sign-in per Story #952 F1 SSR auth gate. No more 200-with-chrome leak to anonymous callers."
+  },
+  {
+    "path": "/admin/teams",
+    "method": "GET",
+    "expectedStatus": 302,
+    "note": "Anonymous → 302 /sign-in per Story #952 F4 SSR auth gate. Signed-in non-admin would get 404 (non-enumeration per Epic #11 AC-2/AC-3); the smoke is anonymous, so it hits the sign-in redirect first."
   },
   {
     "path": "/api/v1/health",
