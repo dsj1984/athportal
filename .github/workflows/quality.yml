@@ -176,6 +176,116 @@ jobs:
           path: apps/web/test-results/cucumber.json
           if-no-files-found: error
 
+  verify-stack:
+    # Story #943 — verify the local-dev stack actually starts and answers
+    # a documented allowlist of front-door URLs. Catches the entire class
+    # of "the integration between the two long-lived processes is broken"
+    # bugs that the Epic #11 manual-QA walkthrough (PR #940) surfaced —
+    # specifically the Vite-proxy gap and the @clerk/backend v2/v3
+    # middleware drift (Story #941). Boots `pnpm dev` in the background,
+    # waits for the API health probe to answer 200, runs the smoke
+    # script, then tears the dev processes down and uploads the captured
+    # logs as a job artifact for triage.
+    name: Verify-stack smoke
+    needs: [lint, typecheck]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # `/dev/sign-in-as/:persona` mints a Clerk sign-in ticket via the
+      # Backend API, so it needs the test-instance secret. When the
+      # secret is unset (fork PRs, before the secret is wired) the
+      # smoke runner skips that one allowlist entry via the entry's
+      # `requireEnv` field and the rest of the job stays meaningful.
+      CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
+      CLERK_PUBLISHABLE_KEY: ${{ secrets.CLERK_PUBLISHABLE_KEY }}
+      # The dev seam refuses unless RUNTIME_ENV is development. The
+      # Astro dev server reads this at request time via
+      # `process.env.RUNTIME_ENV`.
+      RUNTIME_ENV: development
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - name: Set up toolchain (checkout + pnpm + node + install)
+        uses: ./.github/actions/setup-toolchain
+
+      - name: Reset and seed the local DB
+        # `pnpm dev`'s preflight assumes the SQLite file exists and is
+        # migrated. Running reset+seed up front is faster than letting
+        # the dev preflight do its first-run dance under CI's slower
+        # disk + giving the smoke runner a deterministic data set.
+        run: pnpm --filter @repo/shared run db:reset && pnpm --filter @repo/shared run db:seed
+
+      - name: Boot pnpm dev in the background
+        # `setsid` puts pnpm in its own process group so the cleanup
+        # step can SIGTERM the whole tree without leaving turbo /
+        # tsx / astro child processes orphaned. The two output streams
+        # are tee'd to separate files so the smoke runner's --log
+        # flag can scan each independently and the artifact upload
+        # ships both for triage.
+        run: |
+          mkdir -p logs
+          setsid bash -c 'pnpm dev' \
+            > >(tee logs/dev-stdout.log) \
+            2> >(tee logs/dev-stderr.log >&2) \
+            &
+          echo $! > logs/dev.pid
+          echo "[ci] pnpm dev pgid=$(ps -o pgid= -p $(cat logs/dev.pid) | tr -d ' ')"
+
+      - name: Wait for /api/v1/health to answer 200
+        # 60s budget. Astro + Hono cold-start on CI runners is well
+        # under 20s normally; the budget covers a slow disk plus the
+        # first-time esbuild pass. The `--max-time 2` on curl caps any
+        # single probe so we don't blow the budget on one stuck poll.
+        run: |
+          for i in $(seq 1 60); do
+            status=$(curl -s -o /dev/null -w '%{http_code}' --max-time 2 http://localhost:4321/api/v1/health || true)
+            if [ "$status" = "200" ]; then
+              echo "[ci] health probe answered 200 after ${i}s"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "[ci] health probe did not answer 200 within 60s — last status: ${status}"
+          echo "[ci] tail dev-stderr.log:"
+          tail -n 80 logs/dev-stderr.log || true
+          exit 1
+
+      - name: Run verify-stack smoke
+        run: |
+          node scripts/smoke/verify-stack.mjs \
+            --base http://localhost:4321 \
+            --log logs/dev-stdout.log \
+            --log logs/dev-stderr.log
+
+      - name: Tear down pnpm dev (always)
+        if: always()
+        run: |
+          if [ -f logs/dev.pid ]; then
+            pid=$(cat logs/dev.pid)
+            pgid=$(ps -o pgid= -p $pid 2>/dev/null | tr -d ' ' || true)
+            if [ -n "$pgid" ]; then
+              echo "[ci] killing process group $pgid"
+              kill -TERM -$pgid 2>/dev/null || true
+              sleep 2
+              kill -KILL -$pgid 2>/dev/null || true
+            fi
+          fi
+          # Belt-and-braces: any survivor with our well-known names.
+          pkill -f 'turbo run dev' 2>/dev/null || true
+          pkill -f 'astro dev' 2>/dev/null || true
+          pkill -f 'tsx watch' 2>/dev/null || true
+
+      - name: Upload dev-server logs
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: verify-stack-logs
+          path: logs/
+          if-no-files-found: warn
+
   lint-steps:
     name: Lint step definitions
     needs: [lint, typecheck]
