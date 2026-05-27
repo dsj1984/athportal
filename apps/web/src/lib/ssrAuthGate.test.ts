@@ -52,6 +52,33 @@ describe('requireSignedIn', () => {
 
     expect(requireSignedIn(ctx)).toBeNull();
   });
+
+  it('appends an encoded redirect_url query param when returnTo is provided', () => {
+    const ctx = makeContext({ userId: null });
+
+    const result = requireSignedIn(ctx, { returnTo: '/onboarding' });
+
+    expect(result?.status).toBe(302);
+    expect(result?.headers.get('Location')).toBe('/sign-in?redirect_url=%2Fonboarding');
+  });
+
+  it('encodes returnTo paths that contain query strings', () => {
+    const ctx = makeContext({ userId: null });
+
+    const result = requireSignedIn(ctx, { returnTo: '/onboarding?invite=tok_abc' });
+
+    expect(result?.headers.get('Location')).toBe(
+      '/sign-in?redirect_url=%2Fonboarding%3Finvite%3Dtok_abc',
+    );
+  });
+
+  it('ignores an empty returnTo string and emits a bare /sign-in redirect', () => {
+    const ctx = makeContext({ userId: null });
+
+    const result = requireSignedIn(ctx, { returnTo: '' });
+
+    expect(result?.headers.get('Location')).toBe('/sign-in');
+  });
 });
 
 describe('requireAdminSsr', () => {

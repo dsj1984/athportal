@@ -64,15 +64,37 @@ const SIGN_IN_PATH = '/sign-in';
 const ADMIN_PROBE_PATH = '/api/v1/admin/teams';
 
 /**
- * Anonymous → 302 `/sign-in`. Signed-in → `null` (caller proceeds).
+ * Options accepted by `requireSignedIn`.
+ */
+export interface RequireSignedInOptions {
+  /**
+   * Path the caller should be returned to after a successful sign-in.
+   * When provided, the redirect target becomes
+   * `/sign-in?redirect_url=<encoded>` so Clerk completes the round-trip
+   * back to the originating page. Omit for surfaces (like `/dashboard`)
+   * where a bare `/sign-in` redirect is sufficient.
+   */
+  returnTo?: string;
+}
+
+/**
+ * Anonymous → 302 `/sign-in` (optionally `?redirect_url=<returnTo>`).
+ * Signed-in → `null` (caller proceeds).
  *
  * @returns A redirect `Response` when the caller is anonymous,
  *   otherwise `null`.
  */
-export function requireSignedIn(ctx: SsrAuthContext): Response | null {
+export function requireSignedIn(
+  ctx: SsrAuthContext,
+  options: RequireSignedInOptions = {},
+): Response | null {
   const userId = ctx.locals.auth().userId;
   if (typeof userId !== 'string' || userId.length === 0) {
-    return ctx.redirect(SIGN_IN_PATH, 302);
+    const target =
+      typeof options.returnTo === 'string' && options.returnTo.length > 0
+        ? `${SIGN_IN_PATH}?redirect_url=${encodeURIComponent(options.returnTo)}`
+        : SIGN_IN_PATH;
+    return ctx.redirect(target, 302);
   }
   return null;
 }
