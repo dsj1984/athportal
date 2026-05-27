@@ -211,6 +211,38 @@ jobs:
       - name: Set up toolchain (checkout + pnpm + node + install)
         uses: ./.github/actions/setup-toolchain
 
+      - name: Synthesize .env for dev-preflight
+        # `scripts/dev-preflight.mjs` (invoked by `pnpm dev`) refuses to
+        # boot without a `.env` file populated with the five canonical
+        # keys (CLERK_SECRET_KEY, CLERK_PUBLISHABLE_KEY,
+        # PUBLIC_CLERK_PUBLISHABLE_KEY, PUBLIC_API_URL, DATABASE_URL).
+        # `.env` is gitignored, so CI synthesises one here from the
+        # secrets the job already exports. The smoke allowlist hits
+        # anonymous routes only — Clerk middleware mounts but never
+        # actually validates a token during the smoke window — so
+        # syntactically-valid `sk_test_…` / `pk_test_…` placeholders
+        # satisfy the preflight on fork PRs where the secrets are
+        # absent. The /dev/sign-in-as/coach entry self-skips via its
+        # `requireEnv: ["CLERK_SECRET_KEY"]` field when the real
+        # secret is missing, so a placeholder there is safe.
+        run: |
+          : "${CLERK_SECRET_KEY:=sk_test_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa}"
+          : "${CLERK_PUBLISHABLE_KEY:=pk_test_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa}"
+          cat > .env <<EOF
+          NODE_ENV=development
+          RUNTIME_ENV=development
+          DATABASE_URL=file:packages/shared/data/local.db
+          PUBLIC_API_URL=http://localhost:8787
+          CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
+          CLERK_PUBLISHABLE_KEY=${CLERK_PUBLISHABLE_KEY}
+          PUBLIC_CLERK_PUBLISHABLE_KEY=${CLERK_PUBLISHABLE_KEY}
+          CLOUDFLARE_API_TOKEN=cf_token_placeholder
+          CLOUDFLARE_ACCOUNT_ID=00000000000000000000000000000000
+          EOF
+          # Sanity log without leaking secret values — only the keys
+          # the preflight scans for.
+          echo "[ci] synthesised .env keys: $(grep -oE '^[A-Z_]+' .env | tr '\n' ' ')"
+
       - name: Reset and seed the local DB
         # `pnpm dev`'s preflight assumes the SQLite file exists and is
         # migrated. Running reset+seed up front is faster than letting
