@@ -3,7 +3,9 @@
 //
 // `/admin/roster` — org-admin landing surface for the org-wide
 // athlete roster (Epic #10 / Story #661 / Task #693; restyled under
-// Epic #828 / Story #843 / Task #856).
+// Epic #828 / Story #843 / Task #856; rebased onto `<AppLayout>` by
+// Story #974 to compose the shared App Shell chrome introduced by
+// Story #971).
 //
 // Renders an empty shell server-side; the inline script fetches
 // `/api/v1/admin/roster` (plus optional `?teamId=` and `?sport=`
@@ -13,10 +15,12 @@
 //
 // Styling follows the Tailwind-utility-first convention codified by
 // ADR-0007 (docs/decisions/0007-ui-styling-convention.md). Page chrome
-// is composed via the shared `PageHeader` primitive and the table
-// chrome via the shared `DataTable` primitive — no orphan BEM hooks.
-// Every `data-testid` on the surface is preserved verbatim because
-// the roster contract tests (`RosterTable.test.ts`) and the admin
+// composes the shared `<AppLayout>` (Story #971 reference adoption)
+// for the persona-aware header + user menu, and the `<PageHeader>`
+// primitive inside the layout's <main> slot. Table chrome composes
+// the shared `<DataTable>` primitive — no orphan BEM hooks. Every
+// `data-testid` on the surface is preserved verbatim because the
+// roster contract tests (`RosterTable.test.ts`) and the admin
 // acceptance scenarios target those selectors.
 //
 // Authentication & authorization: every `/admin/*` route is gated by
@@ -25,97 +29,88 @@
 // 403 FORBIDDEN). The page itself does not re-check the role — the
 // list-fetch will surface a 403 envelope if the actor is not an admin.
 
-import { requireAdminSsr } from '../../lib/ssrAuthGate';
-
-// SSR auth gate (Story #952 F4). Anonymous → 302 /sign-in; signed-in
-// non-admin → 404 (non-enumeration per Epic #11 AC-2/AC-3). The page
-// chrome must not render to non-admin callers, even though the inline
-// client-script fetch would 403 a moment later.
+import AppLayout from '../../components/layout/AppLayout.astro';
 import DataTable from '../../components/ui/DataTable.astro';
 import FormField from '../../components/ui/FormField.astro';
 import PageHeader from '../../components/ui/PageHeader.astro';
 import { ROSTER_TEST_IDS } from '../../components/admin/roster/RosterTable.ts';
+import { requireAdminSsr } from '../../lib/ssrAuthGate';
+
+// SSR auth gate (Story #952 F4). Anonymous → 302 /sign-in; signed-in
+// non-admin → 404 (non-enumeration per Epic #11 AC-2/AC-3). The page
+// chrome (including the <AppLayout> header) must not render to
+// non-admin callers, even though the inline client-script fetch would
+// 403 a moment later.
 const __ssr_gate = await requireAdminSsr(Astro);
 if (__ssr_gate) return __ssr_gate;
-
 ---
 
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="robots" content="noindex, nofollow" />
-    <title>Roster · Admin</title>
-  </head>
-  <body class="bg-surface-page text-text-primary">
-    <main class="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
-      <PageHeader title="Roster" />
-      <span class="sr-only" data-testid="admin-roster-heading">Roster</span>
+<AppLayout title="Roster · Admin" role="org_admin" activeHref="/admin/roster">
+  <PageHeader title="Roster" />
+  <span class="sr-only" data-testid="admin-roster-heading">Roster</span>
 
-      <section
-        class="grid grid-cols-1 gap-4 sm:grid-cols-2"
-        aria-label="Roster filters"
+  <section
+    class="grid grid-cols-1 gap-4 sm:grid-cols-2"
+    aria-label="Roster filters"
+  >
+    <FormField label="Team" htmlFor="roster-filter-team">
+      <input
+        id="roster-filter-team"
+        type="text"
+        class="block w-full rounded-md border border-border bg-surface-card px-3 py-2 text-sm text-text-primary placeholder:text-text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+        data-testid={ROSTER_TEST_IDS.filterTeam}
+        placeholder="Team id"
+      />
+    </FormField>
+    <FormField label="Sport" htmlFor="roster-filter-sport">
+      <input
+        id="roster-filter-sport"
+        type="text"
+        class="block w-full rounded-md border border-border bg-surface-card px-3 py-2 text-sm text-text-primary placeholder:text-text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+        data-testid={ROSTER_TEST_IDS.filterSport}
+        placeholder="Sport (e.g. Volleyball)"
+      />
+    </FormField>
+  </section>
+
+  <p
+    class="hidden rounded-md border border-danger bg-danger-soft px-4 py-3 text-sm text-danger"
+    role="alert"
+    data-testid={ROSTER_TEST_IDS.error}
+    hidden
+  ></p>
+
+  <DataTable
+    testId={ROSTER_TEST_IDS.table}
+    tbodyTestId={ROSTER_TEST_IDS.tbody}
+    columns={[
+      { key: 'name', label: 'Name' },
+      { key: 'team', label: 'Team' },
+      { key: 'sport', label: 'Sport' },
+      { key: 'age-group', label: 'Age group' },
+      { key: 'verified-achievements', label: 'Verified achievements', align: 'end' },
+    ]}
+  >
+    <div slot="pagination">
+      <button
+        type="button"
+        class="inline-flex items-center justify-center rounded-md border border-border bg-surface-card px-4 py-2 text-sm font-medium text-text-primary shadow-sm hover:bg-surface-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand disabled:cursor-not-allowed disabled:opacity-50"
+        data-testid={ROSTER_TEST_IDS.nextPage}
+        disabled
       >
-        <FormField label="Team" htmlFor="roster-filter-team">
-          <input
-            id="roster-filter-team"
-            type="text"
-            class="block w-full rounded-md border border-border bg-surface-card px-3 py-2 text-sm text-text-primary placeholder:text-text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
-            data-testid={ROSTER_TEST_IDS.filterTeam}
-            placeholder="Team id"
-          />
-        </FormField>
-        <FormField label="Sport" htmlFor="roster-filter-sport">
-          <input
-            id="roster-filter-sport"
-            type="text"
-            class="block w-full rounded-md border border-border bg-surface-card px-3 py-2 text-sm text-text-primary placeholder:text-text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
-            data-testid={ROSTER_TEST_IDS.filterSport}
-            placeholder="Sport (e.g. Volleyball)"
-          />
-        </FormField>
-      </section>
+        Next page
+      </button>
+    </div>
+  </DataTable>
 
-      <p
-        class="hidden rounded-md border border-danger bg-danger-soft px-4 py-3 text-sm text-danger"
-        role="alert"
-        data-testid={ROSTER_TEST_IDS.error}
-        hidden
-      ></p>
-
-      <DataTable
-        testId={ROSTER_TEST_IDS.table}
-        tbodyTestId={ROSTER_TEST_IDS.tbody}
-        columns={[
-          { key: 'name', label: 'Name' },
-          { key: 'team', label: 'Team' },
-          { key: 'sport', label: 'Sport' },
-          { key: 'age-group', label: 'Age group' },
-          { key: 'verified-achievements', label: 'Verified achievements', align: 'end' },
-        ]}
-      >
-        <div slot="pagination">
-          <button
-            type="button"
-            class="inline-flex items-center justify-center rounded-md border border-border bg-surface-card px-4 py-2 text-sm font-medium text-text-primary shadow-sm hover:bg-surface-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand disabled:cursor-not-allowed disabled:opacity-50"
-            data-testid={ROSTER_TEST_IDS.nextPage}
-            disabled
-          >
-            Next page
-          </button>
-        </div>
-      </DataTable>
-
-      <p
-        class="hidden rounded-xl border border-border bg-surface-card px-6 py-10 text-center text-sm text-text-secondary"
-        data-testid={ROSTER_TEST_IDS.emptyState}
-        hidden
-      >
-        No athletes to show.
-      </p>
-    </main>
-  </body>
-</html>
+  <p
+    class="hidden rounded-xl border border-border bg-surface-card px-6 py-10 text-center text-sm text-text-secondary"
+    data-testid={ROSTER_TEST_IDS.emptyState}
+    hidden
+  >
+    No athletes to show.
+  </p>
+</AppLayout>
 
 <script>
   import {

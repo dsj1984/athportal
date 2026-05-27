@@ -1,6 +1,6 @@
 {
   "$schema": ".agents/schemas/baselines/crap.schema.json",
-  "generatedAt": "2026-05-27T22:53:24.658Z",
+  "generatedAt": "2026-05-27T23:26:21.591Z",
   "kernelVersion": "1.0.0",
   "rollup": {
     "*": {
@@ -2494,6 +2494,30 @@
       "method": "<anon method-3>",
       "path": "apps/web/src/components/admin/CsvMappingTool.ts",
       "startLine": 142
+    },
+    {
+      "crap": 20,
+      "method": "deriveBatchStatus",
+      "path": "apps/web/src/components/admin/ImportHistory.ts",
+      "startLine": 48
+    },
+    {
+      "crap": 6,
+      "method": "formatImportTimestamp",
+      "path": "apps/web/src/components/admin/ImportHistory.ts",
+      "startLine": 68
+    },
+    {
+      "crap": 6,
+      "method": "<anon method-1>",
+      "path": "apps/web/src/components/admin/ImportHistory.ts",
+      "startLine": 72
+    },
+    {
+      "crap": 6,
+      "method": "renderImportHistoryRows",
+      "path": "apps/web/src/components/admin/ImportHistory.ts",
+      "startLine": 93
     },
     {
       "crap": 2,
