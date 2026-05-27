@@ -1,0 +1,188 @@
+---
+// apps/web/src/components/styleguide/AppLayoutDoc.astro
+//
+// Section 6 of the internal styleguide. Documents the shared
+// authenticated `<AppLayout>` chrome shipped by Story #971.
+//
+// Important rendering note. `AppLayout` wraps the page in
+// `<RootLayout>` which emits a full `<html>`/`<body>` document. The
+// styleguide page itself is already a full document, so this section
+// CANNOT render an `AppLayout` instance inline — doing so would emit
+// nested `<html>` / `<body>` and break Astro's hydration. Instead, this
+// section documents the component's shape, props, nav registry, and
+// sign-out contract, and links the reader to the live reference page
+// (`/admin/teams`) where the chrome can be observed end-to-end.
+
+import { APP_NAV, type AppNavRole } from '../../lib/navigation';
+
+const ROLES: readonly AppNavRole[] = ['org_admin', 'coach', 'athlete'];
+---
+
+<section class="styleguide-section" data-testid="styleguide-section-applayout">
+  <h2 class="styleguide-section__title">6. AppLayout (Story #971)</h2>
+  <p class="styleguide-help">
+    The shared authenticated App Shell. Every page under <code>/admin</code>,
+    <code>/app</code>, and the persona dashboards composes
+    <code>apps/web/src/components/layout/AppLayout.astro</code> as the
+    top-level chrome — it owns the brand mark + wordmark, the
+    persona-aware primary nav, and the user menu (whose “Sign out” item
+    POSTs to <code>/sign-out</code> for full Clerk-cookie cleanup, per
+    Story #951). The reference adoption is
+    <a href="/admin/teams"><code>/admin/teams</code></a>; follow-up
+    Stories roll the same shell out to the rest of <code>/admin/*</code>
+    and the dashboards.
+  </p>
+
+  <h3 class="styleguide-subsection__title">Props</h3>
+  <ul class="styleguide-applayout-props">
+    <li>
+      <code>title</code> — page-level <code>&lt;title&gt;</code>, forwarded
+      to <code>RootLayout</code>. Required.
+    </li>
+    <li>
+      <code>role</code> — one of <code>"org_admin"</code> | <code>"coach"</code> |
+      <code>"athlete"</code>. Drives which nav list renders. Required.
+    </li>
+    <li>
+      <code>activeHref</code> — optional href of the active route
+      (typically <code>Astro.url.pathname</code>); the matching nav row
+      renders with the active treatment.
+    </li>
+    <li>
+      <code>userLabel</code> — optional display label for the user-menu
+      trigger. Defaults to <code>"Account"</code>.
+    </li>
+  </ul>
+
+  <h3 class="styleguide-subsection__title">Nav registry — <code>resolveAppNav(role)</code></h3>
+  <p class="styleguide-help">
+    The role → nav-rows map lives in
+    <code>apps/web/src/lib/navigation.ts</code>. Extend a persona's nav
+    here, not in the layout. Story #971 lands only the org-admin set;
+    the other roles are placeholders for follow-up Stories.
+  </p>
+  <div class="styleguide-applayout-tables">
+    {
+      ROLES.map((role) => (
+        <div class="styleguide-applayout-table">
+          <span class="styleguide-applayout-table__label">
+            <code>role="{role}"</code>
+          </span>
+          {APP_NAV[role].length === 0 ? (
+            <p class="styleguide-applayout-empty">
+              No rows yet — follow-up Story will populate this list.
+            </p>
+          ) : (
+            <ul class="styleguide-applayout-rows">
+              {APP_NAV[role].map((item) => (
+                <li>
+                  <code>{item.label}</code> → <code>{item.href}</code>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      ))
+    }
+  </div>
+
+  <h3 class="styleguide-subsection__title">Sign-out contract</h3>
+  <p class="styleguide-help">
+    The user-menu Sign out button is a <code>&lt;form method="POST"
+    action="/sign-out"&gt;</code> submit. The endpoint at
+    <code>apps/web/src/pages/sign-out.ts</code> (Story #951) revokes
+    the Clerk session server-side, deletes every Clerk-namespaced
+    cookie, and 303s to <code>/sign-in</code>. This is the canonical
+    sign-out path documented in <code>docs/testing-strategy.md</code>
+    — every QA Plan that says "sign out via the &lt;UserButton/&gt;
+    menu in the header" exercises this control.
+  </p>
+</section>
+
+<style>
+  /*
+   * Local definitions of the shared section/subsection title hooks. The
+   * sibling section components (Composites/DisplayAtoms/Foundations/…)
+   * each colocate the same rules so the orphan-BEM lint resolves them
+   * to a same-file <style> block. Keep these visually identical to the
+   * canonical definitions in the sibling files — the duplication is a
+   * deliberate trade-off for the lint resolver.
+   */
+  .styleguide-section {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 24px 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .styleguide-section__title {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+  .styleguide-subsection__title {
+    font-family: var(--font-display);
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-top: 8px;
+  }
+  .styleguide-help {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+  }
+  .styleguide-help code {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+  }
+
+  .styleguide-applayout-props {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 0;
+    padding-left: 20px;
+    font-size: 0.875rem;
+    color: var(--color-text-primary);
+  }
+  .styleguide-applayout-props code {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+  }
+  .styleguide-applayout-tables {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .styleguide-applayout-table {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface-card);
+  }
+  .styleguide-applayout-table__label {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+  }
+  .styleguide-applayout-rows {
+    margin: 0;
+    padding-left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.875rem;
+  }
+  .styleguide-applayout-rows code {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+  }
+  .styleguide-applayout-empty {
+    margin: 0;
+    font-size: 0.875rem;
+    color: var(--color-text-tertiary);
+    font-style: italic;
+  }
+</style>

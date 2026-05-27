@@ -12,10 +12,13 @@
 //
 // Styling follows the Tailwind-utility-first convention codified by
 // ADR-0007 (docs/decisions/0007-ui-styling-convention.md). Page chrome
-// composes the shared PageHeader primitive and the table chrome
-// composes the shared DataTable primitive — no orphan BEM hooks. Every
+// composes the shared `<AppLayout>` (Story #971 reference adoption)
+// for the persona-aware header + user menu, and the `<PageHeader>`
+// primitive inside the layout's <main> slot. Table chrome composes
+// the shared DataTable primitive — no orphan BEM hooks. Every
 // `data-testid` is preserved verbatim because the teams acceptance
-// scenarios target those selectors. Restyled by Story #851 / Task #858.
+// scenarios target those selectors. Restyled by Story #851 /
+// Task #858; rebased onto `<AppLayout>` by Story #971.
 //
 // Authentication & authorization: every `/admin/*` route is gated by
 // Clerk's middleware (signed-in users only) AND the API edge's
@@ -23,79 +26,70 @@
 // 403 FORBIDDEN). The page itself does not re-check the role — the
 // list-fetch will surface a 403 envelope if the actor is not an admin.
 
+import AppLayout from '../../../components/layout/AppLayout.astro';
+import DataTable from '../../../components/ui/DataTable.astro';
+import PageHeader from '../../../components/ui/PageHeader.astro';
+import { TEAMS_LIST_TEST_IDS } from '../../../components/admin/teams/TeamForm.ts';
 import { requireAdminSsr } from '../../../lib/ssrAuthGate';
 
 // SSR auth gate (Story #952 F4). Anonymous → 302 /sign-in; signed-in
 // non-admin → 404 (non-enumeration per Epic #11 AC-2/AC-3). The page
-// chrome must not render to non-admin callers, even though the inline
-// client-script fetch would 403 a moment later.
-import DataTable from '../../../components/ui/DataTable.astro';
-import PageHeader from '../../../components/ui/PageHeader.astro';
-import { TEAMS_LIST_TEST_IDS } from '../../../components/admin/teams/TeamForm.ts';
+// chrome (including the <AppLayout> header) must not render to
+// non-admin callers, even though the inline client-script fetch would
+// 403 a moment later.
 const __ssr_gate = await requireAdminSsr(Astro);
 if (__ssr_gate) return __ssr_gate;
-
 ---
 
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="robots" content="noindex, nofollow" />
-    <title>Teams · Admin</title>
-  </head>
-  <body class="bg-surface-page text-text-primary">
-    <main class="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
-      <PageHeader title="Teams">
-        <a
-          slot="actions"
-          class="inline-flex items-center justify-center rounded-md bg-brand px-4 py-2 text-sm font-medium text-text-on-brand shadow-sm hover:bg-brand-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
-          data-testid={TEAMS_LIST_TEST_IDS.createLink}
-          href="/admin/teams/new"
-        >
-          New team
-        </a>
-      </PageHeader>
-      <span class="sr-only" data-testid="admin-teams-heading">Teams</span>
+<AppLayout title="Teams · Admin" role="org_admin" activeHref="/admin/teams">
+  <PageHeader title="Teams">
+    <a
+      slot="actions"
+      class="inline-flex items-center justify-center rounded-md bg-brand px-4 py-2 text-sm font-medium text-text-on-brand shadow-sm hover:bg-brand-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+      data-testid={TEAMS_LIST_TEST_IDS.createLink}
+      href="/admin/teams/new"
+    >
+      New team
+    </a>
+  </PageHeader>
+  <span class="sr-only" data-testid="admin-teams-heading">Teams</span>
 
-      <label class="inline-flex items-center gap-2 text-sm text-text-primary">
-        <input
-          type="checkbox"
-          class="h-4 w-4 rounded border border-border text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
-          data-testid={TEAMS_LIST_TEST_IDS.showArchivedToggle}
-        />
-        Show archived
-      </label>
+  <label class="inline-flex items-center gap-2 text-sm text-text-primary">
+    <input
+      type="checkbox"
+      class="h-4 w-4 rounded border border-border text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+      data-testid={TEAMS_LIST_TEST_IDS.showArchivedToggle}
+    />
+    Show archived
+  </label>
 
-      <p
-        class="hidden rounded-md border border-action-coral bg-surface-card px-4 py-3 text-sm text-action-coral"
-        role="alert"
-        data-testid="admin-teams-error"
-        hidden
-      ></p>
+  <p
+    class="hidden rounded-md border border-action-coral bg-surface-card px-4 py-3 text-sm text-action-coral"
+    role="alert"
+    data-testid="admin-teams-error"
+    hidden
+  ></p>
 
-      <DataTable
-        testId={TEAMS_LIST_TEST_IDS.list}
-        tbodyTestId="admin-teams-tbody"
-        columns={[
-          { key: 'name', label: 'Name' },
-          { key: 'sport', label: 'Sport' },
-          { key: 'season', label: 'Season' },
-          { key: 'age-group', label: 'Age group' },
-          { key: 'actions', label: 'Actions', align: 'end' },
-        ]}
-      />
+  <DataTable
+    testId={TEAMS_LIST_TEST_IDS.list}
+    tbodyTestId="admin-teams-tbody"
+    columns={[
+      { key: 'name', label: 'Name' },
+      { key: 'sport', label: 'Sport' },
+      { key: 'season', label: 'Season' },
+      { key: 'age-group', label: 'Age group' },
+      { key: 'actions', label: 'Actions', align: 'end' },
+    ]}
+  />
 
-      <p
-        class="hidden rounded-xl border border-border bg-surface-card px-6 py-10 text-center text-sm text-text-secondary"
-        data-testid={TEAMS_LIST_TEST_IDS.emptyState}
-        hidden
-      >
-        No teams to show.
-      </p>
-    </main>
-  </body>
-</html>
+  <p
+    class="hidden rounded-xl border border-border bg-surface-card px-6 py-10 text-center text-sm text-text-secondary"
+    data-testid={TEAMS_LIST_TEST_IDS.emptyState}
+    hidden
+  >
+    No teams to show.
+  </p>
+</AppLayout>
 
 <script>
   import { TEAMS_LIST_TEST_IDS as TEST_IDS } from '../../../components/admin/teams/TeamForm.ts';
