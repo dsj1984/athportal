@@ -123,3 +123,14 @@ export const CsvImportParseOutputSchema = z.object({
   previewRows: z.array(z.array(z.string())),
 });
 export type CsvImportParseOutput = z.infer<typeof CsvImportParseOutputSchema>;
+
+// Re-exports for the import-history list schemas (Story #973 F1). The
+// declarations live in the sibling `csvImportBatches.ts` module so this
+// file stays inside the ADR-019 maintainability floor. Consumers see a
+// single import surface (`@repo/shared/schemas/admin/csvImport`).
+export {
+  CsvImportBatchListOutputSchema,
+  CsvImportBatchSummarySchema,
+  type CsvImportBatchListOutput,
+  type CsvImportBatchSummary,
+} from './csvImportBatches';
