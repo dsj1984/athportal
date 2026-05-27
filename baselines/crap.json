@@ -1,6 +1,6 @@
 {
   "$schema": ".agents/schemas/baselines/crap.schema.json",
-  "generatedAt": "2026-05-26T20:45:36.288Z",
+  "generatedAt": "2026-05-27T14:56:50.196Z",
   "kernelVersion": "1.0.0",
   "rollup": {
     "*": {
@@ -3723,7 +3723,7 @@
       "crap": 2,
       "method": "seedFixtures",
       "path": "packages/shared/src/db/seedFixtures.ts",
-      "startLine": 130
+      "startLine": 134
     },
     {
       "crap": 2,
