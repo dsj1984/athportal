@@ -5,7 +5,7 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { requireAdminSsr, requireSignedIn, type SsrAuthContext } from './ssrAuthGate';
+import { type SsrAuthContext, requireAdminSsr, requireSignedIn } from './ssrAuthGate';
 
 function makeContext(opts: {
   userId: string | null;
