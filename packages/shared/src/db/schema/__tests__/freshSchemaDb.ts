@@ -85,5 +85,6 @@ export function freshSchemaDb(): SchemaTestDb {
   applyMigration(client, loadMigration('0005_team_metadata.sql'));
   applyMigration(client, loadMigration('0006_csv_import_batches.sql'));
   applyMigration(client, loadMigration('0007_roster.sql'));
+  applyMigration(client, loadMigration('0008_csv_import_batch_filename.sql'));
   return buildHandle(client);
 }

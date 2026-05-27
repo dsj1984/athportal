@@ -65,6 +65,11 @@ export type ColumnMappingInput = z.infer<typeof ColumnMappingSchema>;
 export const CsvImportCommitInputSchema = z
   .object({
     fileBase64: z.string().min(1),
+    // Original upload filename, surfaced back via the import-history
+    // list (Story #973 F1). Constrained to 1..255 chars so the column
+    // never carries an empty value or a path that would blow past
+    // typical filesystem limits.
+    fileName: z.string().min(1).max(255),
     mapping: ColumnMappingSchema,
   })
   .strict();
@@ -74,11 +79,17 @@ export type CsvImportCommitInput = z.infer<typeof CsvImportCommitInputSchema>;
  * Per-row error returned to the admin UI on a failed commit. Shape
  * matches the parser's `ResolveError` plus the importer's own
  * post-validation codes (`EMAIL_INVALID`, `TEAM_NOT_FOUND`).
+ *
+ * `cellValue` carries the original (untrimmed) cell text for the
+ * offending field when one applies (Story #973 F2). Mapping-level
+ * errors (`MISSING_REQUIRED_COLUMN`, `EMPTY_FILE`) have no cell
+ * coordinate, so `cellValue` is omitted in those cases.
  */
 export const CsvImportRowErrorSchema = z.object({
   rowIndex: z.number().int(),
   code: z.string().min(1),
   field: z.string().min(1).optional(),
+  cellValue: z.string().optional(),
 });
 export type CsvImportRowError = z.infer<typeof CsvImportRowErrorSchema>;
 
@@ -108,3 +119,25 @@ export const CsvImportParseOutputSchema = z.object({
   previewRows: z.array(z.array(z.string())),
 });
 export type CsvImportParseOutput = z.infer<typeof CsvImportParseOutputSchema>;
+
+/**
+ * Single row of the import-history list (`GET
+ * /api/v1/admin/csv-import/batches`). Carries the persisted
+ * `csv_import_batches` columns the admin UI surfaces (Story #973 F1).
+ * `createdAt` is serialized as an ISO-8601 string at the wire boundary.
+ */
+export const CsvImportBatchSummarySchema = z.object({
+  id: z.string(),
+  fileName: z.string(),
+  rowCount: z.number().int().min(0),
+  successCount: z.number().int().min(0),
+  errorCount: z.number().int().min(0),
+  createdAt: z.string(),
+});
+export type CsvImportBatchSummary = z.infer<typeof CsvImportBatchSummarySchema>;
+
+/** `data` payload of `GET /api/v1/admin/csv-import/batches`. */
+export const CsvImportBatchListOutputSchema = z.object({
+  batches: z.array(CsvImportBatchSummarySchema),
+});
+export type CsvImportBatchListOutput = z.infer<typeof CsvImportBatchListOutputSchema>;

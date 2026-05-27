@@ -49,11 +49,12 @@ import { randomUUID } from 'node:crypto';
 import { parseCsv, resolveRows } from '@repo/shared/csv/parse';
 import { athleteMemberships, csvImportBatches, teams, users } from '@repo/shared/db/schema';
 import {
+  type CsvImportBatchListOutput,
   CsvImportCommitInputSchema,
   type CsvImportCommitOutput,
   type CsvImportRowError,
 } from '@repo/shared/schemas/admin/csvImport';
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, desc, eq, inArray } from 'drizzle-orm';
 import { Hono } from 'hono';
 import type { RequireInternalUserEnv } from '../../../../middleware/auth';
 
@@ -96,12 +97,15 @@ function errorBody(
  * middleware carries the handle as `unknown` and each consumer pins
  * the precise subset it uses.
  */
+interface DbWhereChain {
+  all(): unknown[];
+  orderBy(order: unknown): { all(): unknown[] };
+}
+
 interface DbLike {
   select(): {
     from(table: unknown): {
-      where(predicate: unknown): {
-        all(): unknown[];
-      };
+      where(predicate: unknown): DbWhereChain;
     };
   };
   insert(table: unknown): {
@@ -159,6 +163,116 @@ function decodeBase64(input: string): Uint8Array | null {
  * (`EMAIL_INVALID`, `TEAM_NOT_FOUND`).
  */
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/**
+ * Decode the upload bytes and split into headers + every data row.
+ * Mirrors the RFC 4180-lite split inside `@repo/shared/csv/parse`
+ * but returns the full row set rather than only the 10-row preview.
+ * Used by the per-row error report (Story #973 F2) to look up the
+ * original cell value for a failing rowIndex + field pair.
+ */
+function parseAllRows(bytes: Uint8Array): {
+  headers: readonly string[];
+  dataRows: ReadonlyArray<readonly string[]>;
+} {
+  const text = new TextDecoder('utf-8').decode(bytes);
+  const stripped = text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
+  if (stripped.trim().length === 0) {
+    return { headers: [], dataRows: [] };
+  }
+  const normalised = stripped.replace(/\r\n?/g, '\n');
+  const lines = normalised.split('\n');
+  while (lines.length > 0 && lines[lines.length - 1] === '') {
+    lines.pop();
+  }
+  const rows = lines.map((line) => splitCsvLine(line));
+  if (rows.length === 0) return { headers: [], dataRows: [] };
+  const [headers, ...dataRows] = rows;
+  return { headers: headers ?? [], dataRows };
+}
+
+function splitCsvLine(line: string): string[] {
+  const cells: string[] = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line.charAt(i);
+    if (inQuotes) {
+      if (ch === '"') {
+        if (line.charAt(i + 1) === '"') {
+          current += '"';
+          i++;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        current += ch;
+      }
+    } else if (ch === ',') {
+      cells.push(current);
+      current = '';
+    } else if (ch === '"' && current.length === 0) {
+      inQuotes = true;
+    } else {
+      current += ch;
+    }
+  }
+  cells.push(current);
+  return cells.map((c) => c.trim());
+}
+
+/**
+ * Index `{ rowIndex, field } → cellValue` so the row-error enricher
+ * can look up the offending cell in O(1) without re-parsing per error.
+ */
+type CellLookup = ReadonlyMap<number, ReadonlyMap<string, string>>;
+
+function buildCellLookup(
+  parse: { headers: readonly string[]; dataRows: ReadonlyArray<readonly string[]> },
+  mapping: Readonly<Record<string, string | null>>,
+): CellLookup {
+  // header column index → target field name
+  const colToTarget = new Map<number, string>();
+  parse.headers.forEach((header, idx) => {
+    const target = mapping[header];
+    if (typeof target === 'string' && target.length > 0) {
+      colToTarget.set(idx, target);
+    }
+  });
+
+  const lookup = new Map<number, Map<string, string>>();
+  parse.dataRows.forEach((cells, rowIndex) => {
+    const fieldToCell = new Map<string, string>();
+    colToTarget.forEach((target, colIdx) => {
+      const raw = cells[colIdx];
+      fieldToCell.set(target, typeof raw === 'string' ? raw : '');
+    });
+    lookup.set(rowIndex, fieldToCell);
+  });
+  return lookup;
+}
+
+/**
+ * Attach the original cell value to a row-error envelope. Mapping-
+ * level errors (`rowIndex === -1`) have no cell coordinate, and the
+ * envelope is returned unchanged. When the field is present but the
+ * lookup misses (out-of-bounds row, unmapped field), `cellValue` is
+ * omitted so the wire shape never carries `undefined`.
+ */
+function enrichRowError(
+  err: { rowIndex: number; code: string; field?: string },
+  lookup: CellLookup,
+): CsvImportRowError {
+  const base: CsvImportRowError = {
+    rowIndex: err.rowIndex,
+    code: err.code,
+    ...(err.field ? { field: err.field } : {}),
+  };
+  if (err.rowIndex < 0 || !err.field) return base;
+  const cell = lookup.get(err.rowIndex)?.get(err.field);
+  if (typeof cell !== 'string') return base;
+  return { ...base, cellValue: cell };
+}
 
 export const csvImportAdminRouter = new Hono<RequireInternalUserEnv>();
 
@@ -230,6 +344,17 @@ csvImportAdminRouter.post('/commit', async (c) => {
     return c.json(errorBody('INTERNAL', 'Service temporarily unavailable.'), 500);
   }
 
+  // Re-parse the upload to recover the original (untrimmed) data cells
+  // by row index. The resolver's per-row errors only carry rowIndex +
+  // field — for the per-row error report (Story #973 F2) the UI needs
+  // to show the operator the exact cell value that failed validation.
+  // `parseCsv` returns only the first 10 preview rows by design, so we
+  // call into the same parser via a small helper that yields every
+  // row. The shape (`headers`, `dataRows`) is the parser's normalised
+  // RFC 4180-lite output already trimmed of the trailing blank row.
+  const fullParse = parseAllRows(bytes);
+  const cellLookup = buildCellLookup(fullParse, parsed.data.mapping);
+
   // Resolve rows + collect parser errors first. If the mapping is
   // structurally bad (missing required column, etc.), the transaction
   // never starts.
@@ -239,11 +364,7 @@ csvImportAdminRouter.post('/commit', async (c) => {
       errorBody(
         'IMPORT_FAILED',
         'CSV failed validation; no rows imported.',
-        resolved.errors.map((e) => ({
-          rowIndex: e.rowIndex,
-          code: e.code,
-          ...(e.field ? { field: e.field } : {}),
-        })),
+        resolved.errors.map((e) => enrichRowError(e, cellLookup)),
       ),
       400,
     );
@@ -254,7 +375,9 @@ csvImportAdminRouter.post('/commit', async (c) => {
   for (let i = 0; i < resolved.rows.length; i++) {
     const row = resolved.rows[i]!;
     if (!EMAIL_REGEX.test(row.email ?? '')) {
-      rowErrors.push({ rowIndex: i, code: 'EMAIL_INVALID', field: 'email' });
+      rowErrors.push(
+        enrichRowError({ rowIndex: i, code: 'EMAIL_INVALID', field: 'email' }, cellLookup),
+      );
     }
   }
 
@@ -286,7 +409,12 @@ csvImportAdminRouter.post('/commit', async (c) => {
       for (let i = 0; i < resolved.rows.length; i++) {
         const name = resolved.rows[i]!.teamName;
         if (typeof name === 'string' && name.length > 0 && !teamByName.has(name)) {
-          rowErrors.push({ rowIndex: i, code: 'TEAM_NOT_FOUND', field: 'teamName' });
+          rowErrors.push(
+            enrichRowError(
+              { rowIndex: i, code: 'TEAM_NOT_FOUND', field: 'teamName' },
+              cellLookup,
+            ),
+          );
         }
       }
     }
@@ -339,6 +467,7 @@ csvImportAdminRouter.post('/commit', async (c) => {
           successCount: resolved.rows.length,
           errorCount: 0,
           errorEnvelope: '[]',
+          fileName: parsed.data.fileName,
           createdAt: importedAt,
         })
         .run();
@@ -433,6 +562,59 @@ csvImportAdminRouter.post('/commit', async (c) => {
     // De-duplicate so the same user does not appear twice if a CSV
     // mentions the same email on two rows.
     reusedUserIds: Array.from(new Set(reusedUserIds)),
+  };
+  return c.json({ success: true as const, data }, 200);
+});
+
+// ──────────────────────────────────────────────────────────────────────────
+// GET /batches — list prior import batches for the actor's org.
+//
+// Returns the persisted summary (id, fileName, row counts, createdAt)
+// sorted newest-first. Cross-tenant defence: the `where(eq(orgId,
+// actor.orgId))` predicate is the only signal we expose — peer-org
+// batches are never reachable through this surface. Story #973 F1.
+// ──────────────────────────────────────────────────────────────────────────
+csvImportAdminRouter.get('/batches', (c) => {
+  const auth = c.get('auth');
+  const orgId = auth.orgId;
+  if (!orgId) {
+    return c.json(errorBody('FORBIDDEN', 'Actor has no org context.'), 403);
+  }
+
+  const db = narrowDb(c.get('db'));
+  if (!db) {
+    return c.json(errorBody('INTERNAL', 'Service temporarily unavailable.'), 500);
+  }
+
+  const rows = db
+    .select()
+    .from(csvImportBatches)
+    .where(eq(csvImportBatches.orgId, orgId))
+    .orderBy(desc(csvImportBatches.createdAt))
+    .all() as Array<{
+    id: string;
+    fileName: string;
+    rowCount: number;
+    successCount: number;
+    errorCount: number;
+    createdAt: Date | number;
+  }>;
+
+  const data: CsvImportBatchListOutput = {
+    batches: rows.map((r) => ({
+      id: r.id,
+      fileName: r.fileName,
+      rowCount: r.rowCount,
+      successCount: r.successCount,
+      errorCount: r.errorCount,
+      // Drizzle `{ mode: 'timestamp' }` returns a Date; raw SQLite
+      // integer falls through as a number. Normalise both to ISO-8601
+      // strings at the wire boundary.
+      createdAt:
+        r.createdAt instanceof Date
+          ? r.createdAt.toISOString()
+          : new Date(r.createdAt * 1000).toISOString(),
+    })),
   };
   return c.json({ success: true as const, data }, 200);
 });
