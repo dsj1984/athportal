@@ -561,9 +561,7 @@ describe('admin csv-import — contract', () => {
     // Both rows surface as EMAIL_INVALID with the original cell text
     // echoed back so the admin UI can render a downloadable error
     // report keyed by row + cell.
-    const byKey = new Map(
-      (body.error.rowErrors ?? []).map((e) => [`${e.rowIndex}:${e.code}`, e]),
-    );
+    const byKey = new Map((body.error.rowErrors ?? []).map((e) => [`${e.rowIndex}:${e.code}`, e]));
     const row0 = byKey.get('0:EMAIL_INVALID');
     expect(row0).toBeDefined();
     expect(row0!.field).toBe('email');

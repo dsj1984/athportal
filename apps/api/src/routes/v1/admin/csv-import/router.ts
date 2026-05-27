@@ -410,10 +410,7 @@ csvImportAdminRouter.post('/commit', async (c) => {
         const name = resolved.rows[i]!.teamName;
         if (typeof name === 'string' && name.length > 0 && !teamByName.has(name)) {
           rowErrors.push(
-            enrichRowError(
-              { rowIndex: i, code: 'TEAM_NOT_FOUND', field: 'teamName' },
-              cellLookup,
-            ),
+            enrichRowError({ rowIndex: i, code: 'TEAM_NOT_FOUND', field: 'teamName' }, cellLookup),
           );
         }
       }
