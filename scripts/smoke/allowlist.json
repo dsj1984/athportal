@@ -1,0 +1,57 @@
+[
+  {
+    "path": "/",
+    "method": "GET",
+    "expectedStatus": 302,
+    "note": "Anonymous root → 302 to /sign-in (per apps/web/src/middleware.ts onboarding+anon redirect)"
+  },
+  {
+    "path": "/sign-in",
+    "method": "GET",
+    "expectedStatus": 200,
+    "note": "Clerk-hosted sign-in shell renders inline"
+  },
+  {
+    "path": "/sign-up",
+    "method": "GET",
+    "expectedStatus": 200,
+    "note": "Clerk-hosted sign-up shell renders inline"
+  },
+  {
+    "path": "/onboarding",
+    "method": "GET",
+    "expectedStatus": 302,
+    "note": "Anonymous → 302 to /sign-in (the gate runs only for signed-in unboarded users)"
+  },
+  {
+    "path": "/dashboard",
+    "method": "GET",
+    "expectedStatus": 302,
+    "note": "Anonymous → 302 to /sign-in"
+  },
+  {
+    "path": "/api/v1/health",
+    "method": "GET",
+    "expectedStatus": 200,
+    "note": "Anonymous-friendly liveness probe (mounted before clerkAuth)"
+  },
+  {
+    "path": "/api/v1/coach/teams/team_test_a_1/roster",
+    "method": "GET",
+    "expectedStatus": 401,
+    "note": "Anonymous → 401 UNAUTHENTICATED; story #941 fixed the prior 500 regression. NOT 500."
+  },
+  {
+    "path": "/app/coach/teams/team_test_a_1/roster",
+    "method": "GET",
+    "expectedStatus": 404,
+    "note": "Anonymous → 404 per AC-2/AC-3 SSR non-enumeration gate (PR #940)"
+  },
+  {
+    "path": "/dev/sign-in-as/coach",
+    "method": "GET",
+    "expectedStatus": 302,
+    "requireEnv": ["CLERK_SECRET_KEY"],
+    "note": "Dev-only seam: mints a Clerk sign-in ticket and redirects through Clerk's ticket flow. Hard-refuses in production. Skipped when CLERK_SECRET_KEY is unset (e.g. fork PRs)"
+  }
+]

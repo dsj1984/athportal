@@ -106,6 +106,11 @@
         │   Authored in Gherkin             │     (Detox binder adds at v1.0)
         └───────────────────────────────────┘
         ┌───────────────────────────────────┐
+        │   Smoke                           │  ← Node + fetch, no browser
+        │   Boot both servers, ping a       │     scripts/smoke/verify-stack.mjs
+        │   short front-door URL allowlist  │     allowlist at scripts/smoke/allowlist.json
+        └───────────────────────────────────┘
+        ┌───────────────────────────────────┐
         │   API Contract                    │  ← Vitest + ephemeral SQLite
         │   Wire shape, status codes,       │     apps/api/src/**/*.contract.test.ts
         │   DB side-effects, authz          │     helpers in packages/shared/src/testing/
@@ -118,6 +123,8 @@
 ```
 
 Every test belongs to **exactly one** tier. Tests that span tiers are a signal that the tier boundary is being violated — split them.
+
+The **smoke** tier sits between contract and acceptance: it boots the real local-dev stack (`pnpm dev` — Astro on `:4321` + Hono on `:8787`) and hits a short, hand-curated allowlist of front-door URLs to prove the two long-lived processes still talk to each other. See [§ Smoke](#smoke) for the cheap-and-fast posture and what belongs there vs. acceptance.
 
 ---
 
@@ -312,6 +319,29 @@ downstream run unchanged from production. See
 for the load-bearing reference test that pins this contract across the
 four MVP personas.
 
+### Smoke — front-door URL allowlist {#smoke}
+
+Location: [`scripts/smoke/verify-stack.mjs`](../scripts/smoke/verify-stack.mjs) (Node + `fetch`, no framework). The hand-curated allowlist lives at [`scripts/smoke/allowlist.json`](../scripts/smoke/allowlist.json). CI invocation lives in the `verify-stack` job in [`quality.yml`](../.github/workflows/quality.yml).
+
+**Posture.** Cheap and fast. Boots the real local-dev stack (`pnpm dev` — Astro on `:4321` + Hono on `:8787`) and hits a short, hand-curated list of URLs through the Astro origin, exactly as a browser would. For each entry the runner asserts a single first-response status code (no redirect follow) and, after the probes complete, scans the captured server logs for forbidden substrings (`TypeError`, `at async`, ` 500 `, `Internal Server Error`). A `200` response alongside a `500` in the API log is still red — the log scan is the F2 budget Story #943 codified.
+
+**What belongs at this tier.**
+
+- "The integration between the two long-lived dev processes is alive and routes are reachable." Smoke is the only tier that boots `pnpm dev`; every bug whose first symptom is "the two halves never talked to each other" belongs here. The Vite-proxy gap that PR #940 surfaced (every `/api/*` browser fetch 404'd) and the `@clerk/backend` v2/v3 middleware drift Story #941 fixed (anonymous → 500 instead of 401) are the codifying examples.
+- Anonymous status assertions for the routes the operator most relies on at the start of a manual walkthrough (`/`, `/sign-in`, `/dashboard`, `/api/v1/health`, `/api/v1/coach/...` ⇒ `401`).
+- "No 5xx in the API log during the smoke window," via the log-scan budget.
+
+**What does NOT belong here.**
+
+- Sign-in flows, mutations, DB-state assertions — those are contract or acceptance.
+- Anything that requires a browser or DOM. Smoke is `fetch`-only by design; a browser-driven journey is acceptance-tier.
+- Latency / performance budgets. Useful but a separate concern (and a separate baseline file).
+- Anything that requires re-implementing business logic in the smoke runner. The runner is small on purpose — the allowlist is the contract.
+
+**Skip semantics.** An allowlist entry can declare `requireEnv: ["NAME"]`; the runner skips that entry (still pass) when the named env var is missing. Used for `/dev/sign-in-as/:persona`, which calls the Clerk Backend API and therefore needs `CLERK_SECRET_KEY`. Fork-PR runs without secrets stay meaningful — the rest of the allowlist still exercises the front door.
+
+**Local invocation.** With `pnpm dev` already running in another terminal, `node scripts/smoke/verify-stack.mjs` runs the same probes a CI job would. Pre-push smoke check that catches the Vite-proxy or auth-middleware-shape class of regression before the push.
+
 ### Acceptance — user journey (Gherkin)
 
 Location: `tests/features/**/*.feature` at the repo root. Step definitions live under `apps/web/e2e/steps/**` (and `apps/mobile/e2e/steps/**` once the mobile runner wires in at v1.0).
@@ -380,6 +410,7 @@ Violations are review blockers. They are the mirror of the assertion-placement r
 |---|---|---|---|
 | Unit | Colocated `*.test.ts` / `*.test.tsx`, or `__tests__/` inside the module | Vitest | `pnpm run test` |
 | Contract | `apps/api/src/**/*.contract.test.ts`; helpers in `packages/shared/src/testing/` | Vitest + SQLite | `pnpm run test` |
+| Smoke | `scripts/smoke/verify-stack.mjs` + `scripts/smoke/allowlist.json` | Node + `fetch` (no framework) | `node scripts/smoke/verify-stack.mjs` against a running `pnpm dev` |
 | Acceptance (web, MVP) | `tests/features/**/*.feature` + `apps/web/e2e/steps/**` | Playwright-bdd | `pnpm --filter @repo/web exec bddgen` then `pnpm --filter @repo/web test:e2e` |
 | Acceptance (mobile, v1.0) | `tests/features/**/*.feature` + `apps/mobile/e2e/steps/**` | Detox + Jest binder | wires in with the v1.0 native-apps Epic |
 
