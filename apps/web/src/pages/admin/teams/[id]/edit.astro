@@ -15,6 +15,12 @@
 // composes the shared PageHeader primitive. Restyled by Story #851 /
 // Task #858.
 
+import { requireAdminSsr } from '../../../../lib/ssrAuthGate';
+
+// SSR auth gate (Story #952 F4). Anonymous → 302 /sign-in; signed-in
+// non-admin → 404 (non-enumeration per Epic #11 AC-2/AC-3). The page
+// chrome must not render to non-admin callers, even though the inline
+// client-script fetch would 403 a moment later.
 import PageHeader from '../../../../components/ui/PageHeader.astro';
 import TeamForm from '../../../../components/admin/teams/TeamForm.astro';
 
@@ -23,6 +29,9 @@ if (typeof id !== 'string' || id.length === 0) {
   return new Response('Not Found', { status: 404 });
 }
 const action = `/api/v1/admin/teams/${id}`;
+const __ssr_gate = await requireAdminSsr(Astro);
+if (__ssr_gate) return __ssr_gate;
+
 ---
 
 <html lang="en">
