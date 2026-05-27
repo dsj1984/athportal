@@ -46,7 +46,7 @@ prerequisites:
    **Expected:** the browser lands on the coach's default authenticated landing surface (the coach dashboard or `/dashboard`, per the current build). The header shows the signed-in identity for the test email and the "must complete onboarding" gate is gone.
 
 8. Reload the landing surface once.
-   **Expected:** the page re-renders without redirecting back to `/onboarding`. The session cookie is `httpOnly` and `secure` (verify in browser devtools), and no auth token is present in `localStorage` or `sessionStorage`.
+   **Expected:** the page re-renders without redirecting back to `/onboarding`. Session cookies match Clerk's documented posture — `__session` is short-lived (≤5 min TTL) and JS-readable by design. No long-lived auth secret (refresh token, `sk_*` key) appears in `localStorage` or `sessionStorage`.
 
 ## Cleanup
 
