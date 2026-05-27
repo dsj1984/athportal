@@ -102,6 +102,40 @@ function extractToken(req: Request): string | null {
 }
 
 /**
+ * Structured reason codes the middleware emits on every 401 path. Kept
+ * narrow and finite so triage queries against the Workers tail-log sink
+ * stay grep-friendly. Reasons distinguish "no credential" from "credential
+ * presented but rejected" from "credential verified but unusable" without
+ * ever echoing the token, the secret key, or the cookie value.
+ */
+type AuthWarnReason = 'no-token' | 'verify-threw' | 'no-subject';
+
+/**
+ * Emit a structured warning for a 401 path. The Worker API does not
+ * have a dedicated project-wide `logger` surface — `console.warn` is
+ * captured by Cloudflare's tail-log pipeline (the same path
+ * `wrangler tail` follows) and is the canonical structured-log surface
+ * for this runtime. Wrapped in try/catch so a logging-layer fault can
+ * never turn a failed-auth 401 into a user-visible 500.
+ *
+ * Per `.agents/rules/security-baseline.md` (Data Leakage & Logging): the
+ * payload MUST NOT carry the token, secret key, cookie value, or any
+ * other secret material — only the reason discriminator and (optionally)
+ * the thrown error's class name.
+ */
+function logAuthWarn(payload: { reason: AuthWarnReason; errorClass?: string }): void {
+  try {
+    console.warn(JSON.stringify({ scope: 'clerk-auth', ...payload }));
+  } catch {
+    // intentional swallow — see comment above
+  }
+}
+
+function errorClassName(err: unknown): string {
+  return err instanceof Error ? err.constructor.name : 'NonError';
+}
+
+/**
  * `clerkAuth` middleware factory. Returns a Hono middleware that:
  *
  *   1. Extracts the Clerk session token from the request.
@@ -110,20 +144,39 @@ function extractToken(req: Request): string | null {
  *   3. On success, writes the Clerk subject id (`sub`) into
  *      `c.var.clerkSubjectId` and calls `next()`.
  *   4. On any failure, returns `401 UNAUTHENTICATED` with the canonical
- *      error envelope — no stack trace, no internal class name.
+ *      error envelope — no stack trace, no internal class name — and
+ *      emits one `console.warn` carrying the structured reason so
+ *      operators can distinguish missing-cookie from expired-token from
+ *      wrong-issuer without re-instrumenting in prod.
  *
  * Concrete failure paths mapped to the same envelope:
  *
- *   - Missing token (no cookie, no bearer)
- *   - Token rejected by `verifyToken` (expired, wrong signature,
- *     unknown subject, malformed payload, etc.)
- *   - Token verifies but the payload has no `sub` claim — defensive
- *     guard, should be unreachable with Clerk-issued tokens.
+ *   - Missing token (no cookie, no bearer) → `reason: 'no-token'`.
+ *   - `verifyToken` throws (expired token, wrong signature, malformed
+ *     payload, transport-layer fault) → `reason: 'verify-threw'`.
+ *   - Token verifies but the payload has no usable `sub` claim →
+ *     `reason: 'no-subject'`.
+ *
+ * @clerk/backend v2 vs v3 contract drift (Story #941).
+ *
+ * The v2 surface returned a `{ data, errors }` envelope — `errors` set
+ * on failure, `data` on success. v3 ships the same internal
+ * envelope-returning function but exports it via `withLegacyReturn`,
+ * which converts the envelope into "return `JwtPayload` directly OR
+ * throw the first error". The middleware was originally written
+ * against v2's envelope; on v3 the success-path read of
+ * `verification.data.sub` collapsed to `Cannot read properties of
+ * undefined (reading 'sub')` because `verification` IS the payload
+ * itself, not a wrapper around it (see PR #940's manual-QA
+ * walkthrough). The `try/catch` is therefore load-bearing on v3, not
+ * defensive — every rejected token reaches the middleware as a thrown
+ * rejection.
  */
 export function clerkAuth(): MiddlewareHandler<ClerkAuthEnv> {
   return async (c, next) => {
     const token = extractToken(c.req.raw);
     if (!token) {
+      logAuthWarn({ reason: 'no-token' });
       return c.json(unauthenticated('Authentication required.'), 401);
     }
 
@@ -131,19 +184,25 @@ export function clerkAuth(): MiddlewareHandler<ClerkAuthEnv> {
     if (!secretKey) {
       // Misconfiguration — the binding is required at deploy time. We
       // still surface 401 (never echo internal config state to the
-      // caller) but the binding's absence will already have failed the
-      // deploy precheck.
+      // caller); the binding's absence will already have failed the
+      // deploy precheck. Logged as `no-token` because, from the
+      // caller's perspective, the credential could not be validated.
+      logAuthWarn({ reason: 'no-token' });
       return c.json(unauthenticated('Authentication required.'), 401);
     }
 
-    const verification = await verifyToken(token, { secretKey });
-    if (verification.errors !== undefined) {
+    let payload: Awaited<ReturnType<typeof verifyToken>>;
+    try {
+      payload = await verifyToken(token, { secretKey });
+    } catch (err) {
+      logAuthWarn({ reason: 'verify-threw', errorClass: errorClassName(err) });
       return c.json(unauthenticated('Authentication required.'), 401);
     }
 
-    const payload = verification.data as { sub?: unknown };
-    const subject = typeof payload.sub === 'string' ? payload.sub : '';
+    const sub = (payload as { sub?: unknown } | null | undefined)?.sub;
+    const subject = typeof sub === 'string' ? sub : '';
     if (subject.length === 0) {
+      logAuthWarn({ reason: 'no-subject' });
       return c.json(unauthenticated('Authentication required.'), 401);
     }
 

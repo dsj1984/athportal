@@ -165,7 +165,7 @@ describe('PATCH /api/v1/users/:id/role — last-admin invariant', () => {
     });
 
     mockedVerifyToken.mockResolvedValueOnce({
-      data: { sub: actor.clerkSubjectId },
+      sub: actor.clerkSubjectId,
     } as unknown as Awaited<ReturnType<typeof verifyToken>>);
 
     const app = buildApp(db);
@@ -214,7 +214,7 @@ describe('PATCH /api/v1/users/:id/role — last-admin invariant', () => {
     });
 
     mockedVerifyToken.mockResolvedValueOnce({
-      data: { sub: actor.clerkSubjectId },
+      sub: actor.clerkSubjectId,
     } as unknown as Awaited<ReturnType<typeof verifyToken>>);
 
     const app = buildApp(db);
@@ -281,7 +281,7 @@ describe('PATCH /api/v1/users/:id/role — last-admin invariant', () => {
     });
 
     mockedVerifyToken.mockResolvedValueOnce({
-      data: { sub: actor.clerkSubjectId },
+      sub: actor.clerkSubjectId,
     } as unknown as Awaited<ReturnType<typeof verifyToken>>);
 
     const app = buildApp(db);
@@ -347,7 +347,7 @@ describe('PATCH /api/v1/users/:id/role — last-admin invariant', () => {
     });
 
     mockedVerifyToken.mockResolvedValueOnce({
-      data: { sub: actor.clerkSubjectId },
+      sub: actor.clerkSubjectId,
     } as unknown as Awaited<ReturnType<typeof verifyToken>>);
 
     const app = buildApp(db);

@@ -77,7 +77,7 @@ beforeEach(() => {
 describe('POST /api/v1/sign-out', () => {
   it('returns 204 and clears the __session cookie with security flags', async () => {
     mockedVerifyToken.mockResolvedValueOnce({
-      data: { sub: 'user_signout_1' },
+      sub: 'user_signout_1',
     } as unknown as Awaited<ReturnType<typeof verifyToken>>);
 
     const app = buildApp(freshDb());

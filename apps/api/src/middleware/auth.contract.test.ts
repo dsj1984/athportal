@@ -17,7 +17,7 @@
 // JIT-race and cookie-flag suite is owned by Task #346.
 
 import { Hono } from 'hono';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { type MockInstance, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock `@clerk/backend` so contract tests never touch the network. The
 // mock is hoisted by vitest before the module under test loads.
@@ -75,9 +75,39 @@ const env = {
   ANALYTICS: { writeDataPoint: () => {} },
 };
 
+/**
+ * Capture every `console.warn` invocation. The middleware emits one
+ * structured warn per 401 path; tests below assert the JSON envelope
+ * shape AND the absence of any secret material in the captured output.
+ */
+type ConsoleWarn = (typeof console)['warn'];
+let warnSpy: MockInstance<ConsoleWarn>;
+
 beforeEach(() => {
   mockedVerifyToken.mockReset();
+  warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  // `vi.spyOn` reuses the existing spy on a property that has already
+  // been spied this run, so `mock.calls` carries over across tests
+  // unless explicitly cleared. Clear so each test sees only its own
+  // structured-warn output.
+  warnSpy.mockClear();
 });
+
+/**
+ * Decode every captured `console.warn` payload back to its JSON object.
+ * The middleware always emits a single JSON string per call (see
+ * `logAuthWarn` in auth.ts); anything that fails to parse fails the
+ * test rather than being silently dropped.
+ */
+function capturedWarnPayloads(): Array<Record<string, unknown>> {
+  return warnSpy.mock.calls.map((args) => {
+    const raw: unknown = args[0];
+    if (typeof raw !== 'string') {
+      throw new Error(`expected JSON string from logAuthWarn, got ${typeof raw}`);
+    }
+    return JSON.parse(raw) as Record<string, unknown>;
+  });
+}
 
 describe('clerkAuth middleware', () => {
   it('returns 401 UNAUTHENTICATED for anonymous requests', async () => {
@@ -91,13 +121,26 @@ describe('clerkAuth middleware', () => {
       error: { code: 'UNAUTHENTICATED', message: 'Authentication required.' },
     });
     expect(mockedVerifyToken).not.toHaveBeenCalled();
+
+    // Structured warn: anonymous request → reason 'no-token'.
+    const payloads = capturedWarnPayloads();
+    expect(payloads).toHaveLength(1);
+    expect(payloads[0]).toEqual({ scope: 'clerk-auth', reason: 'no-token' });
   });
 
-  it('returns 401 UNAUTHENTICATED when verifyToken rejects an invalid token', async () => {
-    mockedVerifyToken.mockResolvedValueOnce({
-      // shape per @clerk/backend's JwtReturnType
-      errors: [new Error('token expired')],
-    } as unknown as Awaited<ReturnType<typeof verifyToken>>);
+  it('returns 401 UNAUTHENTICATED when verifyToken throws (expired token, wrong signature, etc.)', async () => {
+    // @clerk/backend@^3 exports verifyToken wrapped in `withLegacyReturn`,
+    // which converts the internal `{ data, errors }` envelope into "return
+    // JwtPayload directly OR throw the first error". Every rejected-token
+    // path therefore surfaces here as a thrown rejection — this is the
+    // load-bearing case Story #941 fixed.
+    class TokenExpiredError extends Error {
+      constructor() {
+        super('token expired');
+        this.name = 'TokenExpiredError';
+      }
+    }
+    mockedVerifyToken.mockRejectedValueOnce(new TokenExpiredError());
 
     const app = createApp();
 
@@ -116,14 +159,69 @@ describe('clerkAuth middleware', () => {
       success: false,
       error: { code: 'UNAUTHENTICATED', message: 'Authentication required.' },
     });
-    // Stack traces / internal error details must not leak.
+    // Stack traces / internal error details must not leak via the wire.
     expect(JSON.stringify(body)).not.toMatch(/token expired/);
     expect(JSON.stringify(body)).not.toMatch(/stack/i);
+
+    // Structured warn: rejected token → reason 'verify-threw' with the
+    // constructor name of the thrown error. Token MUST NOT leak.
+    const payloads = capturedWarnPayloads();
+    expect(payloads).toHaveLength(1);
+    expect(payloads[0]).toEqual({
+      scope: 'clerk-auth',
+      reason: 'verify-threw',
+      errorClass: 'TokenExpiredError',
+    });
+    expect(JSON.stringify(payloads[0])).not.toMatch(/bad-token/);
+    expect(JSON.stringify(payloads[0])).not.toMatch(/sk_test_unit/);
+  });
+
+  it('returns 401 UNAUTHENTICATED when verifyToken throws a transport-layer fault', async () => {
+    // DNS / TLS / runtime polyfill drift also surface as thrown
+    // rejections rather than envelope errors. Same 401 + structured
+    // warn discipline.
+    class FetchFailedError extends Error {
+      constructor() {
+        super('upstream fetch failed');
+        this.name = 'FetchFailedError';
+      }
+    }
+    mockedVerifyToken.mockRejectedValueOnce(new FetchFailedError());
+
+    const app = createApp();
+
+    const res = await app.request(
+      '/echo',
+      {
+        method: 'GET',
+        headers: { cookie: '__session=will-throw' },
+      },
+      env,
+    );
+
+    expect(res.status).toBe(401);
+    expect(await res.json()).toEqual({
+      success: false,
+      error: { code: 'UNAUTHENTICATED', message: 'Authentication required.' },
+    });
+
+    const payloads = capturedWarnPayloads();
+    expect(payloads).toHaveLength(1);
+    expect(payloads[0]).toEqual({
+      scope: 'clerk-auth',
+      reason: 'verify-threw',
+      errorClass: 'FetchFailedError',
+    });
+    expect(JSON.stringify(payloads[0])).not.toMatch(/will-throw/);
+    expect(JSON.stringify(payloads[0])).not.toMatch(/sk_test_unit/);
   });
 
   it('writes clerkSubjectId and yields next() on a valid cookie token', async () => {
+    // v3 surface: verifyToken returns the JwtPayload directly (not
+    // a `{ data, errors }` envelope), per `withLegacyReturn` wrapping
+    // at the public export. See Story #941.
     mockedVerifyToken.mockResolvedValueOnce({
-      data: { sub: 'user_abc123' },
+      sub: 'user_abc123',
     } as unknown as Awaited<ReturnType<typeof verifyToken>>);
 
     const app = createApp();
@@ -143,11 +241,14 @@ describe('clerkAuth middleware', () => {
     expect(mockedVerifyToken).toHaveBeenCalledWith('good-token', {
       secretKey: 'sk_test_unit',
     });
+
+    // Happy path: no structured warn fires.
+    expect(capturedWarnPayloads()).toHaveLength(0);
   });
 
   it('accepts a Bearer token when no __session cookie is present', async () => {
     mockedVerifyToken.mockResolvedValueOnce({
-      data: { sub: 'user_bearer' },
+      sub: 'user_bearer',
     } as unknown as Awaited<ReturnType<typeof verifyToken>>);
 
     const app = createApp();
@@ -170,7 +271,7 @@ describe('clerkAuth middleware', () => {
 
   it('rejects a verified token that carries an empty sub claim', async () => {
     mockedVerifyToken.mockResolvedValueOnce({
-      data: { sub: '' },
+      sub: '',
     } as unknown as Awaited<ReturnType<typeof verifyToken>>);
 
     const app = createApp();
@@ -186,6 +287,11 @@ describe('clerkAuth middleware', () => {
       success: false,
       error: { code: 'UNAUTHENTICATED' },
     });
+
+    // Structured warn: empty sub claim → reason 'no-subject'.
+    const payloads = capturedWarnPayloads();
+    expect(payloads).toHaveLength(1);
+    expect(payloads[0]).toEqual({ scope: 'clerk-auth', reason: 'no-subject' });
   });
 });
 
@@ -382,7 +488,7 @@ describe('Session cookie security flags (Task #346)', () => {
     // sign-out path is the contract gate for the cookie-flag posture
     // (Tech Spec #318 §Security, security-baseline §"Transport & Headers").
     mockedVerifyToken.mockResolvedValueOnce({
-      data: { sub: 'user_cookie_flags' },
+      sub: 'user_cookie_flags',
     } as unknown as Awaited<ReturnType<typeof verifyToken>>);
 
     const app = buildProtectedApp(freshProductionDb(), (a) =>
