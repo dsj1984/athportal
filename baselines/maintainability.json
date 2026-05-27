@@ -1,16 +1,16 @@
 {
   "$schema": ".agents/schemas/baselines/maintainability.schema.json",
-  "generatedAt": "2026-05-26T20:45:37.981Z",
+  "generatedAt": "2026-05-27T21:01:15.187Z",
   "kernelVersion": "1.0.0",
   "rollup": {
     "*": {
       "min": 70.515,
-      "p50": 104.761,
+      "p50": 104.614,
       "p95": 171
     },
     "apps/api": {
       "min": 78.354,
-      "p50": 106.463,
+      "p50": 105.787,
       "p95": 171
     },
     "apps/mobile": {
@@ -20,7 +20,7 @@
     },
     "apps/web": {
       "min": 80.074,
-      "p50": 106.74,
+      "p50": 106.544,
       "p95": 163.185
     },
     "packages/baselines": {
@@ -35,7 +35,7 @@
     },
     "packages/shared": {
       "min": 70.515,
-      "p50": 99.315,
+      "p50": 97.857,
       "p95": 171
     }
   },
@@ -45,7 +45,7 @@
       "path": "apps/api/src/env.ts"
     },
     {
-      "mi": 106.463,
+      "mi": 105.787,
       "path": "apps/api/src/index.ts"
     },
     {
@@ -65,7 +65,7 @@
       "path": "apps/api/src/middleware/__testing__/auth-test.ts"
     },
     {
-      "mi": 99.719,
+      "mi": 99.586,
       "path": "apps/api/src/middleware/auth.ts"
     },
     {
@@ -83,6 +83,10 @@
     {
       "mi": 130.527,
       "path": "apps/api/src/middleware/withDb.ts"
+    },
+    {
+      "mi": 85.66,
+      "path": "apps/api/src/routes/debug/create-test-user.ts"
     },
     {
       "mi": 116.953,
@@ -193,12 +197,16 @@
       "path": "apps/mobile/src/sentry.ts"
     },
     {
-      "mi": 96.097,
+      "mi": 91.193,
       "path": "apps/web/astro.config.ts"
     },
     {
       "mi": 133.574,
       "path": "apps/web/e2e/fixtures/email-inbox.ts"
+    },
+    {
+      "mi": 100.398,
+      "path": "apps/web/e2e/fixtures/freshUser.ts"
     },
     {
       "mi": 91.32,
@@ -233,6 +241,10 @@
       "path": "apps/web/e2e/steps/auth.steps.ts"
     },
     {
+      "mi": 112.839,
+      "path": "apps/web/e2e/steps/diagnostics.steps.ts"
+    },
+    {
       "mi": 171,
       "path": "apps/web/e2e/steps/form.steps.ts"
     },
@@ -253,7 +265,7 @@
       "path": "apps/web/e2e/steps/observability.steps.ts"
     },
     {
-      "mi": 117.16,
+      "mi": 117.187,
       "path": "apps/web/e2e/steps/onboarding.steps.ts"
     },
     {
@@ -433,6 +445,10 @@
       "path": "apps/web/src/lib/db.ts"
     },
     {
+      "mi": 109.057,
+      "path": "apps/web/src/lib/ssrAuthGate.ts"
+    },
+    {
       "mi": 104.126,
       "path": "apps/web/src/middleware.ts"
     },
@@ -453,7 +469,7 @@
       "path": "apps/web/src/pages/onboarding.ts"
     },
     {
-      "mi": 113.043,
+      "mi": 101.775,
       "path": "apps/web/src/pages/sign-out.ts"
     },
     {
@@ -517,7 +533,7 @@
       "path": "packages/shared/scripts/reset.mjs"
     },
     {
-      "mi": 86.896,
+      "mi": 91.3,
       "path": "packages/shared/scripts/seed.mjs"
     },
     {
@@ -605,7 +621,7 @@
       "path": "packages/shared/src/db/seed.ts"
     },
     {
-      "mi": 78.863,
+      "mi": 75.194,
       "path": "packages/shared/src/db/seedFixtures.ts"
     },
     {
@@ -695,6 +711,10 @@
     {
       "mi": 96.366,
       "path": "packages/shared/src/testing/clerkTickets.ts"
+    },
+    {
+      "mi": 94.28,
+      "path": "packages/shared/src/testing/createTestUser.ts"
     },
     {
       "mi": 111.005,

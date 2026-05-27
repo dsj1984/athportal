@@ -33,9 +33,13 @@
  *     other invariant does not have to fight against this guard).
  */
 import { expect } from '@playwright/test';
-import { Before, createBdd } from 'playwright-bdd';
+import { createBdd } from 'playwright-bdd';
 
-const { Then } = createBdd();
+// playwright-bdd exposes `Before` / `After` lifecycle hooks via the
+// `createBdd()` builder, not as top-level exports. Keeping them on the
+// builder return is how the package binds the hooks to the right
+// internal test type — a direct top-level import does not exist.
+const { Before, Then } = createBdd();
 
 /**
  * Test-scoped buffer of captured console messages and page errors.
