@@ -68,8 +68,11 @@ const FORBIDDEN_ATTRS_RE = /\blang\s*=/;
 export function lintSource(source) {
   const out = [];
   SCRIPT_OPEN_TAG_RE.lastIndex = 0;
-  let match;
-  while ((match = SCRIPT_OPEN_TAG_RE.exec(source)) !== null) {
+  for (
+    let match = SCRIPT_OPEN_TAG_RE.exec(source);
+    match !== null;
+    match = SCRIPT_OPEN_TAG_RE.exec(source)
+  ) {
     const attrs = match[1] ?? '';
     const attrMatch = FORBIDDEN_ATTRS_RE.exec(attrs);
     if (!attrMatch) continue;
