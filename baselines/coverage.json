@@ -1,17 +1,17 @@
 {
   "$schema": ".agents/schemas/baselines/coverage.schema.json",
-  "generatedAt": "2026-05-24T23:21:14.697Z",
+  "generatedAt": "2026-05-27T21:01:01.992Z",
   "kernelVersion": "1.0.0",
   "rollup": {
     "*": {
-      "branches": 90.46,
-      "functions": 84.77,
-      "lines": 83.91
+      "branches": 90.92,
+      "functions": 87.94,
+      "lines": 87.54
     },
     "apps/api": {
-      "branches": 85.2,
-      "functions": 88.19,
-      "lines": 87.28
+      "branches": 85.09,
+      "functions": 89.54,
+      "lines": 88.52
     },
     "apps/mobile": {
       "branches": 0,
@@ -19,9 +19,9 @@
       "lines": 0
     },
     "apps/web": {
-      "branches": 86.19,
-      "functions": 89.39,
-      "lines": 82.85
+      "branches": 89.95,
+      "functions": 93.49,
+      "lines": 90.35
     },
     "packages/baselines": {
       "branches": 92.52,
@@ -34,9 +34,9 @@
       "lines": 0
     },
     "packages/shared": {
-      "branches": 97.47,
-      "functions": 79.93,
-      "lines": 82.05
+      "branches": 97.1,
+      "functions": 81.7,
+      "lines": 84.58
     }
   },
   "rows": [
@@ -49,7 +49,7 @@
     {
       "branches": 100,
       "functions": 50,
-      "lines": 93.75,
+      "lines": 95.24,
       "path": "apps/api/src/index.ts"
     },
     {
@@ -66,14 +66,20 @@
     },
     {
       "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/api/src/mailer/rosterInvite.ts"
+    },
+    {
+      "branches": 100,
       "functions": 0,
       "lines": 0,
       "path": "apps/api/src/middleware/__testing__/auth-test.ts"
     },
     {
-      "branches": 76.19,
+      "branches": 73.81,
       "functions": 100,
-      "lines": 85.07,
+      "lines": 85.14,
       "path": "apps/api/src/middleware/auth.ts"
     },
     {
@@ -93,6 +99,18 @@
       "functions": 100,
       "lines": 94.12,
       "path": "apps/api/src/middleware/requireRole.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/api/src/middleware/withDb.ts"
+    },
+    {
+      "branches": 83.33,
+      "functions": 75,
+      "lines": 96.88,
+      "path": "apps/api/src/routes/debug/create-test-user.ts"
     },
     {
       "branches": 100,
@@ -176,7 +194,31 @@
       "branches": 100,
       "functions": 100,
       "lines": 100,
+      "path": "apps/api/src/routes/v1/coach/index.ts"
+    },
+    {
+      "branches": 70,
+      "functions": 90.91,
+      "lines": 85.71,
+      "path": "apps/api/src/routes/v1/coach/invites.ts"
+    },
+    {
+      "branches": 60.34,
+      "functions": 100,
+      "lines": 82.61,
+      "path": "apps/api/src/routes/v1/coach/roster.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
       "path": "apps/api/src/routes/v1/me.ts"
+    },
+    {
+      "branches": 80.95,
+      "functions": 100,
+      "lines": 88.57,
+      "path": "apps/api/src/routes/v1/public/roster-invites.ts"
     },
     {
       "branches": 100,
@@ -257,6 +299,18 @@
       "path": "apps/web/src/components/admin/teams/TeamForm.ts"
     },
     {
+      "branches": 90.91,
+      "functions": 100,
+      "lines": 98.21,
+      "path": "apps/web/src/components/coach/InviteAthleteDialog.ts"
+    },
+    {
+      "branches": 63.75,
+      "functions": 100,
+      "lines": 96.67,
+      "path": "apps/web/src/components/coach/RosterTable.ts"
+    },
+    {
       "branches": 100,
       "functions": 100,
       "lines": 100,
@@ -287,7 +341,7 @@
       "path": "apps/web/src/components/onboarding/ProfilePhotoUploader.ts"
     },
     {
-      "branches": 83.33,
+      "branches": 88.89,
       "functions": 100,
       "lines": 100,
       "path": "apps/web/src/components/ui/Avatar.ts"
@@ -296,7 +350,145 @@
       "branches": 100,
       "functions": 100,
       "lines": 100,
+      "path": "apps/web/src/components/ui/Card.ts"
+    },
+    {
+      "branches": 91.43,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/web/src/components/ui/DataTable.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
       "path": "apps/web/src/components/ui/EmptyState.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/web/src/components/ui/EventChip.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/web/src/components/ui/FormField.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/web/src/components/ui/Input.tsx"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/web/src/components/ui/Logo.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/web/src/components/ui/PageHeader.ts"
+    },
+    {
+      "branches": 94.74,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/web/src/components/ui/Ph.ts"
+    },
+    {
+      "branches": 92.31,
+      "functions": 100,
+      "lines": 95.45,
+      "path": "apps/web/src/components/ui/Ring.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/web/src/components/ui/Select.tsx"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/web/src/components/ui/Shell.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/web/src/components/ui/Sidebar.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/web/src/components/ui/Stat.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/web/src/components/ui/Textarea.tsx"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/web/src/components/ui/ToastHost.tsx"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/web/src/components/ui/VerifiedTick.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/web/src/components/ui/_lib/badge.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/web/src/components/ui/_lib/btn.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/web/src/components/ui/_lib/cn.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/web/src/components/ui/_lib/eventColors.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/web/src/components/ui/_lib/form.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/web/src/components/ui/_lib/sidebarNav.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/web/src/components/ui/_lib/toast.ts"
     },
     {
       "branches": 100,
@@ -311,9 +503,21 @@
       "path": "apps/web/src/index.ts"
     },
     {
-      "branches": 100,
-      "functions": 60,
-      "lines": 89.29,
+      "branches": 75,
+      "functions": 100,
+      "lines": 87.1,
+      "path": "apps/web/src/lib/db.ts"
+    },
+    {
+      "branches": 94.44,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/web/src/lib/ssrAuthGate.ts"
+    },
+    {
+      "branches": 94.44,
+      "functions": 80,
+      "lines": 93.75,
       "path": "apps/web/src/middleware.ts"
     },
     {
@@ -329,15 +533,33 @@
       "path": "apps/web/src/pages/dashboard.ts"
     },
     {
+      "branches": 0,
+      "functions": 0,
+      "lines": 0,
+      "path": "apps/web/src/pages/dev/create-test-user.ts"
+    },
+    {
+      "branches": 0,
+      "functions": 0,
+      "lines": 0,
+      "path": "apps/web/src/pages/dev/sign-in-as/[persona].ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "apps/web/src/pages/internal/styleguide.ts"
+    },
+    {
       "branches": 100,
       "functions": 100,
       "lines": 100,
       "path": "apps/web/src/pages/onboarding.ts"
     },
     {
-      "branches": 0,
-      "functions": 0,
-      "lines": 0,
+      "branches": 78.57,
+      "functions": 75,
+      "lines": 93.33,
       "path": "apps/web/src/pages/sign-out.ts"
     },
     {
@@ -413,9 +635,15 @@
       "path": "packages/shared/src/db/queries/__tests__/onboardingDb.ts"
     },
     {
-      "branches": 85.71,
+      "branches": 75,
       "functions": 100,
-      "lines": 92.31,
+      "lines": 93.55,
+      "path": "packages/shared/src/db/queries/coach/roster.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
       "path": "packages/shared/src/db/queries/legalDocuments.ts"
     },
     {
@@ -431,15 +659,15 @@
       "path": "packages/shared/src/db/queries/scopedDb.ts"
     },
     {
-      "branches": 100,
+      "branches": 92.86,
       "functions": 100,
-      "lines": 100,
+      "lines": 92.31,
       "path": "packages/shared/src/db/queries/users.ts"
     },
     {
       "branches": 100,
-      "functions": 0,
-      "lines": 0,
+      "functions": 100,
+      "lines": 100,
       "path": "packages/shared/src/db/schema/__tests__/freshSchemaDb.ts"
     },
     {
@@ -492,6 +720,18 @@
     },
     {
       "branches": 100,
+      "functions": 25,
+      "lines": 40,
+      "path": "packages/shared/src/db/schema/rosterEntries.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 25,
+      "lines": 50,
+      "path": "packages/shared/src/db/schema/rosterInvites.ts"
+    },
+    {
+      "branches": 100,
       "functions": 0,
       "lines": 50,
       "path": "packages/shared/src/db/schema/teams.ts"
@@ -518,6 +758,12 @@
       "branches": 100,
       "functions": 100,
       "lines": 100,
+      "path": "packages/shared/src/db/seedFixtures.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
       "path": "packages/shared/src/index.ts"
     },
     {
@@ -531,6 +777,12 @@
       "functions": 100,
       "lines": 100,
       "path": "packages/shared/src/observability/redaction.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "packages/shared/src/rbac/coachOnTeam.ts"
     },
     {
       "branches": 100,
@@ -613,6 +865,12 @@
     {
       "branches": 100,
       "functions": 100,
+      "lines": 100,
+      "path": "packages/shared/src/schemas/coach/roster.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
       "lines": 0,
       "path": "packages/shared/src/testing/__tests__/fixtures/echo-schema.ts"
     },
@@ -627,6 +885,24 @@
       "functions": 80,
       "lines": 70.83,
       "path": "packages/shared/src/testing/auth.ts"
+    },
+    {
+      "branches": 92.31,
+      "functions": 100,
+      "lines": 100,
+      "path": "packages/shared/src/testing/clerkPersonas.ts"
+    },
+    {
+      "branches": 100,
+      "functions": 100,
+      "lines": 100,
+      "path": "packages/shared/src/testing/clerkTickets.ts"
+    },
+    {
+      "branches": 82.35,
+      "functions": 66.67,
+      "lines": 94.12,
+      "path": "packages/shared/src/testing/createTestUser.ts"
     },
     {
       "branches": 100,

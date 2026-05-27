@@ -47,6 +47,10 @@ import { type ClerkAuthEnv, clerkAuth, requireInternalUser } from './middleware/
 import { type RequestLoggerEnv, requestLogger } from './middleware/request-logger';
 import { requireOnboarded } from './middleware/requireOnboarded';
 import { withDb } from './middleware/withDb';
+import {
+  type CreateTestUserDebugEnv,
+  createTestUserDebugRoute,
+} from './routes/debug/create-test-user';
 import { type SyntheticFailureEnv, syntheticFailureRoute } from './routes/debug/synthetic-failure';
 import { adminRoute } from './routes/v1/admin';
 import { authRoute } from './routes/v1/auth';
@@ -57,7 +61,7 @@ import { signOutRoute } from './routes/v1/sign-out';
 import { userRoleRoute } from './routes/v1/users/role';
 import { clerkInvitationAcceptedRoute } from './routes/webhooks/clerk-invitation-accepted';
 
-type AppEnv = RequestLoggerEnv & SyntheticFailureEnv & ClerkAuthEnv;
+type AppEnv = RequestLoggerEnv & SyntheticFailureEnv & CreateTestUserDebugEnv & ClerkAuthEnv;
 
 const app = new Hono<AppEnv>();
 
@@ -75,6 +79,15 @@ app.get('/api/v1/health', (c) => c.json({ ok: true }));
 //    auth path. The route is gated by an env binding — see its module
 //    docstring.
 app.route('/api/v1/_debug/synthetic-failure', syntheticFailureRoute);
+
+// 3.1) Gated dev-only test-user creation seam (Story #963). Mounted at
+//      the same level as the synthetic-failure rehearsal: BEFORE
+//      clerkAuth so the Playwright fixture can call it without a Clerk
+//      session, and gated by `DEBUG_TEST_USER_CREATION_ENABLED` so a
+//      production build never exposes it. The route's own contract
+//      test (`routes/debug/create-test-user.contract.test.ts`) locks
+//      the 404-on-closed-gate / 503-on-non-test-key invariants.
+app.route('/api/v1/_debug/create-test-user', createTestUserDebugRoute);
 
 // 3.5) Clerk webhooks. Mounted BEFORE clerkAuth because webhook
 //      callers present a Standard Webhooks signature, not a Clerk
