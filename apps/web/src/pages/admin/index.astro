@@ -1,0 +1,27 @@
+---
+// apps/web/src/pages/admin/index.astro
+//
+// `/admin` — admin root. Story #955 / F2.
+//
+// Filled the gap where signed-in org-admins got a 404 on the bare
+// `/admin` URL even though every sub-page (`/admin/teams`,
+// `/admin/invitations`, `/admin/import`) existed. The interim shape is
+// a server-side redirect to `/admin/teams` (the canonical admin
+// landing surface today) once the SSR admin gate from Story #952
+// confirms the caller is an org-admin. Anonymous → 302 `/sign-in`
+// (handled inside the gate). Signed-in non-admin → 404 (non-
+// enumeration per Epic #11 AC-2/AC-3).
+//
+// Once Story #952 F5 (persona-aware landing) ships a real admin
+// landing page with links to the sub-surfaces, swap this redirect
+// for a real `<RootLayout>` render. Until then, redirect is the
+// smallest change that closes the 404 without leaking the existence
+// of `/admin` to non-admins.
+
+import { requireAdminSsr } from '../../lib/ssrAuthGate';
+
+const gate = await requireAdminSsr(Astro);
+if (gate) return gate;
+
+return Astro.redirect('/admin/teams', 302);
+---
