@@ -24,6 +24,7 @@ import {
   renderCommitStatus,
   renderDecisionRows,
   renderPlanDiff,
+  syncTargetTeamForDecision,
 } from './RolloverPreview';
 
 let tbody: HTMLTableSectionElement;
@@ -187,6 +188,110 @@ describe('renderPlanDiff', () => {
     renderPlanDiff(container, { archives: [], promotions: [], errors: [] });
     expect(container.querySelector('[data-col="archives"]')).toBeNull();
     expect(container.textContent).toContain('Archives: 0');
+  });
+});
+
+describe('syncTargetTeamForDecision (Story #972 F3)', () => {
+  it('auto-fills target=source on initial render (decision defaults to promote)', () => {
+    renderDecisionRows(tbody, [
+      {
+        membershipId: 'am_1',
+        athleteName: 'Ada',
+        sourceTeamId: 't_u14',
+        sourceTeamName: 'U14',
+      },
+    ]);
+    const target = tbody.querySelector<HTMLInputElement>(
+      `[data-testid="${ROLLOVER_TEST_IDS.decisionTargetTeam}"]`,
+    );
+    expect(target?.value).toBe('t_u14');
+    expect(target?.disabled).toBe(false);
+  });
+
+  it('clears + disables target when decision flips to archive', () => {
+    renderDecisionRows(tbody, [
+      {
+        membershipId: 'am_1',
+        athleteName: 'Ada',
+        sourceTeamId: 't_u14',
+        sourceTeamName: 'U14',
+      },
+    ]);
+    const row = tbody.querySelector<HTMLTableRowElement>('tr');
+    if (!row) throw new Error('row missing');
+    syncTargetTeamForDecision(row, 'archive');
+    const target = tbody.querySelector<HTMLInputElement>(
+      `[data-testid="${ROLLOVER_TEST_IDS.decisionTargetTeam}"]`,
+    );
+    expect(target?.value).toBe('');
+    expect(target?.disabled).toBe(true);
+    expect(target?.getAttribute('data-hidden')).toBe('true');
+  });
+
+  it('clears target on transfer (operator must pick a new team)', () => {
+    renderDecisionRows(tbody, [
+      {
+        membershipId: 'am_1',
+        athleteName: 'Ada',
+        sourceTeamId: 't_u14',
+        sourceTeamName: 'U14',
+      },
+    ]);
+    const row = tbody.querySelector<HTMLTableRowElement>('tr');
+    if (!row) throw new Error('row missing');
+    syncTargetTeamForDecision(row, 'transfer');
+    const target = tbody.querySelector<HTMLInputElement>(
+      `[data-testid="${ROLLOVER_TEST_IDS.decisionTargetTeam}"]`,
+    );
+    expect(target?.value).toBe('');
+    expect(target?.disabled).toBe(false);
+  });
+
+  it('re-fills target with source team id when decision flips back to promote', () => {
+    renderDecisionRows(tbody, [
+      {
+        membershipId: 'am_1',
+        athleteName: 'Ada',
+        sourceTeamId: 't_u14',
+        sourceTeamName: 'U14',
+      },
+    ]);
+    const row = tbody.querySelector<HTMLTableRowElement>('tr');
+    if (!row) throw new Error('row missing');
+    syncTargetTeamForDecision(row, 'archive');
+    syncTargetTeamForDecision(row, 'promote');
+    const target = tbody.querySelector<HTMLInputElement>(
+      `[data-testid="${ROLLOVER_TEST_IDS.decisionTargetTeam}"]`,
+    );
+    expect(target?.value).toBe('t_u14');
+    expect(target?.disabled).toBe(false);
+  });
+});
+
+describe('collectDecisionDrafts after F3 auto-fill (Story #972)', () => {
+  it('produces membership-id-keyed promote drafts with source team auto-filled', () => {
+    renderDecisionRows(tbody, [
+      {
+        membershipId: 'am_1',
+        athleteName: 'Ada',
+        sourceTeamId: 't_u14',
+        sourceTeamName: 'U14',
+      },
+      {
+        membershipId: 'am_2',
+        athleteName: 'Grace',
+        sourceTeamId: 't_u14',
+        sourceTeamName: 'U14',
+      },
+    ]);
+    // No further operator input — the initial promote default + the
+    // auto-filled target should already be enough to produce a valid
+    // wire-shape payload.
+    const drafts = collectDecisionDrafts(tbody);
+    expect(drafts).toEqual([
+      { membershipId: 'am_1', decision: 'promote', targetTeamId: 't_u14' },
+      { membershipId: 'am_2', decision: 'promote', targetTeamId: 't_u14' },
+    ]);
   });
 });
 

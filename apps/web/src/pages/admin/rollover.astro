@@ -161,11 +161,18 @@ if (__ssr_gate) return __ssr_gate;
     renderCommitStatus,
     renderDecisionRows,
     renderPlanDiff,
+    syncTargetTeamForDecision,
+    type RolloverDecision,
     type RolloverMembershipRow,
     type RolloverPlanView,
   } from '../../components/admin/rollover/RolloverPreview.ts';
 
   interface RosterItemWire {
+    // Story #972 F1 — roster projection now surfaces the membership id
+    // directly; the rollover planner keys on it. The pre-#972 form had
+    // to synthesize a key from athleteId, which the planner rejected
+    // with UNKNOWN_MEMBERSHIP and silently broke the whole surface.
+    membershipId: string;
     athleteId: string;
     fullName: string;
     teamId: string;
@@ -173,12 +180,6 @@ if (__ssr_gate) return __ssr_gate;
     sport: string;
     ageGroup: string;
     verifiedAchievementCount: number;
-    // Story #661's roster endpoint does NOT return the membershipId
-    // directly — but the rollover decisions list keys on it. Future
-    // work: extend roster projection with `membershipId`. For now the
-    // page asks the operator to load by season name and synthesizes a
-    // best-effort key (athleteId+teamId) — the AC scenario seeds a row
-    // whose synthesized key matches what the API expects.
   }
 
   interface RosterPageWire {
@@ -269,18 +270,32 @@ if (__ssr_gate) return __ssr_gate;
       showError(body.error?.message ?? 'Unable to load roster.');
       return;
     }
-    // The current roster projection does not surface membershipId; the
-    // page synthesizes one with the wire-side athleteId so the
-    // server-side preview/commit can map it. The synthesized key is
-    // documented above the interface — bumping the projection to
-    // include `membershipId` is a follow-up.
+    // Story #972 F1 — use the membership id the roster projection
+    // surfaces. The planner keys on it; any synthesized substitute
+    // fails the UNKNOWN_MEMBERSHIP check and breaks the whole surface.
     const rows: RolloverMembershipRow[] = body.data.items.map((item) => ({
-      membershipId: item.athleteId,
+      membershipId: item.membershipId,
       athleteName: item.fullName,
       sourceTeamId: item.teamId,
       sourceTeamName: item.teamName,
     }));
     renderDecisionRows(tbody, rows);
+    // Wire each row's decision <select> so flipping
+    // promote / archive / transfer auto-shapes the Target team field
+    // per Story #972 F3.
+    const decisionSelects = tbody.querySelectorAll<HTMLSelectElement>(
+      `[data-testid="${TEST_IDS.decisionSelect}"]`,
+    );
+    decisionSelects.forEach((select) => {
+      select.addEventListener('change', () => {
+        const row = select.closest<HTMLTableRowElement>('tr');
+        if (!row) return;
+        syncTargetTeamForDecision(row, select.value as RolloverDecision);
+      });
+    });
+    // Clear any stale plan / commit-disabled state from a prior load.
+    lastPlan = null;
+    if (commitBtn) commitBtn.disabled = true;
   }
 
   async function runPreview(): Promise<void> {
@@ -316,7 +331,21 @@ if (__ssr_gate) return __ssr_gate;
     }
     lastPlan = body.data.plan;
     renderPlanDiff(diffEl, lastPlan);
-    commitBtn.disabled = false;
+    // Story #972 F2 — Commit is only enabled when the preview reports
+    // zero errors. Allowing a commit against an errored preview lets
+    // the operator "apply" a plan with no writes and still see the
+    // success-toned "Applied" status line, which is exactly the
+    // silently-broken UX that Story #972 fixes.
+    if (lastPlan.errors.length > 0) {
+      commitBtn.disabled = true;
+      showError(
+        `Resolve ${lastPlan.errors.length} preview error${
+          lastPlan.errors.length === 1 ? '' : 's'
+        } before committing.`,
+      );
+    } else {
+      commitBtn.disabled = false;
+    }
   }
 
   async function runCommit(): Promise<void> {
