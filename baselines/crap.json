@@ -193,57 +193,69 @@
     },
     {
       "crap": 2,
-      "method": "clerkAuth",
+      "method": "logAuthWarn",
       "path": "apps/api/src/middleware/auth.ts",
-      "startLine": 123
+      "startLine": 126
     },
     {
-      "crap": 42,
+      "crap": 6,
+      "method": "errorClassName",
+      "path": "apps/api/src/middleware/auth.ts",
+      "startLine": 134
+    },
+    {
+      "crap": 2,
+      "method": "clerkAuth",
+      "path": "apps/api/src/middleware/auth.ts",
+      "startLine": 175
+    },
+    {
+      "crap": 30,
       "method": "<anon method-1>",
       "path": "apps/api/src/middleware/auth.ts",
-      "startLine": 124
+      "startLine": 176
     },
     {
       "crap": 2,
       "method": "<anon method-2>",
       "path": "apps/api/src/middleware/auth.ts",
-      "startLine": 254
+      "startLine": 313
     },
     {
       "crap": 2,
       "method": "buildJitCandidate",
       "path": "apps/api/src/middleware/auth.ts",
-      "startLine": 269
+      "startLine": 328
     },
     {
       "crap": 2,
       "method": "toAuthContext",
       "path": "apps/api/src/middleware/auth.ts",
-      "startLine": 278
+      "startLine": 337
     },
     {
       "crap": 2,
       "method": "requireInternalUser",
       "path": "apps/api/src/middleware/auth.ts",
-      "startLine": 313
+      "startLine": 372
     },
     {
       "crap": 42,
       "method": "<anon method-3>",
       "path": "apps/api/src/middleware/auth.ts",
-      "startLine": 314
+      "startLine": 373
     },
     {
       "crap": 2,
       "method": "lookupBySubject",
       "path": "apps/api/src/middleware/auth.ts",
-      "startLine": 361
+      "startLine": 420
     },
     {
       "crap": 2,
       "method": "insertIfAbsent",
       "path": "apps/api/src/middleware/auth.ts",
-      "startLine": 379
+      "startLine": 438
     },
     {
       "crap": 6,
