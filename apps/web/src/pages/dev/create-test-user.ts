@@ -120,7 +120,9 @@ async function clerkPost(
   path: string,
   secretKey: string,
   body: Record<string, unknown>,
-): Promise<{ ok: true; data: Record<string, unknown> } | { ok: false; status: number; body: string }> {
+): Promise<
+  { ok: true; data: Record<string, unknown> } | { ok: false; status: number; body: string }
+> {
   const res = await fetch(`https://api.clerk.com${path}`, {
     method: 'POST',
     headers: {
@@ -160,7 +162,7 @@ export const POST: APIRoute = async ({ request }) => {
   const body = parseBody(rawBody);
   if (body === null) {
     return badRequest(
-      "Request body must be { email: string, password?: string, " +
+      'Request body must be { email: string, password?: string, ' +
         'emailVerified?: boolean, firstName?: string, lastName?: string }.',
     );
   }
@@ -201,10 +203,10 @@ export const POST: APIRoute = async ({ request }) => {
   }
   const userId = createUser.data.id;
   if (typeof userId !== 'string') {
-    return new Response(
-      JSON.stringify({ error: 'Clerk users.create returned no id.' }),
-      { status: 502, headers: { 'content-type': 'application/json' } },
-    );
+    return new Response(JSON.stringify({ error: 'Clerk users.create returned no id.' }), {
+      status: 502,
+      headers: { 'content-type': 'application/json' },
+    });
   }
 
   if (!emailVerified) {

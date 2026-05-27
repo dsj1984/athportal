@@ -35,8 +35,7 @@ function fakeClerkClient(returned: { userId: string }) {
 function fakeFactory(returned: { userId: string }) {
   const fakes = fakeClerkClient(returned);
   const factory = vi.fn(
-    () =>
-      fakes.client as unknown as ReturnType<typeof import('@clerk/backend').createClerkClient>,
+    () => fakes.client as unknown as ReturnType<typeof import('@clerk/backend').createClerkClient>,
   );
   return { factory, ...fakes };
 }

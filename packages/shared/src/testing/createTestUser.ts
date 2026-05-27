@@ -40,9 +40,6 @@ import { createClerkClient } from '@clerk/backend';
 
 import { assertClerkTestSecretKey } from './clerkTickets';
 
-/** Required env-var prefix for Clerk test-instance secret keys. */
-const REQUIRED_SECRET_KEY_PREFIX = 'sk_test_';
-
 /** Env var the helper reads. */
 const SECRET_KEY_ENV_VAR = 'CLERK_SECRET_KEY';
 
@@ -151,9 +148,7 @@ export function isClerkTestChannelEmail(email: string): boolean {
  * @throws `Error` propagated from the Clerk SDK on duplicate email,
  *   policy rejection, or 5xx.
  */
-export async function createTestUser(
-  options: CreateTestUserOptions,
-): Promise<CreatedTestUser> {
+export async function createTestUser(options: CreateTestUserOptions): Promise<CreatedTestUser> {
   const {
     email,
     password = DEFAULT_TEST_PASSWORD,
