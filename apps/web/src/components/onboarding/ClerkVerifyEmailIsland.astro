@@ -52,7 +52,7 @@ const view = buildClerkVerifyEmailView({ isVerified: false });
   </button>
 </section>
 
-<script lang="ts">
+<script>
   // Hydrate the island against the real Clerk SDK state. The script
   // waits for `window.Clerk` to become ready, reads the primary
   // email's verification status, mirrors it onto the surface, and
@@ -107,15 +107,12 @@ const view = buildClerkVerifyEmailView({ isVerified: false });
     };
 
     const win = window as unknown as { Clerk?: ClerkSdk };
+    let settled = false;
     const tick = () => {
+      if (settled) return;
       const clerk = win.Clerk;
-      if (!clerk || clerk.loaded !== true) {
-        // Clerk not ready yet; check again on the next frame. This is
-        // safe because the Clerk loader emits a global `clerk:loaded`
-        // event that we also listen for below, so the worst case is a
-        // single redundant tick.
-        return;
-      }
+      if (!clerk || clerk.loaded !== true) return;
+      settled = true;
       render(readVerified(clerk));
       if (typeof clerk.addListener === 'function') {
         clerk.addListener(() => render(readVerified(clerk)));
@@ -124,8 +121,13 @@ const view = buildClerkVerifyEmailView({ isVerified: false });
 
     document.addEventListener('clerk:loaded', tick, { once: true });
     // Some Astro/Clerk integrations emit nothing on a warm load, so
-    // poll once after the script runs.
-    queueMicrotask(tick);
+    // poll on a bounded schedule until the SDK reports ready or the
+    // budget elapses. Without this, a warm reload where `clerk:loaded`
+    // never fires leaves the island stuck at `data-verified="false"`.
+    const pollDelays = [0, 50, 200, 500, 1000, 2000];
+    for (const delay of pollDelays) {
+      window.setTimeout(tick, delay);
+    }
 
     if (resendEl) {
       resendEl.addEventListener('click', async (event) => {
