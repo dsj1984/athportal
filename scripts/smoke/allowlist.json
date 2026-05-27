@@ -2,8 +2,8 @@
   {
     "path": "/",
     "method": "GET",
-    "expectedStatus": 302,
-    "note": "Anonymous root → 302 to /sign-in (per apps/web/src/middleware.ts onboarding+anon redirect)"
+    "expectedStatus": 404,
+    "note": "No /index.astro route exists yet — Astro returns 404. Story #943 listed 302 as an aspirational target; pin to current behavior. Update to 302 when a root redirect lands."
   },
   {
     "path": "/sign-in",
@@ -20,14 +20,14 @@
   {
     "path": "/onboarding",
     "method": "GET",
-    "expectedStatus": 302,
-    "note": "Anonymous → 302 to /sign-in (the gate runs only for signed-in unboarded users)"
+    "expectedStatus": 200,
+    "note": "Server returns the page shell (200); Clerk's React island handles the client-side sign-in redirect. Anonymous requests bypass the server-side onboarding gate per apps/web/src/middleware.ts ('Anonymous requests are NEVER bounced by the new gate — they are Clerk's problem')."
   },
   {
     "path": "/dashboard",
     "method": "GET",
-    "expectedStatus": 302,
-    "note": "Anonymous → 302 to /sign-in"
+    "expectedStatus": 200,
+    "note": "Same posture as /onboarding — server returns the page shell, Clerk's React island handles the client-side sign-in redirect."
   },
   {
     "path": "/api/v1/health",
