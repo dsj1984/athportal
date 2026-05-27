@@ -80,6 +80,8 @@ Browser → Clerk session → apps/web middleware → @repo/api middleware/auth.
 
 This eliminates the "Clerk webhook race" where a webhook had not landed before the first authenticated request. Under n parallel first-touch requests for the same subject, exactly one row exists in `users` and every request succeeds with the same `userId` — no `SQLITE_CONSTRAINT` surfaces to the caller. A `userLegalAgreements` table records terms/privacy acceptance stamped at the close of onboarding.
 
+**Local dev: seed ↔ Clerk persona alignment.** For the operator's local DB to recognise their real Clerk-test-instance sessions (instead of JIT-provisioning a stranger row on every sign-in), the seed must write the operator's real `user_…` subject IDs into `users.clerk_subject_id`. `packages/shared/scripts/seed.mjs` reads `packages/shared/src/testing/clerk-personas.json` at seed time and refuses to silently fall back to stubs when the JSON is present-but-partially-populated. See [`docs/runbooks/clerk-persona-bootstrap.md`](./runbooks/clerk-persona-bootstrap.md) for the full bootstrap procedure (Story #942 closed the gap that caused Epic #11's manual-QA walkthrough to land on JIT-provisioned strangers instead of the seeded coach).
+
 ### 3.2 Mux direct upload + playback
 
 ```text

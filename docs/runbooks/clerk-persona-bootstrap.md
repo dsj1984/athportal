@@ -150,16 +150,27 @@ readPersonaClerkIds: the following persona(s) are not yet populated …
 
 …then one or more keys is still `null` or empty. Re-read Step 2 and confirm every value is a `user_…` string.
 
-### Step 4 — Run `pnpm db:seed` twice
+### Step 4 — Reset and re-seed the local DB so it links to your real Clerk personas
 
-The seed script (`packages/shared/scripts/seed.mjs`) is idempotent — running it twice MUST be a no-op on the second run. Verify that:
+> **Why this step is mandatory.** After Story #942, `packages/shared/scripts/seed.mjs` reads the populated `clerk-personas.json` at seed time and writes your operator-curated `user_…` subject IDs into the `users.clerk_subject_id` column. **A local DB that was seeded before you populated the JSON still carries the stub `user_test_*` values** — your real Clerk session's `sub` claim will not match any row, and `requireInternalUser` will JIT-provision a stranger row with no team assignment (every authenticated `/api/v1/*` request lands on the onboarding gate instead of the seeded coach team). Re-running the seed is the only way to relink.
+
+From the repo root:
 
 ```bash
-pnpm db:seed
-pnpm db:seed
+pnpm --filter @repo/shared run db:reset && pnpm --filter @repo/shared run db:seed
 ```
 
-Expected: both invocations exit `0` and the second prints "already seeded" diagnostics rather than re-inserting rows. If the second invocation throws a unique-constraint violation, the seed isn't aligned with what Clerk's JIT-provisioner has already created for one of the three personas — most commonly, you signed in as one of the personas in a previous session and Clerk's JIT wrote a row with a different email casing than the seed expects. Reset the local DB (`pnpm db:reset`) and re-run.
+`db:reset` re-creates `packages/shared/data/local.db` from a clean schema; the chained `db:seed` then writes the legal-documents + persona-graph fixtures, with your real Clerk subject IDs from `clerk-personas.json` flowing into `users.clerk_subject_id`.
+
+Verify idempotence by running `pnpm --filter @repo/shared run db:seed` a second time — it must exit `0` with no inserted rows (the seed uses `ON CONFLICT(id) DO NOTHING` for every table).
+
+If the seed throws an error that begins:
+
+```text
+seed: the following persona(s) are not yet populated in …/clerk-personas.json: …
+```
+
+…re-read Step 2. The seed refuses to silently fall back to stub IDs when the JSON is present-but-partially-populated, because that is exactly the state PR #940's manual-QA walkthrough surfaced as a 500 on every authenticated request.
 
 ---
 

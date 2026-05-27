@@ -16,11 +16,13 @@
  *
  * Persona ↔ org ↔ team mapping is sourced from `PERSONA_FIXTURES` in
  * `@repo/shared/testing/auth` so the persona ↔ identifier ↔ role
- * mapping stays single-source. The `clerk_subject_id` values are the
- * deterministic stubs the contract-tier middleware recognises; once
- * Story #876 lands the Clerk-persona-bootstrap runbook, the operator
- * may replace these with real `user_*` subject IDs in the same
- * `PERSONA_FIXTURES` record without touching this seed.
+ * mapping stays single-source. The `clerk_subject_id` values written
+ * here are deterministic `user_test_*` stubs used by the contract-tier
+ * middleware test surface. The operator's runtime DB does NOT use this
+ * function — `pnpm db:seed` goes through
+ * `packages/shared/scripts/seed.mjs`, which reads
+ * `packages/shared/src/testing/clerk-personas.json` at seed time and
+ * writes the operator's real `user_*` Clerk subject IDs (Story #942).
  *
  * The `dev_admin` persona is intentionally OUT OF SCOPE — see
  * Tech Spec #871 § Data Models. The operator's dev-admin Clerk identity
