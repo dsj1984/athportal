@@ -40,7 +40,7 @@ prerequisites:
 5. Change the team name to a second unique value (e.g. `e2e-team-<timestamp>-renamed`) and submit the edit form.
    **Expected:** the form submits without errors, the browser returns to the team index (or stays on the edit page with a success indicator), and the renamed team appears in the index list under its new name. The previous name is no longer present in the index.
 
-6. From the edit page, locate the archive control (a button, toggle, or status selector that transitions the team to an archived/inactive state) and trigger it. Confirm any modal prompt the build surfaces.
+6. From `/admin/teams`, click the Archive button on the team's row (a button, toggle, or status selector that transitions the team to an archived/inactive state) and trigger it. Confirm any modal prompt the build surfaces.
    **Expected:** the archive action completes without surfacing a validation banner and the team either disappears from the default `/admin/teams` view or moves into a visually-distinct "archived" section depending on the build. The current user remains signed in as org-admin and the page is not redirected to an unauthenticated surface.
 
 7. Reload `/admin/teams` and confirm the archived team is not in the active list.
