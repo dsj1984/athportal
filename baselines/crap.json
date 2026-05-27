@@ -1,11 +1,11 @@
 {
   "$schema": ".agents/schemas/baselines/crap.schema.json",
-  "generatedAt": "2026-05-27T19:31:24.302Z",
+  "generatedAt": "2026-05-27T21:00:50.212Z",
   "kernelVersion": "1.0.0",
   "rollup": {
     "*": {
       "max": 506,
-      "methodsAbove20": 76,
+      "methodsAbove20": 78,
       "p50": 2,
       "p95": 42
     }
@@ -15,13 +15,13 @@
       "crap": 2,
       "method": "<anon method-1>",
       "path": "apps/api/src/index.ts",
-      "startLine": 70
+      "startLine": 74
     },
     {
       "crap": 2,
       "method": "<anon method-2>",
       "path": "apps/api/src/index.ts",
-      "startLine": 71
+      "startLine": 75
     },
     {
       "crap": 2,
@@ -340,6 +340,30 @@
       "method": "<anon method-1>",
       "path": "apps/api/src/middleware/withDb.ts",
       "startLine": 55
+    },
+    {
+      "crap": 56,
+      "method": "<anon method-1>",
+      "path": "apps/api/src/routes/debug/create-test-user.ts",
+      "startLine": 145
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-2>",
+      "path": "apps/api/src/routes/debug/create-test-user.ts",
+      "startLine": 154
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-3>",
+      "path": "apps/api/src/routes/debug/create-test-user.ts",
+      "startLine": 163
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-4>",
+      "path": "apps/api/src/routes/debug/create-test-user.ts",
+      "startLine": 252
     },
     {
       "crap": 6,
@@ -1254,6 +1278,30 @@
       "startLine": 106
     },
     {
+      "crap": 2,
+      "method": "freshClerkTestEmail",
+      "path": "apps/web/e2e/fixtures/freshUser.ts",
+      "startLine": 117
+    },
+    {
+      "crap": 30,
+      "method": "mintFreshTestUser",
+      "path": "apps/web/e2e/fixtures/freshUser.ts",
+      "startLine": 135
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "apps/web/e2e/fixtures/freshUser.ts",
+      "startLine": 170
+    },
+    {
+      "crap": 2,
+      "method": "signInAsFreshUser",
+      "path": "apps/web/e2e/fixtures/freshUser.ts",
+      "startLine": 195
+    },
+    {
       "crap": 42,
       "method": "globalSetup",
       "path": "apps/web/e2e/fixtures/persona-global-setup.ts",
@@ -1390,6 +1438,36 @@
       "method": "<anon method-3>",
       "path": "apps/web/e2e/steps/auth.steps.ts",
       "startLine": 52
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "apps/web/e2e/steps/diagnostics.steps.ts",
+      "startLine": 81
+    },
+    {
+      "crap": 6,
+      "method": "<anon method-2>",
+      "path": "apps/web/e2e/steps/diagnostics.steps.ts",
+      "startLine": 85
+    },
+    {
+      "crap": 12,
+      "method": "<anon method-3>",
+      "path": "apps/web/e2e/steps/diagnostics.steps.ts",
+      "startLine": 91
+    },
+    {
+      "crap": 6,
+      "method": "<anon method-4>",
+      "path": "apps/web/e2e/steps/diagnostics.steps.ts",
+      "startLine": 110
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-5>",
+      "path": "apps/web/e2e/steps/diagnostics.steps.ts",
+      "startLine": 118
     },
     {
       "crap": 2,
@@ -1935,211 +2013,217 @@
       "crap": 6,
       "method": "resolveOnboardingSurfacePath",
       "path": "apps/web/e2e/steps/onboarding.steps.ts",
-      "startLine": 41
+      "startLine": 42
     },
     {
       "crap": 2,
       "method": "<anon method-1>",
       "path": "apps/web/e2e/steps/onboarding.steps.ts",
-      "startLine": 66
+      "startLine": 67
     },
     {
       "crap": 2,
       "method": "<anon method-2>",
       "path": "apps/web/e2e/steps/onboarding.steps.ts",
-      "startLine": 72
+      "startLine": 84
     },
     {
       "crap": 2,
       "method": "<anon method-3>",
       "path": "apps/web/e2e/steps/onboarding.steps.ts",
-      "startLine": 84
+      "startLine": 88
     },
     {
       "crap": 2,
       "method": "<anon method-4>",
       "path": "apps/web/e2e/steps/onboarding.steps.ts",
-      "startLine": 88
+      "startLine": 100
     },
     {
       "crap": 2,
       "method": "<anon method-5>",
       "path": "apps/web/e2e/steps/onboarding.steps.ts",
-      "startLine": 92
+      "startLine": 104
     },
     {
       "crap": 2,
       "method": "<anon method-6>",
       "path": "apps/web/e2e/steps/onboarding.steps.ts",
-      "startLine": 100
+      "startLine": 108
     },
     {
       "crap": 2,
       "method": "<anon method-7>",
       "path": "apps/web/e2e/steps/onboarding.steps.ts",
-      "startLine": 106
+      "startLine": 116
     },
     {
       "crap": 2,
       "method": "<anon method-8>",
       "path": "apps/web/e2e/steps/onboarding.steps.ts",
-      "startLine": 110
+      "startLine": 122
     },
     {
       "crap": 2,
       "method": "<anon method-9>",
       "path": "apps/web/e2e/steps/onboarding.steps.ts",
-      "startLine": 117
+      "startLine": 126
     },
     {
       "crap": 2,
       "method": "<anon method-10>",
       "path": "apps/web/e2e/steps/onboarding.steps.ts",
-      "startLine": 121
+      "startLine": 133
     },
     {
       "crap": 2,
       "method": "<anon method-11>",
       "path": "apps/web/e2e/steps/onboarding.steps.ts",
-      "startLine": 125
+      "startLine": 137
     },
     {
       "crap": 2,
       "method": "<anon method-12>",
       "path": "apps/web/e2e/steps/onboarding.steps.ts",
-      "startLine": 131
+      "startLine": 141
     },
     {
       "crap": 2,
       "method": "<anon method-13>",
       "path": "apps/web/e2e/steps/onboarding.steps.ts",
-      "startLine": 135
+      "startLine": 147
     },
     {
       "crap": 2,
       "method": "<anon method-14>",
       "path": "apps/web/e2e/steps/onboarding.steps.ts",
-      "startLine": 140
+      "startLine": 151
     },
     {
       "crap": 2,
       "method": "<anon method-15>",
       "path": "apps/web/e2e/steps/onboarding.steps.ts",
-      "startLine": 146
+      "startLine": 156
     },
     {
       "crap": 2,
       "method": "<anon method-16>",
       "path": "apps/web/e2e/steps/onboarding.steps.ts",
-      "startLine": 151
+      "startLine": 162
     },
     {
       "crap": 2,
       "method": "<anon method-17>",
       "path": "apps/web/e2e/steps/onboarding.steps.ts",
-      "startLine": 156
+      "startLine": 167
     },
     {
       "crap": 2,
       "method": "<anon method-18>",
       "path": "apps/web/e2e/steps/onboarding.steps.ts",
-      "startLine": 164
+      "startLine": 172
     },
     {
       "crap": 2,
       "method": "<anon method-19>",
       "path": "apps/web/e2e/steps/onboarding.steps.ts",
-      "startLine": 168
+      "startLine": 180
     },
     {
       "crap": 2,
       "method": "<anon method-20>",
       "path": "apps/web/e2e/steps/onboarding.steps.ts",
-      "startLine": 172
+      "startLine": 184
     },
     {
       "crap": 2,
       "method": "<anon method-21>",
       "path": "apps/web/e2e/steps/onboarding.steps.ts",
-      "startLine": 180
+      "startLine": 188
     },
     {
       "crap": 2,
       "method": "<anon method-22>",
       "path": "apps/web/e2e/steps/onboarding.steps.ts",
-      "startLine": 184
-    },
-    {
-      "crap": 6,
-      "method": "<anon method-23>",
-      "path": "apps/web/e2e/steps/onboarding.steps.ts",
-      "startLine": 188
+      "startLine": 196
     },
     {
       "crap": 2,
+      "method": "<anon method-23>",
+      "path": "apps/web/e2e/steps/onboarding.steps.ts",
+      "startLine": 200
+    },
+    {
+      "crap": 6,
       "method": "<anon method-24>",
       "path": "apps/web/e2e/steps/onboarding.steps.ts",
-      "startLine": 209
+      "startLine": 204
     },
     {
       "crap": 2,
       "method": "<anon method-25>",
       "path": "apps/web/e2e/steps/onboarding.steps.ts",
-      "startLine": 217
+      "startLine": 225
     },
     {
       "crap": 2,
       "method": "<anon method-26>",
       "path": "apps/web/e2e/steps/onboarding.steps.ts",
-      "startLine": 221
+      "startLine": 233
     },
     {
       "crap": 2,
       "method": "<anon method-27>",
       "path": "apps/web/e2e/steps/onboarding.steps.ts",
-      "startLine": 225
+      "startLine": 237
     },
     {
       "crap": 2,
       "method": "<anon method-28>",
       "path": "apps/web/e2e/steps/onboarding.steps.ts",
-      "startLine": 231
+      "startLine": 241
     },
     {
       "crap": 2,
       "method": "<anon method-29>",
       "path": "apps/web/e2e/steps/onboarding.steps.ts",
-      "startLine": 235
+      "startLine": 247
     },
     {
       "crap": 2,
       "method": "<anon method-30>",
       "path": "apps/web/e2e/steps/onboarding.steps.ts",
-      "startLine": 239
+      "startLine": 251
     },
     {
       "crap": 2,
       "method": "<anon method-31>",
       "path": "apps/web/e2e/steps/onboarding.steps.ts",
-      "startLine": 243
+      "startLine": 255
     },
     {
       "crap": 2,
       "method": "<anon method-32>",
       "path": "apps/web/e2e/steps/onboarding.steps.ts",
-      "startLine": 248
+      "startLine": 259
     },
     {
       "crap": 2,
       "method": "<anon method-33>",
       "path": "apps/web/e2e/steps/onboarding.steps.ts",
-      "startLine": 253
+      "startLine": 264
     },
     {
       "crap": 2,
       "method": "<anon method-34>",
       "path": "apps/web/e2e/steps/onboarding.steps.ts",
-      "startLine": 257
+      "startLine": 269
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-35>",
+      "path": "apps/web/e2e/steps/onboarding.steps.ts",
+      "startLine": 273
     },
     {
       "crap": 2,

@@ -20,6 +20,7 @@
  */
 import { expect } from '@playwright/test';
 import { createBdd } from 'playwright-bdd';
+import { signInAsFreshUser } from '../fixtures/freshUser';
 
 const { Given, When, Then } = createBdd();
 
@@ -67,6 +68,21 @@ Given('I have not yet completed onboarding', async () => {
   // Intentional no-op. The corresponding scenarios are tagged
   // `@pending`; the fixture seam that resets `users.onboarded_at` for
   // the seeded persona lands in a follow-up Story.
+});
+
+/**
+ * Mint a brand-new `+clerk_test@` user via the dev-only debug route
+ * and sign them into the browser. The resulting page is authenticated
+ * but `users.onboarded_at` is null — exactly the state Story #958's
+ * regression guard needs.
+ *
+ * Tagged `@pending` at the scenario level until Issue #383 flips the
+ * Playwright `webServer` to the real Astro dev server. The fixture
+ * itself (`apps/web/e2e/fixtures/freshUser.ts`) is functional today
+ * against a real Astro server with `@clerk/astro` mounted.
+ */
+Given('I am a freshly created test user with a verified email', async ({ page }) => {
+  await signInAsFreshUser({ page });
 });
 
 Given('I have already completed onboarding', async () => {

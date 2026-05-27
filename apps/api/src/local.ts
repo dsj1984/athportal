@@ -144,6 +144,13 @@ const bindings: Env = {
   CLERK_WEBHOOK_SIGNING_SECRET: process.env.CLERK_WEBHOOK_SECRET ?? '',
   DB: dbHandle,
   DATABASE_URL: process.env.DATABASE_URL ?? `file:${DEFAULT_DB_PATH}`,
+  // Story #963: forward the gated test-user-creation flag from the
+  // host env so the local dev server (and the Playwright fixture
+  // running against it) can opt in to the dev-only debug route. The
+  // route refuses any value other than the literal string 'true'.
+  ...(process.env.DEBUG_TEST_USER_CREATION_ENABLED !== undefined
+    ? { DEBUG_TEST_USER_CREATION_ENABLED: process.env.DEBUG_TEST_USER_CREATION_ENABLED }
+    : {}),
 };
 
 serve(

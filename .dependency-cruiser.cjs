@@ -152,7 +152,11 @@ module.exports = {
       comment:
         'packages/shared/src/testing/** holds the Clerk test-instance seam and contract ' +
         'harness. Production code must never reach into it; otherwise the test seam ships ' +
-        'in production builds. See docs/testing-strategy.md § Authenticated routes.',
+        'in production builds. See docs/testing-strategy.md § Authenticated routes. ' +
+        'Exception: `apps/api/src/routes/debug/**` mounts gated dev-only routes whose ' +
+        'whole purpose is to expose the test seam over HTTP. The DEBUG_*_ENABLED env ' +
+        'gates (Story #963 / #275) prevent the routes from responding in production ' +
+        'even though the modules ship in the build.',
       severity: 'error',
       from: {
         path: '^(apps|packages)/[^/]+/src',
@@ -162,6 +166,7 @@ module.exports = {
           '(^|/)__tests__/',
           '(^|/)__testing__/',
           '^packages/shared/src/testing/',
+          '^apps/api/src/routes/debug/',
           '^apps/web/e2e/',
           '^tests/',
         ],

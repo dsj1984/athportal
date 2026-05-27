@@ -91,6 +91,19 @@ export interface Env {
   DB: unknown;
 
   /**
+   * Gated dev-only flag exposing `POST /api/v1/_debug/create-test-user`
+   * (Story #963). Compared to the literal string `'true'`; anything
+   * else (including unset, `'false'`, `'1'`, `'TRUE'`) is the closed
+   * state and the route returns 404 for every verb.
+   *
+   * Production deployments NEVER set this. Local dev and the acceptance
+   * CI job set it to `'true'` so the Playwright fresh-user fixture can
+   * mint a brand-new `+clerk_test@` user without going through the
+   * Cloudflare-Turnstile-gated `/sign-up` form.
+   */
+  DEBUG_TEST_USER_CREATION_ENABLED?: string;
+
+  /**
    * Origin connection string for the persistence layer (Story #760).
    *
    * Local dev: `file:packages/shared/data/local.db` (better-sqlite3).
