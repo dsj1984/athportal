@@ -72,6 +72,10 @@
       "types": "./dist/schemas/admin/csvImport.d.ts",
       "import": "./src/schemas/admin/csvImport.ts"
     },
+    "./schemas/admin/csvImportBatches": {
+      "types": "./dist/schemas/admin/csvImportBatches.d.ts",
+      "import": "./src/schemas/admin/csvImportBatches.ts"
+    },
     "./csv/parse": {
       "types": "./dist/csv/parse.d.ts",
       "import": "./src/csv/parse.ts"
