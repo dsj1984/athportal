@@ -20,8 +20,8 @@
   {
     "path": "/onboarding",
     "method": "GET",
-    "expectedStatus": 200,
-    "note": "Server returns the page shell (200); Clerk's React island handles the client-side sign-in redirect. Anonymous requests bypass the server-side onboarding gate per apps/web/src/middleware.ts ('Anonymous requests are NEVER bounced by the new gate — they are Clerk's problem')."
+    "expectedStatus": 302,
+    "note": "Anonymous → 302 /sign-in?redirect_url=%2Fonboarding per Story #965 F1 SSR auth gate. Companion to Story #952's gate on /dashboard and /admin/*; closes the prior 200-with-form-shell leak."
   },
   {
     "path": "/dashboard",

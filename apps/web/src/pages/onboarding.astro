@@ -45,6 +45,18 @@ import {
 import OnboardingForm from '../components/onboarding/OnboardingForm.astro';
 import RootLayout from '../layouts/RootLayout.astro';
 import { getDb } from '../lib/db';
+import { requireSignedIn } from '../lib/ssrAuthGate';
+
+// SSR auth gate (Story #965 F1). The onboarding-gate middleware
+// (apps/web/src/middleware.ts) allowlists `/onboarding` so an
+// un-onboarded signed-in user can reach the form; the same allowlist
+// lets anonymous requests fall through to this page, which previously
+// rendered the form shell with a 200. That leaked the surface to
+// anonymous callers and bypassed sign-in. Bounce them to /sign-in with
+// a return path so the user lands back on /onboarding once Clerk
+// completes the sign-in round-trip.
+const authGate = requireSignedIn(Astro, { returnTo: '/onboarding' });
+if (authGate) return authGate;
 
 // Story #903 hardening — wrap the live DB read in try/catch so a fresh
 // deploy that has run migrations but not yet `pnpm db:seed` does not
