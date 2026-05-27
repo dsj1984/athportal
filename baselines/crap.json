@@ -1,6 +1,6 @@
 {
   "$schema": ".agents/schemas/baselines/crap.schema.json",
-  "generatedAt": "2026-05-27T21:22:36.767Z",
+  "generatedAt": "2026-05-27T22:21:39.523Z",
   "kernelVersion": "1.0.0",
   "rollup": {
     "*": {
@@ -3022,6 +3022,30 @@
       "method": "__resetDbForTests",
       "path": "apps/web/src/lib/db.ts",
       "startLine": 158
+    },
+    {
+      "crap": 6,
+      "method": "resolveAppNav",
+      "path": "apps/web/src/lib/navigation.ts",
+      "startLine": 77
+    },
+    {
+      "crap": 2,
+      "method": "buildAppNavView",
+      "path": "apps/web/src/lib/navigation.ts",
+      "startLine": 126
+    },
+    {
+      "crap": 6,
+      "method": "<anon method-1>",
+      "path": "apps/web/src/lib/navigation.ts",
+      "startLine": 129
+    },
+    {
+      "crap": 2,
+      "method": "slug",
+      "path": "apps/web/src/lib/navigation.ts",
+      "startLine": 136
     },
     {
       "crap": 30,
