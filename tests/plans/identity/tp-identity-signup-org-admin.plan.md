@@ -49,7 +49,7 @@ prerequisites:
    **Expected:** the `/admin` surface renders without an authorization error. The signed-in user is recognised as an org-admin and admin-only controls (e.g. import, invitations) are visible.
 
 9. Reload the admin landing surface once.
-   **Expected:** the page re-renders without redirecting back to `/onboarding`. The session cookie is `httpOnly` and `secure`, and no auth token is present in `localStorage` or `sessionStorage`.
+   **Expected:** the page re-renders without redirecting back to `/onboarding`. Session cookies match Clerk's documented posture — `__session` is short-lived (≤5 min TTL) and JS-readable by design. No long-lived auth secret (refresh token, `sk_*` key) appears in `localStorage` or `sessionStorage`.
 
 ## Cleanup
 

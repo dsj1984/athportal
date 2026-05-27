@@ -23,9 +23,18 @@
 // 403 FORBIDDEN). The page itself does not re-check the role — the
 // list-fetch will surface a 403 envelope if the actor is not an admin.
 
+import { requireAdminSsr } from '../../../lib/ssrAuthGate';
+
+// SSR auth gate (Story #952 F4). Anonymous → 302 /sign-in; signed-in
+// non-admin → 404 (non-enumeration per Epic #11 AC-2/AC-3). The page
+// chrome must not render to non-admin callers, even though the inline
+// client-script fetch would 403 a moment later.
 import DataTable from '../../../components/ui/DataTable.astro';
 import PageHeader from '../../../components/ui/PageHeader.astro';
 import { TEAMS_LIST_TEST_IDS } from '../../../components/admin/teams/TeamForm.ts';
+const __ssr_gate = await requireAdminSsr(Astro);
+if (__ssr_gate) return __ssr_gate;
+
 ---
 
 <html lang="en">

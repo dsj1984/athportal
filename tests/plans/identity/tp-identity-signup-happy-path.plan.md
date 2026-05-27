@@ -43,7 +43,7 @@ prerequisites:
    **Expected:** the browser lands on `/dashboard` (the athlete's default authenticated landing surface). The header shows the signed-in identity (or initials) corresponding to the test email, and the "you must complete onboarding" gate is gone.
 
 7. Reload `/dashboard` once.
-   **Expected:** the dashboard re-renders without redirecting back to `/onboarding`. The session cookie is `httpOnly` and `secure` (verify in the browser devtools storage tab), and no auth token is present in `localStorage` or `sessionStorage`.
+   **Expected:** the dashboard re-renders without redirecting back to `/onboarding`. Session cookies match Clerk's documented posture — `__session` is short-lived (≤5 min TTL) and JS-readable by design. No long-lived auth secret (refresh token, `sk_*` key) appears in `localStorage` or `sessionStorage`.
 
 ## Cleanup
 

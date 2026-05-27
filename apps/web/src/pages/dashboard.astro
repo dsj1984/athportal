@@ -20,7 +20,15 @@ import Card from '../components/ui/Card.astro';
 import EmptyState from '../components/ui/EmptyState.astro';
 import PageHeader from '../components/ui/PageHeader.astro';
 import RootLayout from '../layouts/RootLayout.astro';
+import { requireSignedIn } from '../lib/ssrAuthGate';
 import { EMPTY_DASHBOARD_DATA, buildDashboard } from './dashboard.ts';
+
+// SSR auth gate (Story #952 F1). Anonymous requests must not see the
+// dashboard chrome — the prior shape returned 200-with-chrome to a bare
+// `curl` call, which leaked the surface's existence. Onboarding redirect
+// stays in the middleware chain (see `apps/web/src/middleware.ts`).
+const gate = requireSignedIn(Astro);
+if (gate) return gate;
 
 const view = buildDashboard(EMPTY_DASHBOARD_DATA);
 ---

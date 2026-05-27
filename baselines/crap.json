@@ -1,6 +1,6 @@
 {
   "$schema": ".agents/schemas/baselines/crap.schema.json",
-  "generatedAt": "2026-05-27T18:58:20.200Z",
+  "generatedAt": "2026-05-27T19:31:24.302Z",
   "kernelVersion": "1.0.0",
   "rollup": {
     "*": {
@@ -2938,6 +2938,24 @@
       "method": "__resetDbForTests",
       "path": "apps/web/src/lib/db.ts",
       "startLine": 158
+    },
+    {
+      "crap": 12,
+      "method": "requireSignedIn",
+      "path": "apps/web/src/lib/ssrAuthGate.ts",
+      "startLine": 72
+    },
+    {
+      "crap": 20,
+      "method": "requireAdminSsr",
+      "path": "apps/web/src/lib/ssrAuthGate.ts",
+      "startLine": 94
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "apps/web/src/lib/ssrAuthGate.ts",
+      "startLine": 107
     },
     {
       "crap": 20,

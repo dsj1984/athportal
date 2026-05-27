@@ -16,7 +16,16 @@
 // to is gated by `requireRole('org_admin')` per Tech Spec #647. The
 // page therefore assumes the caller has reached it legitimately and
 // does not re-check role server-side.
+import { requireAdminSsr } from '../../../lib/ssrAuthGate';
+
+// SSR auth gate (Story #952 F4). Anonymous → 302 /sign-in; signed-in
+// non-admin → 404 (non-enumeration per Epic #11 AC-2/AC-3). The page
+// chrome must not render to non-admin callers, even though the inline
+// client-script fetch would 403 a moment later.
 import CoachInviteForm from '../../../components/admin/invitations/CoachInviteForm.astro';
+const __ssr_gate = await requireAdminSsr(Astro);
+if (__ssr_gate) return __ssr_gate;
+
 ---
 
 <html lang="en">

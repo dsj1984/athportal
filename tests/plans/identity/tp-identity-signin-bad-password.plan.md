@@ -18,7 +18,7 @@ prerequisites:
 
 - Confirm the local stack is running. `pnpm dev` at the repo root must be active; the API binds to `http://localhost:8787` and the web app serves from `http://localhost:4321`.
 - Confirm the seeded fixture is present: run `pnpm --filter @repo/shared run db:seed` since the last reset. The seed must produce at least one athlete `users` row whose email this plan will reuse.
-- Note the seeded athlete's email. The password this plan submits is an intentionally-wrong value (e.g. `WrongPassword!9999`) — never the seeded user's real password.
+- Note the seeded athlete's email. The password this plan submits is an intentionally-wrong value (e.g. `WrongPassword!9999`) — never the seeded user's real password. This Plan MUST exercise the password-form path; the `/dev/sign-in-as/:persona` seam (a valid shortcut for the happy-path and sign-out Plans) BYPASSES the password screen and so does not exercise the surface under test here. The recovery step at the end (re-sign-in with the correct password) may instead use the dev-seam if the operator does not know the persona password — see [`apps/web/src/pages/dev/sign-in-as/[persona].ts`](../../../apps/web/src/pages/dev/sign-in-as/%5Bpersona%5D.ts).
 - Open a fresh browser session with no existing cookies for the local origin so the plan exercises the wrong-password path against an unauthenticated visitor.
 
 ## Steps
@@ -26,11 +26,11 @@ prerequisites:
 1. Open the fresh browser session and visit `/sign-in`.
    **Expected:** the sign-in page renders with the sign-in heading and a form containing email and password fields. No "you're already signed in" banner appears.
 
-2. Enter the seeded athlete's email in the email field.
-   **Expected:** the form accepts the email and advances to the password step (or makes the password field interactive) without a top-level error banner.
+2. Enter the seeded athlete's email and submit.
+   **Expected:** Clerk's two-step flow advances to the factor-one (password) screen without a top-level error banner.
 
-3. Enter the intentionally-wrong password and submit the form.
-   **Expected:** the page remains on `/sign-in`. A visible error message indicates the credentials are not valid. The browser is NOT redirected to `/dashboard` or `/onboarding`.
+3. Enter the intentionally-wrong password on the factor-one screen and submit.
+   **Expected:** the page remains on the factor-one (sign-in) flow. A visible error message indicates the credentials are not valid. The browser is NOT redirected to `/dashboard` or `/onboarding`.
 
 4. Inspect the error message wording.
    **Expected:** the message is generic (e.g. "incorrect email or password") and does not disclose whether the email exists in the system. No timing-oracle signal — the response feels comparable to a sign-in with a non-existent email (this is a soft check; the contract-tier auth-fuzz coverage owns the precise timing assertion).
