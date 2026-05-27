@@ -49,7 +49,7 @@ const TARGET_EXT = '.astro';
 // the opening tag; the body is whatever — Astro routes the whole tag
 // based on the attributes on this opener. The lazy capture `[^>]*?`
 // avoids crossing tag boundaries.
-const SCRIPT_OPEN_TAG_RE = /<script(\s[^>]*?)?>/g;
+const SCRIPT_OPEN_TAG_RE = /<script(\s[^>]*?)?>/gi;
 
 // Attributes that opt a <script> out of Astro's bundling pipeline.
 // `lang=` is the documented offender (Story #958, Story #966). Add
