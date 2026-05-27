@@ -1,11 +1,11 @@
 {
   "$schema": ".agents/schemas/baselines/crap.schema.json",
-  "generatedAt": "2026-05-27T22:21:39.523Z",
+  "generatedAt": "2026-05-27T22:53:24.658Z",
   "kernelVersion": "1.0.0",
   "rollup": {
     "*": {
       "max": 506,
-      "methodsAbove20": 79,
+      "methodsAbove20": 83,
       "p50": 2,
       "p95": 42
     }
@@ -381,79 +381,145 @@
       "crap": 6,
       "method": "errorBody",
       "path": "apps/api/src/routes/v1/admin/csv-import/router.ts",
-      "startLine": 82
+      "startLine": 83
     },
     {
       "crap": 42,
       "method": "narrowDb",
       "path": "apps/api/src/routes/v1/admin/csv-import/router.ts",
-      "startLine": 118
+      "startLine": 122
     },
     {
       "crap": 6,
       "method": "extractUploadBytes",
       "path": "apps/api/src/routes/v1/admin/csv-import/router.ts",
-      "startLine": 131
+      "startLine": 135
     },
     {
       "crap": 2,
       "method": "decodeBase64",
       "path": "apps/api/src/routes/v1/admin/csv-import/router.ts",
-      "startLine": 146
+      "startLine": 150
     },
     {
-      "crap": 30,
-      "method": "<anon method-1>",
+      "crap": 42,
+      "method": "parseAllRows",
       "path": "apps/api/src/routes/v1/admin/csv-import/router.ts",
-      "startLine": 168
-    },
-    {
-      "crap": 506,
-      "method": "<anon method-2>",
-      "path": "apps/api/src/routes/v1/admin/csv-import/router.ts",
-      "startLine": 203
+      "startLine": 174
     },
     {
       "crap": 2,
-      "method": "<anon method-3>",
+      "method": "<anon method-1>",
       "path": "apps/api/src/routes/v1/admin/csv-import/router.ts",
-      "startLine": 210
+      "startLine": 188
     },
     {
-      "crap": 6,
+      "crap": 72,
+      "method": "splitCsvLine",
+      "path": "apps/api/src/routes/v1/admin/csv-import/router.ts",
+      "startLine": 194
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-2>",
+      "path": "apps/api/src/routes/v1/admin/csv-import/router.ts",
+      "startLine": 221
+    },
+    {
+      "crap": 2,
+      "method": "buildCellLookup",
+      "path": "apps/api/src/routes/v1/admin/csv-import/router.ts",
+      "startLine": 230
+    },
+    {
+      "crap": 12,
+      "method": "<anon method-3>",
+      "path": "apps/api/src/routes/v1/admin/csv-import/router.ts",
+      "startLine": 236
+    },
+    {
+      "crap": 2,
       "method": "<anon method-4>",
       "path": "apps/api/src/routes/v1/admin/csv-import/router.ts",
-      "startLine": 242
+      "startLine": 244
     },
     {
       "crap": 6,
       "method": "<anon method-5>",
       "path": "apps/api/src/routes/v1/admin/csv-import/router.ts",
-      "startLine": 266
+      "startLine": 246
     },
     {
-      "crap": 2,
+      "crap": 30,
+      "method": "enrichRowError",
+      "path": "apps/api/src/routes/v1/admin/csv-import/router.ts",
+      "startLine": 262
+    },
+    {
+      "crap": 30,
       "method": "<anon method-6>",
       "path": "apps/api/src/routes/v1/admin/csv-import/router.ts",
-      "startLine": 273
+      "startLine": 282
     },
     {
-      "crap": 6,
+      "crap": 506,
       "method": "<anon method-7>",
       "path": "apps/api/src/routes/v1/admin/csv-import/router.ts",
-      "startLine": 274
+      "startLine": 317
     },
     {
       "crap": 2,
       "method": "<anon method-8>",
       "path": "apps/api/src/routes/v1/admin/csv-import/router.ts",
-      "startLine": 309
+      "startLine": 324
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-9>",
+      "path": "apps/api/src/routes/v1/admin/csv-import/router.ts",
+      "startLine": 367
+    },
+    {
+      "crap": 6,
+      "method": "<anon method-10>",
+      "path": "apps/api/src/routes/v1/admin/csv-import/router.ts",
+      "startLine": 389
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-11>",
+      "path": "apps/api/src/routes/v1/admin/csv-import/router.ts",
+      "startLine": 396
+    },
+    {
+      "crap": 6,
+      "method": "<anon method-12>",
+      "path": "apps/api/src/routes/v1/admin/csv-import/router.ts",
+      "startLine": 397
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-13>",
+      "path": "apps/api/src/routes/v1/admin/csv-import/router.ts",
+      "startLine": 434
     },
     {
       "crap": 42,
-      "method": "<anon method-9>",
+      "method": "<anon method-14>",
       "path": "apps/api/src/routes/v1/admin/csv-import/router.ts",
-      "startLine": 331
+      "startLine": 456
+    },
+    {
+      "crap": 12,
+      "method": "<anon method-15>",
+      "path": "apps/api/src/routes/v1/admin/csv-import/router.ts",
+      "startLine": 574
+    },
+    {
+      "crap": 6,
+      "method": "<anon method-16>",
+      "path": "apps/api/src/routes/v1/admin/csv-import/router.ts",
+      "startLine": 601
     },
     {
       "crap": 2,
@@ -2373,37 +2439,61 @@
       "crap": 2,
       "method": "emptyState",
       "path": "apps/web/src/components/admin/CsvMappingTool.ts",
-      "startLine": 41
+      "startLine": 52
     },
     {
       "crap": 12,
       "method": "isMappingComplete",
       "path": "apps/web/src/components/admin/CsvMappingTool.ts",
-      "startLine": 50
+      "startLine": 61
     },
     {
       "crap": 2,
       "method": "<anon method-1>",
       "path": "apps/web/src/components/admin/CsvMappingTool.ts",
-      "startLine": 51
+      "startLine": 62
     },
     {
       "crap": 6,
       "method": "fileToBase64",
       "path": "apps/web/src/components/admin/CsvMappingTool.ts",
-      "startLine": 60
+      "startLine": 71
     },
     {
-      "crap": 20,
+      "crap": 30,
       "method": "tryBuildCommitPayload",
       "path": "apps/web/src/components/admin/CsvMappingTool.ts",
-      "startLine": 76
+      "startLine": 87
     },
     {
       "crap": 2,
       "method": "formatStatus",
       "path": "apps/web/src/components/admin/CsvMappingTool.ts",
-      "startLine": 89
+      "startLine": 101
+    },
+    {
+      "crap": 6,
+      "method": "escapeCsvCell",
+      "path": "apps/web/src/components/admin/CsvMappingTool.ts",
+      "startLine": 115
+    },
+    {
+      "crap": 6,
+      "method": "buildErrorReportCsv",
+      "path": "apps/web/src/components/admin/CsvMappingTool.ts",
+      "startLine": 133
+    },
+    {
+      "crap": 6,
+      "method": "<anon method-2>",
+      "path": "apps/web/src/components/admin/CsvMappingTool.ts",
+      "startLine": 136
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-3>",
+      "path": "apps/web/src/components/admin/CsvMappingTool.ts",
+      "startLine": 142
     },
     {
       "crap": 2,
@@ -3741,7 +3831,7 @@
       "crap": 2,
       "method": "<anon method-3>",
       "path": "packages/shared/src/db/schema/csvImportBatches.ts",
-      "startLine": 53
+      "startLine": 59
     },
     {
       "crap": 2,

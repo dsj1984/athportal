@@ -48,6 +48,12 @@ export const csvImportBatches = sqliteTable(
     // of side tables. Default is the empty array so the wire shape
     // is stable across success/failure outcomes.
     errorEnvelope: text('error_envelope').notNull().default(sql`'[]'`),
+    // Original upload filename, persisted so the admin "import history"
+    // surface can name the source CSV against each batch (Story #973
+    // F1). Added by migration 0008 with a `''` default so rows that
+    // pre-date the column survive; new inserts always carry a non-
+    // empty value via the `CsvImportCommitInputSchema.fileName` field.
+    fileName: text('file_name').notNull().default(''),
     createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
   },
   (table) => ({

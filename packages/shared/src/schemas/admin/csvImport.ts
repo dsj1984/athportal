@@ -23,6 +23,13 @@
  *
  * `previewRows` is `string[][]`; `mapping` is `Record<string, string |
  * null>` where the value names a target field (or `null` to ignore).
+ *
+ * Story #973 extends the commit input with `fileName` (round-trips to
+ * `csv_import_batches.file_name`) and the row-error shape with
+ * `cellValue` (the original CSV cell text, surfaced in the admin's
+ * per-row error report). The batch-history list schemas live in the
+ * sibling `csvImportBatches.ts` module — they exist on their own MI
+ * budget so this file stays inside the ADR-019 floor.
  */
 
 import { z } from 'zod';
@@ -60,11 +67,13 @@ export type ColumnMappingInput = z.infer<typeof ColumnMappingSchema>;
  * `fileBase64` is bounded at 5 MB of decoded bytes (~6.7 MB of base64
  * text). The bound is enforced in the handler, not in the schema, so
  * the rejection carries `PAYLOAD_TOO_LARGE` instead of a generic
- * Zod validation error.
+ * Zod validation error. `fileName` round-trips to
+ * `csv_import_batches.file_name` (Story #973 F1).
  */
 export const CsvImportCommitInputSchema = z
   .object({
     fileBase64: z.string().min(1),
+    fileName: z.string().min(1).max(255),
     mapping: ColumnMappingSchema,
   })
   .strict();
@@ -74,11 +83,17 @@ export type CsvImportCommitInput = z.infer<typeof CsvImportCommitInputSchema>;
  * Per-row error returned to the admin UI on a failed commit. Shape
  * matches the parser's `ResolveError` plus the importer's own
  * post-validation codes (`EMAIL_INVALID`, `TEAM_NOT_FOUND`).
+ *
+ * `cellValue` carries the original (untrimmed) cell text for the
+ * offending field when one applies (Story #973 F2). Mapping-level
+ * errors (`MISSING_REQUIRED_COLUMN`, `EMPTY_FILE`) have no cell
+ * coordinate, so `cellValue` is omitted in those cases.
  */
 export const CsvImportRowErrorSchema = z.object({
   rowIndex: z.number().int(),
   code: z.string().min(1),
   field: z.string().min(1).optional(),
+  cellValue: z.string().optional(),
 });
 export type CsvImportRowError = z.infer<typeof CsvImportRowErrorSchema>;
 
@@ -108,3 +123,14 @@ export const CsvImportParseOutputSchema = z.object({
   previewRows: z.array(z.array(z.string())),
 });
 export type CsvImportParseOutput = z.infer<typeof CsvImportParseOutputSchema>;
+
+// Re-exports for the import-history list schemas (Story #973 F1). The
+// declarations live in the sibling `csvImportBatches.ts` module so this
+// file stays inside the ADR-019 maintainability floor. Consumers see a
+// single import surface (`@repo/shared/schemas/admin/csvImport`).
+export {
+  CsvImportBatchListOutputSchema,
+  CsvImportBatchSummarySchema,
+  type CsvImportBatchListOutput,
+  type CsvImportBatchSummary,
+} from './csvImportBatches';

@@ -53,6 +53,8 @@ const MIGRATION_FILES = [
   '0004_org_branding.sql',
   '0005_team_metadata.sql',
   '0006_csv_import_batches.sql',
+  '0007_roster.sql',
+  '0008_csv_import_batch_filename.sql',
 ];
 
 function freshProductionDb() {
@@ -209,6 +211,7 @@ describe('admin csv-import — contract', () => {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
         fileBase64: toBase64(HAPPY_CSV),
+        fileName: 'roster.csv',
         mapping: {
           email: 'email',
           firstName: 'firstName',
@@ -240,6 +243,10 @@ describe('admin csv-import — contract', () => {
     expect(batches.length).toBe(1);
     expect(batches[0]!.orgId).toBe(seed.orgA);
     expect(batches[0]!.rowCount).toBe(3);
+    // Story #973 F1 — the persisted batch row carries the original
+    // upload filename so the admin "import history" surface can name
+    // the source CSV.
+    expect(batches[0]!.fileName).toBe('roster.csv');
 
     const newAthletes = db.select().from(users).where(eq(users.email, 'a@x.invalid')).all();
     expect(newAthletes.length).toBe(1);
@@ -273,6 +280,7 @@ describe('admin csv-import — contract', () => {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
         fileBase64: toBase64(HAPPY_CSV),
+        fileName: 'roster.csv',
         mapping: {
           email: 'email',
           firstName: 'firstName',
@@ -315,6 +323,7 @@ describe('admin csv-import — contract', () => {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
         fileBase64: toBase64(HAPPY_CSV),
+        fileName: 'roster.csv',
         mapping: {
           email: 'email',
           firstName: 'firstName',
@@ -356,6 +365,7 @@ describe('admin csv-import — contract', () => {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
         fileBase64: toBase64(csv),
+        fileName: 'roster.csv',
         mapping: {
           email: 'email',
           firstName: 'firstName',
@@ -398,6 +408,7 @@ describe('admin csv-import — contract', () => {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
         fileBase64: toBase64(HAPPY_CSV),
+        fileName: 'roster.csv',
         mapping: {
           email: 'email',
           firstName: 'firstName',
@@ -410,5 +421,159 @@ describe('admin csv-import — contract', () => {
     expect(res.status).toBe(403);
     const body = (await res.json()) as { success: false; error: { code: string } };
     expect(body.error.code).toBe('FORBIDDEN');
+  });
+
+  // ──────────────────────────────────────────────────────────────────
+  // Story #973 F1 — file_name column round-trips through create→list.
+  // ──────────────────────────────────────────────────────────────────
+  it('GET /batches returns prior batches with the original file_name', async () => {
+    const db = freshProductionDb();
+    const seed = seedGraph(db);
+    const app = buildApp(db, actorFor(seed, 'A'));
+
+    // Arrange: import twice with different filenames. The same CSV is
+    // re-uploaded — duplicate emails resolve via user-reuse so the
+    // second batch still persists.
+    for (const fileName of ['fall-roster.csv', 'spring-roster.csv']) {
+      const res = await app.request('/api/v1/admin/csv-import/commit', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          fileBase64: toBase64(HAPPY_CSV),
+          fileName,
+          mapping: {
+            email: 'email',
+            firstName: 'firstName',
+            lastName: 'lastName',
+            teamName: 'teamName',
+          },
+        }),
+      });
+      expect(res.status).toBe(200);
+    }
+
+    const list = await app.request('/api/v1/admin/csv-import/batches', {
+      method: 'GET',
+    });
+    expect(list.status).toBe(200);
+    const body = (await list.json()) as {
+      success: true;
+      data: {
+        batches: Array<{
+          id: string;
+          fileName: string;
+          rowCount: number;
+          successCount: number;
+          errorCount: number;
+          createdAt: string;
+        }>;
+      };
+    };
+    expect(body.success).toBe(true);
+    expect(body.data.batches.length).toBe(2);
+    // Newest-first ordering — the second insert appears first.
+    const filenames = body.data.batches.map((b) => b.fileName).sort();
+    expect(filenames).toEqual(['fall-roster.csv', 'spring-roster.csv']);
+  });
+
+  it('GET /batches scopes results to the actor’s org', async () => {
+    const db = freshProductionDb();
+    const seed = seedGraph(db);
+
+    // Org A imports a batch.
+    const appA = buildApp(db, actorFor(seed, 'A'));
+    await appA.request('/api/v1/admin/csv-import/commit', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        fileBase64: toBase64(HAPPY_CSV),
+        fileName: 'org-a-roster.csv',
+        mapping: {
+          email: 'email',
+          firstName: 'firstName',
+          lastName: 'lastName',
+          teamName: 'teamName',
+        },
+      }),
+    });
+
+    // Org B lists batches — must not see Org A's history.
+    const appB = buildApp(db, actorFor(seed, 'B'));
+    const list = await appB.request('/api/v1/admin/csv-import/batches', {
+      method: 'GET',
+    });
+    expect(list.status).toBe(200);
+    const body = (await list.json()) as {
+      success: true;
+      data: { batches: Array<{ fileName: string }> };
+    };
+    expect(body.data.batches).toEqual([]);
+  });
+
+  // ──────────────────────────────────────────────────────────────────
+  // Story #973 F2 — per-row error breakdown carries the cell value
+  // so the admin UI can render a downloadable error report.
+  // ──────────────────────────────────────────────────────────────────
+  it('POST /commit failure envelope carries per-row breakdown with cellValue', async () => {
+    const db = freshProductionDb();
+    const seed = seedGraph(db);
+    const app = buildApp(db, actorFor(seed, 'A'));
+
+    // Both rows have invalid emails; the resolver passes (no
+    // missing-required-value because every required cell is non-empty)
+    // and the post-resolve EMAIL_INVALID check surfaces both rows.
+    const csv = [
+      'email,firstName,lastName,teamName',
+      'not-an-email,Ada,Lovelace,Tigers',
+      'also bad,Bob,Smith,Lions',
+    ].join('\n');
+
+    const res = await app.request('/api/v1/admin/csv-import/commit', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        fileBase64: toBase64(csv),
+        fileName: 'bad.csv',
+        mapping: {
+          email: 'email',
+          firstName: 'firstName',
+          lastName: 'lastName',
+          teamName: 'teamName',
+        },
+      }),
+    });
+
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as {
+      success: false;
+      error: {
+        code: string;
+        rowErrors?: Array<{
+          rowIndex: number;
+          code: string;
+          field?: string;
+          cellValue?: string;
+        }>;
+      };
+    };
+    expect(body.error.code).toBe('IMPORT_FAILED');
+    expect(body.error.rowErrors).toBeDefined();
+    // Both rows surface as EMAIL_INVALID with the original cell text
+    // echoed back so the admin UI can render a downloadable error
+    // report keyed by row + cell.
+    const byKey = new Map((body.error.rowErrors ?? []).map((e) => [`${e.rowIndex}:${e.code}`, e]));
+    const row0 = byKey.get('0:EMAIL_INVALID');
+    expect(row0).toBeDefined();
+    expect(row0!.field).toBe('email');
+    expect(row0!.cellValue).toBe('not-an-email');
+
+    const row1 = byKey.get('1:EMAIL_INVALID');
+    expect(row1).toBeDefined();
+    expect(row1!.field).toBe('email');
+    expect(row1!.cellValue).toBe('also bad');
+
+    // Side-effect: no batch persisted on failure (matches existing
+    // contract — the failure path does not write an audit row).
+    expect(db.select().from(csvImportBatches).all().length).toBe(0);
   });
 });
