@@ -313,6 +313,11 @@ import FormField from '../ui/FormField.astro';
         reusedCount: body.data.reusedUserIds.length,
         errorCount: body.data.errorCount,
       });
+      // Notify sibling islands (e.g. the import-history list on
+      // /admin/import, Story #974 F2) so they can re-fetch their
+      // data without a manual page reload. Listeners that are not
+      // attached on the page simply receive nothing.
+      document.dispatchEvent(new CustomEvent('admin-csv-import:commit-succeeded'));
     });
 
     function renderRowErrors(rowErrors: readonly CsvImportRowError[]): void {

@@ -1,0 +1,61 @@
+---
+// apps/web/src/components/admin/ImportHistory.astro
+//
+// Admin import-history list (Story #974 F2). Rendered below the
+// CSV upload form on `/admin/import` (`apps/web/src/pages/admin/
+// import.astro`). The page-level inline `<script>` fetches
+// `/api/v1/admin/csv-import/batches` and calls
+// `renderImportHistoryRows` from the sibling `ImportHistory.ts`
+// module to populate the table on load and after every successful
+// commit.
+//
+// Wire contract: `GET /api/v1/admin/csv-import/batches` returns
+// `{ success, data: { batches: CsvImportBatchSummary[] } }`,
+// newest first, scoped to the actor's org by the API edge (Story
+// #973 F1). Cross-tenant isolation is enforced server-side; this
+// surface assumes the response is already org-scoped and renders
+// it verbatim.
+//
+// Styling follows the Tailwind-utility-first convention codified by
+// ADR-0007. Table chrome composes the shared `<DataTable>`
+// primitive — no orphan BEM hooks.
+
+import DataTable from '../ui/DataTable.astro';
+import { IMPORT_HISTORY_TEST_IDS } from './ImportHistory.ts';
+---
+
+<section
+  class="flex flex-col gap-4"
+  data-testid={IMPORT_HISTORY_TEST_IDS.section}
+  aria-label="Import history"
+>
+  <h2 class="font-display text-xl font-semibold text-text-primary">Import history</h2>
+
+  <p
+    class="hidden rounded-md border border-danger bg-danger-soft px-4 py-3 text-sm text-danger"
+    role="alert"
+    data-testid={IMPORT_HISTORY_TEST_IDS.error}
+    hidden
+  ></p>
+
+  <DataTable
+    testId={IMPORT_HISTORY_TEST_IDS.table}
+    tbodyTestId={IMPORT_HISTORY_TEST_IDS.tbody}
+    columns={[
+      { key: 'timestamp', label: 'Imported' },
+      { key: 'file-name', label: 'File name' },
+      { key: 'row-count', label: 'Rows', align: 'end' },
+      { key: 'success-count', label: 'Succeeded', align: 'end' },
+      { key: 'error-count', label: 'Errors', align: 'end' },
+      { key: 'status', label: 'Status' },
+    ]}
+  />
+
+  <p
+    class="hidden rounded-xl border border-border bg-surface-card px-6 py-10 text-center text-sm text-text-secondary"
+    data-testid={IMPORT_HISTORY_TEST_IDS.emptyState}
+    hidden
+  >
+    No imports yet. Upload a CSV above.
+  </p>
+</section>
