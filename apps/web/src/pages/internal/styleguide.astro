@@ -31,6 +31,7 @@ import InteractiveAtoms from '../../components/styleguide/InteractiveAtoms.astro
 import DisplayAtoms from '../../components/styleguide/DisplayAtoms.astro';
 import Composites from '../../components/styleguide/Composites.astro';
 import Primitives from '../../components/styleguide/Primitives.astro';
+import AppLayoutDoc from '../../components/styleguide/AppLayoutDoc.astro';
 import {
   STYLEGUIDE_ROBOTS_HEADER,
   decideStyleguideAccess,
@@ -71,6 +72,7 @@ if (decision.kind === 'redirect') {
     <DisplayAtoms />
     <Composites />
     <Primitives />
+    <AppLayoutDoc />
   </main>
 </RootLayout>
 

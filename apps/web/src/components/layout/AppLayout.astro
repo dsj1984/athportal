@@ -1,0 +1,148 @@
+---
+// apps/web/src/components/layout/AppLayout.astro
+//
+// Shared authenticated App Shell (Story #971). Composes:
+//
+//   - A page-wide <header> with the brand mark (Logo + wordmark),
+//     persona-aware nav links, and a user menu trigger that drops down
+//     a Sign out form which POSTs to `/sign-out`.
+//   - A <main> content slot for the page body, constrained to the
+//     canonical max-w-6xl gutter used across `/admin/*` pages.
+//
+// Styling is Tailwind-utility-first on the @theme tokens declared in
+// `apps/web/src/styles/global.css` (ADR-0007). No orphan BEM hooks —
+// classnames here are either Tailwind utilities or the documented
+// data-* test hooks used by the unit/contract tests in `navigation.ts`.
+//
+// Sign-out path. Rather than rely on Clerk's client-side signOut()
+// (which doesn't run our cookie-clear endpoint), the menu submits a
+// `<form method="POST" action="/sign-out">`. That endpoint
+// (`apps/web/src/pages/sign-out.ts`, Story #951) revokes the Clerk
+// session server-side, deletes every Clerk-namespaced cookie, and
+// 303s the browser to `/sign-in`. This is the canonical sign-out
+// path documented in `docs/testing-strategy.md` §QA sign-out.
+//
+// SSR auth gate stays on the page (e.g. `requireAdminSsr(Astro)`) —
+// AppLayout assumes the page has already gated the request and is
+// passing a verified `role`. Anonymous callers should never reach
+// this layout because the page's gate redirected them first.
+
+import RootLayout from '../../layouts/RootLayout.astro';
+import Logo from '../ui/Logo.astro';
+import {
+  APP_LAYOUT_HEADER_TEST_ID,
+  APP_LAYOUT_MAIN_TEST_ID,
+  APP_LAYOUT_NAV_TEST_ID,
+  APP_LAYOUT_SIGN_OUT_TEST_ID,
+  APP_LAYOUT_USER_MENU_TEST_ID,
+  type AppNavRole,
+  buildAppNavView,
+} from '../../lib/navigation';
+
+interface Props {
+  /** Page-level <title>, forwarded to the underlying RootLayout. */
+  title: string;
+  /**
+   * The signed-in user's role. Drives which nav set the header
+   * renders. Pages compute this server-side (the SSR auth gate
+   * already vouched for it) and pass it down.
+   */
+  role: AppNavRole;
+  /**
+   * Optional href of the active route — typically `Astro.url.pathname`
+   * from the page frontmatter. The matching nav row is rendered with
+   * the active treatment (brand colour + bold weight).
+   */
+  activeHref?: string;
+  /**
+   * Optional display label for the user-menu trigger (e.g. the user's
+   * first name or initials). Falls back to the literal "Account" so
+   * the menu remains usable when the page has no display value yet.
+   */
+  userLabel?: string;
+}
+
+const { title, role, activeHref, userLabel = 'Account' } = Astro.props;
+
+const navRows = buildAppNavView(role, activeHref);
+---
+
+<RootLayout title={title}>
+  <header
+    class="border-b border-border bg-surface-card"
+    data-testid={APP_LAYOUT_HEADER_TEST_ID}
+  >
+    <div class="mx-auto flex w-full max-w-6xl items-center gap-6 px-4 py-3 sm:px-6 lg:px-8">
+      <a
+        class="inline-flex items-center gap-2 text-text-primary no-underline"
+        href="/"
+        data-testid="app-layout-brand"
+      >
+        <Logo size={28} title="AthPortal" />
+        <span class="font-display text-lg font-semibold">AthPortal</span>
+      </a>
+
+      <nav
+        class="flex flex-1 items-center gap-1"
+        data-testid={APP_LAYOUT_NAV_TEST_ID}
+        aria-label="Primary"
+      >
+        {
+          navRows.map((row) => (
+            <a
+              class={
+                row.active
+                  ? 'inline-flex items-center rounded-md bg-surface-hover px-3 py-2 text-sm font-semibold text-brand no-underline'
+                  : 'inline-flex items-center rounded-md px-3 py-2 text-sm font-medium text-text-secondary no-underline hover:bg-surface-hover hover:text-text-primary'
+              }
+              href={row.href}
+              data-testid={row.testId}
+              aria-current={row.active ? 'page' : undefined}
+            >
+              {row.label}
+            </a>
+          ))
+        }
+      </nav>
+
+      <details class="relative">
+        <summary
+          class="flex cursor-pointer list-none items-center gap-2 rounded-full border border-border bg-surface-card px-3 py-1.5 text-sm font-medium text-text-primary hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+          data-testid={APP_LAYOUT_USER_MENU_TEST_ID}
+          aria-label="Open user menu"
+        >
+          <span
+            class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-brand text-xs font-semibold text-white"
+            aria-hidden="true"
+          >
+            {userLabel.slice(0, 1).toUpperCase()}
+          </span>
+          <span>{userLabel}</span>
+        </summary>
+        <div
+          class="absolute right-0 mt-2 min-w-[12rem] rounded-md border border-border bg-surface-card p-1 shadow-md"
+          role="menu"
+          data-testid="app-layout-user-menu-panel"
+        >
+          <form method="POST" action="/sign-out">
+            <button
+              class="block w-full rounded-sm px-3 py-2 text-left text-sm text-text-primary hover:bg-surface-hover"
+              type="submit"
+              data-testid={APP_LAYOUT_SIGN_OUT_TEST_ID}
+              role="menuitem"
+            >
+              Sign out
+            </button>
+          </form>
+        </div>
+      </details>
+    </div>
+  </header>
+
+  <main
+    class="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8"
+    data-testid={APP_LAYOUT_MAIN_TEST_ID}
+  >
+    <slot />
+  </main>
+</RootLayout>
