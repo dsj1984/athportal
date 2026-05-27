@@ -59,6 +59,17 @@ export type RosterQuery = z.infer<typeof RosterQuerySchema>;
  */
 export const RosterItemSchema = z
   .object({
+    /**
+     * The `athlete_memberships.id` for this athlete's active membership
+     * on `teamId`. Required because the season-rollover surface keys
+     * its per-row decisions on `membershipId` — the planner at
+     * `@repo/shared/rollover/buildPlan` and the
+     * `/api/v1/admin/rollover/*` endpoints reject any other shape with
+     * `UNKNOWN_MEMBERSHIP`. Surfaced by the roster projection so the
+     * client never has to synthesize one (Story #972 — the original
+     * synthesized-from-athleteId shape silently broke rollover).
+     */
+    membershipId: z.string(),
     athleteId: z.string(),
     fullName: z.string(),
     teamId: z.string(),

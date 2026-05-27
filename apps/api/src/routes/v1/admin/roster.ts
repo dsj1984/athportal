@@ -254,6 +254,11 @@ rosterAdminRoute.get('/', async (c) => {
 
   const items = pageRows.map((r) =>
     RosterItemSchema.parse({
+      // Surfaced by Story #972 — the season-rollover decisions table
+      // keys on `membershipId`; without it the form had to synthesize
+      // a key (which the rollover planner then rejected as
+      // UNKNOWN_MEMBERSHIP, silently breaking the entire surface).
+      membershipId: r.membershipId,
       athleteId: r.athleteUserId,
       fullName: deriveFullName(r.email),
       teamId: r.teamId,

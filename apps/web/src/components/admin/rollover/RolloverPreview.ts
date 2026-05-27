@@ -112,6 +112,13 @@ export function renderDecisionRows(
     const tr = document.createElement('tr');
     tr.setAttribute('data-testid', ROLLOVER_TEST_IDS.decisionRow);
     tr.setAttribute('data-membership-id', row.membershipId);
+    // Persist the source team id on the row so the decision-change
+    // handler (`syncTargetTeamForDecision` below) can auto-fill the
+    // target on `promote` without re-querying the data source. Story
+    // #972 F3 — `promote` semantically means "roll forward to the same
+    // team for the next season", so requiring the operator to retype
+    // the source team id for every row is pure friction.
+    tr.setAttribute('data-source-team-id', row.sourceTeamId);
 
     const nameCell = document.createElement('td');
     nameCell.setAttribute('data-col', 'athlete');
@@ -147,8 +154,60 @@ export function renderDecisionRows(
     targetCell.appendChild(targetInput);
     tr.appendChild(targetCell);
 
+    // Story #972 F3 — initial decision is `promote` (the `<select>`'s
+    // first <option>), so auto-fill target = source for parity with
+    // every subsequent decision change handled by
+    // `syncTargetTeamForDecision`.
+    syncTargetTeamForDecision(tr, 'promote');
+
     tbody.appendChild(tr);
   }
+}
+
+/**
+ * Re-shape one decision row's Target team field for the supplied
+ * decision (Story #972 F3):
+ *
+ *   - `promote`  — target auto-fills with the row's source team id
+ *                  (read from `data-source-team-id`) and stays editable
+ *                  so the operator can override.
+ *   - `transfer` — target is cleared and stays editable (operator must
+ *                  pick a different team).
+ *   - `archive`  — target is cleared, disabled, and hidden via the
+ *                  `data-hidden` attribute so the operator sees that
+ *                  no target makes sense for an archive row.
+ *
+ * The inline page script wires this to the per-row `<select>` change
+ * event; the unit-test suite drives it directly.
+ */
+export function syncTargetTeamForDecision(
+  row: HTMLTableRowElement,
+  decision: RolloverDecision,
+): void {
+  const targetInput = row.querySelector<HTMLInputElement>(
+    `[data-testid="${ROLLOVER_TEST_IDS.decisionTargetTeam}"]`,
+  );
+  if (!targetInput) return;
+  const sourceTeamId = row.getAttribute('data-source-team-id') ?? '';
+  if (decision === 'archive') {
+    targetInput.value = '';
+    targetInput.disabled = true;
+    targetInput.setAttribute('aria-hidden', 'true');
+    targetInput.setAttribute('data-hidden', 'true');
+    return;
+  }
+  targetInput.disabled = false;
+  targetInput.removeAttribute('aria-hidden');
+  targetInput.removeAttribute('data-hidden');
+  if (decision === 'promote') {
+    // Auto-fill with the source team id. The operator can still type
+    // over it if they want a different team — promote is just the
+    // semantic default for "same team, next season".
+    targetInput.value = sourceTeamId;
+    return;
+  }
+  // transfer — clear so the operator is forced to pick a target.
+  targetInput.value = '';
 }
 
 /**
