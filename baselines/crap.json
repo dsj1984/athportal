@@ -1,11 +1,11 @@
 {
   "$schema": ".agents/schemas/baselines/crap.schema.json",
-  "generatedAt": "2026-05-27T18:36:05.994Z",
+  "generatedAt": "2026-05-27T18:58:20.200Z",
   "kernelVersion": "1.0.0",
   "rollup": {
     "*": {
       "max": 506,
-      "methodsAbove20": 75,
+      "methodsAbove20": 76,
       "p50": 2,
       "p95": 42
     }
@@ -3012,16 +3012,28 @@
       "startLine": 59
     },
     {
-      "crap": 6,
-      "method": "<anon method-1>",
+      "crap": 42,
+      "method": "extractClerkCookieNames",
       "path": "apps/web/src/pages/sign-out.ts",
-      "startLine": 41
+      "startLine": 78
     },
     {
       "crap": 2,
+      "method": "<anon method-1>",
+      "path": "apps/web/src/pages/sign-out.ts",
+      "startLine": 86
+    },
+    {
+      "crap": 12,
       "method": "<anon method-2>",
       "path": "apps/web/src/pages/sign-out.ts",
-      "startLine": 63
+      "startLine": 96
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-3>",
+      "path": "apps/web/src/pages/sign-out.ts",
+      "startLine": 124
     },
     {
       "crap": 2,
