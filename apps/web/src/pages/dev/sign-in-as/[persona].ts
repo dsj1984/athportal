@@ -35,10 +35,7 @@ type QaPersona = (typeof QA_PERSONAS)[number];
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(HERE, '../../../../../..');
-const PERSONAS_JSON_PATH = resolve(
-  REPO_ROOT,
-  'packages/shared/src/testing/clerk-personas.json',
-);
+const PERSONAS_JSON_PATH = resolve(REPO_ROOT, 'packages/shared/src/testing/clerk-personas.json');
 const ROOT_ENV_PATH = resolve(REPO_ROOT, '.env');
 
 const TICKET_TTL_SECONDS = 60;

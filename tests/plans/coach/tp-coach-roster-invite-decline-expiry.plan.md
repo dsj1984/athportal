@@ -35,16 +35,16 @@ prerequisites:
 
 ### Expiry path
 
-3. Send a second roster invite from `/app/coach/teams/<teamId>/roster` to the expire address. Confirm the pending row appears.
+1. Send a second roster invite from `/app/coach/teams/<teamId>/roster` to the expire address. Confirm the pending row appears.
    **Expected:** pending invite visible in the pending-invites strip with the expire address.
 
-4. Force expiry: open `packages/shared/data/local.db` (e.g. via `pnpm sqlite3 packages/shared/data/local.db` or a SQLite client) and update the `expires_at` for that `roster_invites` row to a timestamp in the past (e.g. `expires_at = strftime('%s','now') - 86400`). Reload the roster page.
+2. Force expiry: open `packages/shared/data/local.db` (e.g. via `pnpm sqlite3 packages/shared/data/local.db` or a SQLite client) and update the `expires_at` for that `roster_invites` row to a timestamp in the past (e.g. `expires_at = strftime('%s','now') - 86400`). Reload the roster page.
    **Expected:** the invite is now displayed as `expired` rather than `pending` (lazy expiry transition).
 
-5. Retrieve the original tokenized accept link for the expired invite and open it in a private window.
+3. Retrieve the original tokenized accept link for the expired invite and open it in a private window.
    **Expected:** the accept handshake page refuses the invite — a clear "no longer acceptable" / expired banner. No `roster_entries` row is created. The `roster_invites` row remains `expired` (or transitions to it on read).
 
-6. From the coach session, send a fresh invite to the same expire address.
+4. From the coach session, send a fresh invite to the same expire address.
    **Expected:** the new invite is accepted by the system (no "duplicate invite" error) and appears as pending in the strip. The previously-expired row is unchanged.
 
 ## Cleanup
