@@ -34,6 +34,7 @@ import type { Hono } from 'hono';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { RequireInternalUserEnv } from '../../../middleware/auth';
 import { rolloverAdminRoute } from './rollover';
+import { rosterAdminRoute } from './roster';
 
 const MIGRATIONS_DIR = join(__dirname, '../../../../../../packages/shared/src/db/migrations');
 
@@ -526,5 +527,167 @@ describe('Cross-org isolation', () => {
       .from(athleteMemberships)
       .where(and(eq(athleteMemberships.id, memB), isNull(athleteMemberships.endedAt)));
     expect(stillActive).toHaveLength(1);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────
+// Story #972 — roster ↔ rollover ID-shape contract
+// ─────────────────────────────────────────────────────────────────────
+//
+// Regression pin for the silently-broken rollover surface uncovered in
+// Story #945 Session 3. Before #972, the `/admin/rollover` form
+// synthesized membership keys from `athleteId` (because the roster
+// projection did not surface `membershipId`); the planner then rejected
+// every row with `UNKNOWN_MEMBERSHIP` and the operator saw "Applied —
+// archived: 0, promoted: 0, errors: N" against a no-op commit.
+//
+// This contract test wires the real roster handler and the real
+// rollover handlers against one shared in-memory DB, then drives the
+// end-to-end shape the form uses post-#972:
+//
+//   1. GET  /api/v1/admin/roster                — read the projection
+//   2. POST /api/v1/admin/rollover/preview      — using membershipId
+//                                                 from step 1
+//   3. POST /api/v1/admin/rollover/commit       — using the preview's
+//                                                 expectedPlan
+//
+// The pre-#972 form's synthesized-from-athleteId key would have failed
+// this scenario at step 2 (`errors: 1` per row). Post-#972, the roster
+// projection includes the real membership id and the rollover surface
+// reports `errors: 0` and applies the writes.
+
+describe('roster → rollover ID-shape end-to-end (Story #972 F1, F4)', () => {
+  function buildRosterAndRolloverApp(db: RolloverDb, a: AuthContext) {
+    const harness = createTestApp(db, { actor: a }) as unknown as Hono<RequireInternalUserEnv>;
+    harness.route('/api/v1/admin/roster', rosterAdminRoute);
+    harness.route('/api/v1/admin/rollover', rolloverAdminRoute);
+    return harness;
+  }
+
+  it('surfaces membershipId in the roster projection so the rollover planner accepts it', async () => {
+    const db = freshRolloverDb();
+    seedOrg(db, ORG_A);
+    const teamU14 = seedTeam(db, ORG_A, { name: 'U14', season: 'Fall 2026', ageGroup: 'U14' });
+    const ada = seedAthleteUser(db, ORG_A, { id: 'u_ada', email: 'ada@test.invalid' });
+    const memAda = seedMembership(db, ORG_A, teamU14, ada, { id: 'am_ada' });
+
+    const app = buildRosterAndRolloverApp(db, actor(ORG_A));
+
+    // Step 1: roster projection MUST carry membershipId. Pre-#972 this
+    // field did not exist and the form synthesized one from athleteId.
+    const rosterRes = await app.request('/api/v1/admin/roster', { method: 'GET' }, STUB_ENV);
+    expect(rosterRes.status).toBe(200);
+    const rosterBody = (await rosterRes.json()) as {
+      data: { items: Array<{ membershipId: string; athleteId: string; teamId: string }> };
+    };
+    expect(rosterBody.data.items[0]?.membershipId).toBe(memAda);
+    expect(rosterBody.data.items[0]?.athleteId).toBe(ada);
+    // Pre-#972 invariant violation reproducer: when the form sent the
+    // user id where the planner expected the membership id, the planner
+    // emitted UNKNOWN_MEMBERSHIP — confirm that legacy shape still
+    // fails so a regression can be caught quickly.
+    const previewWithUserId = await app.request(
+      '/api/v1/admin/rollover/preview',
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          sourceSeason: 'Fall 2026',
+          targetSeason: 'Fall 2027',
+          choices: [{ membershipId: ada, decision: 'promote', targetTeamId: teamU14 }],
+        }),
+      },
+      STUB_ENV,
+    );
+    const legacyBody = (await previewWithUserId.json()) as PreviewBody;
+    expect(legacyBody.data.plan.errors).toHaveLength(1);
+    expect(legacyBody.data.plan.errors[0]?.code).toBe('UNKNOWN_MEMBERSHIP');
+  });
+
+  it('roster→preview→commit using membershipId from the projection applies writes with errors: 0', async () => {
+    const db = freshRolloverDb();
+    seedOrg(db, ORG_A);
+    const teamU14 = seedTeam(db, ORG_A, { name: 'U14', season: 'Fall 2026', ageGroup: 'U14' });
+    const ada = seedAthleteUser(db, ORG_A, { id: 'u_ada', email: 'ada@test.invalid' });
+    const grace = seedAthleteUser(db, ORG_A, { id: 'u_grace', email: 'grace@test.invalid' });
+    const memAda = seedMembership(db, ORG_A, teamU14, ada, { id: 'am_ada' });
+    const memGrace = seedMembership(db, ORG_A, teamU14, grace, { id: 'am_grace' });
+
+    const app = buildRosterAndRolloverApp(db, actor(ORG_A));
+
+    // Step 1: load roster (the form's "Load roster" pass).
+    const rosterRes = await app.request('/api/v1/admin/roster', { method: 'GET' }, STUB_ENV);
+    const rosterBody = (await rosterRes.json()) as {
+      data: { items: Array<{ membershipId: string; teamId: string }> };
+    };
+    expect(rosterBody.data.items).toHaveLength(2);
+
+    // Step 2: build the choices payload the post-#972 form sends —
+    // membershipId comes straight from the roster projection, and
+    // promote auto-fills targetTeamId with sourceTeamId (F3).
+    const choices = rosterBody.data.items.map((item) => ({
+      membershipId: item.membershipId,
+      decision: 'promote' as const,
+      targetTeamId: item.teamId,
+    }));
+
+    const previewRes = await app.request(
+      '/api/v1/admin/rollover/preview',
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          sourceSeason: 'Fall 2026',
+          targetSeason: 'Fall 2027',
+          choices,
+        }),
+      },
+      STUB_ENV,
+    );
+    expect(previewRes.status).toBe(200);
+    const previewBody = (await previewRes.json()) as PreviewBody;
+    // The load-bearing assertion — Story #972 fixes the form's shape
+    // so this is 0, not the pre-fix `errors: 2`.
+    expect(previewBody.data.plan.errors).toHaveLength(0);
+    expect(previewBody.data.plan.archives).toHaveLength(2);
+    expect(previewBody.data.plan.promotions).toHaveLength(2);
+
+    // Step 3: commit with the canonical expectedPlan.
+    const commitRes = await app.request(
+      '/api/v1/admin/rollover/commit',
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          sourceSeason: 'Fall 2026',
+          targetSeason: 'Fall 2027',
+          choices,
+          expectedPlan: previewBody.data.plan,
+        }),
+      },
+      STUB_ENV,
+    );
+    expect(commitRes.status).toBe(200);
+    const commitBody = (await commitRes.json()) as CommitBody;
+    expect(commitBody.data.applied.errors).toBe(0);
+    expect(commitBody.data.applied.archived).toBe(2);
+    expect(commitBody.data.applied.promoted).toBe(2);
+
+    // DB side-effect: both source rows end-dated, two new rows active.
+    const adaSource = await db
+      .select()
+      .from(athleteMemberships)
+      .where(eq(athleteMemberships.id, memAda));
+    expect((adaSource[0] as { endedAt: Date | null }).endedAt).not.toBeNull();
+    const graceSource = await db
+      .select()
+      .from(athleteMemberships)
+      .where(eq(athleteMemberships.id, memGrace));
+    expect((graceSource[0] as { endedAt: Date | null }).endedAt).not.toBeNull();
+    const activeAfter = await db
+      .select()
+      .from(athleteMemberships)
+      .where(isNull(athleteMemberships.endedAt));
+    expect(activeAfter).toHaveLength(2);
   });
 });

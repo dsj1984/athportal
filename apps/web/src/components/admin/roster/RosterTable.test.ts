@@ -61,6 +61,7 @@ describe('renderRosterRows', () => {
 
   function makeItem(overrides: Partial<RosterItem> = {}): RosterItem {
     return {
+      membershipId: 'am_ada',
       athleteId: 'u_ada',
       fullName: 'Ada Lovelace',
       teamId: 't_one',
