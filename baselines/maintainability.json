@@ -1,6 +1,6 @@
 {
   "$schema": ".agents/schemas/baselines/maintainability.schema.json",
-  "generatedAt": "2026-05-27T21:01:15.187Z",
+  "generatedAt": "2026-05-27T22:53:23.101Z",
   "kernelVersion": "1.0.0",
   "rollup": {
     "*": {
@@ -20,7 +20,7 @@
     },
     "apps/web": {
       "min": 80.074,
-      "p50": 106.544,
+      "p50": 106.532,
       "p95": 163.185
     },
     "packages/baselines": {
@@ -97,7 +97,7 @@
       "path": "apps/api/src/routes/v1/admin/csv-import/index.ts"
     },
     {
-      "mi": 84.62,
+      "mi": 87.153,
       "path": "apps/api/src/routes/v1/admin/csv-import/router.ts"
     },
     {
@@ -125,7 +125,7 @@
       "path": "apps/api/src/routes/v1/admin/rollover.ts"
     },
     {
-      "mi": 91.441,
+      "mi": 91.257,
       "path": "apps/api/src/routes/v1/admin/roster.ts"
     },
     {
@@ -289,7 +289,7 @@
       "path": "apps/web/playwright.config.ts"
     },
     {
-      "mi": 109.992,
+      "mi": 108.91,
       "path": "apps/web/src/components/admin/CsvMappingTool.ts"
     },
     {
@@ -445,7 +445,11 @@
       "path": "apps/web/src/lib/db.ts"
     },
     {
-      "mi": 109.057,
+      "mi": 106.52,
+      "path": "apps/web/src/lib/navigation.ts"
+    },
+    {
+      "mi": 106.274,
       "path": "apps/web/src/lib/ssrAuthGate.ts"
     },
     {
@@ -573,7 +577,7 @@
       "path": "packages/shared/src/db/schema/coachAssignments.ts"
     },
     {
-      "mi": 107.499,
+      "mi": 105.72,
       "path": "packages/shared/src/db/schema/csvImportBatches.ts"
     },
     {
@@ -661,8 +665,12 @@
       "path": "packages/shared/src/rollover/buildPlan.ts"
     },
     {
-      "mi": 73.141,
+      "mi": 70.836,
       "path": "packages/shared/src/schemas/admin/csvImport.ts"
+    },
+    {
+      "mi": 92.379,
+      "path": "packages/shared/src/schemas/admin/csvImportBatches.ts"
     },
     {
       "mi": 86.881,
@@ -681,7 +689,7 @@
       "path": "packages/shared/src/schemas/admin/rollover.ts"
     },
     {
-      "mi": 78.851,
+      "mi": 78.003,
       "path": "packages/shared/src/schemas/admin/roster.ts"
     },
     {

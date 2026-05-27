@@ -48,8 +48,8 @@
 import { randomUUID } from 'node:crypto';
 import { parseCsv, resolveRows } from '@repo/shared/csv/parse';
 import { athleteMemberships, csvImportBatches, teams, users } from '@repo/shared/db/schema';
+import type { CsvImportBatchListOutput } from '@repo/shared/schemas/admin/csvImportBatches';
 import {
-  type CsvImportBatchListOutput,
   CsvImportCommitInputSchema,
   type CsvImportCommitOutput,
   type CsvImportRowError,

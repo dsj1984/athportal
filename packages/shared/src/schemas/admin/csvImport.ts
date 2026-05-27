@@ -23,6 +23,13 @@
  *
  * `previewRows` is `string[][]`; `mapping` is `Record<string, string |
  * null>` where the value names a target field (or `null` to ignore).
+ *
+ * Story #973 extends the commit input with `fileName` (round-trips to
+ * `csv_import_batches.file_name`) and the row-error shape with
+ * `cellValue` (the original CSV cell text, surfaced in the admin's
+ * per-row error report). The batch-history list schemas live in the
+ * sibling `csvImportBatches.ts` module — they exist on their own MI
+ * budget so this file stays inside the ADR-019 floor.
  */
 
 import { z } from 'zod';
@@ -60,15 +67,12 @@ export type ColumnMappingInput = z.infer<typeof ColumnMappingSchema>;
  * `fileBase64` is bounded at 5 MB of decoded bytes (~6.7 MB of base64
  * text). The bound is enforced in the handler, not in the schema, so
  * the rejection carries `PAYLOAD_TOO_LARGE` instead of a generic
- * Zod validation error.
+ * Zod validation error. `fileName` round-trips to
+ * `csv_import_batches.file_name` (Story #973 F1).
  */
 export const CsvImportCommitInputSchema = z
   .object({
     fileBase64: z.string().min(1),
-    // Original upload filename, surfaced back via the import-history
-    // list (Story #973 F1). Constrained to 1..255 chars so the column
-    // never carries an empty value or a path that would blow past
-    // typical filesystem limits.
     fileName: z.string().min(1).max(255),
     mapping: ColumnMappingSchema,
   })
@@ -119,25 +123,3 @@ export const CsvImportParseOutputSchema = z.object({
   previewRows: z.array(z.array(z.string())),
 });
 export type CsvImportParseOutput = z.infer<typeof CsvImportParseOutputSchema>;
-
-/**
- * Single row of the import-history list (`GET
- * /api/v1/admin/csv-import/batches`). Carries the persisted
- * `csv_import_batches` columns the admin UI surfaces (Story #973 F1).
- * `createdAt` is serialized as an ISO-8601 string at the wire boundary.
- */
-export const CsvImportBatchSummarySchema = z.object({
-  id: z.string(),
-  fileName: z.string(),
-  rowCount: z.number().int().min(0),
-  successCount: z.number().int().min(0),
-  errorCount: z.number().int().min(0),
-  createdAt: z.string(),
-});
-export type CsvImportBatchSummary = z.infer<typeof CsvImportBatchSummarySchema>;
-
-/** `data` payload of `GET /api/v1/admin/csv-import/batches`. */
-export const CsvImportBatchListOutputSchema = z.object({
-  batches: z.array(CsvImportBatchSummarySchema),
-});
-export type CsvImportBatchListOutput = z.infer<typeof CsvImportBatchListOutputSchema>;
