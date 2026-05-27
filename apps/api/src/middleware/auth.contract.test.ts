@@ -128,17 +128,19 @@ describe('clerkAuth middleware', () => {
     expect(payloads[0]).toEqual({ scope: 'clerk-auth', reason: 'no-token' });
   });
 
-  it('returns 401 UNAUTHENTICATED when verifyToken rejects an invalid token', async () => {
+  it('returns 401 UNAUTHENTICATED when verifyToken throws (expired token, wrong signature, etc.)', async () => {
+    // @clerk/backend@^3 exports verifyToken wrapped in `withLegacyReturn`,
+    // which converts the internal `{ data, errors }` envelope into "return
+    // JwtPayload directly OR throw the first error". Every rejected-token
+    // path therefore surfaces here as a thrown rejection — this is the
+    // load-bearing case Story #941 fixed.
     class TokenExpiredError extends Error {
       constructor() {
         super('token expired');
         this.name = 'TokenExpiredError';
       }
     }
-    mockedVerifyToken.mockResolvedValueOnce({
-      // shape per @clerk/backend's JwtReturnType (v3 envelope)
-      errors: [new TokenExpiredError()],
-    } as unknown as Awaited<ReturnType<typeof verifyToken>>);
+    mockedVerifyToken.mockRejectedValueOnce(new TokenExpiredError());
 
     const app = createApp();
 
@@ -161,8 +163,8 @@ describe('clerkAuth middleware', () => {
     expect(JSON.stringify(body)).not.toMatch(/token expired/);
     expect(JSON.stringify(body)).not.toMatch(/stack/i);
 
-    // Structured warn: errors envelope → reason 'verify-threw' with
-    // the constructor name of the first error. Token MUST NOT leak.
+    // Structured warn: rejected token → reason 'verify-threw' with the
+    // constructor name of the thrown error. Token MUST NOT leak.
     const payloads = capturedWarnPayloads();
     expect(payloads).toHaveLength(1);
     expect(payloads[0]).toEqual({
@@ -174,12 +176,10 @@ describe('clerkAuth middleware', () => {
     expect(JSON.stringify(payloads[0])).not.toMatch(/sk_test_unit/);
   });
 
-  it('returns 401 UNAUTHENTICATED when verifyToken throws (transport-layer fault)', async () => {
-    // Defence-in-depth: even though @clerk/backend@^3 returns errors via
-    // the envelope, a DNS/TLS/polyfill fault still surfaces as a thrown
-    // rejection. Without the middleware's try/catch this collapses to an
-    // opaque 500 (Story #941 root cause). The middleware must absorb
-    // the throw and emit the canonical 401 envelope + structured warn.
+  it('returns 401 UNAUTHENTICATED when verifyToken throws a transport-layer fault', async () => {
+    // DNS / TLS / runtime polyfill drift also surface as thrown
+    // rejections rather than envelope errors. Same 401 + structured
+    // warn discipline.
     class FetchFailedError extends Error {
       constructor() {
         super('upstream fetch failed');
@@ -217,8 +217,11 @@ describe('clerkAuth middleware', () => {
   });
 
   it('writes clerkSubjectId and yields next() on a valid cookie token', async () => {
+    // v3 surface: verifyToken returns the JwtPayload directly (not
+    // a `{ data, errors }` envelope), per `withLegacyReturn` wrapping
+    // at the public export. See Story #941.
     mockedVerifyToken.mockResolvedValueOnce({
-      data: { sub: 'user_abc123' },
+      sub: 'user_abc123',
     } as unknown as Awaited<ReturnType<typeof verifyToken>>);
 
     const app = createApp();
@@ -245,7 +248,7 @@ describe('clerkAuth middleware', () => {
 
   it('accepts a Bearer token when no __session cookie is present', async () => {
     mockedVerifyToken.mockResolvedValueOnce({
-      data: { sub: 'user_bearer' },
+      sub: 'user_bearer',
     } as unknown as Awaited<ReturnType<typeof verifyToken>>);
 
     const app = createApp();
@@ -268,7 +271,7 @@ describe('clerkAuth middleware', () => {
 
   it('rejects a verified token that carries an empty sub claim', async () => {
     mockedVerifyToken.mockResolvedValueOnce({
-      data: { sub: '' },
+      sub: '',
     } as unknown as Awaited<ReturnType<typeof verifyToken>>);
 
     const app = createApp();
@@ -485,7 +488,7 @@ describe('Session cookie security flags (Task #346)', () => {
     // sign-out path is the contract gate for the cookie-flag posture
     // (Tech Spec #318 §Security, security-baseline §"Transport & Headers").
     mockedVerifyToken.mockResolvedValueOnce({
-      data: { sub: 'user_cookie_flags' },
+      sub: 'user_cookie_flags',
     } as unknown as Awaited<ReturnType<typeof verifyToken>>);
 
     const app = buildProtectedApp(freshProductionDb(), (a) =>

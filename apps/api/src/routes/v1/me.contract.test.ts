@@ -80,7 +80,7 @@ describe('GET /api/v1/me', () => {
 
   it('returns the AuthContext payload for an authenticated caller', async () => {
     mockedVerifyToken.mockResolvedValueOnce({
-      data: { sub: 'user_me_1' },
+      sub: 'user_me_1',
     } as unknown as Awaited<ReturnType<typeof verifyToken>>);
 
     const db = freshDb();
@@ -113,9 +113,7 @@ describe('GET /api/v1/me', () => {
   });
 
   it('does not echo internal-error details on token rejection', async () => {
-    mockedVerifyToken.mockResolvedValueOnce({
-      errors: [new Error('jwt secret rotation pending')],
-    } as unknown as Awaited<ReturnType<typeof verifyToken>>);
+    mockedVerifyToken.mockRejectedValueOnce(new Error('jwt secret rotation pending'));
 
     const app = buildApp(freshDb());
     const res = await app.request(

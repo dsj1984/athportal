@@ -59,26 +59,23 @@ const env = {
 
 describe('clerkAuth — real @clerk/backend@^3 envelope contract', () => {
   it.skipIf(SKIP)(
-    'verifyToken returns the v3 { errors } envelope for an invalid token (does not throw, does not return undefined data)',
+    'verifyToken throws (never returns) when given an invalid token — pins the v2→v3 surface change',
     async () => {
-      // Pin the v2→v3 contract: a malformed token MUST come back as
-      // `{ errors: [...] }`, never as a thrown rejection and never as
-      // `{ data: undefined, errors: undefined }`. The middleware's
-      // 401 path depends on this shape.
-      const result = await verifyToken('not.a.real.jwt', {
-        secretKey: env.CLERK_SECRET_KEY,
-      });
-
-      // v3 envelope discriminator.
-      expect(result).toHaveProperty('errors');
-      const errors = (result as { errors?: unknown }).errors;
-      expect(Array.isArray(errors)).toBe(true);
-      expect((errors as unknown[]).length).toBeGreaterThan(0);
-
-      // The success-side data field MUST be undefined when errors is set.
-      // (If a future major returns a populated `data` alongside `errors`,
-      // our middleware's discriminator collapses and this catches it.)
-      expect((result as { data?: unknown }).data).toBeUndefined();
+      // Pin the v2→v3 contract. The v2 export returned a
+      // `{ data, errors }` envelope for every input. v3 wraps the
+      // underlying envelope-returning function with `withLegacyReturn`,
+      // which converts the rejection branch into a thrown rejection
+      // and the success branch into a plain `JwtPayload` return value
+      // (see `@clerk/backend/dist/jwt/legacyReturn.d.ts`).
+      //
+      // The middleware's `try/catch` (auth.ts) is load-bearing on v3
+      // exactly because of this — if a future major reverts to the
+      // envelope shape, this test will catch the silent surface change
+      // at install time instead of letting it slip into manual QA the
+      // way it did in PR #940.
+      await expect(
+        verifyToken('not.a.real.jwt', { secretKey: env.CLERK_SECRET_KEY }),
+      ).rejects.toThrow();
     },
     30_000,
   );
@@ -98,7 +95,8 @@ describe('clerkAuth — real @clerk/backend@^3 envelope contract', () => {
       );
 
       // The wire contract: rejected token → 401 with the canonical
-      // envelope, NOT a 500 from an uncaught middleware throw.
+      // envelope, NOT a 500 from an uncaught middleware throw. This
+      // is the regression PR #940 surfaced and Story #941 closes.
       expect(res.status).toBe(401);
       expect(await res.json()).toEqual({
         success: false,

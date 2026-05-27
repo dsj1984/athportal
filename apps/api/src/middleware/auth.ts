@@ -152,19 +152,25 @@ function errorClassName(err: unknown): string {
  * Concrete failure paths mapped to the same envelope:
  *
  *   - Missing token (no cookie, no bearer) → `reason: 'no-token'`.
- *   - `verifyToken` throws (transport-layer fault, runtime exception,
- *     etc.) OR returns an `{ errors }` envelope (expired token, wrong
- *     signature, malformed payload) → `reason: 'verify-threw'`.
+ *   - `verifyToken` throws (expired token, wrong signature, malformed
+ *     payload, transport-layer fault) → `reason: 'verify-threw'`.
  *   - Token verifies but the payload has no usable `sub` claim →
  *     `reason: 'no-subject'`.
  *
- * The `try/catch` around `verifyToken` is defence-in-depth even though
- * `@clerk/backend@^3` returns errors via the envelope rather than
- * throwing: a transport-layer fault (DNS, TLS, runtime polyfill drift)
- * still reaches the middleware as an unhandled rejection and would
- * otherwise surface as an opaque 500 instead of the canonical 401.
- * Discovered in production via PR #940's manual-QA walkthrough — see
- * Story #941.
+ * @clerk/backend v2 vs v3 contract drift (Story #941).
+ *
+ * The v2 surface returned a `{ data, errors }` envelope — `errors` set
+ * on failure, `data` on success. v3 ships the same internal
+ * envelope-returning function but exports it via `withLegacyReturn`,
+ * which converts the envelope into "return `JwtPayload` directly OR
+ * throw the first error". The middleware was originally written
+ * against v2's envelope; on v3 the success-path read of
+ * `verification.data.sub` collapsed to `Cannot read properties of
+ * undefined (reading 'sub')` because `verification` IS the payload
+ * itself, not a wrapper around it (see PR #940's manual-QA
+ * walkthrough). The `try/catch` is therefore load-bearing on v3, not
+ * defensive — every rejected token reaches the middleware as a thrown
+ * rejection.
  */
 export function clerkAuth(): MiddlewareHandler<ClerkAuthEnv> {
   return async (c, next) => {
@@ -185,27 +191,16 @@ export function clerkAuth(): MiddlewareHandler<ClerkAuthEnv> {
       return c.json(unauthenticated('Authentication required.'), 401);
     }
 
-    let verification: Awaited<ReturnType<typeof verifyToken>>;
+    let payload: Awaited<ReturnType<typeof verifyToken>>;
     try {
-      verification = await verifyToken(token, { secretKey });
+      payload = await verifyToken(token, { secretKey });
     } catch (err) {
       logAuthWarn({ reason: 'verify-threw', errorClass: errorClassName(err) });
       return c.json(unauthenticated('Authentication required.'), 401);
     }
 
-    const errors = verification.errors as readonly unknown[] | undefined | null;
-    if (errors !== undefined && errors !== null) {
-      // v3 envelope contract: `errors` is a one-element tuple. We only
-      // surface the first error's class name in the log payload; the
-      // wire response always collapses to the canonical envelope so the
-      // class name never leaks beyond Workers tail logs.
-      const firstError = errors[0];
-      logAuthWarn({ reason: 'verify-threw', errorClass: errorClassName(firstError) });
-      return c.json(unauthenticated('Authentication required.'), 401);
-    }
-
-    const payload = verification.data as { sub?: unknown } | undefined;
-    const subject = typeof payload?.sub === 'string' ? payload.sub : '';
+    const sub = (payload as { sub?: unknown } | null | undefined)?.sub;
+    const subject = typeof sub === 'string' ? sub : '';
     if (subject.length === 0) {
       logAuthWarn({ reason: 'no-subject' });
       return c.json(unauthenticated('Authentication required.'), 401);
