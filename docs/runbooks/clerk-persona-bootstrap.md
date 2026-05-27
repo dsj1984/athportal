@@ -204,6 +204,65 @@ Production rollback is not applicable — this runbook only targets the Clerk Te
 
 ---
 
+## Programmatic user creation (Story #953)
+
+The three bootstrap personas above are stable, pre-provisioned, and shared across every Plan. Some Plans (Story #945 Session 2 — signup, onboarding gate, role assignment; Session 1 — `tp-identity-signin-email-not-verified`, `tp-identity-jit-provisioning`) need **ephemeral** users that the persona graph deliberately omits. Two facts make the plain `/sign-up` form unusable for those Plans:
+
+- **Cloudflare Turnstile** is enabled on `/sign-up` for the Clerk Test instance. The Turnstile iframe gates the submit button on a real human-verification interaction; a scripted click leaves the button in the "Loading" state indefinitely.
+- **Email verification codes** for randomly-chosen addresses have no programmatic retrieval seam — there is no local mail catcher (Clerk Test sends via Clerk's own infra, not local SMTP), and the runner has no inbox to poll.
+
+The supported path around both is to **create ephemeral users through Clerk's Backend SDK**, using `+clerk_test@` addresses with the deterministic verification code `424242`.
+
+### Turnstile and programmatic flows
+
+Clerk's Backend SDK (`@clerk/backend`) does **not** invoke Turnstile — bot protection is a frontend control on the sign-up form, not on the `/v1/users` API. The chosen posture for this workspace is therefore:
+
+> **Leave Turnstile ON in the Clerk dashboard for the Test instance. Programmatic user creation routes through the Backend SDK and bypasses Turnstile entirely.**
+
+This keeps the human-facing test-instance sign-up flow realistic (operators can verify Turnstile copy and behaviour in browser-driven walkthroughs) while still letting the QA-corpus runner provision users at scale. The alternative — turning Turnstile off entirely — was rejected because it would mask Turnstile-related UI regressions from manual review.
+
+### `createTestUser()` helper
+
+[`packages/shared/src/testing/createTestUser.ts`](../../packages/shared/src/testing/createTestUser.ts) is the analogue of `mintSignInTicket()` for fresh users:
+
+```ts
+import { createTestUser } from '@repo/shared/testing';
+
+const user = await createTestUser({
+  email: 'signup-happy+clerk_test@example.com',
+  // emailVerified defaults to true; pass false for the unverified-email path.
+});
+// → { userId, email, emailVerified, password }
+```
+
+The same security boundary as `mintSignInTicket()` applies: the helper refuses to run unless `CLERK_SECRET_KEY` starts with `sk_test_`.
+
+### `/dev/create-test-user` route
+
+[`apps/web/src/pages/dev/create-test-user.ts`](../../apps/web/src/pages/dev/create-test-user.ts) is the browser-driven companion to `/dev/sign-in-as/:persona` (PR [#940](https://github.com/dsj1984/athportal/pull/940)). POST a JSON body to it and the route returns the new user's id plus a sign-in ticket:
+
+```bash
+curl -X POST http://localhost:4321/dev/create-test-user \
+  -H 'content-type: application/json' \
+  -d '{"email":"signup-happy+clerk_test@example.com"}'
+# → 201 { "userId": "user_…", "email": "…", "emailVerified": true, "password": "…", "signInTicket": "sit_…" }
+```
+
+The route is hard-refused in production (404) and gated on `CLERK_SECRET_KEY` starting with `sk_test_`. It exists so manual sweep sessions can provision ephemeral users without the dashboard click-through.
+
+### Test-channel emails
+
+Clerk's Test instance recognises any address whose local part ends with `+clerk_test` (e.g. `signup-happy+clerk_test@example.com`, `verify-fail+clerk_test@example.com`) as a **testing email**. Two properties matter for the QA runner:
+
+1. **No inbox is required.** Clerk does not actually deliver the verification email anywhere — there is no SMTP destination.
+2. **The verification code is deterministic.** Submitting `424242` (the fixed code Clerk publishes for testing emails) completes the email-verification step regardless of which `+clerk_test@` address was used.
+
+Test Plans that previously read "Have the Clerk test channel ready to retrieve the verification code" should be interpreted as: **use a `+clerk_test@` address and submit `424242` as the verification code.** The `createTestUser()` helper and the `/dev/create-test-user` route both log a warning when an email does not match the `+clerk_test@` pattern, so callers know up front why their downstream verification step might wedge.
+
+Reference: [Clerk docs — Testing emails and phones](https://clerk.com/docs/testing/test-emails-and-phones).
+
+---
+
 ## Related
 
 - [`packages/shared/src/testing/clerkPersonas.ts`](../../packages/shared/src/testing/clerkPersonas.ts) — the reader; throws actionable errors when JSON is unpopulated.

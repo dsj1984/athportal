@@ -72,3 +72,10 @@ export {
   type MintSignInTicketOptions,
   type SignInTicket,
 } from './clerkTickets';
+export {
+  CLERK_TEST_VERIFICATION_CODE,
+  createTestUser,
+  isClerkTestChannelEmail,
+  type CreatedTestUser,
+  type CreateTestUserOptions,
+} from './createTestUser';
