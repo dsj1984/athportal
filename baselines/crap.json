@@ -1,11 +1,11 @@
 {
   "$schema": ".agents/schemas/baselines/crap.schema.json",
-  "generatedAt": "2026-05-27T21:00:50.212Z",
+  "generatedAt": "2026-05-27T21:22:36.767Z",
   "kernelVersion": "1.0.0",
   "rollup": {
     "*": {
       "max": 506,
-      "methodsAbove20": 78,
+      "methodsAbove20": 79,
       "p50": 2,
       "p95": 42
     }
@@ -3024,22 +3024,22 @@
       "startLine": 158
     },
     {
-      "crap": 12,
+      "crap": 30,
       "method": "requireSignedIn",
       "path": "apps/web/src/lib/ssrAuthGate.ts",
-      "startLine": 72
+      "startLine": 87
     },
     {
       "crap": 20,
       "method": "requireAdminSsr",
       "path": "apps/web/src/lib/ssrAuthGate.ts",
-      "startLine": 94
+      "startLine": 116
     },
     {
       "crap": 2,
       "method": "<anon method-1>",
       "path": "apps/web/src/lib/ssrAuthGate.ts",
-      "startLine": 107
+      "startLine": 129
     },
     {
       "crap": 20,
