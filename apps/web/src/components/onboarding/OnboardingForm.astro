@@ -47,8 +47,19 @@ import ProfilePhotoUploader from './ProfilePhotoUploader.astro';
   data-tos-version={termsOfServiceVersion}
   data-privacy-version={privacyPolicyVersion}
   data-invite-token={inviteToken ?? ''}
+  method="post"
+  action="/api/v1/auth/onboard"
   novalidate
 >
+  <noscript>
+    <p
+      class="rounded-md border border-action-coral bg-surface-card p-3 text-sm text-action-coral"
+      role="alert"
+    >
+      JavaScript is required to finish setting up your account. Please enable
+      JavaScript and reload this page.
+    </p>
+  </noscript>
   <p
     class="rounded-md border border-action-coral bg-surface-card p-3 text-sm text-action-coral"
     data-testid={ONBOARDING_FORM_TEST_IDS.formError}
@@ -121,7 +132,7 @@ import ProfilePhotoUploader from './ProfilePhotoUploader.astro';
   </button>
 </form>
 
-<script lang="ts">
+<script>
   import {
     ONBOARDING_FORM_TEST_IDS as TEST_IDS,
     createInitialOnboardingFormState,
