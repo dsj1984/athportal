@@ -193,12 +193,13 @@ export function clerkAuth(): MiddlewareHandler<ClerkAuthEnv> {
       return c.json(unauthenticated('Authentication required.'), 401);
     }
 
-    if (verification.errors !== undefined) {
+    const errors = verification.errors as readonly unknown[] | undefined | null;
+    if (errors !== undefined && errors !== null) {
       // v3 envelope contract: `errors` is a one-element tuple. We only
       // surface the first error's class name in the log payload; the
       // wire response always collapses to the canonical envelope so the
       // class name never leaks beyond Workers tail logs.
-      const firstError: unknown = verification.errors[0];
+      const firstError = errors[0];
       logAuthWarn({ reason: 'verify-threw', errorClass: errorClassName(firstError) });
       return c.json(unauthenticated('Authentication required.'), 401);
     }
