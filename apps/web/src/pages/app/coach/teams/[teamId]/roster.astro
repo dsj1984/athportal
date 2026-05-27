@@ -26,6 +26,31 @@ const { teamId } = Astro.params;
 if (typeof teamId !== 'string' || teamId.length === 0) {
   return new Response('Not Found', { status: 404 });
 }
+
+// SSR auth gate (Epic #11 AC-2 / AC-3). The API is the single source of
+// truth for `requireCoachOnTeam`; rather than duplicate that check in
+// the web tier, we probe the same endpoint the client-side script will
+// fetch and treat any non-2xx as "this team's roster does not exist
+// for you" — anonymous users, authenticated non-coach users, and
+// coaches assigned to a different team all collapse to the same 404,
+// per the cross-tenant non-enumeration posture in the Acceptance Spec.
+//
+// In production both halves are served from one origin (Epic #27) and
+// `API_BASE_URL` falls back to same-origin. Locally the Node API runs
+// on port 8787 (apps/api/src/local.ts) and the Vite proxy in
+// astro.config.ts forwards `/api/*` for browser fetches; server-side
+// fetches bypass that proxy, so we resolve the base URL explicitly.
+const apiBaseUrl = process.env.API_BASE_URL ?? 'http://localhost:8787';
+const cookieHeader = Astro.request.headers.get('cookie') ?? '';
+const probe = await fetch(
+  `${apiBaseUrl}/api/v1/coach/teams/${encodeURIComponent(teamId)}/roster`,
+  {
+    headers: { accept: 'application/json', cookie: cookieHeader },
+  },
+).catch(() => null);
+if (probe === null || !probe.ok) {
+  return new Response('Not Found', { status: 404 });
+}
 ---
 
 <html lang="en">

@@ -115,7 +115,7 @@ Toolchain, CI, observability, baselines, the three-tier test infrastructure, the
 - ✅ [#741](https://github.com/dsj1984/athportal/issues/741) — Foundation hardening — make apps/web actually run, end-to-end
 - ✅ [#775](https://github.com/dsj1984/athportal/issues/775) — Manual + agent-driveable QA corpus (Test Plans + Exploratory Charters)
 - ✅ [#828](https://github.com/dsj1984/athportal/issues/828) — Web UI styling completion — eliminate orphan BEM, lock in the convention
-- ⬜ [#869](https://github.com/dsj1984/athportal/issues/869) — Drive the QA-corpus agent runner to green against every generated Test Plan and Charter
+- ✅ [#869](https://github.com/dsj1984/athportal/issues/869) — Drive the QA-corpus agent runner to green against every generated Test Plan and Charter
 
 ##### Feature files
 
@@ -252,6 +252,11 @@ The multi-tenant data model and the server-enforced gate every authenticated use
 - [`tp-org-admin-csv-import-happy`](../tests/plans/org-admin/tp-org-admin-csv-import-happy.plan.md)
 - [`tp-org-admin-season-rollover`](../tests/plans/org-admin/tp-org-admin-season-rollover.plan.md)
 - [`tp-org-admin-reporting`](../tests/plans/org-admin/tp-org-admin-reporting.plan.md)
+- [`tp-coach-roster-view`](../tests/plans/coach/tp-coach-roster-view.plan.md)
+- [`tp-coach-roster-invite-send-accept`](../tests/plans/coach/tp-coach-roster-invite-send-accept.plan.md)
+- [`tp-coach-roster-invite-decline-expiry`](../tests/plans/coach/tp-coach-roster-invite-decline-expiry.plan.md)
+- [`tp-coach-roster-edit-remove`](../tests/plans/coach/tp-coach-roster-edit-remove.plan.md)
+- [`tp-coach-roster-team-scoped-access`](../tests/plans/coach/tp-coach-roster-team-scoped-access.plan.md)
 
 ##### Charters
 
