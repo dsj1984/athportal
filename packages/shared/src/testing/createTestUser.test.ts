@@ -159,9 +159,11 @@ describe('createTestUser — unverified path', () => {
 
     // The createUser call MUST NOT include emailAddress on the
     // unverified path — that would make Clerk auto-verify the email.
-    const createUserArg = createUser.mock.calls[0]?.[0] as { emailAddress?: unknown } | undefined;
-    expect(createUserArg).toBeDefined();
-    expect(createUserArg?.emailAddress).toBeUndefined();
+    expect(createUser).toHaveBeenCalledTimes(1);
+    const calls = createUser.mock.calls as unknown as Array<[{ emailAddress?: unknown }]>;
+    const firstArg = calls[0]?.[0];
+    expect(firstArg).toBeDefined();
+    expect(firstArg?.emailAddress).toBeUndefined();
 
     expect(createEmailAddress).toHaveBeenCalledWith({
       userId: 'user_test_unverified',
