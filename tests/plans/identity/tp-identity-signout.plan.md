@@ -20,13 +20,13 @@ prerequisites:
 
 - Confirm the local stack is running. `pnpm dev` at the repo root must be active.
 - Confirm the seeded fixture is present: run `pnpm --filter @repo/shared run db:seed` since the last reset. The seeded athlete must have `onboardingCompleted=true` so the sign-in path reaches `/dashboard` directly.
-- Note the seeded athlete's email and password.
+- Note the seeded athlete's email. Operators without the persona password may sign in via the dev-only seam `/dev/sign-in-as/athlete` — see [`apps/web/src/pages/dev/sign-in-as/[persona].ts`](../../../apps/web/src/pages/dev/sign-in-as/%5Bpersona%5D.ts). Hard-refused in production.
 - Open a fresh browser session with no existing cookies for the local origin so the plan exercises sign-in → sign-out → protected-route attempt in a clean state.
 
 ## Steps
 
-1. Open the fresh browser session, visit `/sign-in`, enter the seeded athlete's credentials, and submit.
-   **Expected:** the browser is redirected to `/dashboard` and the signed-in identity appears in the header. The session cookie is set and visible in devtools storage (httpOnly + secure).
+1. Open the fresh browser session, visit `/sign-in`, enter the seeded athlete's email and submit, then enter the password on the factor-one screen and submit. (Equivalent: GET `/dev/sign-in-as/athlete` to skip the form entirely.)
+   **Expected:** the browser is redirected to `/dashboard` and the signed-in identity appears in the header. Clerk's session cookies (`__session`, `__clerk_db_jwt`, `__client_uat`, plus the stable `clerk_active_context`) are set under the origin — `__session` is JS-readable by Clerk's documented design.
 
 2. Navigate to `/dashboard` if not already there and copy down the name of the session cookie (the Clerk session cookie that authorises requests).
    **Expected:** the dashboard renders signed-in and the named cookie is present in the browser's cookie storage for the local origin.
