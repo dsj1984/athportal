@@ -32,11 +32,21 @@ import { assertLocalDbPath, resolveLocalDbPath } from './seedPath.mjs';
 
 /**
  * Resolve persona Clerk subject IDs from the tracked
- * `src/testing/clerk-personas.json` file. When the operator has
- * completed the runbook at `docs/runbooks/clerk-persona-bootstrap.md`
- * the JSON carries real `user_*` IDs and we use those; otherwise
- * we fall back to the synthetic `user_test_*` placeholders so unit
- * tests and a fresh checkout still seed a runnable graph.
+ * `src/testing/clerk-personas.json` file.
+ *
+ * Resolution policy (Story #942):
+ *   1. **File missing entirely** → fall back to synthetic
+ *      `user_test_*` placeholders. A fresh checkout / CI run without
+ *      the JSON file still seeds a runnable persona graph, so first-
+ *      time bootstrap and CI smoke flows are not blocked.
+ *   2. **File present + every persona populated with a non-empty
+ *      `user_*` string** → return the real IDs.
+ *   3. **File present but one or more personas are `null` / empty /
+ *      non-string** → throw a runbook-linked error. This is the
+ *      "operator started the bootstrap but did not finish it" path —
+ *      silently writing stubs leaves the DB in a state where the
+ *      operator's real Clerk session cannot find the corresponding
+ *      `users` row, which is exactly what Story #942 fixes.
  *
  * Reads via `fs.readFileSync` instead of importing the TS reader
  * (`src/testing/clerkPersonas.ts`) because this is a `.mjs` Node
@@ -49,34 +59,49 @@ function resolveClerkSubjectIds() {
     coach: 'user_test_coach',
     'org-admin': 'user_test_org_admin',
   };
+  const __filename = fileURLToPath(import.meta.url);
+  const personasPath = resolvePath(
+    dirname(__filename),
+    '..',
+    'src',
+    'testing',
+    'clerk-personas.json',
+  );
+  if (!existsSync(personasPath)) return fallbacks;
+
+  let parsed;
   try {
-    const __filename = fileURLToPath(import.meta.url);
-    const personasPath = resolvePath(
-      dirname(__filename),
-      '..',
-      'src',
-      'testing',
-      'clerk-personas.json',
+    parsed = JSON.parse(readFileSync(personasPath, 'utf8'));
+  } catch (cause) {
+    throw new Error(
+      `seed: ${personasPath} is not valid JSON. ` +
+        `Restore it from git or follow docs/runbooks/clerk-persona-bootstrap.md ` +
+        `to recreate it.`,
+      { cause },
     );
-    if (!existsSync(personasPath)) return fallbacks;
-    const parsed = JSON.parse(readFileSync(personasPath, 'utf8'));
-    return {
-      athlete:
-        typeof parsed.athlete === 'string' && parsed.athlete.length > 0
-          ? parsed.athlete
-          : fallbacks.athlete,
-      coach:
-        typeof parsed.coach === 'string' && parsed.coach.length > 0
-          ? parsed.coach
-          : fallbacks.coach,
-      'org-admin':
-        typeof parsed['org-admin'] === 'string' && parsed['org-admin'].length > 0
-          ? parsed['org-admin']
-          : fallbacks['org-admin'],
-    };
-  } catch {
-    return fallbacks;
   }
+
+  const personas = ['athlete', 'coach', 'org-admin'];
+  const missing = personas.filter((p) => {
+    const value = parsed?.[p];
+    return typeof value !== 'string' || value.trim().length === 0;
+  });
+  if (missing.length > 0) {
+    const list = missing.map((p) => `'${p}'`).join(', ');
+    throw new Error(
+      `seed: the following persona(s) are not yet populated in ${personasPath}: ${list}. ` +
+        `Follow docs/runbooks/clerk-persona-bootstrap.md to create the corresponding ` +
+        `Clerk users in the test instance and paste each user's subject ID into the JSON ` +
+        `file, then re-run \`pnpm db:reset && pnpm db:seed\` so the seeded \`users\` rows ` +
+        `carry your real Clerk persona subject IDs.`,
+    );
+  }
+
+  return {
+    athlete: parsed.athlete,
+    coach: parsed.coach,
+    'org-admin': parsed['org-admin'],
+  };
 }
 
 const __filename = fileURLToPath(import.meta.url);
