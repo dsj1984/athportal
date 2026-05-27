@@ -3270,28 +3270,40 @@
       "startLine": 70
     },
     {
-      "crap": 72,
+      "crap": 12,
       "method": "resolveClerkSubjectIds",
       "path": "packages/shared/scripts/seed.mjs",
-      "startLine": 46
+      "startLine": 56
+    },
+    {
+      "crap": 6,
+      "method": "<anon method-1>",
+      "path": "packages/shared/scripts/seed.mjs",
+      "startLine": 85
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-2>",
+      "path": "packages/shared/scripts/seed.mjs",
+      "startLine": 90
     },
     {
       "crap": 2,
       "method": "applySeed",
       "path": "packages/shared/scripts/seed.mjs",
-      "startLine": 152
+      "startLine": 177
     },
     {
       "crap": 6,
       "method": "main",
       "path": "packages/shared/scripts/seed.mjs",
-      "startLine": 224
+      "startLine": 249
     },
     {
       "crap": 2,
-      "method": "<anon method-1>",
+      "method": "<anon method-3>",
       "path": "packages/shared/scripts/seed.mjs",
-      "startLine": 252
+      "startLine": 277
     },
     {
       "crap": 12,
@@ -3735,7 +3747,7 @@
       "crap": 2,
       "method": "seedFixtures",
       "path": "packages/shared/src/db/seedFixtures.ts",
-      "startLine": 134
+      "startLine": 136
     },
     {
       "crap": 2,
