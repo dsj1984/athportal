@@ -33,6 +33,7 @@
 import { athleteMemberships } from './schema/athleteMemberships';
 import { coachAssignments } from './schema/coachAssignments';
 import { organizations } from './schema/organizations';
+import { rosterEntries } from './schema/rosterEntries';
 import { teams } from './schema/teams';
 import { users } from './schema/users';
 
@@ -72,6 +73,9 @@ export const SEED_FIXTURE_COACH_USER_ID = 'user_seed_coach' as const;
 export const SEED_FIXTURE_ORG_ADMIN_USER_ID = 'user_seed_org_admin' as const;
 export const SEED_FIXTURE_ATHLETE_MEMBERSHIP_ID = 'am_seed_athlete' as const;
 export const SEED_FIXTURE_COACH_ASSIGNMENT_ID = 'ca_seed_coach' as const;
+export const SEED_FIXTURE_ROSTER_ENTRY_ID = 're_seed_athlete' as const;
+export const SEED_FIXTURE_ROSTER_JERSEY_NUMBER = '10' as const;
+export const SEED_FIXTURE_ROSTER_PRIMARY_POSITION = 'Forward' as const;
 
 /**
  * The Clerk subject IDs and persona emails the seed writes into `users`.
@@ -212,6 +216,28 @@ export function seedFixtures(db: unknown): void {
         orgId: SEED_FIXTURE_ORG_ID,
         teamId: SEED_FIXTURE_TEAM_ID,
         coachUserId: SEED_FIXTURE_COACH_USER_ID,
+      },
+    ])
+    .onConflictDoNothing()
+    .run();
+
+  // The roster surface (Epic #11) reads from `roster_entries` exclusively —
+  // it is NOT a projection of `athlete_memberships`. Seed one active row
+  // for the seeded athlete so the coach roster page renders a populated
+  // table out of the box. Active membership: `ended_at = null`.
+  handle
+    .insert(rosterEntries)
+    .values([
+      {
+        id: SEED_FIXTURE_ROSTER_ENTRY_ID,
+        orgId: SEED_FIXTURE_ORG_ID,
+        teamId: SEED_FIXTURE_TEAM_ID,
+        athleteUserId: SEED_FIXTURE_ATHLETE_USER_ID,
+        jerseyNumber: SEED_FIXTURE_ROSTER_JERSEY_NUMBER,
+        primaryPosition: SEED_FIXTURE_ROSTER_PRIMARY_POSITION,
+        endedAt: null,
+        createdAt: SEED_FIXTURE_EFFECTIVE_AT,
+        updatedAt: SEED_FIXTURE_EFFECTIVE_AT,
       },
     ])
     .onConflictDoNothing()

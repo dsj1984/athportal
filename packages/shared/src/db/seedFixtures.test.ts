@@ -9,9 +9,10 @@
  *
  * Test DB scope — `seedFixtures` writes to tables introduced across
  * migrations 0000 (auth_and_rbac), 0002 (org_team_graph), 0004
- * (org_branding), and 0005 (team_metadata). The bespoke `freshDb()`
- * helper at the bottom of this file applies the full migration chain
- * so the assertions exercise the production schema verbatim.
+ * (org_branding), 0005 (team_metadata), and 0007 (roster). The bespoke
+ * `freshDb()` helper at the bottom of this file applies the full
+ * migration chain so the assertions exercise the production schema
+ * verbatim.
  */
 
 import { readFileSync } from 'node:fs';
@@ -24,6 +25,7 @@ import { describe, expect, it } from 'vitest';
 import { athleteMemberships } from './schema/athleteMemberships';
 import { coachAssignments } from './schema/coachAssignments';
 import { organizations } from './schema/organizations';
+import { rosterEntries } from './schema/rosterEntries';
 import { teams } from './schema/teams';
 import { users } from './schema/users';
 import { SEED_BOOTSTRAP_EFFECTIVE_AT } from './seed';
@@ -34,12 +36,15 @@ import {
   SEED_FIXTURE_COACH_USER_ID,
   SEED_FIXTURE_ORG_ADMIN_USER_ID,
   SEED_FIXTURE_ORG_ID,
+  SEED_FIXTURE_ROSTER_ENTRY_ID,
+  SEED_FIXTURE_ROSTER_JERSEY_NUMBER,
+  SEED_FIXTURE_ROSTER_PRIMARY_POSITION,
   SEED_FIXTURE_TEAM_ID,
   seedFixtures,
 } from './seedFixtures';
 
 describe('seedFixtures', () => {
-  it('writes one org, three persona users, one team, and the membership/assignment rows', () => {
+  it('writes one org, three persona users, one team, the membership/assignment rows, and one active roster entry', () => {
     const db = freshDb();
 
     seedFixtures(db);
@@ -74,6 +79,15 @@ describe('seedFixtures', () => {
     expect(assignments).toHaveLength(1);
     expect(assignments[0]?.id).toBe(SEED_FIXTURE_COACH_ASSIGNMENT_ID);
     expect(assignments[0]?.coachUserId).toBe(SEED_FIXTURE_COACH_USER_ID);
+
+    const roster = db.select().from(rosterEntries).all();
+    expect(roster).toHaveLength(1);
+    expect(roster[0]?.id).toBe(SEED_FIXTURE_ROSTER_ENTRY_ID);
+    expect(roster[0]?.athleteUserId).toBe(SEED_FIXTURE_ATHLETE_USER_ID);
+    expect(roster[0]?.teamId).toBe(SEED_FIXTURE_TEAM_ID);
+    expect(roster[0]?.jerseyNumber).toBe(SEED_FIXTURE_ROSTER_JERSEY_NUMBER);
+    expect(roster[0]?.primaryPosition).toBe(SEED_FIXTURE_ROSTER_PRIMARY_POSITION);
+    expect(roster[0]?.endedAt).toBeNull();
   });
 
   it('pins onboarded_at on every persona user to SEED_BOOTSTRAP_EFFECTIVE_AT', () => {
@@ -121,6 +135,7 @@ describe('seedFixtures', () => {
     expect(db.select().from(teams).all()).toHaveLength(1);
     expect(db.select().from(athleteMemberships).all()).toHaveLength(1);
     expect(db.select().from(coachAssignments).all()).toHaveLength(1);
+    expect(db.select().from(rosterEntries).all()).toHaveLength(1);
   });
 });
 
@@ -140,12 +155,15 @@ const FIXTURE_MIGRATIONS = [
   '0003_invitations.sql',
   '0004_org_branding.sql',
   '0005_team_metadata.sql',
+  '0006_csv_import_batches.sql',
+  '0007_roster.sql',
 ];
 
 const schema = {
   athleteMemberships,
   coachAssignments,
   organizations,
+  rosterEntries,
   teams,
   users,
 };

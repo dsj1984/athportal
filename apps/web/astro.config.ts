@@ -61,5 +61,20 @@ export default defineConfig({
     // and a fresh worktree would miss the operator's PUBLIC_CLERK_*
     // and DATABASE_URL keys (Story #760).
     envDir: '../../',
+    // Local-dev proxy: forward `/api/*` to the Node-hosted Hono API on
+    // port 8787 (see `apps/api/src/local.ts`). Production wiring is a
+    // single Cloudflare worker that serves both surfaces from one
+    // origin (Epic #27); locally we run two processes on two ports, so
+    // without this proxy every browser fetch from `/app/*` to `/api/*`
+    // returns the Astro 404 page. The dev-only proxy makes the two
+    // halves behave like one origin without changing any client code.
+    server: {
+      proxy: {
+        '/api': {
+          target: process.env.API_BASE_URL ?? 'http://localhost:8787',
+          changeOrigin: true,
+        },
+      },
+    },
   },
 });
