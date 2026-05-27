@@ -28,7 +28,7 @@ concurrency:
 
 jobs:
   lint:
-    name: Lint
+    name: Lint (Biome + ESLint + Markdown + RBAC drift)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -71,29 +71,23 @@ jobs:
       - name: Typecheck
         run: pnpm run typecheck
 
-  test:
-    name: Test (unit + contract)
-    needs: [lint, typecheck]
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - name: Checkout
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-        with:
-          submodules: recursive
-          persist-credentials: false
-      - name: Set up toolchain (checkout + pnpm + node + install)
-        uses: ./.github/actions/setup-toolchain
-
-      - name: Test
-        run: pnpm run test
+  # NOTE: The standalone `test` job was removed in the CI cleanup pass
+  # (see `chore/ci-cleanup-quality-yml`). The `quality-baselines` job
+  # below runs `pnpm run test:coverage`, which exercises every Vitest
+  # project declared in the root `vitest.config.ts` (unit-node,
+  # unit-jsdom, scripts, contract) — exactly the surface the dropped
+  # `test` job covered, just with v8 coverage instrumentation layered
+  # on top. Failing tests still fail the run before the baseline-check
+  # steps execute. If you ever need a quick test-only signal without
+  # coverage, run `pnpm run test` locally.
 
   quality-baselines:
-    # Combined baseline gate (ADR-015 coverage, ADR-018 CRAP, ADR-019
-    # maintainability). One setup + one `pnpm run test:coverage` feeds all
-    # three checks, eliminating two duplicate pnpm installs and two
-    # redundant coverage-parsing passes versus the prior split jobs.
-    name: Quality baselines (coverage ADR-015, CRAP ADR-018, maintainability ADR-019)
+    # Combined gate: unit + contract tests via `vitest run --coverage`,
+    # then the three baseline ratchets (coverage ADR-015, CRAP ADR-018,
+    # maintainability ADR-019). Test failures surface in the
+    # "Generate coverage reports" step; coverage / CRAP / maintainability
+    # regressions surface in the three baseline-check steps that follow.
+    name: Tests + quality baselines (coverage + CRAP + maintainability)
     needs: [lint, typecheck]
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -121,7 +115,7 @@ jobs:
         run: pnpm run maintainability:check
 
   acceptance-smoke:
-    name: Acceptance smoke (@smoke)
+    name: Acceptance smoke (Playwright @smoke scenarios)
     needs: [lint, typecheck]
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -186,7 +180,7 @@ jobs:
     # waits for the API health probe to answer 200, runs the smoke
     # script, then tears the dev processes down and uploads the captured
     # logs as a job artifact for triage.
-    name: Verify-stack smoke
+    name: Verify-stack smoke (pnpm dev boots + URL allowlist)
     needs: [lint, typecheck]
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -318,8 +312,31 @@ jobs:
           path: logs/
           if-no-files-found: warn
 
-  lint-steps:
-    name: Lint step definitions
+  targeted-lints:
+    # Three small ~25-60s lint gates that previously each ran in their
+    # own job — each paid the full `setup-toolchain` install cost
+    # (checkout + pnpm + node + install ≈ 60s) for a few seconds of
+    # actual work. Folded into one job (CI cleanup pass) so the install
+    # happens once; the three lints run sequentially and the first to
+    # fail names itself in the job log, so triage cost is unchanged.
+    #
+    # Step 1 — Playwright step-definition lint (no duplicate phrases /
+    #   no forbidden patterns / no SQL or HTTP-status assertions inside
+    #   step bodies). See `scripts/lint-steps.mjs`.
+    # Step 2 — orphan BEM class-name lint (ADR-0007). Walks
+    #   apps/web/src/ and fails when a `foo__bar` / `foo--bar` class
+    #   doesn't resolve via the four sanctioned paths (colocated
+    #   <style>, global.css, cva variant, colocated <script>).
+    # Step 3 — Astro frontmatter `<script` token lint (Story #865).
+    #   Walks apps/web/src/**/*.astro and fails when a frontmatter
+    #   comment contains the literal `<script` token, which Astro's
+    #   compiler treats as a real script-block opener and feeds to
+    #   esbuild — breaking `pnpm dev` for downstream consumers.
+    #
+    # Steps 2 + 3 also run in `.husky/pre-push` as part of the fail-fast
+    # local chain; this job is their CI mirror. Step 3 additionally
+    # runs the script's own self-test under `node --test`.
+    name: Targeted lints (step defs, orphan BEM, Astro frontmatter)
     needs: [lint, typecheck]
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -332,8 +349,17 @@ jobs:
       - name: Set up toolchain (checkout + pnpm + node + install)
         uses: ./.github/actions/setup-toolchain
 
-      - name: Lint step definitions
+      - name: Lint Playwright step definitions
         run: pnpm run lint:steps
+
+      - name: Lint orphan BEM class names (ADR-0007)
+        run: node scripts/lint-orphan-bem.mjs
+
+      - name: Lint Astro frontmatter for the <script token trap
+        run: node scripts/lint-astro-frontmatter.mjs
+
+      - name: Unit-test the Astro frontmatter lint script itself
+        run: node --test scripts/lint-astro-frontmatter.test.mjs
 
   qa-corpus:
     # Epic #775 — QA-corpus gates.
@@ -347,7 +373,7 @@ jobs:
     #      hold; writes coverage/qa-coverage.json and exits 1 on gaps
     # Citation: Tech Spec #782 § CI integration; PRD #781 AC-4/AC-7/AC-8;
     # Acceptance Spec #783 AC-6/AC-14/AC-15.
-    name: QA corpus (lint + index + coverage)
+    name: QA corpus (lint + index sync + coverage floors)
     needs: [lint, typecheck]
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -376,63 +402,6 @@ jobs:
           name: qa-coverage
           path: coverage/qa-coverage.json
           if-no-files-found: ignore
-
-  lint-orphan-bem:
-    # Story #834 / Task #840 — orphan BEM lint gate.
-    # Walks apps/web/src/ and fails when any class name matching the
-    # BEM block-element (foo__bar) or modifier (foo--bar) shape does
-    # not resolve via the four ADR-0007 resolver paths (colocated
-    # <style>, global.css, cva variant, colocated <script>). The
-    # script also runs in .husky/pre-push as part of the fail-fast
-    # local chain; this job is its CI mirror. Pre-existing orphans
-    # tolerated by the codifying Story live in
-    # .lint-orphan-bem-allowlist.json — follow-on Stories peel entries
-    # off the allowlist as they refactor each surface. See
-    # docs/decisions/0007-ui-styling-convention.md for the binding rule.
-    name: lint-orphan-bem
-    needs: [lint, typecheck]
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - name: Checkout
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-        with:
-          submodules: recursive
-          persist-credentials: false
-      - name: Set up toolchain (checkout + pnpm + node + install)
-        uses: ./.github/actions/setup-toolchain
-
-      - name: Lint orphan BEM hooks (ADR-0007)
-        run: node scripts/lint-orphan-bem.mjs
-
-  lint-astro-frontmatter:
-    # Story #865 — Astro-frontmatter `<script` token lint.
-    # Walks apps/web/src/**/*.astro and fails when a component's
-    # frontmatter (`---` ... `---` block) contains the literal
-    # `<script` token in a comment. Astro's compiler treats the token
-    # as a real script-block opener and feeds the trailing comment
-    # body to esbuild as JS, producing `pnpm dev` parser errors on
-    # downstream consumers (PRs #862 and #864 fixed six instances of
-    # this trap manually). This lint enforces the rewording
-    # mechanically. Also runs in `.husky/pre-push`.
-    name: lint-astro-frontmatter
-    needs: [lint, typecheck]
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - name: Checkout
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-        with:
-          submodules: recursive
-          persist-credentials: false
-      - name: Set up toolchain (checkout + pnpm + node + install)
-        uses: ./.github/actions/setup-toolchain
-
-      - name: Lint Astro frontmatter for <script token
-        run: node scripts/lint-astro-frontmatter.mjs
-
-      - name: Unit-test the lint script itself
-        run: node --test scripts/lint-astro-frontmatter.test.mjs
 
   lint-deps:
     # Story #590 — architecture-boundary gate.
@@ -497,7 +466,7 @@ jobs:
     # `needs:` this so a failed audit blocks the deploy-targeted build
     # output even when branch protection isn't (yet) enforcing the
     # required-check contract.
-    name: Supply-chain security (ADR-011)
+    name: Supply-chain audit (pnpm audit, prod graph, ADR-011)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -528,7 +497,7 @@ jobs:
     # Fails the build on any detected secret, then uploads the SARIF
     # report to GitHub Code Scanning so findings surface in the Security
     # tab. `security-events: write` is scoped to this job alone.
-    name: gitleaks (secret scan, PR)
+    name: "Secret scan: gitleaks (PR diff)"
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -564,7 +533,7 @@ jobs:
           category: gitleaks
 
   build:
-    name: Build
+    name: Build (turbo fan-out, all workspaces)
     needs: [lint, typecheck]
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -609,7 +578,7 @@ jobs:
           if-no-files-found: error
 
   bundle-size-baseline:
-    name: Bundle-size baseline (1 MiB Worker cap + per-bundle gzippedKb, ADR-014)
+    name: Bundle-size baseline (Worker 1 MiB cap, ADR-014)
     needs: [build]
     runs-on: ubuntu-latest
     timeout-minutes: 20
