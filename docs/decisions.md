@@ -514,10 +514,10 @@ The dimension is per-method (not per-file or per-workspace) because CRAP is a me
 
 **Decision**:
 
-- Adopt a per-method CRAP baseline at `baselines/crap.json` gated by [`scripts/crap-baseline.mjs`](../scripts/crap-baseline.mjs).
+- Adopt a per-method CRAP baseline at `baselines/crap.json` gated by the Mandrel framework engine (`node .agents/scripts/check-baselines.js --gate crap`).
 - **Tolerance per method = `current ≤ prev × 1.05`** (relative-5%, lower-is-better). A method whose CRAP score rises by 5% or less of the prior baseline value passes; a method whose score rises by more than 5% fails the gate. The relative form scales naturally — a method scoring 4 has a 0.2-point headroom, a method scoring 100 has a 5-point headroom — so the ratchet stays meaningful across the score range.
-- **Row identity = `path:startLine:method`**. A refactor that moves a method down by one line is a row rename (the prior row identifier disappears, a new one appears with `prev = 0`); the new row is treated as a fresh registration that does not fire the gate. This matches the harness's "deletions are never regressions" invariant from [Story #210](../packages/baselines/src/compare.ts).
-- **Refresh procedure**: run `pnpm run crap:update` (regenerates `baselines/crap.json` from the current tree with `generatedAt` refreshed and rows canonically sorted by `(path, startLine, method)`) → inspect the diff → commit with subject `chore(baseline): refresh crap baseline (relative-5% buffer)`.
+- **Row identity = `path:method`**. `startLine` is stored per row for source navigation but is not part of the identity key (Story #999 / PR #999). A full method rename or file move is a row rename (the prior row identifier disappears, a new one appears with `prev = 0`); the new row is treated as a fresh registration that does not fire the gate. This matches the harness's "deletions are never regressions" invariant from [Story #210](../packages/baselines/src/compare.ts).
+- **Refresh procedure**: run `pnpm run crap:update` (regenerates `baselines/crap.json` from the current tree with `generatedAt` refreshed and rows canonically sorted by `(path, method)`) → inspect the diff → commit with subject `chore(baseline): refresh crap baseline`.
 - **Never raise a floor without a corresponding source change.** A row whose CRAP score rises after `:update` is by definition a regression that the source PR should have caught — the only legitimate refresh is one where the source diff justifies every per-row movement.
 
 **Rejected — absolute-integer tolerance (`prev + 3` or similar)**: Penalizes high-CRAP methods proportionally more than low-CRAP ones. A method scoring 4 → 7 is a 75% rise and clearly bad; the same `+3` tolerance lets a method scoring 100 → 103 slide because the relative drift is trivial. Absolute integer policy gets this exactly backwards.
@@ -530,8 +530,8 @@ The dimension is per-method (not per-file or per-workspace) because CRAP is a me
 
 - CRAP regressions are visible at CI time, not at quarterly audit. The `crap-baseline` job in [`.github/workflows/quality.yml`](../.github/workflows/quality.yml) is the binding gate.
 - The script's `:update` path is the only writer of `baselines/crap.json`. Hand-edits are rejected by reviewers and would be caught at the next `:update` because the canonical row order and the stable JSON serialisation produce byte-identical output across runs.
-- The initial commit ships unprimed (empty rows, zero rollup) per the ADR-015 precedent; the operator runs `pnpm run crap:update` once after this Epic merges to prime real measurements.
-- Coverage integration is deferred. The current scoring treats `cov = 0` for every method (the worst case in the formula), so the score collapses to `c² + c`. When the coverage cross-link Epic lands, the kernel version on `baselines/crap.json` bumps from `1.0.0` to `1.1.0` and the formula starts honoring per-method statement coverage from the Vitest V8 reporter.
+- The baseline was primed with real measurements in Story #375 and converged onto the Mandrel framework engine in Story #1000. `baselines/crap.json` ships pre-populated on `main`; `pnpm run crap:check` is live from the next commit.
+- Coverage integration is deferred. The current scoring requires per-method V8 coverage to compute a full CRAP score; methods without a matching V8 declaration are excluded from the baseline entirely (rather than defaulting to `cov = 0`). When the coverage cross-link Epic lands, the match rate will increase and the baseline row count will grow to approach the full method population.
 - Cross-references: [`docs/patterns.md` § "CRAP baseline ratchet"](./patterns.md#crap-baseline-ratchet) is the operator-facing refresh runbook; the [Epic #6 Tech Spec](https://github.com/dsj1984/athportal/issues/196) carries the schema and harness rationale.
 
 ---
@@ -546,7 +546,7 @@ The mandrel framework default for this dimension targets the rollup `min` axis w
 
 **Decision**:
 
-- Adopt a per-file MI baseline at `baselines/maintainability.json` gated by [`scripts/maintainability-baseline.mjs`](../scripts/maintainability-baseline.mjs).
+- Adopt a per-file MI baseline at `baselines/maintainability.json` gated by the Mandrel framework engine (`node .agents/scripts/check-baselines.js --gate maintainability`).
 - **The gate is `rollup['*'].min >= 70`** (the mandrel framework default). A `:check` run that finds the whole-repo min below 70 fails non-zero and the stderr log names the file whose MI matches the min — the file dragging the gate down. Per-row `mi` values are recorded and surfaced via the per-component rollups (`apps/<name>`, `packages/<name>`) for visibility, but **only the rollup `*` `min` axis fires the gate**.
 - **The floor lives in ADR-019, not in the baseline file.** `:update` regenerates the snapshot from the current tree; it does not lower the floor. A refreshed `baselines/maintainability.json` whose `rollup['*'].min` is below 70 still fails `:check`. Moving the floor requires a new ADR superseding this one — the baseline file is a measurement, not a policy.
 - **Row identity is `path`**. A file move (rename across directories) is a row rename (the prior `path` disappears, a new one appears); the new row carries whatever MI the file scores in its new location. The harness's "deletions are never regressions" invariant from [Story #210](../packages/baselines/src/compare.ts) applies but is incidental — the gate runs against the rollup, not against per-row drift.

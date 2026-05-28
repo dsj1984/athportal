@@ -684,15 +684,16 @@ with that ADR.
 
 ### Files and entrypoints
 
-- [`scripts/crap-baseline.mjs`](../scripts/crap-baseline.mjs) — the
-  ratchet script. Pure Node ESM, no build step. Walks every JS/TS
-  source under `apps/*` and `packages/*` (skipping tests, fixtures,
-  build output, and ambient types), scores per-method CRAP via
+- **Mandrel framework engine** — `.agents/scripts/update-crap-baseline.js`
+  (scorer) and `.agents/scripts/check-baselines.js --gate crap` (gate).
+  Wired via `delivery.quality.gates.crap` in `.agentrc.json`. Walks
+  every JS/TS source under `apps/*` and `packages/*` with
+  `ignoreGlobs` excluding tests, fixtures, and ambient `.d.ts` files,
+  scores per-method CRAP via
   [`typhonjs-escomplex`](https://github.com/typhonjs-node-escomplex/typhonjs-escomplex),
   and rolls the per-row scores into the shared baseline-envelope shape
   (`$schema`, `kernelVersion`, `generatedAt`, `rollup`, `rows`). Rows
-  are canonically sorted by `(path, startLine, method)` so successive
-  runs against an unchanged tree produce byte-identical JSON.
+  are canonically sorted by `(path, startLine, method)`.
 - [`baselines/crap.json`](../baselines/crap.json) — the committed
   snapshot. The single source of truth for "what CRAP score each
   method is allowed to carry". Diffs against this file are the gate.
@@ -701,37 +702,35 @@ with that ADR.
   via the shared
   [`baseline-envelope.schema.json`](../.agents/schemas/baselines/baseline-envelope.schema.json).
 - `pnpm run crap:check` — runs
-  `node scripts/crap-baseline.mjs --check`. Exits non-zero if any
-  method's CRAP score rose more than 5% above the prior baseline
-  value. The PR-blocking
+  `node .agents/scripts/check-baselines.js --gate crap`. Compares the
+  HEAD baseline against the base branch; exits non-zero if any method's
+  CRAP score rose more than 5% above the prior baseline value. The
+  PR-blocking
   [`crap-baseline` job in `quality.yml`](../.github/workflows/quality.yml)
   is the CI binding.
 - `pnpm run crap:update` — runs
-  `node scripts/crap-baseline.mjs --update`. Regenerates
-  `baselines/crap.json` from the current tree.
+  `node .agents/scripts/update-crap-baseline.js`. Regenerates
+  `baselines/crap.json` from the current tree (requires
+  `coverage/coverage-final.json`; run `pnpm run test:coverage` first).
 
 ### Refresh procedure
 
 1. **Inspect the failure.** Run `pnpm run crap:check` and read the
-   stderr listing — it names every regressed method by
+   output — it names every regressed method by
    `path:startLine:method`, prints the prior and current CRAP scores,
    and names the relative-5% tolerance the violation tripped.
 2. **Fix-first path.** The expected response to a regression is to
    reduce the method's complexity (extract helpers, collapse branches)
-   or, when the coverage cross-link Epic lands, raise its statement
-   coverage. The script does not auto-suggest a remediation — the
-   reviewer is responsible for confirming the source change matches
-   the score movement.
+   or raise its statement coverage. The reviewer is responsible for
+   confirming the source change matches the score movement.
 3. **Regenerate the baseline.** When the rise is intentional and
-   approved, run `pnpm run crap:update`. The script re-scans the tree,
-   recomputes per-method scores, and rewrites `baselines/crap.json` in
-   place. The output is byte-identical across runs against an
-   unchanged tree.
+   approved, run `pnpm run test:coverage` followed by
+   `pnpm run crap:update`. The engine re-scans the tree, recomputes
+   per-method scores, and rewrites `baselines/crap.json` in place.
 4. **Inspect the diff.** Open `baselines/crap.json` against the prior
    commit. Confirm every per-row movement is justified — a rise is a
    regression and should not be re-baselined without an accompanying
-   source change. A drop is the happy path and should be committed so
-   the next contributor cannot quietly re-introduce the complexity.
+   source change. A drop is the happy path.
 5. **Commit the snapshot alongside the source change.** Reviewers
    should see *both* the source change and the baseline bump in the
    same PR. A baseline-only PR is a smell — it means the floor moved
@@ -741,57 +740,46 @@ with that ADR.
 
 `baselines/crap.json` is **not** a hand-edited file. Reviewers MUST
 reject any PR that hand-edits the snapshot — the only path to update
-it is to re-run `pnpm run crap:update`. This mirrors the hand-edit
+it is to run `pnpm run crap:update`. This mirrors the hand-edit
 rejection rule the other dimension runbooks (lint, coverage,
 maintainability, mutation, lighthouse, bundle-size) enforce.
 
-The script's serialiser sorts keys at every depth, sorts rows by
-`(path, startLine, method)`, and appends a trailing newline so
-byte-identical re-emission is the invariant — any commit that drifts
-the file off that shape is by definition a hand-edit and must be
-reverted.
+The engine sorts rows by `(path, startLine, method)` and emits
+deterministic JSON so byte-identical re-emission is the invariant —
+any commit that drifts the file off that shape is by definition a
+hand-edit and must be reverted.
 
 ### Runbook
 
-1. **You ran `pnpm run crap:check` and it failed.** Read the stderr
-   listing — it names every regressed method, the prior score, the
-   current score, and the relative-5% policy that fired. The fix-first
-   path is to refactor the method (extract helpers, collapse branches)
+1. **You ran `pnpm run crap:check` and it failed.** Read the output
+   — it names every regressed method, the prior score, the current
+   score, and the relative-5% policy that fired. The fix-first path
+   is to refactor the method (extract helpers, collapse branches)
    so the score returns at or below the prior value.
 2. **The rise is intentional** (e.g. a new feature that legitimately
-   added branches and you accept the higher CRAP for now). Re-run
-   `pnpm run crap:update`, inspect the diff on `baselines/crap.json`
-   to confirm only the methods you expected to change actually
-   changed, and commit the snapshot alongside the source change.
-3. **A newly-added method.** The ratchet treats a new row (one whose
-   `path:startLine:method` identifier was absent from the prior
-   baseline) as a fresh registration. The harness's `relative-pct`
-   evaluator on a `lower-is-better` axis treats `prev = 0` plus any
-   `next > 0` as a fail, so a freshly-added method with non-zero CRAP
-   *does* fire the gate. Run `pnpm run crap:update` to register the
+   added branches and you accept the higher CRAP for now). Run
+   `pnpm run test:coverage` then `pnpm run crap:update`, inspect the
+   diff on `baselines/crap.json` to confirm only the methods you
+   expected to change actually changed, and commit the snapshot
+   alongside the source change.
+3. **A newly-added method.** New rows are subject to the
+   `newMethodCeiling` configured in `.agentrc.json`; a method whose
+   CRAP exceeds the ceiling fails the gate. Run
+   `pnpm run test:coverage && pnpm run crap:update` to register the
    new method's baseline value alongside its introducing source
    change.
 4. **A method moved (refactor changed its `startLine`).** The row
    identifier embeds the start line, so a moved method appears as a
-   new row (with `prev = 0`) and the old row drops out. The new row
-   triggers the new-row case above. Run `pnpm run crap:update` in the
-   same PR as the move so reviewers see both halves of the rename.
-5. **Baseline is unprimed** (empty rows + zero rollup). The ratchet
-   skips the gate and prints a hint that the operator must run
-   `pnpm run crap:update` once to establish the floor. This is the
-   state the freshly-committed
-   [`baselines/crap.json`](../baselines/crap.json) ships in; the
-   first `--update` after this Story merges primes the real
-   measurements.
-6. **Parse failure on a source file.** The kernel returns an empty
+   new row and the old row drops out. Run `pnpm run crap:update`
+   in the same PR as the move so reviewers see both halves of the
+   rename.
+5. **Parse failure on a source file.** The kernel returns an empty
    row list for any file `typhonjs-escomplex` cannot parse, treating
    it as unscorable rather than zero-complexity. If `crap:update`
-   reports fewer rows than expected, run the script with
-   `--scan-root=<workspace>` against a single workspace to narrow the
-   set, then inspect the offending file manually — the underlying
-   parser supports TypeScript via the babel-parser, so a persistent
-   parse failure usually indicates a syntactic experiment that
-   should not be on the main branch.
+   reports fewer rows than expected, inspect the offending file
+   manually — the underlying parser supports TypeScript via the
+   babel-parser, so a persistent parse failure usually indicates a
+   syntactic experiment that should not be on the main branch.
 
 ## Maintainability baseline ratchet
 
@@ -808,18 +796,19 @@ with that ADR.
 
 ### Files and entrypoints
 
-- [`scripts/maintainability-baseline.mjs`](../scripts/maintainability-baseline.mjs)
-  — the ratchet script. Pure Node ESM, no build step. Walks every JS/TS
-  source under `apps/*` and `packages/*` (skipping tests, fixtures,
-  build output, and ambient types), scores per-file MI via
+- **Mandrel framework engine** — `.agents/scripts/update-maintainability-baseline.js`
+  (scorer) and `.agents/scripts/check-baselines.js --gate maintainability`
+  (gate). Wired via `delivery.quality.gates.maintainability` in
+  `.agentrc.json`. Walks every JS/TS source under `apps/*` and
+  `packages/*` with `ignoreGlobs` excluding tests, fixtures, and
+  ambient `.d.ts` files, scores per-file MI via
   [`typhonjs-escomplex`](https://github.com/typhonjs-node-escomplex/typhonjs-escomplex),
   and rolls the per-row scores into the shared baseline-envelope shape
   (`$schema`, `kernelVersion`, `generatedAt`, `rollup`, `rows`). Rows
-  are canonically sorted by `path` so successive runs against an
-  unchanged tree produce byte-identical JSON. Per-component rollup
-  keys auto-populate for each `apps/<name>` and `packages/<name>`
-  workspace discovered in the rows; the `*` key is the whole-repo
-  rollup and is the axis the gate enforces.
+  are canonically sorted by `path`. Per-component rollup keys
+  auto-populate for each `apps/<name>` and `packages/<name>`
+  workspace; the `*` key is the whole-repo rollup and is the axis the
+  gate enforces.
 - [`baselines/maintainability.json`](../baselines/maintainability.json)
   — the committed snapshot. The shape is fixed by
   [`.agents/schemas/baselines/maintainability.schema.json`](../.agents/schemas/baselines/maintainability.schema.json)
@@ -828,15 +817,17 @@ with that ADR.
   Per-row entries carry `{ path, mi }`; the rollup carries
   `{ min, p50, p95 }` on every component key.
 - `pnpm run maintainability:check` — runs
-  `node scripts/maintainability-baseline.mjs --check`. Exits non-zero
+  `node .agents/scripts/check-baselines.js --gate maintainability`.
+  Compares the HEAD baseline against the base branch; exits non-zero
   when `rollup['*'].min < 70`. The failure log names the file dragging
   the whole-repo min down so the fix lands on the responsible source.
   The PR-blocking
   [`maintainability-baseline` job in `quality.yml`](../.github/workflows/quality.yml)
   is the CI binding.
 - `pnpm run maintainability:update` — runs
-  `node scripts/maintainability-baseline.mjs --update`. Regenerates
-  `baselines/maintainability.json` from the current tree.
+  `node .agents/scripts/update-maintainability-baseline.js`. Regenerates
+  `baselines/maintainability.json` from the current tree (no coverage
+  required; use `--full-scope` for a full rewrite).
 
 ### Refresh procedure
 
@@ -904,24 +895,27 @@ by definition a hand-edit and must be reverted.
    its current shape — accept that the gate will block the PR until
    the source change lifts the min. The ADR-019 floor is the policy
    anchor; refreshing the baseline does not relax it.
-4. **Baseline is unprimed** (empty rows + zero rollup). The ratchet
-   skips the gate and prints a hint that the operator must run
-   `pnpm run maintainability:update` once to establish the rollup.
-   This is the state the freshly-committed
-   [`baselines/maintainability.json`](../baselines/maintainability.json)
-   ships in; the first `--update` after this Story merges primes
-   the real measurements.
+4. **Baseline is missing or empty.** If `baselines/maintainability.json`
+   is absent or carries empty `rows[]`, re-run
+   `pnpm run maintainability:update` — the Mandrel framework engine
+   re-scans all source under `targetDirs` (configured via
+   `delivery.quality.gates.maintainability` in `.agentrc.json`) and
+   regenerates the full primed snapshot. The file has shipped with
+   real measurements since Story #1000; an empty baseline should
+   never appear from a normal `git pull` of `main`.
 5. **Parse failure on a source file.** The kernel returns `null` for
    any file `typhonjs-escomplex` cannot parse, treating it as
    unscorable rather than zero-MI. Unscorable files are excluded
    from the envelope entirely (a zero would be a phantom floor
    violation no source change can fix). If `maintainability:update`
-   reports fewer rows than expected, run the script with
-   `--scan-root=<workspace>` against a single workspace to narrow
-   the set, then inspect the offending file manually — the
-   underlying parser supports TypeScript via the babel-parser, so a
-   persistent parse failure usually indicates a syntactic experiment
-   that should not be on the main branch.
+   produces fewer rows than expected, temporarily reduce the
+   `targetDirs` list in `delivery.quality.gates.maintainability`
+   (`.agentrc.json`) to a single workspace, re-run the update
+   script, and inspect the offending file manually — the
+   babel-parser supports TypeScript, so a persistent parse failure
+   usually indicates a syntactic experiment that should not be on
+   the main branch. Restore `targetDirs` to its full list before
+   committing.
 
 ## Bundle-size baseline ratchet
 
