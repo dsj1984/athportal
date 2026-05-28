@@ -250,7 +250,7 @@ describe('compareCrap', () => {
     const diffs = compareCrap(base, next);
     expect(diffs).toHaveLength(1);
     expect(diffs[0]).toMatchObject({
-      identifier: 'a.ts:1:foo',
+      identifier: 'a.ts:foo',
       axis: 'crap',
       prev: 10,
       next: 12,
@@ -272,7 +272,7 @@ describe('compareCrap', () => {
     const ids = compareCrap(base, next)
       .map((d) => d.identifier)
       .sort();
-    expect(ids).toEqual(['a.ts:1:foo', 'b.ts:1:baz']);
+    expect(ids).toEqual(['a.ts:foo', 'b.ts:baz']);
   });
 
   it('ignores deletions — removing a regression is never a regression', () => {
@@ -289,7 +289,34 @@ describe('compareCrap', () => {
     const next = envelopeWith([{ path: 'a.ts', method: 'newFn', startLine: 1, crap: 5 }]);
     const diffs = compareCrap(base, next);
     expect(diffs).toHaveLength(1);
-    expect(diffs[0].identifier).toBe('a.ts:1:newFn');
+    expect(diffs[0].identifier).toBe('a.ts:newFn');
+  });
+
+  it('line-shift-only produces zero violations (AC: pure line shift is not a regression)', () => {
+    // foo moved from line 1 to line 10 — same name, same file, same CRAP score.
+    const base = envelopeWith([{ path: 'a.ts', method: 'foo', startLine: 1, crap: 12 }]);
+    const next = envelopeWith([{ path: 'a.ts', method: 'foo', startLine: 10, crap: 12 }]);
+    expect(compareCrap(base, next)).toEqual([]);
+  });
+
+  it('real complexity increase on a moved function is still flagged (AC: genuine regression survives line-shift fix)', () => {
+    // foo moved from line 1 to line 10 AND its CRAP rose by +20%.
+    const base = envelopeWith([{ path: 'a.ts', method: 'foo', startLine: 1, crap: 10 }]);
+    const next = envelopeWith([{ path: 'a.ts', method: 'foo', startLine: 10, crap: 12 }]);
+    const diffs = compareCrap(base, next);
+    expect(diffs).toHaveLength(1);
+    expect(diffs[0]).toMatchObject({ identifier: 'a.ts:foo', severity: 'fail' });
+  });
+
+  it('brand-new high-CRAP function is flagged even after line-shift fix (AC: new function still surfaces)', () => {
+    const base = envelopeWith([{ path: 'a.ts', method: 'existingFn', startLine: 1, crap: 2 }]);
+    const next = envelopeWith([
+      { path: 'a.ts', method: 'existingFn', startLine: 1, crap: 2 },
+      { path: 'a.ts', method: 'newHighCrap', startLine: 50, crap: 30 },
+    ]);
+    const diffs = compareCrap(base, next);
+    expect(diffs).toHaveLength(1);
+    expect(diffs[0].identifier).toBe('a.ts:newHighCrap');
   });
 
   it('honours TOLERANCE_PCT from the script', () => {
