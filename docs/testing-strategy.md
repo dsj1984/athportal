@@ -573,7 +573,7 @@ These gates do not belong to a pyramid tier — they enforce structural and poli
 
 Every `@pending` scenario **must** also carry an `@issue-<number>` co-tag on the same scenario header (e.g. `@pending @issue-997`). The linter enforces this independently of the TTL check — a scenario that is under the TTL still fails if the tracking-issue tag is missing. The two violations are surfaced as distinct error lines so authors can fix them separately:
 
-```
+```text
 tests/features/coach/roster/digital-roster.feature: @pending: scenario "The roster table shows each athlete's name" is @pending but missing a tracking @issue-<number> tag
 tests/features/coach/roster/digital-roster.feature: @pending: scenario "The roster table shows each athlete's name" has been @pending for 95 day(s) (TTL: 90 days) — bind the step or add @issue-<number> to defer explicitly
 ```
