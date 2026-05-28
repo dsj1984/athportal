@@ -11,7 +11,7 @@ Feature: Coach roster is scoped to the coach's assigned teams
   treats the team as if it does not exist, and no athlete on that team
   is shown.
 
-  @pending @ac-2 @persona-coach
+  @pending @issue-997 @ac-2 @persona-coach
   Scenario: Coach is refused at another team's roster within the same org
     Given I am signed in as "coach"
     And another team in my organisation has at least one accepted athlete on its roster
@@ -19,7 +19,7 @@ Feature: Coach roster is scoped to the coach's assigned teams
     Then I see a not-found page for the team's roster
     And I do not see any athletes from that team's roster
 
-  @pending @ac-3 @persona-coach
+  @pending @issue-997 @ac-3 @persona-coach
   Scenario: Coach is refused at a team's roster in another organisation
     Given I am signed in as "coach"
     And a team in another organisation has at least one accepted athlete on its roster

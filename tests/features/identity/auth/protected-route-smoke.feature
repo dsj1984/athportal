@@ -1,4 +1,4 @@
-@pending @domain-auth
+@pending @issue-997 @domain-auth
 Feature: Each persona reaches their own protected surface
 
   Every persona has one protected surface that is theirs and no one

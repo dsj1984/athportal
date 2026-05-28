@@ -2,7 +2,7 @@
 # reset of `users.onboarded_at` plus a guaranteed-empty dashboard
 # state) is not yet wired. Un-pend when the fresh-user seam lands and
 # the dashboard widget empty-state markup is locked.
-@pending @domain-onboarding
+@pending @issue-997 @domain-onboarding
 Feature: Freshly-onboarded dashboard shows meaningful empty states
 
   AC-13 requires every widget on the post-onboarding landing surface

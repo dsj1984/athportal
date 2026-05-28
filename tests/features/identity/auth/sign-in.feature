@@ -1,4 +1,4 @@
-@pending @domain-auth
+@pending @issue-997 @domain-auth
 Feature: Athlete signs in to the Athlete Portal
 
   The sign-in surface is the front door to every protected area of the

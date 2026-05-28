@@ -1,4 +1,4 @@
-@pending @domain-team
+@pending @issue-997 @domain-team
 Feature: Org admin manages the team roster
 
   Epic #10 (AC-2, AC-3) pins the org-admin Team CRUD surface: an org

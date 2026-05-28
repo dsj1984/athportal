@@ -128,11 +128,17 @@ function shouldSkipEntry(entry) {
 }
 
 /**
- * Probe one URL. We do NOT follow redirects — the allowlist's expected
- * status is the FIRST response. A `302` that gets followed to a `200`
- * would silently hide a misrouted redirect target.
+ * Probe one URL. We do NOT follow redirects on the primary request — the
+ * allowlist's `expectedStatus` is the FIRST response. A `302` that gets
+ * followed to a `200` would silently hide a misrouted redirect target.
+ *
+ * When the entry declares `assertBodyContains`, a second redirect-following
+ * fetch is issued to check that the final landed page contains the configured
+ * substring. This closes the sign-in-seam blind spot: a 302 alone only means
+ * the server answered; the body assertion confirms the DB seed's
+ * `clerk_subject_id` resolved to the expected persona page (Story #1008).
  */
-async function probe(baseUrl, entry) {
+export async function probe(baseUrl, entry) {
   const url = `${baseUrl}${entry.path}`;
   let response;
   try {
@@ -153,13 +159,89 @@ async function probe(baseUrl, entry) {
     };
   }
   const expected = entry.expectedStatus;
-  const ok = response.status === expected;
+  const statusOk = response.status === expected;
+  if (!statusOk) {
+    return {
+      entry,
+      url,
+      ok: false,
+      status: response.status,
+      detail: `expected ${expected}, got ${response.status}`,
+    };
+  }
+
+  // Optional body assertion — only runs when the entry declares
+  // `assertBodyContains`. Issues a separate redirect-following fetch so
+  // the status check and the body check are independent and each can
+  // fail with a precise diagnostic.
+  const bodyNeedle = typeof entry.assertBodyContains === 'string' ? entry.assertBodyContains : null;
+  if (bodyNeedle !== null) {
+    let bodyResponse;
+    try {
+      bodyResponse = await fetch(url, {
+        method: entry.method ?? 'GET',
+        redirect: 'follow',
+        headers: { 'user-agent': 'verify-stack/1.0 (Story-#943 smoke)' },
+      });
+    } catch (cause) {
+      return {
+        entry,
+        url,
+        ok: false,
+        status: response.status,
+        detail: `assertBodyContains fetch error: ${cause?.message ?? cause}`,
+      };
+    }
+    let body;
+    try {
+      body = await bodyResponse.text();
+    } catch (cause) {
+      return {
+        entry,
+        url,
+        ok: false,
+        status: response.status,
+        detail: `assertBodyContains body read error: ${cause?.message ?? cause}`,
+      };
+    }
+    if (!body.includes(bodyNeedle)) {
+      return {
+        entry,
+        url,
+        ok: false,
+        status: response.status,
+        detail: `assertBodyContains failed: body does not contain ${JSON.stringify(bodyNeedle)}`,
+      };
+    }
+  }
+
+  // Optional Location-header assertion — for redirect responses where following
+  // the redirect is not feasible (e.g. Clerk ticket exchanges that require
+  // browser-side JS). Checks that the `Location` header of the primary
+  // (non-following) response contains the configured substring. This is the
+  // correct gate for the `/dev/sign-in-as/coach` seam: a `302` whose Location
+  // contains `__clerk_ticket=` proves Clerk accepted the persona's user ID.
+  const locationNeedle =
+    typeof entry.assertLocationContains === 'string' ? entry.assertLocationContains : null;
+  if (locationNeedle !== null) {
+    const location = response.headers.get('location') ?? '';
+    if (!location.includes(locationNeedle)) {
+      return {
+        entry,
+        url,
+        ok: false,
+        status: response.status,
+        detail: `assertLocationContains failed: Location header ${JSON.stringify(location)} does not contain ${JSON.stringify(locationNeedle)}`,
+      };
+    }
+  }
+
   return {
     entry,
     url,
-    ok,
+    ok: true,
     status: response.status,
-    detail: ok ? null : `expected ${expected}, got ${response.status}`,
+    detail: null,
   };
 }
 

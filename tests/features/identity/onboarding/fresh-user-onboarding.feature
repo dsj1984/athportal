@@ -1,4 +1,4 @@
-@pending @domain-onboarding @smoke @asserts-no-console-errors
+@pending @issue-997 @domain-onboarding @smoke @asserts-no-console-errors
 Feature: A freshly created user can complete onboarding without console errors
 
   This scenario is the canonical regression guard for Story #958

@@ -1,4 +1,4 @@
-@pending @domain-onboarding
+@pending @issue-997 @domain-onboarding
 Feature: Replaying onboarding submission is a no-op for an onboarded user
 
   AC-14 requires the onboarding submission to be idempotent for a user

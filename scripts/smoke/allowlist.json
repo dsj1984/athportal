@@ -58,6 +58,7 @@
     "method": "GET",
     "expectedStatus": 302,
     "requireEnv": ["CLERK_SECRET_KEY"],
-    "note": "Dev-only seam: mints a Clerk sign-in ticket and redirects through Clerk's ticket flow. Hard-refuses in production. Skipped when CLERK_SECRET_KEY is unset (e.g. fork PRs)"
+    "assertLocationContains": "__clerk_ticket=",
+    "note": "Dev-only seam: mints a Clerk sign-in ticket and redirects through Clerk's ticket flow. Hard-refuses in production. Skipped when CLERK_SECRET_KEY is unset (e.g. fork PRs). assertLocationContains pins that Clerk accepted the seeded coach persona's user ID and returned a valid ticket in the Location header — a headless fetch cannot complete the browser-side exchange but this confirms the DB-seed/Clerk-persona seam is wired (Story #1008 — closes the persona-seed blind spot)."
   }
 ]

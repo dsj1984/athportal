@@ -1,4 +1,4 @@
-@pending @domain-auth
+@pending @issue-997 @domain-auth
 Feature: Reloading a protected page preserves the athlete's session
 
   Session restore is what makes the Athlete Portal feel persistent across
