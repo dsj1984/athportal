@@ -315,6 +315,62 @@ describe('PATCH /api/v1/coach/teams/:teamId/roster/entries/:entryId', () => {
     expect(body.error.code).toBe('INVALID_INPUT');
   });
 
+  it('returns a single user-facing error.message + field for invalid jerseyNumber (Story #989)', async () => {
+    const db = freshCoachDb();
+    seedOrg(db, ORG_A);
+    const team = seedTeam(db, ORG_A, 't_one');
+    const coach = actor(ORG_A);
+    seedUser(db, ORG_A, coach.userId, coach.email);
+    seedCoachAssignment(db, ORG_A, team, coach.userId);
+    const athlete = seedUser(db, ORG_A, 'u_ada');
+    const entryId = seedRosterEntry(db, ORG_A, team, athlete);
+
+    const res = await buildApp(db, coach).request(
+      `/api/v1/coach/teams/${team}/roster/entries/${entryId}`,
+      {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ jerseyNumber: 'abc' }),
+      },
+      STUB_ENV,
+    );
+
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as ErrorBody & { error: { field?: string } };
+    expect(body.error.code).toBe('INVALID_INPUT');
+    // The message must NOT be a JSON-encoded Zod issue array (the bug
+    // Story #989 fixes). It must be a plain user-facing sentence.
+    expect(body.error.message).not.toMatch(/^\[/);
+    expect(body.error.message).toContain('jerseyNumber');
+    expect(body.error.field).toBe('jerseyNumber');
+  });
+
+  it('falls back to "Invalid input." when the body is not valid JSON', async () => {
+    const db = freshCoachDb();
+    seedOrg(db, ORG_A);
+    const team = seedTeam(db, ORG_A, 't_one');
+    const coach = actor(ORG_A);
+    seedUser(db, ORG_A, coach.userId, coach.email);
+    seedCoachAssignment(db, ORG_A, team, coach.userId);
+    const athlete = seedUser(db, ORG_A, 'u_ada');
+    const entryId = seedRosterEntry(db, ORG_A, team, athlete);
+
+    const res = await buildApp(db, coach).request(
+      `/api/v1/coach/teams/${team}/roster/entries/${entryId}`,
+      {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: 'not-json',
+      },
+      STUB_ENV,
+    );
+
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as ErrorBody;
+    expect(body.error.code).toBe('INVALID_INPUT');
+    expect(body.error.message).toBe('Invalid input.');
+  });
+
   it('returns 404 when the coach is on a different team in the same org', async () => {
     const db = freshCoachDb();
     seedOrg(db, ORG_A);

@@ -68,11 +68,16 @@ interface CoachRosterErrorBody {
   readonly error: {
     readonly code: CoachRosterErrorCode;
     readonly message: string;
+    readonly field?: string;
   };
 }
 
-function errorBody(code: CoachRosterErrorCode, message: string): CoachRosterErrorBody {
-  return { success: false, error: { code, message } };
+function errorBody(
+  code: CoachRosterErrorCode,
+  message: string,
+  field?: string,
+): CoachRosterErrorBody {
+  return { success: false, error: field !== undefined ? { code, message, field } : { code, message } };
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -274,14 +279,27 @@ coachRosterRoute.patch('/entries/:entryId', async (c) => {
   // 400 deterministically. The auth predicate runs inside the same
   // handler so an attacker probing this surface still cannot tell the
   // difference between "team not yours" and "team doesn't exist".
-  let parsed: import('@repo/shared/schemas/coach/roster').EditRosterEntryInput;
+  //
+  // Story #989 — emit a single user-facing `error.message` drawn from
+  // `issues[0]?.message` (mirroring the coach-invites POST shape) plus
+  // an optional `error.field` that names the failing input. Surfacing
+  // the raw Zod issue array via `err.message` is hostile to consumers:
+  // every caller had to JSON.parse the message and pick the first issue
+  // themselves before they could render anything human-readable.
+  let raw: unknown;
   try {
-    const raw = (await c.req.json()) as unknown;
-    parsed = EditRosterEntryInput.parse(raw);
-  } catch (err) {
-    const message = err instanceof Error ? err.message : 'invalid-input';
-    return c.json(errorBody('INVALID_INPUT', message), 400);
+    raw = await c.req.json();
+  } catch {
+    return c.json(errorBody('INVALID_INPUT', 'Invalid input.'), 400);
   }
+  const safe = EditRosterEntryInput.safeParse(raw);
+  if (!safe.success) {
+    const firstIssue = safe.error.issues[0];
+    const message = firstIssue?.message ?? 'Invalid input.';
+    const field = firstIssue?.path[0];
+    return c.json(errorBody('INVALID_INPUT', message, typeof field === 'string' ? field : undefined), 400);
+  }
+  const parsed = safe.data;
 
   const db = c.get('db');
 
