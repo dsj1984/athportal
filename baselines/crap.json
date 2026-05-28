@@ -1116,64 +1116,64 @@
       "startLine": 509
     },
     {
-      "crap": 2,
+      "crap": 6,
       "method": "errorBody",
       "path": "apps/api/src/routes/v1/coach/roster.ts",
-      "startLine": 74
+      "startLine": 75
     },
     {
       "crap": 20,
       "method": "deriveFullName",
       "path": "apps/api/src/routes/v1/coach/roster.ts",
-      "startLine": 87
+      "startLine": 95
     },
     {
       "crap": 2,
       "method": "<anon method-1>",
       "path": "apps/api/src/routes/v1/coach/roster.ts",
-      "startLine": 93
+      "startLine": 101
     },
     {
       "crap": 2,
       "method": "<anon method-2>",
       "path": "apps/api/src/routes/v1/coach/roster.ts",
-      "startLine": 94
+      "startLine": 102
     },
     {
       "crap": 12,
       "method": "toRbacActor",
       "path": "apps/api/src/routes/v1/coach/roster.ts",
-      "startLine": 106
+      "startLine": 114
     },
     {
       "crap": 6,
       "method": "projectEntry",
       "path": "apps/api/src/routes/v1/coach/roster.ts",
-      "startLine": 121
+      "startLine": 129
     },
     {
       "crap": 20,
       "method": "<anon method-3>",
       "path": "apps/api/src/routes/v1/coach/roster.ts",
-      "startLine": 151
+      "startLine": 159
     },
     {
       "crap": 42,
       "method": "<anon method-4>",
       "path": "apps/api/src/routes/v1/coach/roster.ts",
-      "startLine": 206
+      "startLine": 214
     },
     {
-      "crap": 110,
+      "crap": 132,
       "method": "<anon method-5>",
       "path": "apps/api/src/routes/v1/coach/roster.ts",
-      "startLine": 261
+      "startLine": 269
     },
     {
       "crap": 30,
       "method": "<anon method-6>",
       "path": "apps/api/src/routes/v1/coach/roster.ts",
-      "startLine": 347
+      "startLine": 371
     },
     {
       "crap": 2,
