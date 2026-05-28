@@ -23,13 +23,7 @@ import { describe, expect, it } from 'vitest';
 import { applySeed } from './seed.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
-const MIGRATIONS_DIR = resolvePath(
-  dirname(__filename),
-  '..',
-  'src',
-  'db',
-  'migrations',
-);
+const MIGRATIONS_DIR = resolvePath(dirname(__filename), '..', 'src', 'db', 'migrations');
 
 // Mirrors FIXTURE_MIGRATIONS in seedFixtures.test.ts plus 0008 so the
 // production schema is fully applied. Keep in lockstep with the
@@ -116,9 +110,7 @@ describe('seed.mjs § applySeed parity with src/db/seedFixtures.ts', () => {
     const client = freshDb();
     try {
       applySeed(client);
-      const row = client
-        .prepare('SELECT * FROM roster_entry WHERE id = ?')
-        .get('re_seed_athlete');
+      const row = client.prepare('SELECT * FROM roster_entry WHERE id = ?').get('re_seed_athlete');
       expect(row).toBeDefined();
       expect(row.org_id).toBe('org_test_a');
       expect(row.team_id).toBe('team_test_a_1');
