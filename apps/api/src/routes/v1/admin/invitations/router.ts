@@ -44,8 +44,8 @@ import {
 import { and, eq, inArray } from 'drizzle-orm';
 import { Hono, type MiddlewareHandler } from 'hono';
 import {
-  asInvitationClient,
   type ClerkInvitationClient,
+  asInvitationClient,
   createInvitation,
   resendInvitation,
   revokeInvitation,
