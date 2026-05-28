@@ -27,5 +27,65 @@
     "repo": "athportal",
     "projectNumber": 6,
     "operatorHandle": "@dsj1984"
+  },
+  "delivery": {
+    "quality": {
+      "gates": {
+        "crap": {
+          "targetDirs": ["apps", "packages"],
+          "floors": {
+            "*": { "methodsAbove20": 0 }
+          },
+          "requireCoverage": false,
+          "newMethodCeiling": 506,
+          "ignoreGlobs": [
+            "**/*.test.ts",
+            "**/*.test.tsx",
+            "**/*.test.js",
+            "**/*.test.mjs",
+            "**/*.test.cjs",
+            "**/*.spec.ts",
+            "**/*.spec.tsx",
+            "**/*.spec.js",
+            "**/*.spec.mjs",
+            "**/*.contract.test.ts",
+            "**/*.d.ts",
+            "**/__tests__/**",
+            "**/__fixtures__/**",
+            "**/fixtures/**",
+            "**/.turbo/**",
+            "**/build/**",
+            "**/test-results/**",
+            "**/playwright-report/**"
+          ]
+        },
+        "maintainability": {
+          "targetDirs": ["apps", "packages"],
+          "floors": {
+            "*": { "min": 70 }
+          },
+          "ignoreGlobs": [
+            "**/*.test.ts",
+            "**/*.test.tsx",
+            "**/*.test.js",
+            "**/*.test.mjs",
+            "**/*.test.cjs",
+            "**/*.spec.ts",
+            "**/*.spec.tsx",
+            "**/*.spec.js",
+            "**/*.spec.mjs",
+            "**/*.contract.test.ts",
+            "**/*.d.ts",
+            "**/__tests__/**",
+            "**/__fixtures__/**",
+            "**/fixtures/**",
+            "**/.turbo/**",
+            "**/build/**",
+            "**/test-results/**",
+            "**/playwright-report/**"
+          ]
+        }
+      }
+    }
   }
 }

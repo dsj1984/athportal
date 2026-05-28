@@ -465,7 +465,7 @@ The pattern is **ratchet-only**: baselines can tighten (improve) but never loose
 
 - **What it measures.** Per-function **CRAP score** (Change Risk Anti-Patterns: complexity² × (1 − coverage)³ + complexity). High CRAP means high cyclomatic complexity with low coverage — the riskiest code in the repo.
 - **Baseline file.** [`baselines/crap.json`](../baselines/crap.json)
-- **Producer script.** [`scripts/crap-baseline.mjs`](../scripts/crap-baseline.mjs)
+- **Producer script.** Mandrel framework engine: `node .agents/scripts/update-crap-baseline.js` (scorer) and `node .agents/scripts/check-baselines.js --gate crap` (gate). Wired via `delivery.quality.gates.crap` in `.agentrc.json`.
 - **Tolerance.** Per-function relative-percent (5%) with a small absolute floor. New functions land in the baseline as-is (they're not "regressions" if there's no prior reading); existing functions cannot regress past the tolerance.
 - **Where it runs.** `pnpm run crap:check` locally and in the `Quality baselines` CI job.
 - **Update.** `pnpm run crap:update`. The common honest case is "I added a new function" — the update absorbs the new row; CI then enforces it going forward. The wrong move is to lower a hot function's bar to paper over uncovered complexity — diagnose the diff and either add tests or reduce branches.
@@ -474,7 +474,7 @@ The pattern is **ratchet-only**: baselines can tighten (improve) but never loose
 
 - **What it measures.** File-level **maintainability index** (a composite of Halstead volume, cyclomatic complexity, and SLOC, scaled 0–100). Higher is better.
 - **Baseline file.** [`baselines/maintainability.json`](../baselines/maintainability.json)
-- **Producer script.** [`scripts/maintainability-baseline.mjs`](../scripts/maintainability-baseline.mjs)
+- **Producer script.** Mandrel framework engine: `node .agents/scripts/update-maintainability-baseline.js` (scorer) and `node .agents/scripts/check-baselines.js --gate maintainability` (gate). Wired via `delivery.quality.gates.maintainability` in `.agentrc.json`.
 - **Tolerance.** A rolling minimum across the workspace plus a hard floor (currently 70). A single file dipping below the rolling minimum is logged; dropping the rolling minimum below the hard floor fails CI.
 - **Where it runs.** `pnpm run maintainability:check` locally and in the `Quality baselines` CI job.
 - **Update.** `pnpm run maintainability:update`. Same discipline as CRAP: absorb new files, refuse to absorb a regression on an existing file without a real reason.
