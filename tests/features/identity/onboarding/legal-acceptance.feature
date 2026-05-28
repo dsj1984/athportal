@@ -2,7 +2,7 @@
 # carries a stamped onboarding row, so the un-onboarded variant of the
 # scenarios cannot run yet) AND on the verified-email step landing —
 # see email-verification-gate.feature. Un-pend when both seams exist.
-@pending @domain-onboarding
+@pending @issue-997 @domain-onboarding
 Feature: Onboarding submit requires active legal acceptance
 
   AC-6 and AC-7 require that submitting onboarding without ticking

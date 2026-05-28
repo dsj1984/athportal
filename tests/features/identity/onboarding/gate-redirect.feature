@@ -1,4 +1,4 @@
-@pending @domain-onboarding
+@pending @issue-997 @domain-onboarding
 Feature: The onboarding gate redirects un-onboarded users
 
   Server-enforced onboarding (Epic #8) requires that any signed-in user
@@ -23,7 +23,7 @@ Feature: The onboarding gate redirects un-onboarded users
   # Spec #490 §Architecture; the matching cutover lands with a later
   # Wave that wires the DB into Astro.locals). Un-pend this scenario
   # together with that wave.
-  @pending @ac-2
+  @pending @issue-997 @ac-2
   Scenario: Onboarded user reaches a protected route without redirect
     Given I am signed in as "athlete"
     And I have already completed onboarding

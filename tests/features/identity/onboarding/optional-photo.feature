@@ -2,7 +2,7 @@
 # dataset → form payload) is stubbed — the `I upload a profile photo`
 # step is a placeholder. Un-pend when the upload-fixture seam lands and
 # the dashboard renders the uploaded image against real markup.
-@pending @domain-onboarding
+@pending @issue-997 @domain-onboarding
 Feature: Profile photo is optional at onboarding
 
   AC-9 and AC-10 require that the profile-photo upload at onboarding

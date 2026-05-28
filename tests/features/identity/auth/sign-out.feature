@@ -1,4 +1,4 @@
-@pending @domain-auth
+@pending @issue-997 @domain-auth
 Feature: Athlete signs out of the Athlete Portal
 
   Signing out is a deliberate, user-initiated transition back to the

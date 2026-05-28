@@ -2,7 +2,7 @@
 # wired into /onboarding yet. Un-pend when the under-13 banner renders
 # against real markup and the step `I see an under-13 not-available
 # message` resolves end-to-end.
-@pending @domain-onboarding
+@pending @issue-997 @domain-onboarding
 Feature: Under-13 attestation blocks onboarding
 
   AC-8 requires that a user who attests to being under 13 sees a

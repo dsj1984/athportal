@@ -3,7 +3,7 @@
 # `my primary email becomes verified` step is currently a placeholder.
 # Un-pend when staging Clerk is wired and the testing helper can drive
 # verification end-to-end.
-@pending @domain-onboarding
+@pending @issue-997 @domain-onboarding
 Feature: Onboarding submit is gated by Clerk email verification
 
   AC-3 and AC-4 require that the onboarding submit control stays

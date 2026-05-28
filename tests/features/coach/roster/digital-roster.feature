@@ -13,7 +13,7 @@ Feature: Coach views and curates their team's digital roster
   scenarios assert only the user-visible outcomes on the coach roster
   page and the athlete profile page.
 
-  @pending @ac-1 @persona-coach @smoke
+  @pending @issue-997 @ac-1 @persona-coach @smoke
   Scenario: Coach sees the roster for their team
     Given I am signed in as "coach"
     And my team has at least one accepted athlete on its roster
@@ -21,7 +21,7 @@ Feature: Coach views and curates their team's digital roster
     Then I see each accepted athlete listed on my team's roster
     And each row shows the athlete's jersey number, primary position, and verification badge
 
-  @pending @ac-9 @persona-coach
+  @pending @issue-997 @ac-9 @persona-coach
   Scenario: Coach updates an athlete's jersey number
     Given I am signed in as "coach"
     And my team has an accepted athlete with a known jersey number
@@ -31,7 +31,7 @@ Feature: Coach views and curates their team's digital roster
     And when I refresh my team's roster page
     Then I see the athlete's row with the new jersey number
 
-  @pending @ac-10 @persona-coach
+  @pending @issue-997 @ac-10 @persona-coach
   Scenario: Coach updates an athlete's primary position
     Given I am signed in as "coach"
     And my team has an accepted athlete with a known primary position
@@ -41,7 +41,7 @@ Feature: Coach views and curates their team's digital roster
     And when I refresh my team's roster page
     Then I see the athlete's row with the new primary position
 
-  @pending @ac-11 @persona-coach
+  @pending @issue-997 @ac-11 @persona-coach
   Scenario: Coach removes an athlete from the roster
     Given I am signed in as "coach"
     And my team has an accepted athlete on its roster
@@ -50,7 +50,7 @@ Feature: Coach views and curates their team's digital roster
     Then I see confirmation that the athlete was removed
     And I no longer see that athlete listed on my team's roster
 
-  @pending @ac-12 @persona-coach
+  @pending @issue-997 @ac-12 @persona-coach
   Scenario: Athlete profile is scoped to the current team's roster context
     Given I am signed in as "coach"
     And one of my athletes is also on another coach's team with a different jersey number and position

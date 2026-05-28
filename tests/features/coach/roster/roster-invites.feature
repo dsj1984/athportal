@@ -14,7 +14,7 @@ Feature: Coach sends roster invites and recipients accept or decline
   sees an accept or decline confirmation, an expired invite refuses to
   accept, and a coach can re-issue after expiry.
 
-  @pending @ac-4 @persona-coach
+  @pending @issue-997 @ac-4 @persona-coach
   Scenario: Coach sends an invite and sees it listed as pending
     Given I am signed in as "coach"
     And my team has no outstanding roster invite for the recipient's email
@@ -23,7 +23,7 @@ Feature: Coach sends roster invites and recipients accept or decline
     Then I see confirmation that the invite was sent
     And I see the invite listed as pending on my team's roster page
 
-  @pending @ac-5 @persona-coach
+  @pending @issue-997 @ac-5 @persona-coach
   Scenario: Recipient accepts the invite and joins the roster
     Given my team has a pending roster invite addressed to an onboarded athlete
     When the invited athlete opens the accept link from the invite email
@@ -31,7 +31,7 @@ Feature: Coach sends roster invites and recipients accept or decline
     And when I refresh my team's roster page as the coach
     Then I see the athlete listed on my team's roster
 
-  @pending @ac-6 @persona-coach
+  @pending @issue-997 @ac-6 @persona-coach
   Scenario: Recipient declines the invite
     Given my team has a pending roster invite addressed to an onboarded athlete
     When the invited athlete opens the decline link from the invite email
@@ -39,7 +39,7 @@ Feature: Coach sends roster invites and recipients accept or decline
     And when I refresh my team's roster page as the coach
     Then I do not see that athlete on my team's roster
 
-  @pending @ac-7 @persona-coach
+  @pending @issue-997 @ac-7 @persona-coach
   Scenario: Expired invite is no longer acceptable
     Given my team has a roster invite whose lifetime has elapsed
     When I open my team's roster page
@@ -47,7 +47,7 @@ Feature: Coach sends roster invites and recipients accept or decline
     And when the invited recipient opens the accept link from the invite email
     Then the recipient sees that the invite is no longer acceptable
 
-  @pending @ac-8 @persona-coach
+  @pending @issue-997 @ac-8 @persona-coach
   Scenario: Coach re-issues an invite after expiry
     Given my team has a roster invite to the recipient that has expired
     When I open my team's roster page

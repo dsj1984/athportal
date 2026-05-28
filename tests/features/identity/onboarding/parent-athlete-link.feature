@@ -3,7 +3,7 @@
 # `I accept the invite during onboarding` and `I have a pending invite
 # addressed to …` steps are placeholders. Un-pend when the invite seam
 # lands.
-@pending @domain-onboarding
+@pending @issue-997 @domain-onboarding
 Feature: Parent-athlete link is established at onboarding close
 
   AC-11 and AC-12 require that an invite accepted during onboarding

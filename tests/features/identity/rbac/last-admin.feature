@@ -1,4 +1,4 @@
-@pending @domain-auth
+@pending @issue-997 @domain-auth
 Feature: Last-admin guard refuses to leave an org orphaned
 
   Removing the last remaining org admin would orphan the organization —

@@ -1,4 +1,4 @@
-@pending @domain-auth
+@pending @issue-997 @domain-auth
 Feature: Anonymous visitors are sent to sign-in
 
   Protected surfaces stay protected end-to-end: an anonymous visitor who

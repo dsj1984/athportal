@@ -1,4 +1,4 @@
-@pending @domain-auth
+@pending @issue-997 @domain-auth
 Feature: Rejected sign-in shows a friendly error
 
   When sign-in fails, the athlete sees a clear, friendly error that
