@@ -2,7 +2,7 @@
 
 > The generic tier rules live in [`.agents/rules/testing-standards.md`](../.agents/rules/testing-standards.md); this document maps those rules onto the concrete tools, paths, and workspaces this repo uses. When `AGENTS.md`, `CLAUDE.md`, or `docs/patterns.md` talk about testing, they defer to this file — do not duplicate rules across documents.
 >
-> The three tiers (unit, contract, acceptance) are wired today: Vitest projects run unit + contract under `pnpm run test`, the smoke acceptance scenario runs under `pnpm --filter @repo/web exec bddgen && pnpm --filter @repo/web test:e2e -- --grep @smoke`, and the step-definition linter runs under `pnpm run lint:steps`. CI ([`quality.yml`](../.github/workflows/quality.yml)) gates every PR on the three; the nightly schedule ([`nightly.yml`](../.github/workflows/nightly.yml)) runs the full acceptance corpus, the Stryker mutation report, and the full Lighthouse + bundle-size baselines.
+> The four tiers (unit, contract, smoke, acceptance) are wired today: Vitest projects run unit + contract under `pnpm run test`, the smoke probe runs under `node scripts/smoke/verify-stack.mjs` against a live `pnpm dev` stack, the smoke acceptance scenario runs under `pnpm --filter @repo/web exec bddgen && pnpm --filter @repo/web test:e2e -- --grep @smoke`, and the step-definition linter runs under `pnpm run lint:steps`. CI ([`quality.yml`](../.github/workflows/quality.yml)) gates every PR on the four; the nightly schedule ([`nightly.yml`](../.github/workflows/nightly.yml)) runs the full acceptance corpus, the Stryker mutation report, and the full Lighthouse + bundle-size baselines.
 >
 > This document is the single source of truth for **what we test, how we test it, and what gates the result**. That includes the automated pyramid (unit → contract → acceptance), the quality-baseline ratchets that the pyramid runs through (coverage, CRAP, maintainability, mutation, bundle-size, Lighthouse, lint), the static-analysis gates that run alongside (dependency-cruiser, Knip, secretlint, RBAC matrix drift, step linter), and the manual-testing cadence that fills the gaps automation can't reach.
 
@@ -37,6 +37,12 @@
   - [Secretlint](#secretlint)
   - [Step-definition linter](#step-definition-linter)
   - [RBAC matrix drift check](#rbac-matrix-drift-check)
+- [@pending TTL Policy](#pending-ttl-policy)
+  - [TTL threshold](#ttl-threshold)
+  - [Tracking-issue co-tag requirement](#tracking-issue-co-tag-requirement)
+  - [How to defer a pending scenario](#how-to-defer-a-pending-scenario)
+  - [How to resolve a pending scenario](#how-to-resolve-a-pending-scenario)
+- [Bug-class-to-tier table](#bug-class-to-tier-table)
 - [Manual Testing](#manual-testing)
   - [What manual testing is for](#what-manual-testing-is-for)
   - [The three cadences](#the-three-cadences)
@@ -82,6 +88,7 @@
 | **Contract** (Vitest `*.contract.test.ts`) | 32 | 174 |
 | ↳ apps/api | 24 | 139 |
 | ↳ packages/shared | 8 | 35 |
+| **Smoke** (`scripts/smoke/allowlist.json` entries) | 1 | 10 entries |
 | **Acceptance** (`.feature` files in `tests/features/**`) | 50 | 79 scenarios |
 | ↳ identity | 23 | 34 |
 | ↳ design-system | 11 | 23 |
@@ -90,7 +97,7 @@
 | ↳ foundation | 1 | 1 |
 | **Step library** (`apps/web/e2e/steps/**`) | 5 canonical + domain files | 145 Given/When/Then phrases |
 
-**Pyramid shape today.** Broad unit base (627 cases) → narrower contract band (174 cases) → narrow acceptance top (79 scenarios). The shape matches the [§ Decision Matrix](#decision-matrix) — wire-shape and DB-state assertions are concentrated at the contract tier, user-visible outcomes are concentrated at the top, and pure logic / component-render assertions are pushed to the base.
+**Pyramid shape today.** Broad unit base (627 cases) → narrower contract band (174 cases) → thin smoke band (10 allowlist entries) → narrow acceptance top (79 scenarios). The shape matches the [§ Decision Matrix](#decision-matrix) — wire-shape and DB-state assertions are concentrated at the contract tier, whole-stack wiring assertions live in the smoke band, user-visible outcomes are concentrated at the top, and pure logic / component-render assertions are pushed to the base.
 
 **Per-workspace skew is intentional.** `apps/api`'s 22-case unit count is low because most of its logic is route handlers exercised at the contract tier (24 contract files, 139 cases). `apps/web`'s 280-case unit count is dominated by component-render coverage. `packages/shared`'s split (246 unit + 35 contract) reflects the boundary between pure helpers (RBAC policy, CSV parsing, validators) and persistence-touching code (Drizzle query helpers, cross-tenant isolation invariants).
 
@@ -142,6 +149,8 @@ Pick the tier by the **class of assertion** the test makes, not by the surface a
 | DB side-effect | After `PATCH`, the row's column equals the new value; soft-deleted rows stay out of list | Contract | Vitest + ephemeral SQLite, `*.contract.test.ts` |
 | Error envelope shape | Validation failure returns `{ success: false, error: { code, message } }` | Contract | Vitest, `*.contract.test.ts` |
 | RBAC / authorization invariant | Every `(role, resource, action)` triple is exhaustively covered | Unit (policy) + Contract (enforcement) | Vitest; policy in `packages/shared/src/rbac/` |
+| Whole-stack wiring / process-group integration | Vite proxy absent — every `/api/*` request 404s; API log contains `500` during smoke window | Smoke | Node + `fetch`, `scripts/smoke/verify-stack.mjs`; allowlist at `scripts/smoke/allowlist.json` |
+| Sign-in seam / auth-middleware shape | `@clerk/backend` v2/v3 drift causes anonymous → 500 instead of 401; persona seed mismatch means coach never signs in | Smoke (body assertion via `assertBodyContains`) | Node + `fetch`, `scripts/smoke/allowlist.json` `assertBodyContains` field |
 | User-visible outcome | "After submitting the form, a success banner appears and the new row shows up in the list" | Acceptance | Playwright + playwright-bdd, `tests/features/**/*.feature` |
 | Navigation / routing behavior | Signing in redirects to `/onboarding` when the gate is un-stamped | Acceptance | Playwright, `.feature` |
 | Pagination envelope | Second page returns the next cursor | Contract | Vitest, `*.contract.test.ts` |
@@ -547,6 +556,61 @@ These gates do not belong to a pyramid tier — they enforce structural and poli
 - **What it enforces.** The published RBAC matrix in [`docs/data-dictionary.md`](data-dictionary.md) matches the source-of-truth `(role, resource, action)` triples in `packages/shared/src/rbac/`. A change to the policy module that isn't reflected in the docs fails CI.
 - **Where it runs.** The Husky `pre-commit` hook (so the doc is regenerated alongside the code change) and the `quality.yml` CI gate.
 - **Tier scope.** Doc-as-test. Pairs with the unit-tier policy tests under `packages/shared/src/rbac/`.
+
+---
+
+## @pending TTL Policy
+
+> The `@pending` TTL gate is enforced by [`scripts/qa/lint.mjs`](../scripts/qa/lint.mjs) as a scan pass over every `.feature` file under `tests/features/**`. The gate fires inside `pnpm run lint:qa` (the CI `quality.yml` gate); it does **not** fire in the staged-file pre-commit path, where the scan would only see a partial corpus.
+
+### TTL threshold
+
+- **Default:** 90 days (set generously on first landing to avoid immediately failing the existing `@pending` corpus; tighten to 30 days once the tracking-issue backlog from Epic #997 is cleared).
+- **Override:** set the `PENDING_TTL_DAYS` environment variable to a positive integer to widen the migration window without a code change (e.g. `PENDING_TTL_DAYS=120 pnpm run lint:qa`).
+- **First-seen date.** The linter uses `git log --follow --diff-filter=A --format=%aI -- <file>` to find the commit date the `.feature` file first appeared in git history. If the file is untracked (new, not yet committed), it falls back to the file's mtime.
+
+### Tracking-issue co-tag requirement
+
+Every `@pending` scenario **must** also carry an `@issue-<number>` co-tag on the same scenario header (e.g. `@pending @issue-997`). The linter enforces this independently of the TTL check — a scenario that is under the TTL still fails if the tracking-issue tag is missing. The two violations are surfaced as distinct error lines so authors can fix them separately:
+
+```
+tests/features/coach/roster/digital-roster.feature: @pending: scenario "The roster table shows each athlete's name" is @pending but missing a tracking @issue-<number> tag
+tests/features/coach/roster/digital-roster.feature: @pending: scenario "The roster table shows each athlete's name" has been @pending for 95 day(s) (TTL: 90 days) — bind the step or add @issue-<number> to defer explicitly
+```
+
+### How to defer a pending scenario
+
+1. Add `@issue-<number>` to the scenario's tag line, referencing an open GitHub Issue that tracks the step-binding work. Example:
+
+   ```gherkin
+   @pending @issue-997
+   Scenario: The roster table shows each athlete's name
+   ```
+
+2. The TTL clock still runs. When the file's git-history age exceeds the TTL, the linter will fail CI even with a tracking-issue tag. Resolve the scenario (bind the step or close the deferral) before the deadline.
+
+### How to resolve a pending scenario
+
+1. Bind the missing step definition in the appropriate `apps/web/e2e/steps/` file, following [§ Adding a new step](#adding-a-new-step).
+2. Remove the `@pending` tag from the scenario. The linter will no longer flag it.
+3. Remove the `@issue-<number>` co-tag if the tracking issue is now closed (optional — leaving it provides traceability).
+
+---
+
+## Bug-class-to-tier table
+
+The five PR #940 bug classes and the tier that catches each one, as codified by Epic #944:
+
+| Bug class | Example | Tier that catches it |
+|---|---|---|
+| Pure logic error | — | Unit |
+| Wire-shape / status-code drift | `@clerk/backend` v2→v3 middleware API drift caused anonymous → 500 instead of 401 (Story #941) | Contract |
+| Process-group wiring gap | Vite proxy absent from dev server config; every `/api/*` browser fetch returned 404 (PR #940 bug 1) | Smoke |
+| Sign-in seam / persona-seed mismatch | Seeded coach `clerk_subject_id` mismatch meant `/dev/sign-in-as/coach` redirected but never authenticated the seeded identity (Story #1008) | Smoke (`assertBodyContains` body assertion) |
+| Silent `@pending` rot | AC-2/AC-3 roster scenarios carried `@pending` for months with no tracking issue; step never bound; regression shipped green-CI (PR #940 bug 3) | QA-corpus lint (`@pending` TTL gate, Story #1007) |
+| Full user journey regression | — | Acceptance (BDD) |
+
+Each class has a distinct detection mechanism. A gap at any level lets a regression reach `main` with green CI — which is exactly what happened in PR #940. The pyramid is only as strong as the tier that matches the bug class.
 
 ---
 
