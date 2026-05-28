@@ -2667,169 +2667,169 @@
       "crap": 2,
       "method": "buildRosterUrl",
       "path": "apps/web/src/components/coach/RosterTable.ts",
-      "startLine": 110
+      "startLine": 111
     },
     {
       "crap": 2,
       "method": "buildEntryUrl",
       "path": "apps/web/src/components/coach/RosterTable.ts",
-      "startLine": 119
+      "startLine": 120
     },
     {
       "crap": 6,
       "method": "renderRosterRows",
       "path": "apps/web/src/components/coach/RosterTable.ts",
-      "startLine": 142
+      "startLine": 143
     },
     {
       "crap": 2,
       "method": "buildButton",
       "path": "apps/web/src/components/coach/RosterTable.ts",
-      "startLine": 220
+      "startLine": 231
     },
     {
       "crap": 2,
       "method": "rowCell",
       "path": "apps/web/src/components/coach/RosterTable.ts",
-      "startLine": 236
+      "startLine": 247
     },
     {
       "crap": 2,
       "method": "actionButton",
       "path": "apps/web/src/components/coach/RosterTable.ts",
-      "startLine": 246
+      "startLine": 257
     },
     {
       "crap": 90,
       "method": "enterEditMode",
       "path": "apps/web/src/components/coach/RosterTable.ts",
-      "startLine": 259
+      "startLine": 270
     },
     {
       "crap": 182,
       "method": "exitEditMode",
       "path": "apps/web/src/components/coach/RosterTable.ts",
-      "startLine": 309
+      "startLine": 320
     },
     {
       "crap": 6,
       "method": "showJerseyWarning",
       "path": "apps/web/src/components/coach/RosterTable.ts",
-      "startLine": 356
+      "startLine": 367
     },
     {
       "crap": 6,
       "method": "hideJerseyWarning",
       "path": "apps/web/src/components/coach/RosterTable.ts",
-      "startLine": 369
+      "startLine": 380
     },
     {
       "crap": 12,
       "method": "readEditValues",
       "path": "apps/web/src/components/coach/RosterTable.ts",
-      "startLine": 383
+      "startLine": 394
     },
     {
       "crap": 42,
       "method": "buildPatchPayload",
       "path": "apps/web/src/components/coach/RosterTable.ts",
-      "startLine": 410
+      "startLine": 421
     },
     {
       "crap": 2,
       "method": "removeRow",
       "path": "apps/web/src/components/coach/RosterTable.ts",
-      "startLine": 437
+      "startLine": 448
     },
     {
       "crap": 6,
       "method": "showRowError",
       "path": "apps/web/src/components/coach/RosterTable.ts",
-      "startLine": 447
+      "startLine": 458
     },
     {
       "crap": 6,
       "method": "hideRowError",
       "path": "apps/web/src/components/coach/RosterTable.ts",
-      "startLine": 458
+      "startLine": 469
     },
     {
       "crap": 12,
       "method": "rowAthleteName",
       "path": "apps/web/src/components/coach/RosterTable.ts",
-      "startLine": 469
+      "startLine": 480
     },
     {
       "crap": 6,
       "method": "mountRemoveConfirm",
       "path": "apps/web/src/components/coach/RosterTable.ts",
-      "startLine": 481
+      "startLine": 492
     },
     {
       "crap": 2,
       "method": "openRemoveConfirm",
       "path": "apps/web/src/components/coach/RosterTable.ts",
-      "startLine": 508
+      "startLine": 519
     },
     {
       "crap": 2,
       "method": "<anon method-1>",
       "path": "apps/web/src/components/coach/RosterTable.ts",
-      "startLine": 509
+      "startLine": 520
     },
     {
       "crap": 2,
       "method": "<anon method-2>",
       "path": "apps/web/src/components/coach/RosterTable.ts",
-      "startLine": 517
+      "startLine": 528
     },
     {
       "crap": 2,
       "method": "<anon method-3>",
       "path": "apps/web/src/components/coach/RosterTable.ts",
-      "startLine": 521
+      "startLine": 532
     },
     {
       "crap": 2,
       "method": "<anon method-4>",
       "path": "apps/web/src/components/coach/RosterTable.ts",
-      "startLine": 522
+      "startLine": 533
     },
     {
       "crap": 72,
       "method": "saveRow",
       "path": "apps/web/src/components/coach/RosterTable.ts",
-      "startLine": 538
+      "startLine": 549
     },
     {
       "crap": 2,
       "method": "<anon method-5>",
       "path": "apps/web/src/components/coach/RosterTable.ts",
-      "startLine": 561
+      "startLine": 572
     },
     {
       "crap": 30,
       "method": "confirmAndRemove",
       "path": "apps/web/src/components/coach/RosterTable.ts",
-      "startLine": 586
+      "startLine": 597
     },
     {
       "crap": 2,
       "method": "<anon method-6>",
       "path": "apps/web/src/components/coach/RosterTable.ts",
-      "startLine": 604
+      "startLine": 615
     },
     {
       "crap": 2,
       "method": "attachRowActions",
       "path": "apps/web/src/components/coach/RosterTable.ts",
-      "startLine": 623
+      "startLine": 634
     },
     {
       "crap": 56,
       "method": "<anon method-7>",
       "path": "apps/web/src/components/coach/RosterTable.ts",
-      "startLine": 628
+      "startLine": 639
     },
     {
       "crap": 2,
@@ -3321,13 +3321,25 @@
       "crap": 2,
       "method": "buildDashboard",
       "path": "apps/web/src/pages/dashboard.ts",
-      "startLine": 89
+      "startLine": 103
     },
     {
       "crap": 2,
       "method": "<anon method-1>",
       "path": "apps/web/src/pages/dashboard.ts",
-      "startLine": 96
+      "startLine": 110
+    },
+    {
+      "crap": 2,
+      "method": "buildRosterRows",
+      "path": "apps/web/src/pages/dashboard.ts",
+      "startLine": 136
+    },
+    {
+      "crap": 6,
+      "method": "<anon method-2>",
+      "path": "apps/web/src/pages/dashboard.ts",
+      "startLine": 139
     },
     {
       "crap": 12,
@@ -3886,6 +3898,36 @@
       "method": "readNode",
       "path": "packages/shared/src/db/queries/scopedDb.ts",
       "startLine": 374
+    },
+    {
+      "crap": 6,
+      "method": "combine",
+      "path": "packages/shared/src/db/queries/userTeams.ts",
+      "startLine": 85
+    },
+    {
+      "crap": 2,
+      "method": "resolveUserIdBySubject",
+      "path": "packages/shared/src/db/queries/userTeams.ts",
+      "startLine": 98
+    },
+    {
+      "crap": 6,
+      "method": "listUserTeamsBySubject",
+      "path": "packages/shared/src/db/queries/userTeams.ts",
+      "startLine": 117
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "packages/shared/src/db/queries/userTeams.ts",
+      "startLine": 153
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-2>",
+      "path": "packages/shared/src/db/queries/userTeams.ts",
+      "startLine": 154
     },
     {
       "crap": 6,
