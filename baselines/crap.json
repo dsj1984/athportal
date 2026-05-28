@@ -1,13 +1,13 @@
 {
   "$schema": ".agents/schemas/baselines/crap.schema.json",
-  "generatedAt": "2026-05-28T00:35:19.045Z",
-  "kernelVersion": "1.0.0",
+  "kernelVersion": "0.1.0",
+  "generatedAt": "2026-05-28T14:29:31.182Z",
   "rollup": {
     "*": {
-      "max": 506,
-      "methodsAbove20": 84,
       "p50": 2,
-      "p95": 42
+      "p95": 42,
+      "max": 506,
+      "methodsAbove20": 87
     }
   },
   "rows": [
@@ -2958,6 +2958,36 @@
       "startLine": 57
     },
     {
+      "crap": 2,
+      "method": "buildBadgeView",
+      "path": "apps/web/src/components/ui/_lib/badge.ts",
+      "startLine": 83
+    },
+    {
+      "crap": 12,
+      "method": "resolveTone",
+      "path": "apps/web/src/components/ui/_lib/badge.ts",
+      "startLine": 97
+    },
+    {
+      "crap": 2,
+      "method": "cn",
+      "path": "apps/web/src/components/ui/_lib/cn.ts",
+      "startLine": 14
+    },
+    {
+      "crap": 6,
+      "method": "resolveEventColor",
+      "path": "apps/web/src/components/ui/_lib/eventColors.ts",
+      "startLine": 113
+    },
+    {
+      "crap": 6,
+      "method": "resolveSidebarNav",
+      "path": "apps/web/src/components/ui/_lib/sidebarNav.ts",
+      "startLine": 67
+    },
+    {
       "crap": 30,
       "method": "buildAvatarView",
       "path": "apps/web/src/components/ui/Avatar.ts",
@@ -3184,36 +3214,6 @@
       "method": "resolvePositive",
       "path": "apps/web/src/components/ui/VerifiedTick.ts",
       "startLine": 36
-    },
-    {
-      "crap": 2,
-      "method": "buildBadgeView",
-      "path": "apps/web/src/components/ui/_lib/badge.ts",
-      "startLine": 83
-    },
-    {
-      "crap": 12,
-      "method": "resolveTone",
-      "path": "apps/web/src/components/ui/_lib/badge.ts",
-      "startLine": 97
-    },
-    {
-      "crap": 2,
-      "method": "cn",
-      "path": "apps/web/src/components/ui/_lib/cn.ts",
-      "startLine": 14
-    },
-    {
-      "crap": 6,
-      "method": "resolveEventColor",
-      "path": "apps/web/src/components/ui/_lib/eventColors.ts",
-      "startLine": 113
-    },
-    {
-      "crap": 6,
-      "method": "resolveSidebarNav",
-      "path": "apps/web/src/components/ui/_lib/sidebarNav.ts",
-      "startLine": 67
     },
     {
       "crap": 30,
@@ -3901,6 +3901,24 @@
     },
     {
       "crap": 6,
+      "method": "getOnboardingState",
+      "path": "packages/shared/src/db/queries/users.ts",
+      "startLine": 66
+    },
+    {
+      "crap": 6,
+      "method": "getOnboardingStateBySubject",
+      "path": "packages/shared/src/db/queries/users.ts",
+      "startLine": 109
+    },
+    {
+      "crap": 6,
+      "method": "isOnboarded",
+      "path": "packages/shared/src/db/queries/users.ts",
+      "startLine": 141
+    },
+    {
+      "crap": 6,
       "method": "combine",
       "path": "packages/shared/src/db/queries/userTeams.ts",
       "startLine": 85
@@ -3928,24 +3946,6 @@
       "method": "<anon method-2>",
       "path": "packages/shared/src/db/queries/userTeams.ts",
       "startLine": 154
-    },
-    {
-      "crap": 6,
-      "method": "getOnboardingState",
-      "path": "packages/shared/src/db/queries/users.ts",
-      "startLine": 66
-    },
-    {
-      "crap": 6,
-      "method": "getOnboardingStateBySubject",
-      "path": "packages/shared/src/db/queries/users.ts",
-      "startLine": 109
-    },
-    {
-      "crap": 6,
-      "method": "isOnboarded",
-      "path": "packages/shared/src/db/queries/users.ts",
-      "startLine": 141
     },
     {
       "crap": 2,
