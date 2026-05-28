@@ -289,11 +289,13 @@ function collectRows({ scanRoot, repoRoot = REPO_ROOT } = {}) {
 // Tolerance comparison (ADR-018 — relative-5% per-method, lower-is-better)
 // ---------------------------------------------------------------------------
 
-// Per-method identifier: `path:startLine:method`. Two methods with the
-// same name in the same file at different start lines are distinct
-// rows; a refactor that moves a method down by one line is a row
-// rename (new row appears, old row disappears) and is not flagged —
-// removing a regression is never a regression.
+// Per-method identifier: `path:method`. A function that moves to a
+// different line but keeps its name and file matches its prior baseline
+// entry — only a genuine CRAP increase is flagged. Genuinely new
+// functions still surface (prev=0 → fail for lower-is-better polarity).
+// `startLine` stays in the row payload for human readability but is not
+// part of the identity. Anonymous callbacks are positionally numbered
+// per-file, so a changed callback count can shuffle them (accepted).
 export const ROW_IDENTIFIER_KEY = 'id';
 
 function indexById(envelope) {
@@ -303,7 +305,7 @@ function indexById(envelope) {
 }
 
 function rowId(r) {
-  return `${r.path}:${r.startLine}:${r.method}`;
+  return `${r.path}:${r.method}`;
 }
 
 export function compareCrap(prev, current) {
