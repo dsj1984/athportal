@@ -24,6 +24,14 @@
 //      mirrors the same guard in `mintSignInTicket()`.
 //   3. Only mints tickets for the three canonical QA personas;
 //      arbitrary `userId` values cannot be passed in.
+//   4. Story #988 — refuses with `409 Conflict` when `locals.auth()`
+//      reports an existing Clerk session whose `userId` does not match
+//      the target persona. Clerk's frontend short-circuits ticket
+//      exchange when a session is already present, which would
+//      otherwise leave the operator silently signed in as the previous
+//      persona; the 409 surfaces that case explicitly with a sign-out
+//      form-shim so the workflow is obvious instead of being a
+//      ten-minute debug session.
 
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
@@ -79,7 +87,39 @@ function notFound(): Response {
   return new Response('Not Found', { status: 404 });
 }
 
-export const GET: APIRoute = async ({ params, redirect }) => {
+/**
+ * Build the `409 Conflict` HTML body returned when the caller already has
+ * a Clerk session for a different persona. Exported so the unit test can
+ * assert the body shape; rendering happens inside the GET handler.
+ *
+ * Pure function — no I/O, no environment access — so it can be exercised
+ * directly without an Astro context.
+ */
+export function renderExistingSessionConflict(args: {
+  readonly targetPersona: string;
+  readonly currentUserId: string;
+}): { readonly body: string; readonly status: 409 } {
+  const target = args.targetPersona;
+  const current = args.currentUserId;
+  const retryHref = `/dev/sign-in-as/${encodeURIComponent(target)}`;
+  return {
+    status: 409,
+    body: `<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Already signed in — dev sign-in seam</title></head>
+<body>
+<h1>Already signed in</h1>
+<p>This dev seam cannot mint a sign-in ticket for <code>${target}</code> while another Clerk session (<code>${current}</code>) is active. Clerk's frontend short-circuits ticket exchange when a session is already present, which would silently leave you signed in as the previous persona.</p>
+<p>Sign out first using the form below, then retry the request.</p>
+<form method="POST" action="/sign-out"><button type="submit">Sign out</button></form>
+<p>After signing out, visit <a href="${retryHref}">${retryHref}</a> to mint the ticket for <code>${target}</code>.</p>
+<p>See <a href="/docs/runbooks/clerk-persona-bootstrap.md">docs/runbooks/clerk-persona-bootstrap.md</a> for the QA workflow.</p>
+</body>
+</html>`,
+  };
+}
+
+export const GET: APIRoute = async ({ params, locals, redirect }) => {
   if (isProduction()) return notFound();
 
   const persona = params.persona;
@@ -106,6 +146,25 @@ export const GET: APIRoute = async ({ params, redirect }) => {
         'Bootstrap the persona per docs/runbooks/clerk-persona-bootstrap.md.',
       { status: 500 },
     );
+  }
+
+  // Story #988 — refuse cleanly when an existing Clerk session is present
+  // for a different user. Clerk's frontend silently no-ops the ticket
+  // exchange in that case, so we surface a 409 with a form-shim sign-out.
+  // The Clerk middleware (see apps/web/src/middleware.ts) populates
+  // `locals.auth()` for every request; on dev surfaces it returns `null`
+  // for anonymous callers and a `userId` string for signed-in callers.
+  const authLocal = (locals as { auth?: () => { userId: string | null } }).auth;
+  const currentUserId = typeof authLocal === 'function' ? authLocal().userId : null;
+  if (typeof currentUserId === 'string' && currentUserId.length > 0 && currentUserId !== userId) {
+    const conflict = renderExistingSessionConflict({
+      targetPersona: persona,
+      currentUserId,
+    });
+    return new Response(conflict.body, {
+      status: conflict.status,
+      headers: { 'content-type': 'text/html; charset=utf-8' },
+    });
   }
 
   const tokenRes = await fetch('https://api.clerk.com/v1/sign_in_tokens', {

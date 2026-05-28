@@ -265,9 +265,11 @@ Reference: [Clerk docs — Testing emails and phones](https://clerk.com/docs/tes
 
 ## Switching personas via `/dev/sign-in-as/<persona>`
 
-The dev seam at [`apps/web/src/pages/dev/sign-in-as/[persona].ts`](../../apps/web/src/pages/dev/sign-in-as/%5Bpersona%5D.ts) mints a Clerk sign-in ticket for the named persona and redirects the browser through Clerk's ticket-exchange flow. Clerk's frontend short-circuits ticket exchange when an existing Clerk session is already present, so hitting `/dev/sign-in-as/<persona>` from a browser that is signed in as a different persona silently no-ops — you stay signed in as the previous persona without warning, and downstream Plan steps will assert against the wrong user.
+The dev seam at [`apps/web/src/pages/dev/sign-in-as/[persona].ts`](../../apps/web/src/pages/dev/sign-in-as/%5Bpersona%5D.ts) mints a Clerk sign-in ticket for the named persona and redirects the browser through Clerk's ticket-exchange flow. Clerk's frontend short-circuits ticket exchange when an existing Clerk session is already present, which would otherwise leave the browser silently signed in as the previous persona.
 
-**Always POST `/sign-out` before hitting `/dev/sign-in-as/<persona>` if the browser has a session from a previous persona.** Use the `<UserButton/>` menu's **Sign out** entry, or paste the documented form shim from [`docs/testing-strategy.md` § Sign-out pattern](../testing-strategy.md#sign-out-pattern) into devtools. A fresh incognito window also works because it has no prior session.
+Story #988 closes that foot-gun with an explicit guard: when `locals.auth().userId` resolves to a user that does not match the requested persona, the seam returns a **`409 Conflict`** HTML response that names the conflicting subject ID and renders an inline sign-out form-shim (POSTs to `/sign-out`). Sign out via the embedded form (or via the `<UserButton/>` menu in the header), then retry the request.
+
+A fresh incognito window also works — it has no prior session, so the 409 guard never fires.
 
 ---
 
