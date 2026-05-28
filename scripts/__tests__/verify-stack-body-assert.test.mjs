@@ -250,10 +250,7 @@ describe('probe — assertLocationContains present, Location header matches', ()
 describe('probe — assertLocationContains present, Location header does NOT match', () => {
   beforeEach(() => {
     // Invariant 7: 302 but Location is missing the needle.
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValueOnce(makeResponse(302, '', '/sign-in')),
-    );
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(makeResponse(302, '', '/sign-in')));
   });
 
   afterEach(() => {

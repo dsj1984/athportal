@@ -174,8 +174,7 @@ export async function probe(baseUrl, entry) {
   // `assertBodyContains`. Issues a separate redirect-following fetch so
   // the status check and the body check are independent and each can
   // fail with a precise diagnostic.
-  const bodyNeedle =
-    typeof entry.assertBodyContains === 'string' ? entry.assertBodyContains : null;
+  const bodyNeedle = typeof entry.assertBodyContains === 'string' ? entry.assertBodyContains : null;
   if (bodyNeedle !== null) {
     let bodyResponse;
     try {
