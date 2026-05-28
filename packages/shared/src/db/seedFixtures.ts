@@ -7,12 +7,15 @@
  * The QA-corpus agent runner (and any operator running plans locally)
  * needs the canonical persona ↔ org ↔ team graph present in the local
  * SQLite DB before `/admin/*` plans can sign in and act. This seed
- * inserts one organization, the three synthetic persona users
- * (`athlete@example.com`, `coach@example.com`, `org-admin@example.com`)
- * with `onboarded_at` pinned to `SEED_BOOTSTRAP_EFFECTIVE_AT`, one team,
- * one athlete_memberships row, and one coach_assignments row. Every
- * insert uses Drizzle's `onConflictDoNothing` on the table primary key
- * for idempotence — the same pattern `seedLegalDocuments` uses.
+ * inserts the three synthetic persona users (`athlete@example.com`,
+ * `coach@example.com`, `org-admin@example.com`) with `onboarded_at`
+ * pinned to `SEED_BOOTSTRAP_EFFECTIVE_AT`, plus the org/team/membership/
+ * roster graph they belong to. Story #986 grew the graph to two orgs,
+ * three teams, and extra athletes so the multi-athlete (F31) and
+ * multi-team / multi-org (F36) coach QA Plans run against a clean reset
+ * without manual DB setup. Every insert uses Drizzle's
+ * `onConflictDoNothing` on the table primary key for idempotence — the
+ * same pattern `seedLegalDocuments` uses.
  *
  * Persona ↔ org ↔ team mapping is sourced from `PERSONA_FIXTURES` in
  * `@repo/shared/testing/auth` so the persona ↔ identifier ↔ role
@@ -80,6 +83,35 @@ export const SEED_FIXTURE_ROSTER_JERSEY_NUMBER = '10' as const;
 export const SEED_FIXTURE_ROSTER_PRIMARY_POSITION = 'Forward' as const;
 
 /**
+ * Story #986 additions (F31 + F36). The Session-4 QA Plans need more
+ * than the single-athlete, single-team graph above:
+ *
+ *   - F31 (`tp-coach-roster-edit-remove`) needs a SECOND athlete on the
+ *     coach's team (`team_test_a_1`) so the "control row unchanged"
+ *     assertions have a row to check against.
+ *   - F36 (`tp-coach-roster-team-scoped-access`) needs THREE distinct
+ *     teams: the coach's assigned team, a second team in the SAME org,
+ *     and a team in a DIFFERENT org — to drive the cross-team and
+ *     cross-org refusal cases.
+ *
+ * The extra athletes are not bootstrap personas (only athlete/coach/
+ * org-admin map to real Clerk users), so they carry synthetic
+ * `user_test_*` subject stubs.
+ */
+export const SEED_FIXTURE_ORG_B_ID = 'org_test_b' as const;
+export const SEED_FIXTURE_TEAM_A2_ID = 'team_test_a_2' as const;
+export const SEED_FIXTURE_TEAM_B1_ID = 'team_test_b_1' as const;
+export const SEED_FIXTURE_ATHLETE_B_USER_ID = 'user_seed_athlete_b' as const;
+export const SEED_FIXTURE_ATHLETE_A2_USER_ID = 'user_seed_athlete_a2' as const;
+export const SEED_FIXTURE_ATHLETE_B1_USER_ID = 'user_seed_athlete_b1' as const;
+export const SEED_FIXTURE_ATHLETE_B_MEMBERSHIP_ID = 'am_seed_athlete_b' as const;
+export const SEED_FIXTURE_ATHLETE_A2_MEMBERSHIP_ID = 'am_seed_athlete_a2' as const;
+export const SEED_FIXTURE_ATHLETE_B1_MEMBERSHIP_ID = 'am_seed_athlete_b1' as const;
+export const SEED_FIXTURE_ROSTER_ENTRY_B_ID = 're_seed_athlete_b' as const;
+export const SEED_FIXTURE_ROSTER_ENTRY_A2_ID = 're_seed_athlete_a2' as const;
+export const SEED_FIXTURE_ROSTER_ENTRY_B1_ID = 're_seed_athlete_b1' as const;
+
+/**
  * The Clerk subject IDs and persona emails the seed writes into `users`.
  * These are the same values exposed by `PERSONA_FIXTURES` in
  * `@repo/shared/testing/auth` — duplicated here (and kept in lockstep)
@@ -144,6 +176,11 @@ export function seedFixtures(db: unknown): void {
         name: 'Seeded Test Organization A',
         organizationType: 'CLUB',
       },
+      {
+        id: SEED_FIXTURE_ORG_B_ID,
+        name: 'Seeded Test Organization B',
+        organizationType: 'CLUB',
+      },
     ])
     .onConflictDoNothing()
     .run();
@@ -158,6 +195,22 @@ export function seedFixtures(db: unknown): void {
         sport: 'soccer',
         season: '2026',
         ageGroup: 'U14',
+      },
+      {
+        id: SEED_FIXTURE_TEAM_A2_ID,
+        orgId: SEED_FIXTURE_ORG_ID,
+        name: 'Seeded Test Team A2',
+        sport: 'basketball',
+        season: '2026',
+        ageGroup: 'U16',
+      },
+      {
+        id: SEED_FIXTURE_TEAM_B1_ID,
+        orgId: SEED_FIXTURE_ORG_B_ID,
+        name: 'Seeded Test Team B1',
+        sport: 'volleyball',
+        season: '2026',
+        ageGroup: 'U16',
       },
     ])
     .onConflictDoNothing()
@@ -193,6 +246,37 @@ export function seedFixtures(db: unknown): void {
         teamId: null,
         onboardedAt: SEED_FIXTURE_EFFECTIVE_AT,
       },
+      // Story #986 — extra athletes for the multi-athlete / multi-team /
+      // multi-org QA Plans. Synthetic `user_test_*` subjects (not Clerk
+      // bootstrap personas). `team_id` stays null; team belonging is via
+      // `athlete_memberships` below.
+      {
+        id: SEED_FIXTURE_ATHLETE_B_USER_ID,
+        clerkSubjectId: 'user_test_athlete_b',
+        email: 'b@example.com',
+        role: 'member',
+        orgId: SEED_FIXTURE_ORG_ID,
+        teamId: null,
+        onboardedAt: SEED_FIXTURE_EFFECTIVE_AT,
+      },
+      {
+        id: SEED_FIXTURE_ATHLETE_A2_USER_ID,
+        clerkSubjectId: 'user_test_athlete_a2',
+        email: 'a2@example.com',
+        role: 'member',
+        orgId: SEED_FIXTURE_ORG_ID,
+        teamId: null,
+        onboardedAt: SEED_FIXTURE_EFFECTIVE_AT,
+      },
+      {
+        id: SEED_FIXTURE_ATHLETE_B1_USER_ID,
+        clerkSubjectId: 'user_test_athlete_b1',
+        email: 'b1@example.com',
+        role: 'member',
+        orgId: SEED_FIXTURE_ORG_B_ID,
+        teamId: null,
+        onboardedAt: SEED_FIXTURE_EFFECTIVE_AT,
+      },
     ])
     .onConflictDoNothing()
     .run();
@@ -205,6 +289,27 @@ export function seedFixtures(db: unknown): void {
         orgId: SEED_FIXTURE_ORG_ID,
         teamId: SEED_FIXTURE_TEAM_ID,
         athleteUserId: SEED_FIXTURE_ATHLETE_USER_ID,
+      },
+      // Story #986 — second athlete on the coach's team (F31 control row).
+      {
+        id: SEED_FIXTURE_ATHLETE_B_MEMBERSHIP_ID,
+        orgId: SEED_FIXTURE_ORG_ID,
+        teamId: SEED_FIXTURE_TEAM_ID,
+        athleteUserId: SEED_FIXTURE_ATHLETE_B_USER_ID,
+      },
+      // Story #986 — athlete on the second same-org team (F36 cross-team).
+      {
+        id: SEED_FIXTURE_ATHLETE_A2_MEMBERSHIP_ID,
+        orgId: SEED_FIXTURE_ORG_ID,
+        teamId: SEED_FIXTURE_TEAM_A2_ID,
+        athleteUserId: SEED_FIXTURE_ATHLETE_A2_USER_ID,
+      },
+      // Story #986 — athlete on the other-org team (F36 cross-org).
+      {
+        id: SEED_FIXTURE_ATHLETE_B1_MEMBERSHIP_ID,
+        orgId: SEED_FIXTURE_ORG_B_ID,
+        teamId: SEED_FIXTURE_TEAM_B1_ID,
+        athleteUserId: SEED_FIXTURE_ATHLETE_B1_USER_ID,
       },
     ])
     .onConflictDoNothing()
@@ -237,6 +342,43 @@ export function seedFixtures(db: unknown): void {
         athleteUserId: SEED_FIXTURE_ATHLETE_USER_ID,
         jerseyNumber: SEED_FIXTURE_ROSTER_JERSEY_NUMBER,
         primaryPosition: SEED_FIXTURE_ROSTER_PRIMARY_POSITION,
+        endedAt: null,
+        createdAt: SEED_FIXTURE_EFFECTIVE_AT,
+        updatedAt: SEED_FIXTURE_EFFECTIVE_AT,
+      },
+      // Story #986 — control row on the coach's team (F31): a second
+      // active roster entry the edit/remove Plan leaves untouched.
+      {
+        id: SEED_FIXTURE_ROSTER_ENTRY_B_ID,
+        orgId: SEED_FIXTURE_ORG_ID,
+        teamId: SEED_FIXTURE_TEAM_ID,
+        athleteUserId: SEED_FIXTURE_ATHLETE_B_USER_ID,
+        jerseyNumber: '7',
+        primaryPosition: 'Goalkeeper',
+        endedAt: null,
+        createdAt: SEED_FIXTURE_EFFECTIVE_AT,
+        updatedAt: SEED_FIXTURE_EFFECTIVE_AT,
+      },
+      // Story #986 — roster entry on the second same-org team (F36).
+      {
+        id: SEED_FIXTURE_ROSTER_ENTRY_A2_ID,
+        orgId: SEED_FIXTURE_ORG_ID,
+        teamId: SEED_FIXTURE_TEAM_A2_ID,
+        athleteUserId: SEED_FIXTURE_ATHLETE_A2_USER_ID,
+        jerseyNumber: '22',
+        primaryPosition: 'Center',
+        endedAt: null,
+        createdAt: SEED_FIXTURE_EFFECTIVE_AT,
+        updatedAt: SEED_FIXTURE_EFFECTIVE_AT,
+      },
+      // Story #986 — roster entry on the other-org team (F36).
+      {
+        id: SEED_FIXTURE_ROSTER_ENTRY_B1_ID,
+        orgId: SEED_FIXTURE_ORG_B_ID,
+        teamId: SEED_FIXTURE_TEAM_B1_ID,
+        athleteUserId: SEED_FIXTURE_ATHLETE_B1_USER_ID,
+        jerseyNumber: '11',
+        primaryPosition: 'Setter',
         endedAt: null,
         createdAt: SEED_FIXTURE_EFFECTIVE_AT,
         updatedAt: SEED_FIXTURE_EFFECTIVE_AT,
