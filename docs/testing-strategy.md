@@ -50,6 +50,7 @@
   - [Regression checklist](#regression-checklist)
   - [How to update this section](#how-to-update-this-section)
 - [QA Corpus](#qa-corpus)
+  - [Manually injecting roster invites](#manually-injecting-roster-invites)
   - [Overview](#overview)
   - [Test Plan format](#test-plan-format)
   - [Exploratory Charter format](#exploratory-charter-format)
@@ -872,6 +873,15 @@ Paste the form into the page, click submit, and observe the same `303 → /` red
 - Any link, anchor, or address-bar entry that issues a GET against `/sign-out`.
 
 The `lint:qa` gate does not (yet) scan for these strings, but Story #876 § Plan-content fixes migrated every existing offender to the patterns above — new authors are expected to follow the same convention. A reviewer who spots a GET-shape sign-out instruction in a PR MUST request changes before approving.
+
+### Manually injecting roster invites
+
+Some QA sessions need to drive the roster-invite accept/decline flow without going through the send leg — for example when the local stack has no mail transport bound (see below) or when the session is probing the accept page directly and the send-side has already been exercised by another plan. Both cases mean inserting `roster_invite` rows by hand.
+
+Two conventions matter when you do that, and both have silent failure modes:
+
+- **Token plaintext is 64 lowercase hex characters, not base64url.** The public route at [`apps/api/src/routes/v1/public/roster-invites.ts`](../apps/api/src/routes/v1/public/roster-invites.ts) requires the path-param plaintext token to match `/^[0-9a-f]{64}$/` — the same shape as a SHA-256 hex digest. The coach-side issue path generates plaintext as `randomBytes(32).toString('hex')` (see [`apps/api/src/routes/v1/coach/invites.ts`](../apps/api/src/routes/v1/coach/invites.ts)), and the accept page hashes the path-param plaintext with SHA-256 before looking up the row. If you reach for `randomBytes(32).toString('base64url')` by default, the resulting 43-char plaintext fails the pre-check and the accept page reports `NOT_FOUND` — indistinguishable from a genuinely missing invite. Generate the plaintext as `randomBytes(32).toString('hex')` and the `token_hash` column as `createHash('sha256').update(plaintext, 'utf8').digest('hex')`.
+- **Local dev does not ship with a transactional-mail transport.** Production environments set `MAILER_TRANSPORT` per environment; local dev does not. UI invite-send flows therefore refuse with `503 MAIL_TRANSPORT_UNBOUND` from [`apps/api/src/routes/v1/coach/invites.ts`](../apps/api/src/routes/v1/coach/invites.ts) until you either wire a transport locally or seed `roster_invite` rows directly using the hex-token convention above. The 503 is the documented "no transport bound" outcome, not a regression.
 
 ### Exploratory Charter format
 

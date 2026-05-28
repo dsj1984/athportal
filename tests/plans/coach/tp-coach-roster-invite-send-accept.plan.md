@@ -20,7 +20,7 @@ prerequisites:
 
 - Confirm `pnpm dev` is running and the web app is reachable at `http://localhost:4321`. The invite send surface is the `<InviteAthleteDialog/>` on the team's roster page; accept lands on [`/r/roster-invite/[token]/accept.astro`](../../../apps/web/src/pages/r/roster-invite/%5Btoken%5D/accept.astro).
 - Reset to a clean seed: `pnpm --filter @repo/shared run db:reset && pnpm --filter @repo/shared run db:seed`. Confirm the seeded coach has at least one team with no outstanding `roster_invite` for the address you will use below.
-- Pick a unique test address (e.g. `e2e-roster+<timestamp>@example.com`) that has no existing `roster_invite` or `roster_entry` in the seeded org. Have the local mail catcher (or Clerk test channel) ready to retrieve the tokenized invite link.
+- Pick a unique test address (e.g. `e2e-roster+<timestamp>@example.com`) that has no existing `roster_invite` or `roster_entry` in the seeded org. Have the local mail catcher (or Clerk test channel) ready to retrieve the tokenized invite link. If the local stack has no mail transport bound, the send-leg will refuse with `503 MAIL_TRANSPORT_UNBOUND` — see [`docs/testing-strategy.md` § Manually injecting roster invites](../../../docs/testing-strategy.md#manually-injecting-roster-invites) for the hex-token convention and the documented workaround.
 - Sign in as the seeded `coach` persona. Note the seeded `teamId` for the team you will invite into.
 
 ## Steps
