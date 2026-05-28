@@ -69,7 +69,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const REPO_ROOT = path.resolve(__dirname, '..');
 export const BASELINE_PATH = path.join(REPO_ROOT, 'baselines', 'maintainability.json');
 export const SCHEMA_POINTER = '.agents/schemas/baselines/maintainability.schema.json';
-export const KERNEL_VERSION = '1.0.0';
+export const KERNEL_VERSION = '0.1.0';
 // Framework-default rollup `min` floor (ADR-019). MI is on a 0–171 scale
 // where higher is better; the mandrel framework default of 70 catches
 // "this file just regressed below the maintainability cliff" without

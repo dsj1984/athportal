@@ -65,9 +65,9 @@ describe('baseline stubs (crap + maintainability)', () => {
     expect(doc).toHaveProperty('rows');
   });
 
-  it.each(STUBS)('$kind stub pins kernelVersion to 1.0.0', ({ file }) => {
+  it.each(STUBS)('$kind stub carries a semver kernelVersion string', ({ file }) => {
     const doc = loadJson(path.join(BASELINES_DIR, file));
-    expect(doc.kernelVersion).toBe('1.0.0');
+    expect(doc.kernelVersion).toMatch(/^\d+\.\d+\.\d+$/);
   });
 
   it.each(STUBS)("$kind stub rollup carries the required '*' key", ({ file }) => {

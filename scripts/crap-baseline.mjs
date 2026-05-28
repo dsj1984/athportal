@@ -60,7 +60,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const REPO_ROOT = path.resolve(__dirname, '..');
 export const BASELINE_PATH = path.join(REPO_ROOT, 'baselines', 'crap.json');
 export const SCHEMA_POINTER = '.agents/schemas/baselines/crap.schema.json';
-export const KERNEL_VERSION = '1.0.0';
+export const KERNEL_VERSION = '0.1.0';
 export const TOLERANCE_PCT = 5; // ADR-018: relative-5% per-method ratchet
 export const METHODS_ABOVE_20_THRESHOLD = 20; // shared crap-ceiling marker
 
