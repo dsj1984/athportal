@@ -1,11 +1,11 @@
 {
   "$schema": ".agents/schemas/baselines/crap.schema.json",
-  "generatedAt": "2026-05-27T23:26:21.591Z",
+  "generatedAt": "2026-05-28T00:35:19.045Z",
   "kernelVersion": "1.0.0",
   "rollup": {
     "*": {
       "max": 506,
-      "methodsAbove20": 83,
+      "methodsAbove20": 84,
       "p50": 2,
       "p95": 42
     }
@@ -525,67 +525,79 @@
       "crap": 2,
       "method": "errorBody",
       "path": "apps/api/src/routes/v1/admin/invitations/router.ts",
-      "startLine": 75
+      "startLine": 79
     },
     {
       "crap": 2,
       "method": "narrowTeamsDb",
       "path": "apps/api/src/routes/v1/admin/invitations/router.ts",
-      "startLine": 119
+      "startLine": 123
     },
     {
       "crap": 2,
       "method": "narrowDb",
       "path": "apps/api/src/routes/v1/admin/invitations/router.ts",
-      "startLine": 123
+      "startLine": 127
     },
     {
       "crap": 12,
       "method": "toWire",
       "path": "apps/api/src/routes/v1/admin/invitations/router.ts",
-      "startLine": 142
+      "startLine": 146
+    },
+    {
+      "crap": 2,
+      "method": "requireClerkInvitationClient",
+      "path": "apps/api/src/routes/v1/admin/invitations/router.ts",
+      "startLine": 174
+    },
+    {
+      "crap": 30,
+      "method": "<anon method-1>",
+      "path": "apps/api/src/routes/v1/admin/invitations/router.ts",
+      "startLine": 175
     },
     {
       "crap": 6,
-      "method": "<anon method-1>",
-      "path": "apps/api/src/routes/v1/admin/invitations/router.ts",
-      "startLine": 155
-    },
-    {
-      "crap": 42,
       "method": "<anon method-2>",
       "path": "apps/api/src/routes/v1/admin/invitations/router.ts",
-      "startLine": 199
-    },
-    {
-      "crap": 2,
-      "method": "<anon method-3>",
-      "path": "apps/api/src/routes/v1/admin/invitations/router.ts",
-      "startLine": 206
+      "startLine": 208
     },
     {
       "crap": 42,
-      "method": "<anon method-4>",
+      "method": "<anon method-3>",
       "path": "apps/api/src/routes/v1/admin/invitations/router.ts",
-      "startLine": 311
+      "startLine": 252
     },
     {
       "crap": 2,
+      "method": "<anon method-4>",
+      "path": "apps/api/src/routes/v1/admin/invitations/router.ts",
+      "startLine": 259
+    },
+    {
+      "crap": 42,
       "method": "<anon method-5>",
       "path": "apps/api/src/routes/v1/admin/invitations/router.ts",
-      "startLine": 318
+      "startLine": 364
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-6>",
+      "path": "apps/api/src/routes/v1/admin/invitations/router.ts",
+      "startLine": 371
     },
     {
       "crap": 56,
-      "method": "<anon method-6>",
+      "method": "<anon method-7>",
       "path": "apps/api/src/routes/v1/admin/invitations/router.ts",
-      "startLine": 399
+      "startLine": 452
     },
     {
       "crap": 42,
-      "method": "<anon method-7>",
+      "method": "<anon method-8>",
       "path": "apps/api/src/routes/v1/admin/invitations/router.ts",
-      "startLine": 454
+      "startLine": 507
     },
     {
       "crap": 2,
