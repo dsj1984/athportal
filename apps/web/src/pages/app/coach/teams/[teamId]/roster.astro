@@ -96,6 +96,7 @@ if (probe === null || !probe.ok) {
   import {
     type CoachRosterEntry,
     COACH_ROSTER_TEST_IDS,
+    attachRowActions,
     buildRosterUrl,
     renderRosterRows,
   } from '../../../../../components/coach/RosterTable.ts';
@@ -329,6 +330,13 @@ if (probe === null || !probe.ok) {
   const rootEl = document.querySelector<HTMLElement>('[data-coach-roster-page]');
   const pageTeamId = rootEl?.dataset.teamId;
   if (pageTeamId) {
+    // Delegate the per-row Edit/Save/Cancel/Remove handlers on the
+    // stable <tbody>, so rows rendered by `renderRosterRows` inside
+    // `load()` pick up the handlers without re-attaching.
+    const rosterTbody = document.querySelector<HTMLTableSectionElement>(
+      '[data-coach-roster-tbody]',
+    );
+    if (rosterTbody) attachRowActions(rosterTbody, pageTeamId);
     wireDialog(pageTeamId);
     wireRevokeDelegation(pageTeamId);
     void loadInvites(pageTeamId);

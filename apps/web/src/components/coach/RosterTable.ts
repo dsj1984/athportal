@@ -53,6 +53,7 @@ export const COACH_ROSTER_TEST_IDS = {
   jerseyInput: 'coach-roster-jersey-input',
   positionInput: 'coach-roster-position-input',
   jerseyWarning: 'coach-roster-jersey-warning',
+  rowError: 'coach-roster-row-error',
   removeConfirm: 'coach-roster-remove-confirm',
   removeConfirmYes: 'coach-roster-remove-confirm-yes',
   removeConfirmCancel: 'coach-roster-remove-confirm-cancel',
@@ -199,6 +200,16 @@ export function renderRosterRows(
     warning.setAttribute('role', 'status');
     warning.hidden = true;
     actionsTd.appendChild(warning);
+
+    // Inline per-row error slot. Surfaces the server's user-facing
+    // `error.message` on a failed PATCH/DELETE (e.g. 400 INVALID_INPUT)
+    // so the coach sees a single readable sentence on the row instead
+    // of a raw envelope. Hidden until a mutation handler fills it.
+    const rowError = document.createElement('span');
+    rowError.setAttribute('data-testid', COACH_ROSTER_TEST_IDS.rowError);
+    rowError.setAttribute('role', 'alert');
+    rowError.hidden = true;
+    actionsTd.appendChild(rowError);
 
     tr.appendChild(actionsTd);
 
@@ -425,4 +436,219 @@ export function buildPatchPayload(
  */
 export function removeRow(tr: HTMLTableRowElement): void {
   tr.remove();
+}
+
+/**
+ * Show the inline per-row error message. Used by the mutation handlers
+ * when a PATCH/DELETE fails — the server's user-facing `error.message`
+ * is rendered verbatim (it is a single readable sentence since the API
+ * picks `issues[0].message`), never the raw envelope.
+ */
+export function showRowError(tr: HTMLTableRowElement, message: string): void {
+  const slot = tr.querySelector<HTMLElement>(`[data-testid="${COACH_ROSTER_TEST_IDS.rowError}"]`);
+  if (!slot) return;
+  slot.textContent = message;
+  slot.hidden = false;
+}
+
+/**
+ * Hide the inline per-row error message. Called when the coach starts a
+ * fresh edit or a retry succeeds.
+ */
+export function hideRowError(tr: HTMLTableRowElement): void {
+  const slot = tr.querySelector<HTMLElement>(`[data-testid="${COACH_ROSTER_TEST_IDS.rowError}"]`);
+  if (!slot) return;
+  slot.hidden = true;
+  slot.textContent = '';
+}
+
+/**
+ * Read the athlete's display name from the row's name cell. Used to
+ * personalise the remove-confirmation prompt.
+ */
+function rowAthleteName(tr: HTMLTableRowElement): string {
+  const nameTd = tr.querySelector<HTMLElement>('td[data-col="name"]');
+  const name = nameTd?.textContent?.trim();
+  return name && name.length > 0 ? name : 'this athlete';
+}
+
+/**
+ * Mount the remove-confirmation dialog into `document.body` and return
+ * it. The dialog carries the canonical confirm/cancel testids so the
+ * acceptance suite can target them. Any previously-mounted instance is
+ * removed first so repeated Remove clicks never stack duplicates.
+ */
+export function mountRemoveConfirm(athleteName: string): HTMLDialogElement {
+  const existing = document.querySelector<HTMLDialogElement>(
+    `dialog[data-testid="${COACH_ROSTER_TEST_IDS.removeConfirm}"]`,
+  );
+  if (existing) existing.remove();
+
+  const dialog = document.createElement('dialog');
+  dialog.setAttribute('data-testid', COACH_ROSTER_TEST_IDS.removeConfirm);
+
+  const prompt = document.createElement('p');
+  prompt.textContent = `Remove ${athleteName} from this roster?`;
+  dialog.appendChild(prompt);
+
+  dialog.appendChild(buildButton('button', COACH_ROSTER_TEST_IDS.removeConfirmCancel, 'Cancel'));
+  dialog.appendChild(buildButton('button', COACH_ROSTER_TEST_IDS.removeConfirmYes, 'Remove'));
+
+  document.body.appendChild(dialog);
+  return dialog;
+}
+
+/**
+ * Open the remove-confirmation dialog and resolve to the coach's
+ * choice. Resolves `true` on confirm, `false` on cancel. The dialog is
+ * removed from the DOM either way. `showModal` is used when available
+ * (real browsers) and falls back to the `open` attribute under jsdom,
+ * which does not implement modal dialogs.
+ */
+function openRemoveConfirm(athleteName: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    const dialog = mountRemoveConfirm(athleteName);
+    const yes = dialog.querySelector<HTMLButtonElement>(
+      `button[data-testid="${COACH_ROSTER_TEST_IDS.removeConfirmYes}"]`,
+    );
+    const cancel = dialog.querySelector<HTMLButtonElement>(
+      `button[data-testid="${COACH_ROSTER_TEST_IDS.removeConfirmCancel}"]`,
+    );
+    const settle = (result: boolean): void => {
+      dialog.remove();
+      resolve(result);
+    };
+    yes?.addEventListener('click', () => settle(true));
+    cancel?.addEventListener('click', () => settle(false));
+    try {
+      dialog.showModal();
+    } catch {
+      dialog.setAttribute('open', '');
+    }
+  });
+}
+
+/**
+ * Persist a row's pending edit. Computes the minimal patch, PATCHes it,
+ * and reconciles the DOM with the server's response: on success the row
+ * exits edit mode with the returned values and surfaces the soft
+ * duplicate-jersey warning when present; on a 4xx the server's
+ * `error.message` is rendered inline on the row.
+ */
+async function saveRow(
+  tr: HTMLTableRowElement,
+  teamId: string,
+  fetchImpl: typeof fetch,
+): Promise<void> {
+  const entryId = tr.getAttribute('data-roster-entry-id');
+  if (!entryId) return;
+
+  const values = readEditValues(tr);
+  const patch = buildPatchPayload(tr, values);
+  if (patch === null) {
+    // No change — cheapest path is to leave edit mode without a fetch.
+    exitEditMode(tr);
+    return;
+  }
+
+  hideRowError(tr);
+  try {
+    const res = await fetchImpl(buildEntryUrl(teamId, entryId), {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json', accept: 'application/json' },
+      body: JSON.stringify(patch),
+    });
+    const envelope = (await res.json().catch(() => null)) as PatchEnvelope | null;
+    if (!res.ok || envelope?.success !== true || !envelope.data) {
+      showRowError(tr, envelope?.error?.message ?? 'Could not save changes.');
+      return;
+    }
+    const entry = envelope.data.entry;
+    exitEditMode(tr, {
+      jerseyNumber: entry.jerseyNumber,
+      primaryPosition: entry.primaryPosition,
+    });
+    if (envelope.data.warnings?.duplicateJerseyNumber && entry.jerseyNumber) {
+      showJerseyWarning(tr, entry.jerseyNumber);
+    } else {
+      hideJerseyWarning(tr);
+    }
+  } catch {
+    showRowError(tr, 'Could not reach the server.');
+  }
+}
+
+/**
+ * Confirm and remove a row. Opens the confirmation dialog; on confirm,
+ * DELETEs the entry and removes the row on a 204. A failed DELETE
+ * surfaces an inline row error.
+ */
+async function confirmAndRemove(
+  tr: HTMLTableRowElement,
+  teamId: string,
+  fetchImpl: typeof fetch,
+): Promise<void> {
+  const confirmed = await openRemoveConfirm(rowAthleteName(tr));
+  if (!confirmed) return;
+
+  const entryId = tr.getAttribute('data-roster-entry-id');
+  if (!entryId) return;
+
+  hideRowError(tr);
+  try {
+    const res = await fetchImpl(buildEntryUrl(teamId, entryId), {
+      method: 'DELETE',
+      headers: { accept: 'application/json' },
+    });
+    if (res.status !== 204 && !res.ok) {
+      const envelope = (await res.json().catch(() => null)) as PatchEnvelope | null;
+      showRowError(tr, envelope?.error?.message ?? 'Could not remove the athlete.');
+      return;
+    }
+    removeRow(tr);
+  } catch {
+    showRowError(tr, 'Could not reach the server.');
+  }
+}
+
+/**
+ * Wire per-row Edit / Save / Cancel / Remove handlers via a single
+ * delegated click listener on the `<tbody>`. Delegation means rows
+ * rendered after `renderRosterRows` re-runs pick up the handlers
+ * without re-attaching — attach once per page load.
+ *
+ * `fetchImpl` is injectable so unit tests can drive the PATCH/DELETE
+ * branches deterministically; production passes the global `fetch`.
+ */
+export function attachRowActions(
+  tbody: HTMLTableSectionElement,
+  teamId: string,
+  fetchImpl: typeof fetch = fetch,
+): void {
+  tbody.addEventListener('click', (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) return;
+    const tr = target.closest<HTMLTableRowElement>(
+      `tr[data-testid="${COACH_ROSTER_TEST_IDS.row}"]`,
+    );
+    if (!tr) return;
+
+    if (target.closest(`button[data-testid="${COACH_ROSTER_TEST_IDS.editBtn}"]`)) {
+      hideRowError(tr);
+      enterEditMode(tr);
+      return;
+    }
+    if (target.closest(`button[data-testid="${COACH_ROSTER_TEST_IDS.cancelBtn}"]`)) {
+      exitEditMode(tr);
+      hideRowError(tr);
+      return;
+    }
+    if (target.closest(`button[data-testid="${COACH_ROSTER_TEST_IDS.saveBtn}"]`)) {
+      void saveRow(tr, teamId, fetchImpl);
+      return;
+    }
+    if (target.closest(`button[data-testid="${COACH_ROSTER_TEST_IDS.removeBtn}"]`)) {
+      void confirmAndRemove(tr, teamId, fetchImpl);
+    }
+  });
 }
