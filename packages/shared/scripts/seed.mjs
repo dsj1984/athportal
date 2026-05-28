@@ -244,6 +244,33 @@ export function applySeed(client) {
        ON CONFLICT(id) DO NOTHING`,
     )
     .run('ca_seed_coach', SEED_ORG_ID, SEED_TEAM_ID, 'user_seed_coach');
+
+  // Roster entry — the coach roster surface (Epic #11) reads from
+  // `roster_entry` exclusively. Mirrors the row written by
+  // `src/db/seedFixtures.ts § seedFixtures`; PR #940 added the row to
+  // the TS module but not to this script, leaving the runtime seed
+  // unable to populate the coach roster page. Story #981.
+  client
+    .prepare(
+      `INSERT INTO roster_entry (
+         id, org_id, team_id, athlete_user_id,
+         jersey_number, primary_position, ended_at,
+         created_at, updated_at
+       )
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(id) DO NOTHING`,
+    )
+    .run(
+      're_seed_athlete',
+      SEED_ORG_ID,
+      SEED_TEAM_ID,
+      'user_seed_athlete',
+      '10',
+      'Forward',
+      null,
+      SEED_BOOTSTRAP_EFFECTIVE_AT_UNIX,
+      SEED_BOOTSTRAP_EFFECTIVE_AT_UNIX,
+    );
 }
 
 async function main() {
