@@ -1,8 +1,8 @@
 ---
-// apps/web/src/pages/app/coach/teams/[teamId]/athletes/[athleteId]/index.astro
+// apps/web/src/pages/app/coach/teams/[teamId]/athletes/[rosterEntryId]/index.astro
 //
-// `/app/coach/teams/:teamId/athletes/:athleteId` — team-scoped athlete
-// profile page (Epic #11 / Story #912 / Task #922).
+// `/app/coach/teams/:teamId/athletes/:rosterEntryId` — team-scoped
+// athlete profile page (Epic #11 / Story #912 / Task #922).
 //
 // The "team-scoped" half of the URL is load-bearing: an athlete may be
 // rostered on multiple teams in the same org, each row carrying a
@@ -21,19 +21,20 @@
 // `innerHTML` — per `.agents/rules/security-baseline.md` § Output &
 // Rendering).
 //
-// Routing note: the `:athleteId` segment in the URL is the
+// Routing note: the `:rosterEntryId` segment in the URL is the
 // `roster_entry.id` (NOT `users.id`) so the API can resolve the
-// team-scoped row by primary key. The page is mounted at
-// `/athletes/:athleteId` to match Tech Spec #906 §API; the segment's
-// semantic is "the roster entry for this athlete on this team".
+// team-scoped row by primary key. The segment was renamed from the
+// earlier `:athleteId` (Story #985 / F29) so the URL contract reflects
+// what the API actually wants — passing a `users.id` returns
+// `entry-not-found`.
 
 import PageHeader from '../../../../../../../components/ui/PageHeader.astro';
 
-const { teamId, athleteId } = Astro.params;
+const { teamId, rosterEntryId } = Astro.params;
 if (typeof teamId !== 'string' || teamId.length === 0) {
   return new Response('Not Found', { status: 404 });
 }
-if (typeof athleteId !== 'string' || athleteId.length === 0) {
+if (typeof rosterEntryId !== 'string' || rosterEntryId.length === 0) {
   return new Response('Not Found', { status: 404 });
 }
 ---
@@ -49,7 +50,7 @@ if (typeof athleteId !== 'string' || athleteId.length === 0) {
     <main
       class="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8"
       data-team-id={teamId}
-      data-athlete-id={athleteId}
+      data-roster-entry-id={rosterEntryId}
       data-coach-athlete-profile
       data-testid="athlete-profile-root"
     >
@@ -127,10 +128,10 @@ if (typeof athleteId !== 'string' || athleteId.length === 0) {
       '[data-testid="athlete-profile-error"]',
     );
     const teamId = root?.dataset.teamId;
-    const athleteId = root?.dataset.athleteId;
-    if (!teamId || !athleteId) return;
+    const rosterEntryId = root?.dataset.rosterEntryId;
+    if (!teamId || !rosterEntryId) return;
     try {
-      const url = `/api/v1/coach/teams/${encodeURIComponent(teamId)}/roster/entries/${encodeURIComponent(athleteId)}`;
+      const url = `/api/v1/coach/teams/${encodeURIComponent(teamId)}/roster/entries/${encodeURIComponent(rosterEntryId)}`;
       const res = await fetch(url, { headers: { accept: 'application/json' } });
       const envelope = (await res.json().catch(() => null)) as ApiEnvelope | null;
       if (!res.ok || envelope?.success !== true || !envelope.data) {

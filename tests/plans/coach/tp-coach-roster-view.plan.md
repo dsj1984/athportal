@@ -32,8 +32,8 @@ prerequisites:
 3. For one row, confirm the jersey number and primary position match the seed values, and the verification badge reflects the athlete's current verification state.
    **Expected:** values match the seeded `roster_entries` row for that athlete on this team. The badge is present (verified) or absent (unverified) consistent with the seed; it does not display data from another team.
 
-4. Click the athlete's name (or row affordance) to open the team-scoped athlete profile.
-   **Expected:** the URL becomes `/app/coach/teams/<teamId>/athletes/<athleteId>` and the page renders the athlete's profile scoped to *this* team — jersey number and position shown match the row from step 3, not any other team the athlete may be on.
+4. Click the athlete's name link to open the team-scoped athlete profile.
+   **Expected:** the URL becomes `/app/coach/teams/<teamId>/athletes/<rosterEntryId>` (the segment is the `roster_entry.id`, e.g. `re_…`, not the athlete's `users.id`) and the page renders the athlete's profile scoped to *this* team — jersey number and position shown match the row from step 3, not any other team the athlete may be on.
 
 5. Use the back affordance (browser back or in-page link) to return to the roster.
    **Expected:** the roster re-renders identically; no row disappears, no toast/error banner.

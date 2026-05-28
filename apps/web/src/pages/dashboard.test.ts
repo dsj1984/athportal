@@ -7,7 +7,13 @@
 // canonical data-testids, and never falls back to a skeleton on the
 // no-data branch.
 import { describe, expect, it } from 'vitest';
-import { type DashboardWidgetId, EMPTY_DASHBOARD_DATA, buildDashboard } from './dashboard';
+import {
+  type DashboardTeamRow,
+  type DashboardWidgetId,
+  EMPTY_DASHBOARD_DATA,
+  buildDashboard,
+  buildRosterRows,
+} from './dashboard';
 
 const REQUIRED_WIDGET_IDS: readonly DashboardWidgetId[] = [
   'dashboard-widget-recent-activity',
@@ -69,7 +75,10 @@ describe('buildDashboard (populated branch)', () => {
   });
 
   it('preserves rows in the order the data slice provided them', () => {
-    const rows = [{ id: 'r1' }, { id: 'r2' }, { id: 'r3' }];
+    const rows: DashboardTeamRow[] = [
+      { teamId: 't1', teamName: 'Team 1', role: 'coach', href: '/app/coach/teams/t1/roster' },
+      { teamId: 't2', teamName: 'Team 2', role: 'athlete' },
+    ];
     const view = buildDashboard({
       recentActivity: [],
       roster: rows,
@@ -77,6 +86,31 @@ describe('buildDashboard (populated branch)', () => {
     });
     const roster = view.widgets.find((w) => w.id === 'dashboard-widget-roster');
     expect(roster?.rows).toEqual(rows);
+  });
+});
+
+describe('buildRosterRows (Story #985 / F27)', () => {
+  it('links coach teams to the coach roster surface', () => {
+    const rows = buildRosterRows([{ teamId: 't_a', teamName: 'Eagles', role: 'coach' }]);
+    expect(rows).toEqual([
+      {
+        teamId: 't_a',
+        teamName: 'Eagles',
+        role: 'coach',
+        href: '/app/coach/teams/t_a/roster',
+      },
+    ]);
+  });
+
+  it('leaves athlete memberships without an href (no athlete surface yet)', () => {
+    const rows = buildRosterRows([{ teamId: 't_b', teamName: 'Hawks', role: 'athlete' }]);
+    expect(rows).toEqual([{ teamId: 't_b', teamName: 'Hawks', role: 'athlete' }]);
+    expect(rows[0]?.href).toBeUndefined();
+  });
+
+  it('URL-encodes the team id in the coach href', () => {
+    const rows = buildRosterRows([{ teamId: 't a/b', teamName: 'Odd', role: 'coach' }]);
+    expect(rows[0]?.href).toBe('/app/coach/teams/t%20a%2Fb/roster');
   });
 });
 
