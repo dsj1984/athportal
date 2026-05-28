@@ -35,7 +35,9 @@ function resolveEscomplexVersion() {
     try {
       const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'));
       if (pkg && typeof pkg.version === 'string') return pkg.version;
-    } catch { /* traverse up */ }
+    } catch {
+      /* traverse up */
+    }
     const parent = path.dirname(dir);
     if (parent === dir) break;
     dir = parent;
