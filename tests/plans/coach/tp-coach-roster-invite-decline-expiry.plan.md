@@ -20,7 +20,7 @@ prerequisites:
 
 - Confirm `pnpm dev` is running and the web app is reachable at `http://localhost:4321`. Decline lands at [`/r/roster-invite/[token]/decline.astro`](../../../apps/web/src/pages/r/roster-invite/%5Btoken%5D/decline.astro); the underlying queries live in [`packages/shared/src/db/queries/coach/roster.ts`](../../../packages/shared/src/db/queries/coach/roster.ts).
 - Reset to a clean seed: `pnpm --filter @repo/shared run db:reset && pnpm --filter @repo/shared run db:seed`.
-- Pick two unique addresses (e.g. `e2e-decline+<ts>@example.com`, `e2e-expire+<ts>@example.com`). Neither should exist in `roster_invites` for the seeded org.
+- Pick two unique addresses (e.g. `e2e-decline+<ts>@example.com`, `e2e-expire+<ts>@example.com`). Neither should exist in `roster_invites` for the seeded org. If you are injecting `roster_invite` rows directly (because the local stack has no mail transport bound), follow the hex-token convention in [`docs/testing-strategy.md` § Manually injecting roster invites](../../../docs/testing-strategy.md#manually-injecting-roster-invites) — base64url plaintext silently fails the accept-page pre-check.
 - Sign in as the seeded `coach` persona. Note the seeded `teamId`.
 
 ## Steps

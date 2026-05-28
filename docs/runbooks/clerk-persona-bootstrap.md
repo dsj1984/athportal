@@ -263,6 +263,14 @@ Reference: [Clerk docs — Testing emails and phones](https://clerk.com/docs/tes
 
 ---
 
+## Switching personas via `/dev/sign-in-as/<persona>`
+
+The dev seam at [`apps/web/src/pages/dev/sign-in-as/[persona].ts`](../../apps/web/src/pages/dev/sign-in-as/%5Bpersona%5D.ts) mints a Clerk sign-in ticket for the named persona and redirects the browser through Clerk's ticket-exchange flow. Clerk's frontend short-circuits ticket exchange when an existing Clerk session is already present, so hitting `/dev/sign-in-as/<persona>` from a browser that is signed in as a different persona silently no-ops — you stay signed in as the previous persona without warning, and downstream Plan steps will assert against the wrong user.
+
+**Always POST `/sign-out` before hitting `/dev/sign-in-as/<persona>` if the browser has a session from a previous persona.** Use the `<UserButton/>` menu's **Sign out** entry, or paste the documented form shim from [`docs/testing-strategy.md` § Sign-out pattern](../testing-strategy.md#sign-out-pattern) into devtools. A fresh incognito window also works because it has no prior session.
+
+---
+
 ## Related
 
 - [`packages/shared/src/testing/clerkPersonas.ts`](../../packages/shared/src/testing/clerkPersonas.ts) — the reader; throws actionable errors when JSON is unpopulated.
