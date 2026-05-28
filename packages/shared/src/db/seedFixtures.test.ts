@@ -30,50 +30,62 @@ import { teams } from './schema/teams';
 import { users } from './schema/users';
 import { SEED_BOOTSTRAP_EFFECTIVE_AT } from './seed';
 import {
-  SEED_FIXTURE_ATHLETE_MEMBERSHIP_ID,
+  SEED_FIXTURE_ATHLETE_A2_USER_ID,
+  SEED_FIXTURE_ATHLETE_B1_USER_ID,
+  SEED_FIXTURE_ATHLETE_B_USER_ID,
   SEED_FIXTURE_ATHLETE_USER_ID,
   SEED_FIXTURE_COACH_ASSIGNMENT_ID,
   SEED_FIXTURE_COACH_USER_ID,
   SEED_FIXTURE_ORG_ADMIN_USER_ID,
+  SEED_FIXTURE_ORG_B_ID,
   SEED_FIXTURE_ORG_ID,
+  SEED_FIXTURE_ROSTER_ENTRY_B_ID,
   SEED_FIXTURE_ROSTER_ENTRY_ID,
   SEED_FIXTURE_ROSTER_JERSEY_NUMBER,
   SEED_FIXTURE_ROSTER_PRIMARY_POSITION,
+  SEED_FIXTURE_TEAM_A2_ID,
+  SEED_FIXTURE_TEAM_B1_ID,
   SEED_FIXTURE_TEAM_ID,
   seedFixtures,
 } from './seedFixtures';
 
 describe('seedFixtures', () => {
-  it('writes one org, three persona users, one team, the membership/assignment rows, and one active roster entry', () => {
+  it('writes both orgs, all persona + athlete users, three teams, the membership/assignment rows, and the active roster entries', () => {
     const db = freshDb();
 
     seedFixtures(db);
 
     const orgs = db.select().from(organizations).all();
-    expect(orgs).toHaveLength(1);
-    expect(orgs[0]?.id).toBe(SEED_FIXTURE_ORG_ID);
-    expect(orgs[0]?.organizationType).toBe('CLUB');
+    expect(orgs.map((o) => o.id).sort()).toEqual(
+      [SEED_FIXTURE_ORG_ID, SEED_FIXTURE_ORG_B_ID].sort(),
+    );
+    const orgA = orgs.find((o) => o.id === SEED_FIXTURE_ORG_ID);
+    expect(orgA?.organizationType).toBe('CLUB');
 
     const userRows = db.select().from(users).all();
-    expect(userRows).toHaveLength(3);
+    expect(userRows).toHaveLength(6);
     const userIds = userRows.map((u) => u.id).sort();
     expect(userIds).toEqual(
       [
         SEED_FIXTURE_ATHLETE_USER_ID,
         SEED_FIXTURE_COACH_USER_ID,
         SEED_FIXTURE_ORG_ADMIN_USER_ID,
+        SEED_FIXTURE_ATHLETE_B_USER_ID,
+        SEED_FIXTURE_ATHLETE_A2_USER_ID,
+        SEED_FIXTURE_ATHLETE_B1_USER_ID,
       ].sort(),
     );
+    // The other-org athlete is scoped to org_test_b.
+    const b1 = userRows.find((u) => u.id === SEED_FIXTURE_ATHLETE_B1_USER_ID);
+    expect(b1?.orgId).toBe(SEED_FIXTURE_ORG_B_ID);
 
     const teamRows = db.select().from(teams).all();
-    expect(teamRows).toHaveLength(1);
-    expect(teamRows[0]?.id).toBe(SEED_FIXTURE_TEAM_ID);
-    expect(teamRows[0]?.orgId).toBe(SEED_FIXTURE_ORG_ID);
+    expect(teamRows.map((t) => t.id).sort()).toEqual(
+      [SEED_FIXTURE_TEAM_ID, SEED_FIXTURE_TEAM_A2_ID, SEED_FIXTURE_TEAM_B1_ID].sort(),
+    );
 
     const memberships = db.select().from(athleteMemberships).all();
-    expect(memberships).toHaveLength(1);
-    expect(memberships[0]?.id).toBe(SEED_FIXTURE_ATHLETE_MEMBERSHIP_ID);
-    expect(memberships[0]?.athleteUserId).toBe(SEED_FIXTURE_ATHLETE_USER_ID);
+    expect(memberships).toHaveLength(4);
 
     const assignments = db.select().from(coachAssignments).all();
     expect(assignments).toHaveLength(1);
@@ -81,13 +93,16 @@ describe('seedFixtures', () => {
     expect(assignments[0]?.coachUserId).toBe(SEED_FIXTURE_COACH_USER_ID);
 
     const roster = db.select().from(rosterEntries).all();
-    expect(roster).toHaveLength(1);
-    expect(roster[0]?.id).toBe(SEED_FIXTURE_ROSTER_ENTRY_ID);
-    expect(roster[0]?.athleteUserId).toBe(SEED_FIXTURE_ATHLETE_USER_ID);
-    expect(roster[0]?.teamId).toBe(SEED_FIXTURE_TEAM_ID);
-    expect(roster[0]?.jerseyNumber).toBe(SEED_FIXTURE_ROSTER_JERSEY_NUMBER);
-    expect(roster[0]?.primaryPosition).toBe(SEED_FIXTURE_ROSTER_PRIMARY_POSITION);
-    expect(roster[0]?.endedAt).toBeNull();
+    expect(roster).toHaveLength(4);
+    const original = roster.find((r) => r.id === SEED_FIXTURE_ROSTER_ENTRY_ID);
+    expect(original?.athleteUserId).toBe(SEED_FIXTURE_ATHLETE_USER_ID);
+    expect(original?.teamId).toBe(SEED_FIXTURE_TEAM_ID);
+    expect(original?.jerseyNumber).toBe(SEED_FIXTURE_ROSTER_JERSEY_NUMBER);
+    expect(original?.primaryPosition).toBe(SEED_FIXTURE_ROSTER_PRIMARY_POSITION);
+    expect(original?.endedAt).toBeNull();
+    // F31 control row shares the coach's team.
+    const control = roster.find((r) => r.id === SEED_FIXTURE_ROSTER_ENTRY_B_ID);
+    expect(control?.teamId).toBe(SEED_FIXTURE_TEAM_ID);
   });
 
   it('pins onboarded_at on every persona user to SEED_BOOTSTRAP_EFFECTIVE_AT', () => {
@@ -130,12 +145,12 @@ describe('seedFixtures', () => {
     seedFixtures(db);
     seedFixtures(db);
 
-    expect(db.select().from(organizations).all()).toHaveLength(1);
-    expect(db.select().from(users).all()).toHaveLength(3);
-    expect(db.select().from(teams).all()).toHaveLength(1);
-    expect(db.select().from(athleteMemberships).all()).toHaveLength(1);
+    expect(db.select().from(organizations).all()).toHaveLength(2);
+    expect(db.select().from(users).all()).toHaveLength(6);
+    expect(db.select().from(teams).all()).toHaveLength(3);
+    expect(db.select().from(athleteMemberships).all()).toHaveLength(4);
     expect(db.select().from(coachAssignments).all()).toHaveLength(1);
-    expect(db.select().from(rosterEntries).all()).toHaveLength(1);
+    expect(db.select().from(rosterEntries).all()).toHaveLength(4);
   });
 });
 

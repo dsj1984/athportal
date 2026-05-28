@@ -17,11 +17,11 @@ prerequisites:
 ## Setup
 
 - Confirm `pnpm dev` is running at `http://localhost:4321`. Team scoping is enforced server-side by [`packages/shared/src/rbac/coachOnTeam.ts`](../../../packages/shared/src/rbac/coachOnTeam.ts) — this plan exercises the user-visible refusal, not the predicate itself (covered by unit tests).
-- Reset to a clean seed: `pnpm --filter @repo/shared run db:reset && pnpm --filter @repo/shared run db:seed`.
-- Collect three `teamId` values from the seed:
-  - `assignedTeamId` — a team the seeded coach is assigned to (control).
-  - `otherTeamSameOrgId` — a team in the same org that the coach is **not** assigned to.
-  - `otherOrgTeamId` — a team in a **different** org.
+- Reset to a clean seed: `pnpm --filter @repo/shared run db:reset && pnpm --filter @repo/shared run db:seed`. The seed (Story #986) provides all three teams below — no manual DB setup is needed.
+- The three `teamId` values come straight from the seed:
+  - `assignedTeamId` = `team_test_a_1` — the team the seeded coach is assigned to (control).
+  - `otherTeamSameOrgId` = `team_test_a_2` — a team in the same org (`org_test_a`) the coach is **not** assigned to; its roster entry is `re_seed_athlete_a2`.
+  - `otherOrgTeamId` = `team_test_b_1` — a team in a **different** org (`org_test_b`); its roster entry is `re_seed_athlete_b1`.
 - Sign in as the seeded `coach` persona.
 
 ## Steps
@@ -38,7 +38,7 @@ prerequisites:
 4. Navigate directly to `/app/coach/teams/<otherOrgTeamId>/roster`.
    **Expected:** the same not-found surface as step 2. The cross-org case is indistinguishable from the same-org refusal — no signal that "this team exists but you can't see it" vs "this team doesn't exist."
 
-5. As a final negative probe, try `/app/coach/teams/<assignedTeamId>/athletes/<rosterEntryIdFromOtherTeam>` — i.e. a roster entry that exists, but on a team this coach does not own — using a `roster_entry.id` retrieved from the seed for `otherTeamSameOrgId`.
+5. As a final negative probe, try `/app/coach/teams/<assignedTeamId>/athletes/re_seed_athlete_a2` — i.e. a roster entry that exists, but on the same-org team this coach does not own (`team_test_a_2`).
    **Expected:** not-found surface. The team-scoped athlete profile route does not render another team's athlete just because the coach owns *a* team.
 
 ## Cleanup

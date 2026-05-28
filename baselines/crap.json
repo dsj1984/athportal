@@ -3657,19 +3657,19 @@
       "crap": 2,
       "method": "applySeed",
       "path": "packages/shared/scripts/seed.mjs",
-      "startLine": 177
+      "startLine": 211
     },
     {
       "crap": 6,
       "method": "main",
       "path": "packages/shared/scripts/seed.mjs",
-      "startLine": 276
+      "startLine": 364
     },
     {
       "crap": 2,
       "method": "<anon method-3>",
       "path": "packages/shared/scripts/seed.mjs",
-      "startLine": 304
+      "startLine": 392
     },
     {
       "crap": 12,
@@ -4143,7 +4143,37 @@
       "crap": 2,
       "method": "seedFixtures",
       "path": "packages/shared/src/db/seedFixtures.ts",
-      "startLine": 136
+      "startLine": 282
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "packages/shared/src/db/seedFixtures.ts",
+      "startLine": 287
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-2>",
+      "path": "packages/shared/src/db/seedFixtures.ts",
+      "startLine": 294
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-3>",
+      "path": "packages/shared/src/db/seedFixtures.ts",
+      "startLine": 309
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-4>",
+      "path": "packages/shared/src/db/seedFixtures.ts",
+      "startLine": 325
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-5>",
+      "path": "packages/shared/src/db/seedFixtures.ts",
+      "startLine": 354
     },
     {
       "crap": 2,

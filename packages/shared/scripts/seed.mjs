@@ -136,6 +136,12 @@ const LEGAL_DOCUMENTS = [
 // Persona-graph seed (mirrors src/db/seedFixtures.ts § seedFixtures).
 const SEED_ORG_ID = 'org_test_a';
 const SEED_TEAM_ID = 'team_test_a_1';
+// Story #986 — second same-org team, second org + team, for the
+// multi-team / multi-org QA Plans (F31 + F36). Mirror of the constants
+// in src/db/seedFixtures.ts.
+const SEED_ORG_B_ID = 'org_test_b';
+const SEED_TEAM_A2_ID = 'team_test_a_2';
+const SEED_TEAM_B1_ID = 'team_test_b_1';
 // Clerk subject IDs are resolved at runtime from
 // src/testing/clerk-personas.json (when populated by the operator
 // per docs/runbooks/clerk-persona-bootstrap.md) — otherwise fall back
@@ -147,6 +153,7 @@ const SEED_USERS = [
     clerkSubjectId: CLERK_SUBJECT_IDS.athlete,
     email: 'athlete@example.com',
     role: 'member',
+    orgId: SEED_ORG_ID,
     teamId: null,
   },
   {
@@ -154,6 +161,7 @@ const SEED_USERS = [
     clerkSubjectId: CLERK_SUBJECT_IDS.coach,
     email: 'coach@example.com',
     role: 'team_admin',
+    orgId: SEED_ORG_ID,
     teamId: SEED_TEAM_ID,
   },
   {
@@ -161,6 +169,32 @@ const SEED_USERS = [
     clerkSubjectId: CLERK_SUBJECT_IDS['org-admin'],
     email: 'org-admin@example.com',
     role: 'org_admin',
+    orgId: SEED_ORG_ID,
+    teamId: null,
+  },
+  // Story #986 — extra athletes (synthetic subjects, not Clerk personas).
+  {
+    id: 'user_seed_athlete_b',
+    clerkSubjectId: 'user_test_athlete_b',
+    email: 'b@example.com',
+    role: 'member',
+    orgId: SEED_ORG_ID,
+    teamId: null,
+  },
+  {
+    id: 'user_seed_athlete_a2',
+    clerkSubjectId: 'user_test_athlete_a2',
+    email: 'a2@example.com',
+    role: 'member',
+    orgId: SEED_ORG_ID,
+    teamId: null,
+  },
+  {
+    id: 'user_seed_athlete_b1',
+    clerkSubjectId: 'user_test_athlete_b1',
+    email: 'b1@example.com',
+    role: 'member',
+    orgId: SEED_ORG_B_ID,
     teamId: null,
   },
 ];
@@ -191,26 +225,37 @@ export function applySeed(client) {
     );
   }
 
-  // Organization.
-  client
-    .prepare(
-      `INSERT INTO organizations (id, name, organization_type)
-       VALUES (?, ?, ?)
-       ON CONFLICT(id) DO NOTHING`,
-    )
-    .run(SEED_ORG_ID, 'Seeded Test Organization A', 'CLUB');
+  // Organizations. Story #986 adds org_test_b for the cross-org Plan.
+  const insertOrg = client.prepare(
+    `INSERT INTO organizations (id, name, organization_type)
+     VALUES (?, ?, ?)
+     ON CONFLICT(id) DO NOTHING`,
+  );
+  insertOrg.run(SEED_ORG_ID, 'Seeded Test Organization A', 'CLUB');
+  insertOrg.run(SEED_ORG_B_ID, 'Seeded Test Organization B', 'CLUB');
 
-  // Team — must land before users because users.team_id FKs to teams.id
-  // and the coach persona carries a non-null team_id.
-  client
-    .prepare(
-      `INSERT INTO teams (id, org_id, name, sport, season, age_group)
-       VALUES (?, ?, ?, ?, ?, ?)
-       ON CONFLICT(id) DO NOTHING`,
-    )
-    .run(SEED_TEAM_ID, SEED_ORG_ID, 'Seeded Test Team A1', 'soccer', '2026', 'U14');
+  // Teams — must land before users because users.team_id FKs to teams.id
+  // and the coach persona carries a non-null team_id. Story #986 adds a
+  // second same-org team (team_test_a_2) and an other-org team
+  // (team_test_b_1).
+  const insertTeam = client.prepare(
+    `INSERT INTO teams (id, org_id, name, sport, season, age_group)
+     VALUES (?, ?, ?, ?, ?, ?)
+     ON CONFLICT(id) DO NOTHING`,
+  );
+  insertTeam.run(SEED_TEAM_ID, SEED_ORG_ID, 'Seeded Test Team A1', 'soccer', '2026', 'U14');
+  insertTeam.run(SEED_TEAM_A2_ID, SEED_ORG_ID, 'Seeded Test Team A2', 'basketball', '2026', 'U16');
+  insertTeam.run(
+    SEED_TEAM_B1_ID,
+    SEED_ORG_B_ID,
+    'Seeded Test Team B1',
+    'volleyball',
+    '2026',
+    'U16',
+  );
 
-  // Persona users.
+  // Persona + Story #986 athlete users. `org_id` is per-user so the
+  // other-org athlete (user_seed_athlete_b1) lands in org_test_b.
   const insertUser = client.prepare(
     `INSERT INTO users (id, clerk_subject_id, email, role, org_id, team_id, onboarded_at)
      VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -222,20 +267,28 @@ export function applySeed(client) {
       user.clerkSubjectId,
       user.email,
       user.role,
-      SEED_ORG_ID,
+      user.orgId,
       user.teamId,
       SEED_BOOTSTRAP_EFFECTIVE_AT_UNIX,
     );
   }
 
-  // Athlete membership + coach assignment.
-  client
-    .prepare(
-      `INSERT INTO athlete_memberships (id, org_id, team_id, athlete_user_id)
-       VALUES (?, ?, ?, ?)
-       ON CONFLICT(id) DO NOTHING`,
-    )
-    .run('am_seed_athlete', SEED_ORG_ID, SEED_TEAM_ID, 'user_seed_athlete');
+  // Athlete memberships. Story #986 adds the F31 control-row athlete on
+  // the coach's team plus the F36 cross-team / cross-org athletes.
+  const insertMembership = client.prepare(
+    `INSERT INTO athlete_memberships (id, org_id, team_id, athlete_user_id)
+     VALUES (?, ?, ?, ?)
+     ON CONFLICT(id) DO NOTHING`,
+  );
+  insertMembership.run('am_seed_athlete', SEED_ORG_ID, SEED_TEAM_ID, 'user_seed_athlete');
+  insertMembership.run('am_seed_athlete_b', SEED_ORG_ID, SEED_TEAM_ID, 'user_seed_athlete_b');
+  insertMembership.run('am_seed_athlete_a2', SEED_ORG_ID, SEED_TEAM_A2_ID, 'user_seed_athlete_a2');
+  insertMembership.run(
+    'am_seed_athlete_b1',
+    SEED_ORG_B_ID,
+    SEED_TEAM_B1_ID,
+    'user_seed_athlete_b1',
+  );
 
   client
     .prepare(
@@ -250,27 +303,62 @@ export function applySeed(client) {
   // `src/db/seedFixtures.ts § seedFixtures`; PR #940 added the row to
   // the TS module but not to this script, leaving the runtime seed
   // unable to populate the coach roster page. Story #981.
-  client
-    .prepare(
-      `INSERT INTO roster_entry (
-         id, org_id, team_id, athlete_user_id,
-         jersey_number, primary_position, ended_at,
-         created_at, updated_at
-       )
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-       ON CONFLICT(id) DO NOTHING`,
-    )
-    .run(
-      're_seed_athlete',
-      SEED_ORG_ID,
-      SEED_TEAM_ID,
-      'user_seed_athlete',
-      '10',
-      'Forward',
-      null,
-      SEED_BOOTSTRAP_EFFECTIVE_AT_UNIX,
-      SEED_BOOTSTRAP_EFFECTIVE_AT_UNIX,
-    );
+  const insertRosterEntry = client.prepare(
+    `INSERT INTO roster_entry (
+       id, org_id, team_id, athlete_user_id,
+       jersey_number, primary_position, ended_at,
+       created_at, updated_at
+     )
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT(id) DO NOTHING`,
+  );
+  insertRosterEntry.run(
+    're_seed_athlete',
+    SEED_ORG_ID,
+    SEED_TEAM_ID,
+    'user_seed_athlete',
+    '10',
+    'Forward',
+    null,
+    SEED_BOOTSTRAP_EFFECTIVE_AT_UNIX,
+    SEED_BOOTSTRAP_EFFECTIVE_AT_UNIX,
+  );
+  // Story #986 — F31 control row on the coach's team.
+  insertRosterEntry.run(
+    're_seed_athlete_b',
+    SEED_ORG_ID,
+    SEED_TEAM_ID,
+    'user_seed_athlete_b',
+    '7',
+    'Goalkeeper',
+    null,
+    SEED_BOOTSTRAP_EFFECTIVE_AT_UNIX,
+    SEED_BOOTSTRAP_EFFECTIVE_AT_UNIX,
+  );
+  // Story #986 — F36 second same-org team roster entry.
+  insertRosterEntry.run(
+    're_seed_athlete_a2',
+    SEED_ORG_ID,
+    SEED_TEAM_A2_ID,
+    'user_seed_athlete_a2',
+    '22',
+    'Center',
+    null,
+    SEED_BOOTSTRAP_EFFECTIVE_AT_UNIX,
+    SEED_BOOTSTRAP_EFFECTIVE_AT_UNIX,
+  );
+  // Story #986 — F36 other-org team roster entry.
+  insertRosterEntry.run(
+    're_seed_athlete_b1',
+    SEED_ORG_B_ID,
+    SEED_TEAM_B1_ID,
+    'user_seed_athlete_b1',
+    '11',
+    'Setter',
+    null,
+    SEED_BOOTSTRAP_EFFECTIVE_AT_UNIX,
+    SEED_BOOTSTRAP_EFFECTIVE_AT_UNIX,
+  );
 }
 
 async function main() {

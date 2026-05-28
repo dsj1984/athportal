@@ -17,8 +17,8 @@ prerequisites:
 ## Setup
 
 - Confirm `pnpm dev` is running at `http://localhost:4321`. Roster mutations are wired through [`apps/web/src/components/coach/RosterTable.ts`](../../../apps/web/src/components/coach/RosterTable.ts) against the coach-roster API in [`packages/shared/src/db/queries/coach/roster.ts`](../../../packages/shared/src/db/queries/coach/roster.ts).
-- Reset to a clean seed: `pnpm --filter @repo/shared run db:reset && pnpm --filter @repo/shared run db:seed`. Confirm the seeded coach's team has at least two accepted athletes (one for editing, one as a control row to confirm scoping).
-- Sign in as the seeded `coach` persona. Note the seeded `teamId` and pick a target athlete row plus a control athlete row.
+- Reset to a clean seed: `pnpm --filter @repo/shared run db:reset && pnpm --filter @repo/shared run db:seed`. The seed plants two accepted athletes on the coach's team `team_test_a_1` (Story #986): `re_seed_athlete` (jersey 10, Forward) and `re_seed_athlete_b` (jersey 7, Goalkeeper). No manual DB setup is needed.
+- Sign in as the seeded `coach` persona. Use `team_test_a_1` as the `teamId`. Treat `re_seed_athlete` as the target row to edit and `re_seed_athlete_b` as the control row that must stay unchanged.
 
 ## Steps
 

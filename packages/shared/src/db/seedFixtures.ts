@@ -7,12 +7,15 @@
  * The QA-corpus agent runner (and any operator running plans locally)
  * needs the canonical persona ↔ org ↔ team graph present in the local
  * SQLite DB before `/admin/*` plans can sign in and act. This seed
- * inserts one organization, the three synthetic persona users
- * (`athlete@example.com`, `coach@example.com`, `org-admin@example.com`)
- * with `onboarded_at` pinned to `SEED_BOOTSTRAP_EFFECTIVE_AT`, one team,
- * one athlete_memberships row, and one coach_assignments row. Every
- * insert uses Drizzle's `onConflictDoNothing` on the table primary key
- * for idempotence — the same pattern `seedLegalDocuments` uses.
+ * inserts the three synthetic persona users (`athlete@example.com`,
+ * `coach@example.com`, `org-admin@example.com`) with `onboarded_at`
+ * pinned to `SEED_BOOTSTRAP_EFFECTIVE_AT`, plus the org/team/membership/
+ * roster graph they belong to. Story #986 grew the graph to two orgs,
+ * three teams, and extra athletes so the multi-athlete (F31) and
+ * multi-team / multi-org (F36) coach QA Plans run against a clean reset
+ * without manual DB setup. Every insert uses Drizzle's
+ * `onConflictDoNothing` on the table primary key for idempotence — the
+ * same pattern `seedLegalDocuments` uses.
  *
  * Persona ↔ org ↔ team mapping is sourced from `PERSONA_FIXTURES` in
  * `@repo/shared/testing/auth` so the persona ↔ identifier ↔ role
@@ -80,27 +83,33 @@ export const SEED_FIXTURE_ROSTER_JERSEY_NUMBER = '10' as const;
 export const SEED_FIXTURE_ROSTER_PRIMARY_POSITION = 'Forward' as const;
 
 /**
- * The Clerk subject IDs and persona emails the seed writes into `users`.
- * These are the same values exposed by `PERSONA_FIXTURES` in
- * `@repo/shared/testing/auth` — duplicated here (and kept in lockstep)
- * to satisfy the architecture rule that forbids production-side imports
- * from `src/testing/**`.
+ * Story #986 additions (F31 + F36). The Session-4 QA Plans need more
+ * than the single-athlete, single-team graph above:
+ *
+ *   - F31 (`tp-coach-roster-edit-remove`) needs a SECOND athlete on the
+ *     coach's team (`team_test_a_1`) so the "control row unchanged"
+ *     assertions have a row to check against.
+ *   - F36 (`tp-coach-roster-team-scoped-access`) needs THREE distinct
+ *     teams: the coach's assigned team, a second team in the SAME org,
+ *     and a team in a DIFFERENT org — to drive the cross-team and
+ *     cross-org refusal cases.
+ *
+ * The extra athletes are not bootstrap personas (only athlete/coach/
+ * org-admin map to real Clerk users), so they carry synthetic
+ * `user_test_*` subject stubs.
  */
-const SEED_FIXTURE_ATHLETE = {
-  clerkSubjectId: 'user_test_athlete',
-  email: 'athlete@example.com',
-  role: 'member',
-} as const;
-const SEED_FIXTURE_COACH = {
-  clerkSubjectId: 'user_test_coach',
-  email: 'coach@example.com',
-  role: 'team_admin',
-} as const;
-const SEED_FIXTURE_ORG_ADMIN = {
-  clerkSubjectId: 'user_test_org_admin',
-  email: 'org-admin@example.com',
-  role: 'org_admin',
-} as const;
+export const SEED_FIXTURE_ORG_B_ID = 'org_test_b' as const;
+export const SEED_FIXTURE_TEAM_A2_ID = 'team_test_a_2' as const;
+export const SEED_FIXTURE_TEAM_B1_ID = 'team_test_b_1' as const;
+export const SEED_FIXTURE_ATHLETE_B_USER_ID = 'user_seed_athlete_b' as const;
+export const SEED_FIXTURE_ATHLETE_A2_USER_ID = 'user_seed_athlete_a2' as const;
+export const SEED_FIXTURE_ATHLETE_B1_USER_ID = 'user_seed_athlete_b1' as const;
+export const SEED_FIXTURE_ATHLETE_B_MEMBERSHIP_ID = 'am_seed_athlete_b' as const;
+export const SEED_FIXTURE_ATHLETE_A2_MEMBERSHIP_ID = 'am_seed_athlete_a2' as const;
+export const SEED_FIXTURE_ATHLETE_B1_MEMBERSHIP_ID = 'am_seed_athlete_b1' as const;
+export const SEED_FIXTURE_ROSTER_ENTRY_B_ID = 're_seed_athlete_b' as const;
+export const SEED_FIXTURE_ROSTER_ENTRY_A2_ID = 're_seed_athlete_a2' as const;
+export const SEED_FIXTURE_ROSTER_ENTRY_B1_ID = 're_seed_athlete_b1' as const;
 
 /**
  * Minimal structural shape for the Drizzle handle this seed uses. The
@@ -117,96 +126,209 @@ interface InsertChain {
   };
 }
 
+const E = SEED_FIXTURE_EFFECTIVE_AT;
+
+// Compact row definitions, expanded to insert objects in `seedFixtures`.
+// Tuples (rather than full object literals) keep the module small enough
+// to stay above the maintainability floor (ADR-019) as the graph grows.
+// The `user_test_*` clerk subjects are duplicated from `PERSONA_FIXTURES`
+// in `@repo/shared/testing/auth` (the architecture rule forbids
+// production-side imports from `src/testing/**`).
+
+// [id, name]
+const ORG_ROWS = [
+  [SEED_FIXTURE_ORG_ID, 'Seeded Test Organization A'],
+  [SEED_FIXTURE_ORG_B_ID, 'Seeded Test Organization B'],
+] as const;
+
+// [id, orgId, name, sport]
+const TEAM_ROWS = [
+  [SEED_FIXTURE_TEAM_ID, SEED_FIXTURE_ORG_ID, 'Seeded Test Team A1', 'soccer'],
+  [SEED_FIXTURE_TEAM_A2_ID, SEED_FIXTURE_ORG_ID, 'Seeded Test Team A2', 'basketball'],
+  [SEED_FIXTURE_TEAM_B1_ID, SEED_FIXTURE_ORG_B_ID, 'Seeded Test Team B1', 'volleyball'],
+] as const;
+
+// [id, clerkSubjectId, email, role, orgId, teamId]
+const USER_ROWS = [
+  [
+    SEED_FIXTURE_ATHLETE_USER_ID,
+    'user_test_athlete',
+    'athlete@example.com',
+    'member',
+    SEED_FIXTURE_ORG_ID,
+    null,
+  ],
+  [
+    SEED_FIXTURE_COACH_USER_ID,
+    'user_test_coach',
+    'coach@example.com',
+    'team_admin',
+    SEED_FIXTURE_ORG_ID,
+    SEED_FIXTURE_TEAM_ID,
+  ],
+  [
+    SEED_FIXTURE_ORG_ADMIN_USER_ID,
+    'user_test_org_admin',
+    'org-admin@example.com',
+    'org_admin',
+    SEED_FIXTURE_ORG_ID,
+    null,
+  ],
+  [
+    SEED_FIXTURE_ATHLETE_B_USER_ID,
+    'user_test_athlete_b',
+    'b@example.com',
+    'member',
+    SEED_FIXTURE_ORG_ID,
+    null,
+  ],
+  [
+    SEED_FIXTURE_ATHLETE_A2_USER_ID,
+    'user_test_athlete_a2',
+    'a2@example.com',
+    'member',
+    SEED_FIXTURE_ORG_ID,
+    null,
+  ],
+  [
+    SEED_FIXTURE_ATHLETE_B1_USER_ID,
+    'user_test_athlete_b1',
+    'b1@example.com',
+    'member',
+    SEED_FIXTURE_ORG_B_ID,
+    null,
+  ],
+] as const;
+
+// [id, orgId, teamId, athleteUserId]
+const MEMBERSHIP_ROWS = [
+  [
+    SEED_FIXTURE_ATHLETE_MEMBERSHIP_ID,
+    SEED_FIXTURE_ORG_ID,
+    SEED_FIXTURE_TEAM_ID,
+    SEED_FIXTURE_ATHLETE_USER_ID,
+  ],
+  [
+    SEED_FIXTURE_ATHLETE_B_MEMBERSHIP_ID,
+    SEED_FIXTURE_ORG_ID,
+    SEED_FIXTURE_TEAM_ID,
+    SEED_FIXTURE_ATHLETE_B_USER_ID,
+  ],
+  [
+    SEED_FIXTURE_ATHLETE_A2_MEMBERSHIP_ID,
+    SEED_FIXTURE_ORG_ID,
+    SEED_FIXTURE_TEAM_A2_ID,
+    SEED_FIXTURE_ATHLETE_A2_USER_ID,
+  ],
+  [
+    SEED_FIXTURE_ATHLETE_B1_MEMBERSHIP_ID,
+    SEED_FIXTURE_ORG_B_ID,
+    SEED_FIXTURE_TEAM_B1_ID,
+    SEED_FIXTURE_ATHLETE_B1_USER_ID,
+  ],
+] as const;
+
+// [id, orgId, teamId, athleteUserId, jerseyNumber, primaryPosition]
+const ROSTER_ROWS = [
+  [
+    SEED_FIXTURE_ROSTER_ENTRY_ID,
+    SEED_FIXTURE_ORG_ID,
+    SEED_FIXTURE_TEAM_ID,
+    SEED_FIXTURE_ATHLETE_USER_ID,
+    SEED_FIXTURE_ROSTER_JERSEY_NUMBER,
+    SEED_FIXTURE_ROSTER_PRIMARY_POSITION,
+  ],
+  [
+    SEED_FIXTURE_ROSTER_ENTRY_B_ID,
+    SEED_FIXTURE_ORG_ID,
+    SEED_FIXTURE_TEAM_ID,
+    SEED_FIXTURE_ATHLETE_B_USER_ID,
+    '7',
+    'Goalkeeper',
+  ],
+  [
+    SEED_FIXTURE_ROSTER_ENTRY_A2_ID,
+    SEED_FIXTURE_ORG_ID,
+    SEED_FIXTURE_TEAM_A2_ID,
+    SEED_FIXTURE_ATHLETE_A2_USER_ID,
+    '22',
+    'Center',
+  ],
+  [
+    SEED_FIXTURE_ROSTER_ENTRY_B1_ID,
+    SEED_FIXTURE_ORG_B_ID,
+    SEED_FIXTURE_TEAM_B1_ID,
+    SEED_FIXTURE_ATHLETE_B1_USER_ID,
+    '11',
+    'Setter',
+  ],
+] as const;
+
 /**
  * Insert the persona-graph rows. Idempotent — calling this twice
- * produces no duplicate rows.
+ * produces no duplicate rows (every insert chains `.onConflictDoNothing()`
+ * on the table primary key).
  *
- * The caller owns the DB handle (production Worker `@libsql/client` or
- * better-sqlite3 in tests). Each insert chains `.onConflictDoNothing()`
- * on the table primary key so the second run is a silent no-op.
+ * Story #986 grew the graph to two orgs, three teams, and six athletes
+ * for the multi-athlete / multi-team / multi-org coach QA Plans.
  *
- * Insert order matters because the schema has FK constraints:
+ * Insert order matters because of the FK chain:
  *   organizations → teams → users → athlete_memberships
- *                                 → coach_assignments
+ *                                 → coach_assignments → roster_entries
  *
- * `teams` lands before `users` because `users.team_id` is a nullable
- * FK to `teams.id` — the coach persona carries a non-null `team_id`,
- * so the team row must exist first.
+ * `teams` lands before `users` because `users.team_id` is a nullable FK
+ * to `teams.id` and the coach persona carries a non-null `team_id`.
  */
 export function seedFixtures(db: unknown): void {
   const handle = db as InsertChain;
 
   handle
     .insert(organizations)
-    .values([
-      {
-        id: SEED_FIXTURE_ORG_ID,
-        name: 'Seeded Test Organization A',
-        organizationType: 'CLUB',
-      },
-    ])
+    .values(ORG_ROWS.map(([id, name]) => ({ id, name, organizationType: 'CLUB' })))
     .onConflictDoNothing()
     .run();
 
   handle
     .insert(teams)
-    .values([
-      {
-        id: SEED_FIXTURE_TEAM_ID,
-        orgId: SEED_FIXTURE_ORG_ID,
-        name: 'Seeded Test Team A1',
-        sport: 'soccer',
+    .values(
+      TEAM_ROWS.map(([id, orgId, name, sport]) => ({
+        id,
+        orgId,
+        name,
+        sport,
         season: '2026',
         ageGroup: 'U14',
-      },
-    ])
+      })),
+    )
     .onConflictDoNothing()
     .run();
 
   handle
     .insert(users)
-    .values([
-      {
-        id: SEED_FIXTURE_ATHLETE_USER_ID,
-        clerkSubjectId: SEED_FIXTURE_ATHLETE.clerkSubjectId,
-        email: SEED_FIXTURE_ATHLETE.email,
-        role: SEED_FIXTURE_ATHLETE.role,
-        orgId: SEED_FIXTURE_ORG_ID,
-        teamId: null,
-        onboardedAt: SEED_FIXTURE_EFFECTIVE_AT,
-      },
-      {
-        id: SEED_FIXTURE_COACH_USER_ID,
-        clerkSubjectId: SEED_FIXTURE_COACH.clerkSubjectId,
-        email: SEED_FIXTURE_COACH.email,
-        role: SEED_FIXTURE_COACH.role,
-        orgId: SEED_FIXTURE_ORG_ID,
-        teamId: SEED_FIXTURE_TEAM_ID,
-        onboardedAt: SEED_FIXTURE_EFFECTIVE_AT,
-      },
-      {
-        id: SEED_FIXTURE_ORG_ADMIN_USER_ID,
-        clerkSubjectId: SEED_FIXTURE_ORG_ADMIN.clerkSubjectId,
-        email: SEED_FIXTURE_ORG_ADMIN.email,
-        role: SEED_FIXTURE_ORG_ADMIN.role,
-        orgId: SEED_FIXTURE_ORG_ID,
-        teamId: null,
-        onboardedAt: SEED_FIXTURE_EFFECTIVE_AT,
-      },
-    ])
+    .values(
+      USER_ROWS.map(([id, clerkSubjectId, email, role, orgId, teamId]) => ({
+        id,
+        clerkSubjectId,
+        email,
+        role,
+        orgId,
+        teamId,
+        onboardedAt: E,
+      })),
+    )
     .onConflictDoNothing()
     .run();
 
   handle
     .insert(athleteMemberships)
-    .values([
-      {
-        id: SEED_FIXTURE_ATHLETE_MEMBERSHIP_ID,
-        orgId: SEED_FIXTURE_ORG_ID,
-        teamId: SEED_FIXTURE_TEAM_ID,
-        athleteUserId: SEED_FIXTURE_ATHLETE_USER_ID,
-      },
-    ])
+    .values(
+      MEMBERSHIP_ROWS.map(([id, orgId, teamId, athleteUserId]) => ({
+        id,
+        orgId,
+        teamId,
+        athleteUserId,
+      })),
+    )
     .onConflictDoNothing()
     .run();
 
@@ -224,24 +346,23 @@ export function seedFixtures(db: unknown): void {
     .run();
 
   // The roster surface (Epic #11) reads from `roster_entries` exclusively —
-  // it is NOT a projection of `athlete_memberships`. Seed one active row
-  // for the seeded athlete so the coach roster page renders a populated
-  // table out of the box. Active membership: `ended_at = null`.
+  // it is NOT a projection of `athlete_memberships`. Active rows only
+  // (`ended_at = null`).
   handle
     .insert(rosterEntries)
-    .values([
-      {
-        id: SEED_FIXTURE_ROSTER_ENTRY_ID,
-        orgId: SEED_FIXTURE_ORG_ID,
-        teamId: SEED_FIXTURE_TEAM_ID,
-        athleteUserId: SEED_FIXTURE_ATHLETE_USER_ID,
-        jerseyNumber: SEED_FIXTURE_ROSTER_JERSEY_NUMBER,
-        primaryPosition: SEED_FIXTURE_ROSTER_PRIMARY_POSITION,
+    .values(
+      ROSTER_ROWS.map(([id, orgId, teamId, athleteUserId, jerseyNumber, primaryPosition]) => ({
+        id,
+        orgId,
+        teamId,
+        athleteUserId,
+        jerseyNumber,
+        primaryPosition,
         endedAt: null,
-        createdAt: SEED_FIXTURE_EFFECTIVE_AT,
-        updatedAt: SEED_FIXTURE_EFFECTIVE_AT,
-      },
-    ])
+        createdAt: E,
+        updatedAt: E,
+      })),
+    )
     .onConflictDoNothing()
     .run();
 }
