@@ -2667,79 +2667,169 @@
       "crap": 2,
       "method": "buildRosterUrl",
       "path": "apps/web/src/components/coach/RosterTable.ts",
-      "startLine": 109
+      "startLine": 110
     },
     {
       "crap": 2,
       "method": "buildEntryUrl",
       "path": "apps/web/src/components/coach/RosterTable.ts",
-      "startLine": 118
+      "startLine": 119
     },
     {
       "crap": 6,
       "method": "renderRosterRows",
       "path": "apps/web/src/components/coach/RosterTable.ts",
-      "startLine": 141
+      "startLine": 142
     },
     {
       "crap": 2,
       "method": "buildButton",
       "path": "apps/web/src/components/coach/RosterTable.ts",
-      "startLine": 209
+      "startLine": 220
     },
     {
       "crap": 2,
       "method": "rowCell",
       "path": "apps/web/src/components/coach/RosterTable.ts",
-      "startLine": 225
+      "startLine": 236
     },
     {
       "crap": 2,
       "method": "actionButton",
       "path": "apps/web/src/components/coach/RosterTable.ts",
-      "startLine": 235
+      "startLine": 246
     },
     {
       "crap": 90,
       "method": "enterEditMode",
       "path": "apps/web/src/components/coach/RosterTable.ts",
-      "startLine": 248
+      "startLine": 259
     },
     {
       "crap": 182,
       "method": "exitEditMode",
       "path": "apps/web/src/components/coach/RosterTable.ts",
-      "startLine": 298
+      "startLine": 309
     },
     {
       "crap": 6,
       "method": "showJerseyWarning",
       "path": "apps/web/src/components/coach/RosterTable.ts",
-      "startLine": 345
+      "startLine": 356
     },
     {
       "crap": 6,
       "method": "hideJerseyWarning",
       "path": "apps/web/src/components/coach/RosterTable.ts",
-      "startLine": 358
+      "startLine": 369
     },
     {
       "crap": 12,
       "method": "readEditValues",
       "path": "apps/web/src/components/coach/RosterTable.ts",
-      "startLine": 372
+      "startLine": 383
     },
     {
       "crap": 42,
       "method": "buildPatchPayload",
       "path": "apps/web/src/components/coach/RosterTable.ts",
-      "startLine": 399
+      "startLine": 410
     },
     {
       "crap": 2,
       "method": "removeRow",
       "path": "apps/web/src/components/coach/RosterTable.ts",
-      "startLine": 426
+      "startLine": 437
+    },
+    {
+      "crap": 6,
+      "method": "showRowError",
+      "path": "apps/web/src/components/coach/RosterTable.ts",
+      "startLine": 447
+    },
+    {
+      "crap": 6,
+      "method": "hideRowError",
+      "path": "apps/web/src/components/coach/RosterTable.ts",
+      "startLine": 458
+    },
+    {
+      "crap": 12,
+      "method": "rowAthleteName",
+      "path": "apps/web/src/components/coach/RosterTable.ts",
+      "startLine": 469
+    },
+    {
+      "crap": 6,
+      "method": "mountRemoveConfirm",
+      "path": "apps/web/src/components/coach/RosterTable.ts",
+      "startLine": 481
+    },
+    {
+      "crap": 2,
+      "method": "openRemoveConfirm",
+      "path": "apps/web/src/components/coach/RosterTable.ts",
+      "startLine": 508
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "apps/web/src/components/coach/RosterTable.ts",
+      "startLine": 509
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-2>",
+      "path": "apps/web/src/components/coach/RosterTable.ts",
+      "startLine": 517
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-3>",
+      "path": "apps/web/src/components/coach/RosterTable.ts",
+      "startLine": 521
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-4>",
+      "path": "apps/web/src/components/coach/RosterTable.ts",
+      "startLine": 522
+    },
+    {
+      "crap": 72,
+      "method": "saveRow",
+      "path": "apps/web/src/components/coach/RosterTable.ts",
+      "startLine": 538
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-5>",
+      "path": "apps/web/src/components/coach/RosterTable.ts",
+      "startLine": 561
+    },
+    {
+      "crap": 30,
+      "method": "confirmAndRemove",
+      "path": "apps/web/src/components/coach/RosterTable.ts",
+      "startLine": 586
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-6>",
+      "path": "apps/web/src/components/coach/RosterTable.ts",
+      "startLine": 604
+    },
+    {
+      "crap": 2,
+      "method": "attachRowActions",
+      "path": "apps/web/src/components/coach/RosterTable.ts",
+      "startLine": 623
+    },
+    {
+      "crap": 56,
+      "method": "<anon method-7>",
+      "path": "apps/web/src/components/coach/RosterTable.ts",
+      "startLine": 628
     },
     {
       "crap": 2,
