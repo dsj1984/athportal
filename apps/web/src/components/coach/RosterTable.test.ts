@@ -488,39 +488,37 @@ describe('attachRowActions', () => {
   const flush = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 0));
 
   it('Edit click swaps the row into edit mode', () => {
-    attachRowActions(
-      tbody,
-      't_one',
-      (async () => new Response(null, { status: 204 })) as unknown as typeof fetch,
-    );
+    attachRowActions(tbody, 't_one', () => Promise.resolve(new Response(null, { status: 204 })));
     click(COACH_ROSTER_TEST_IDS.editBtn);
     expect(tbody.querySelector('[data-testid="coach-roster-jersey-input"]')).not.toBeNull();
   });
 
   it('Save click PATCHes the changed value and exits edit mode on success', async () => {
     const calls: Array<{ url: string; method: string; body: unknown }> = [];
-    const fetchStub = (async (url: string, init?: RequestInit) => {
+    const fetchStub = ((url: string, init?: RequestInit) => {
       calls.push({
         url,
         method: init?.method ?? 'GET',
         body: init?.body ? JSON.parse(init.body as string) : null,
       });
-      return new Response(
-        JSON.stringify({
-          success: true,
-          data: {
-            entry: {
-              id: 're_a',
-              teamId: 't_one',
-              athleteUserId: 'u',
-              athleteEmail: 'a@test.invalid',
-              athleteFullName: 'Ada Lovelace',
-              jerseyNumber: '9',
-              primaryPosition: 'Setter',
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({
+            success: true,
+            data: {
+              entry: {
+                id: 're_a',
+                teamId: 't_one',
+                athleteUserId: 'u',
+                athleteEmail: 'a@test.invalid',
+                athleteFullName: 'Ada Lovelace',
+                jerseyNumber: '9',
+                primaryPosition: 'Setter',
+              },
             },
-          },
-        }),
-        { status: 200, headers: { 'content-type': 'application/json' } },
+          }),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        ),
       );
     }) as unknown as typeof fetch;
 
@@ -541,13 +539,15 @@ describe('attachRowActions', () => {
   });
 
   it('Save click surfaces the server error message inline on a 400', async () => {
-    const fetchStub = (async () =>
-      new Response(
-        JSON.stringify({
-          success: false,
-          error: { code: 'INVALID_INPUT', message: 'jerseyNumber must be 1-3 digits' },
-        }),
-        { status: 400, headers: { 'content-type': 'application/json' } },
+    const fetchStub = (() =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify({
+            success: false,
+            error: { code: 'INVALID_INPUT', message: 'jerseyNumber must be 1-3 digits' },
+          }),
+          { status: 400, headers: { 'content-type': 'application/json' } },
+        ),
       )) as unknown as typeof fetch;
 
     attachRowActions(tbody, 't_one', fetchStub);
@@ -566,9 +566,8 @@ describe('attachRowActions', () => {
   });
 
   it('Cancel click restores the read-only cells without a fetch', () => {
-    const fetchStub = (async () => {
-      throw new Error('fetch must not be called on cancel');
-    }) as unknown as typeof fetch;
+    const fetchStub = (() =>
+      Promise.reject(new Error('fetch must not be called on cancel'))) as unknown as typeof fetch;
     attachRowActions(tbody, 't_one', fetchStub);
     click(COACH_ROSTER_TEST_IDS.editBtn);
     click(COACH_ROSTER_TEST_IDS.cancelBtn);
@@ -578,9 +577,9 @@ describe('attachRowActions', () => {
 
   it('Remove → confirm DELETEs the entry and removes the row on 204', async () => {
     const calls: Array<{ method: string }> = [];
-    const fetchStub = (async (_url: string, init?: RequestInit) => {
+    const fetchStub = ((_url: string, init?: RequestInit) => {
       calls.push({ method: init?.method ?? 'GET' });
-      return new Response(null, { status: 204 });
+      return Promise.resolve(new Response(null, { status: 204 }));
     }) as unknown as typeof fetch;
 
     attachRowActions(tbody, 't_one', fetchStub);
@@ -594,9 +593,10 @@ describe('attachRowActions', () => {
   });
 
   it('Remove → cancel does not DELETE and keeps the row', async () => {
-    const fetchStub = (async () => {
-      throw new Error('fetch must not be called when remove is cancelled');
-    }) as unknown as typeof fetch;
+    const fetchStub = (() =>
+      Promise.reject(
+        new Error('fetch must not be called when remove is cancelled'),
+      )) as unknown as typeof fetch;
 
     attachRowActions(tbody, 't_one', fetchStub);
     click(COACH_ROSTER_TEST_IDS.removeBtn);
