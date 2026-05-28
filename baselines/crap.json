@@ -4143,7 +4143,37 @@
       "crap": 2,
       "method": "seedFixtures",
       "path": "packages/shared/src/db/seedFixtures.ts",
-      "startLine": 168
+      "startLine": 282
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-1>",
+      "path": "packages/shared/src/db/seedFixtures.ts",
+      "startLine": 287
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-2>",
+      "path": "packages/shared/src/db/seedFixtures.ts",
+      "startLine": 294
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-3>",
+      "path": "packages/shared/src/db/seedFixtures.ts",
+      "startLine": 309
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-4>",
+      "path": "packages/shared/src/db/seedFixtures.ts",
+      "startLine": 325
+    },
+    {
+      "crap": 2,
+      "method": "<anon method-5>",
+      "path": "packages/shared/src/db/seedFixtures.ts",
+      "startLine": 354
     },
     {
       "crap": 2,
