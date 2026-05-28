@@ -1,13 +1,14 @@
 // scripts/__tests__/verify-stack-body-assert.test.mjs
 //
-// Unit tests for the assertBodyContains feature added to
-// scripts/smoke/verify-stack.mjs (Story #1008).
+// Unit tests for the assertBodyContains and assertLocationContains features
+// added to scripts/smoke/verify-stack.mjs (Story #1008).
 //
 // Pyramid tier: unit. The `probe` function is tested in isolation by
 // replacing the global `fetch` with a stub so no network I/O occurs.
 //
 // Invariants pinned here:
 //
+//   assertBodyContains:
 //   1. When `assertBodyContains` is absent the probe returns ok when the
 //      status matches, without issuing a body-check fetch.
 //   2. When `assertBodyContains` is present and the redirect-following
@@ -19,6 +20,13 @@
 //      returns ok=false with a descriptive detail message.
 //   5. The status-check runs first; a status mismatch short-circuits before
 //      the body-check fetch is issued.
+//
+//   assertLocationContains:
+//   6. When `assertLocationContains` is present and the Location header
+//      contains the needle, the probe returns ok (no second fetch issued).
+//   7. When `assertLocationContains` is present and the Location header
+//      does NOT contain the needle, the probe returns ok=false.
+//   8. When the Location header is absent, the probe returns ok=false.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { probe } from '../smoke/verify-stack.mjs';
@@ -29,11 +37,16 @@ import { probe } from '../smoke/verify-stack.mjs';
 
 /**
  * Build a minimal Response-like object sufficient for the probe function.
+ * `locationHeader` is only relevant for redirect (3xx) responses where
+ * `assertLocationContains` checks the `Location` header.
  */
-function makeResponse(status, bodyText = '') {
+function makeResponse(status, bodyText = '', locationHeader = null) {
   return {
     status,
     text: () => Promise.resolve(bodyText),
+    headers: {
+      get: (name) => (name.toLowerCase() === 'location' ? locationHeader : null),
+    },
   };
 }
 
@@ -198,5 +211,89 @@ describe('probe — assertBodyContains present, status mismatch short-circuits',
     expect(result.detail).toMatch(/expected 302, got 200/);
     // Only one fetch call — body-check was not attempted.
     expect(fetch).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('probe — assertLocationContains present, Location header matches', () => {
+  beforeEach(() => {
+    // Invariant 6: single fetch; Location header contains the needle.
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValueOnce(
+          makeResponse(302, '', '/sign-in?__clerk_ticket=tok_abc&redirect_url=%2Fdashboard'),
+        ),
+    );
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('returns ok=true without a second fetch when Location contains the needle', async () => {
+    const entry = {
+      path: '/dev/sign-in-as/coach',
+      method: 'GET',
+      expectedStatus: 302,
+      assertLocationContains: '__clerk_ticket=',
+    };
+    const result = await probe('http://localhost:4321', entry);
+    expect(result.ok).toBe(true);
+    expect(result.status).toBe(302);
+    expect(result.detail).toBeNull();
+    // Only one fetch call — no body-check second fetch needed.
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('probe — assertLocationContains present, Location header does NOT match', () => {
+  beforeEach(() => {
+    // Invariant 7: 302 but Location is missing the needle.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValueOnce(makeResponse(302, '', '/sign-in')),
+    );
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('returns ok=false with a diagnostic detail when Location does not contain needle', async () => {
+    const entry = {
+      path: '/dev/sign-in-as/coach',
+      method: 'GET',
+      expectedStatus: 302,
+      assertLocationContains: '__clerk_ticket=',
+    };
+    const result = await probe('http://localhost:4321', entry);
+    expect(result.ok).toBe(false);
+    expect(result.status).toBe(302);
+    expect(result.detail).toMatch(/assertLocationContains failed/);
+    expect(result.detail).toContain('__clerk_ticket=');
+  });
+});
+
+describe('probe — assertLocationContains present, Location header absent', () => {
+  beforeEach(() => {
+    // Invariant 8: 302 with no Location header at all.
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(makeResponse(302, '', null)));
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('returns ok=false when the Location header is absent', async () => {
+    const entry = {
+      path: '/dev/sign-in-as/coach',
+      method: 'GET',
+      expectedStatus: 302,
+      assertLocationContains: '__clerk_ticket=',
+    };
+    const result = await probe('http://localhost:4321', entry);
+    expect(result.ok).toBe(false);
+    expect(result.detail).toMatch(/assertLocationContains failed/);
   });
 });

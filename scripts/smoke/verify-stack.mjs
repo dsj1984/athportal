@@ -174,8 +174,9 @@ export async function probe(baseUrl, entry) {
   // `assertBodyContains`. Issues a separate redirect-following fetch so
   // the status check and the body check are independent and each can
   // fail with a precise diagnostic.
-  const needle = typeof entry.assertBodyContains === 'string' ? entry.assertBodyContains : null;
-  if (needle !== null) {
+  const bodyNeedle =
+    typeof entry.assertBodyContains === 'string' ? entry.assertBodyContains : null;
+  if (bodyNeedle !== null) {
     let bodyResponse;
     try {
       bodyResponse = await fetch(url, {
@@ -204,13 +205,34 @@ export async function probe(baseUrl, entry) {
         detail: `assertBodyContains body read error: ${cause?.message ?? cause}`,
       };
     }
-    if (!body.includes(needle)) {
+    if (!body.includes(bodyNeedle)) {
       return {
         entry,
         url,
         ok: false,
         status: response.status,
-        detail: `assertBodyContains failed: body does not contain ${JSON.stringify(needle)}`,
+        detail: `assertBodyContains failed: body does not contain ${JSON.stringify(bodyNeedle)}`,
+      };
+    }
+  }
+
+  // Optional Location-header assertion — for redirect responses where following
+  // the redirect is not feasible (e.g. Clerk ticket exchanges that require
+  // browser-side JS). Checks that the `Location` header of the primary
+  // (non-following) response contains the configured substring. This is the
+  // correct gate for the `/dev/sign-in-as/coach` seam: a `302` whose Location
+  // contains `__clerk_ticket=` proves Clerk accepted the persona's user ID.
+  const locationNeedle =
+    typeof entry.assertLocationContains === 'string' ? entry.assertLocationContains : null;
+  if (locationNeedle !== null) {
+    const location = response.headers.get('location') ?? '';
+    if (!location.includes(locationNeedle)) {
+      return {
+        entry,
+        url,
+        ok: false,
+        status: response.status,
+        detail: `assertLocationContains failed: Location header ${JSON.stringify(location)} does not contain ${JSON.stringify(locationNeedle)}`,
       };
     }
   }

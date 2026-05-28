@@ -316,7 +316,7 @@ async function scanAllPendingFeatures(
         allErrors.push({
           file: v.file,
           field: '@pending',
-          message: `scenario "${v.scenario}" has been @pending for ${v.ageDays} day(s) (TTL: ${ttlDays} days) — bind the step or add @issue-<number> to defer explicitly`,
+          message: `scenario "${v.scenario}" has been @pending for ${v.ageDays} day(s) (TTL: ${ttlDays} days) — bind the step or remove @pending to resolve this scenario`,
         });
       } else {
         allErrors.push({
