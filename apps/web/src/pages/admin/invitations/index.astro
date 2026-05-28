@@ -37,6 +37,22 @@ if (__ssr_gate) return __ssr_gate;
   <body>
     <main aria-label="Pending invitations">
       <h1>Pending invitations</h1>
+      <nav aria-label="Create invitation" class="my-4 flex flex-wrap gap-2">
+        <a
+          href="/admin/invitations/coach"
+          class="inline-flex items-center justify-center rounded-md border border-border bg-surface-card px-3 py-2 text-sm text-text-primary hover:bg-surface-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+          data-testid="admin-invitations-invite-coach-link"
+        >
+          Invite coach
+        </a>
+        <a
+          href="/admin/invitations/athlete"
+          class="inline-flex items-center justify-center rounded-md border border-border bg-surface-card px-3 py-2 text-sm text-text-primary hover:bg-surface-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+          data-testid="admin-invitations-invite-athlete-link"
+        >
+          Invite athlete
+        </a>
+      </nav>
       <InvitationList />
     </main>
   </body>
