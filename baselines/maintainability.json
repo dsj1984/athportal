@@ -1,41 +1,11 @@
 {
   "$schema": ".agents/schemas/baselines/maintainability.schema.json",
-  "generatedAt": "2026-05-27T22:53:23.101Z",
-  "kernelVersion": "1.0.0",
+  "kernelVersion": "0.1.0",
+  "generatedAt": "2026-05-28T13:19:59.538Z",
   "rollup": {
     "*": {
       "min": 70.515,
-      "p50": 104.614,
-      "p95": 171
-    },
-    "apps/api": {
-      "min": 78.354,
-      "p50": 105.787,
-      "p95": 171
-    },
-    "apps/mobile": {
-      "min": 96.11,
-      "p50": 96.11,
-      "p95": 121.195
-    },
-    "apps/web": {
-      "min": 80.074,
-      "p50": 106.532,
-      "p95": 163.185
-    },
-    "packages/baselines": {
-      "min": 98.311,
-      "p50": 104.945,
-      "p95": 171
-    },
-    "packages/config": {
-      "min": 104.952,
-      "p50": 104.952,
-      "p95": 115.627
-    },
-    "packages/shared": {
-      "min": 70.515,
-      "p50": 97.857,
+      "p50": 104.955,
       "p95": 171
     }
   },
@@ -49,40 +19,40 @@
       "path": "apps/api/src/index.ts"
     },
     {
-      "mi": 120.696,
-      "path": "apps/api/src/lib/clerk-invitations.ts"
+      "path": "apps/api/src/lib/clerk-invitations.ts",
+      "mi": 122.234
     },
     {
-      "mi": 103.9,
-      "path": "apps/api/src/lib/r2.ts"
+      "path": "apps/api/src/lib/r2.ts",
+      "mi": 105.325
     },
     {
-      "mi": 108.172,
-      "path": "apps/api/src/mailer/rosterInvite.ts"
+      "path": "apps/api/src/mailer/rosterInvite.ts",
+      "mi": 108.792
     },
     {
       "mi": 138.232,
       "path": "apps/api/src/middleware/__testing__/auth-test.ts"
     },
     {
-      "mi": 99.586,
-      "path": "apps/api/src/middleware/auth.ts"
+      "path": "apps/api/src/middleware/auth.ts",
+      "mi": 100.114
     },
     {
       "mi": 103.092,
       "path": "apps/api/src/middleware/request-logger.ts"
     },
     {
-      "mi": 120.16,
-      "path": "apps/api/src/middleware/requireOnboarded.ts"
+      "path": "apps/api/src/middleware/requireOnboarded.ts",
+      "mi": 121.473
     },
     {
-      "mi": 107.516,
-      "path": "apps/api/src/middleware/requireRole.ts"
+      "path": "apps/api/src/middleware/requireRole.ts",
+      "mi": 108.152
     },
     {
-      "mi": 130.527,
-      "path": "apps/api/src/middleware/withDb.ts"
+      "path": "apps/api/src/middleware/withDb.ts",
+      "mi": 131.666
     },
     {
       "mi": 85.66,
@@ -109,16 +79,16 @@
       "path": "apps/api/src/routes/v1/admin/invitations/index.ts"
     },
     {
-      "mi": 78.354,
-      "path": "apps/api/src/routes/v1/admin/invitations/router.ts"
+      "path": "apps/api/src/routes/v1/admin/invitations/router.ts",
+      "mi": 79.715
     },
     {
       "mi": 90.817,
       "path": "apps/api/src/routes/v1/admin/org.ts"
     },
     {
-      "mi": 99.743,
-      "path": "apps/api/src/routes/v1/admin/reports.ts"
+      "path": "apps/api/src/routes/v1/admin/reports.ts",
+      "mi": 100.298
     },
     {
       "mi": 98.159,
@@ -137,8 +107,8 @@
       "path": "apps/api/src/routes/v1/auth/index.ts"
     },
     {
-      "mi": 96.056,
-      "path": "apps/api/src/routes/v1/auth/onboard.ts"
+      "path": "apps/api/src/routes/v1/auth/onboard.ts",
+      "mi": 96.751
     },
     {
       "mi": 134.62,
@@ -149,8 +119,8 @@
       "path": "apps/api/src/routes/v1/coach/invites.ts"
     },
     {
-      "mi": 84.627,
-      "path": "apps/api/src/routes/v1/coach/roster.ts"
+      "path": "apps/api/src/routes/v1/coach/roster.ts",
+      "mi": 83.465
     },
     {
       "mi": 115.469,
@@ -169,12 +139,12 @@
       "path": "apps/api/src/routes/v1/users/role.ts"
     },
     {
-      "mi": 94.276,
-      "path": "apps/api/src/routes/webhooks/clerk-invitation-accepted.ts"
+      "path": "apps/api/src/routes/webhooks/clerk-invitation-accepted.ts",
+      "mi": 95.221
     },
     {
-      "mi": 116.475,
-      "path": "apps/api/src/routes/webhooks/clerk-invitation-shared.ts"
+      "path": "apps/api/src/routes/webhooks/clerk-invitation-shared.ts",
+      "mi": 117.769
     },
     {
       "mi": 111.681,
@@ -193,36 +163,12 @@
       "path": "apps/mobile/app.config.ts"
     },
     {
-      "mi": 121.195,
-      "path": "apps/mobile/src/sentry.ts"
+      "path": "apps/mobile/src/sentry.ts",
+      "mi": 122.39
     },
     {
       "mi": 91.193,
       "path": "apps/web/astro.config.ts"
-    },
-    {
-      "mi": 133.574,
-      "path": "apps/web/e2e/fixtures/email-inbox.ts"
-    },
-    {
-      "mi": 100.398,
-      "path": "apps/web/e2e/fixtures/freshUser.ts"
-    },
-    {
-      "mi": 91.32,
-      "path": "apps/web/e2e/fixtures/persona-global-setup.ts"
-    },
-    {
-      "mi": 99.406,
-      "path": "apps/web/e2e/fixtures/persona-projects.ts"
-    },
-    {
-      "mi": 118.899,
-      "path": "apps/web/e2e/fixtures/persona-storage.ts"
-    },
-    {
-      "mi": 105.55,
-      "path": "apps/web/e2e/fixtures/static-server.mjs"
     },
     {
       "mi": 103.497,
@@ -241,8 +187,12 @@
       "path": "apps/web/e2e/steps/auth.steps.ts"
     },
     {
-      "mi": 112.839,
-      "path": "apps/web/e2e/steps/diagnostics.steps.ts"
+      "path": "apps/web/e2e/steps/csv-import.steps.ts",
+      "mi": 111.607
+    },
+    {
+      "path": "apps/web/e2e/steps/diagnostics.steps.ts",
+      "mi": 113.391
     },
     {
       "mi": 171,
@@ -293,140 +243,76 @@
       "path": "apps/web/src/components/admin/CsvMappingTool.ts"
     },
     {
-      "mi": 97.556,
-      "path": "apps/web/src/components/admin/OrgConfigForm.ts"
+      "path": "apps/web/src/components/admin/ImportHistory.ts",
+      "mi": 99.159
+    },
+    {
+      "path": "apps/web/src/components/admin/OrgConfigForm.ts",
+      "mi": 98.423
     },
     {
       "mi": 97.452,
       "path": "apps/web/src/components/admin/reports/VerifiedAchievementReport.ts"
     },
     {
+      "path": "apps/web/src/components/admin/rollover/RolloverPreview.ts",
+      "mi": 82.163
+    },
+    {
       "mi": 97.585,
       "path": "apps/web/src/components/admin/roster/RosterTable.ts"
     },
     {
-      "mi": 95.889,
-      "path": "apps/web/src/components/admin/teams/TeamForm.ts"
+      "path": "apps/web/src/components/admin/teams/TeamForm.ts",
+      "mi": 96.632
     },
     {
       "mi": 98.392,
       "path": "apps/web/src/components/coach/InviteAthleteDialog.ts"
     },
     {
-      "mi": 90.392,
-      "path": "apps/web/src/components/coach/RosterTable.ts"
+      "path": "apps/web/src/components/coach/RosterTable.ts",
+      "mi": 92.041
     },
     {
-      "mi": 133.747,
-      "path": "apps/web/src/components/onboarding/AgeAttestation.ts"
+      "path": "apps/web/src/components/onboarding/AgeAttestation.ts",
+      "mi": 135.152
     },
     {
-      "mi": 113.308,
-      "path": "apps/web/src/components/onboarding/ClerkVerifyEmailIsland.ts"
+      "path": "apps/web/src/components/onboarding/ClerkVerifyEmailIsland.ts",
+      "mi": 114.618
     },
     {
-      "mi": 103.923,
-      "path": "apps/web/src/components/onboarding/LegalAcceptanceCheckboxes.ts"
+      "path": "apps/web/src/components/onboarding/LegalAcceptanceCheckboxes.ts",
+      "mi": 105.01
     },
     {
-      "mi": 103.249,
-      "path": "apps/web/src/components/onboarding/OnboardingForm.ts"
+      "path": "apps/web/src/components/onboarding/OnboardingForm.ts",
+      "mi": 103.873
     },
     {
-      "mi": 106.74,
-      "path": "apps/web/src/components/onboarding/ProfilePhotoUploader.ts"
+      "path": "apps/web/src/components/onboarding/ProfilePhotoUploader.ts",
+      "mi": 107.609
     },
     {
-      "mi": 105.724,
-      "path": "apps/web/src/components/ui/Avatar.ts"
+      "path": "apps/web/src/components/ui/_lib/badge.ts",
+      "mi": 97.315
     },
     {
-      "mi": 127.412,
-      "path": "apps/web/src/components/ui/Card.ts"
-    },
-    {
-      "mi": 86.556,
-      "path": "apps/web/src/components/ui/DataTable.ts"
-    },
-    {
-      "mi": 99.6,
-      "path": "apps/web/src/components/ui/EmptyState.ts"
-    },
-    {
-      "mi": 97.51,
-      "path": "apps/web/src/components/ui/EventChip.ts"
-    },
-    {
-      "mi": 89.666,
-      "path": "apps/web/src/components/ui/FormField.ts"
-    },
-    {
-      "mi": 124.358,
-      "path": "apps/web/src/components/ui/Input.tsx"
-    },
-    {
-      "mi": 117.31,
-      "path": "apps/web/src/components/ui/Logo.ts"
-    },
-    {
-      "mi": 96.003,
-      "path": "apps/web/src/components/ui/PageHeader.ts"
-    },
-    {
-      "mi": 103.854,
-      "path": "apps/web/src/components/ui/Ph.ts"
-    },
-    {
-      "mi": 101.785,
-      "path": "apps/web/src/components/ui/Ring.ts"
-    },
-    {
-      "mi": 124.464,
-      "path": "apps/web/src/components/ui/Select.tsx"
-    },
-    {
-      "mi": 138.889,
-      "path": "apps/web/src/components/ui/Shell.ts"
-    },
-    {
-      "mi": 111.895,
-      "path": "apps/web/src/components/ui/Sidebar.ts"
-    },
-    {
-      "mi": 98.571,
-      "path": "apps/web/src/components/ui/Stat.ts"
-    },
-    {
-      "mi": 124.674,
-      "path": "apps/web/src/components/ui/Textarea.tsx"
-    },
-    {
-      "mi": 163.185,
-      "path": "apps/web/src/components/ui/ToastHost.tsx"
-    },
-    {
-      "mi": 119.789,
-      "path": "apps/web/src/components/ui/VerifiedTick.ts"
-    },
-    {
-      "mi": 96.375,
-      "path": "apps/web/src/components/ui/_lib/badge.ts"
-    },
-    {
-      "mi": 99.377,
-      "path": "apps/web/src/components/ui/_lib/btn.ts"
+      "path": "apps/web/src/components/ui/_lib/btn.ts",
+      "mi": 100.572
     },
     {
       "mi": 147.376,
       "path": "apps/web/src/components/ui/_lib/cn.ts"
     },
     {
-      "mi": 94.178,
-      "path": "apps/web/src/components/ui/_lib/eventColors.ts"
+      "path": "apps/web/src/components/ui/_lib/eventColors.ts",
+      "mi": 94.757
     },
     {
-      "mi": 109.991,
-      "path": "apps/web/src/components/ui/_lib/form.ts"
+      "path": "apps/web/src/components/ui/_lib/form.ts",
+      "mi": 110.788
     },
     {
       "mi": 81.443,
@@ -437,6 +323,78 @@
       "path": "apps/web/src/components/ui/_lib/toast.ts"
     },
     {
+      "mi": 105.724,
+      "path": "apps/web/src/components/ui/Avatar.ts"
+    },
+    {
+      "path": "apps/web/src/components/ui/Card.ts",
+      "mi": 128.724
+    },
+    {
+      "path": "apps/web/src/components/ui/DataTable.ts",
+      "mi": 87.526
+    },
+    {
+      "path": "apps/web/src/components/ui/EmptyState.ts",
+      "mi": 100.464
+    },
+    {
+      "path": "apps/web/src/components/ui/EventChip.ts",
+      "mi": 98.383
+    },
+    {
+      "path": "apps/web/src/components/ui/FormField.ts",
+      "mi": 90.625
+    },
+    {
+      "path": "apps/web/src/components/ui/Input.tsx",
+      "mi": 115.806
+    },
+    {
+      "path": "apps/web/src/components/ui/Logo.ts",
+      "mi": 118.373
+    },
+    {
+      "path": "apps/web/src/components/ui/PageHeader.ts",
+      "mi": 97.137
+    },
+    {
+      "path": "apps/web/src/components/ui/Ph.ts",
+      "mi": 104.439
+    },
+    {
+      "path": "apps/web/src/components/ui/Ring.ts",
+      "mi": 102.529
+    },
+    {
+      "path": "apps/web/src/components/ui/Select.tsx",
+      "mi": 115.901
+    },
+    {
+      "path": "apps/web/src/components/ui/Shell.ts",
+      "mi": 139.724
+    },
+    {
+      "path": "apps/web/src/components/ui/Sidebar.ts",
+      "mi": 112.826
+    },
+    {
+      "path": "apps/web/src/components/ui/Stat.ts",
+      "mi": 99.578
+    },
+    {
+      "path": "apps/web/src/components/ui/Textarea.tsx",
+      "mi": 117.674
+    },
+    {
+      "path": "apps/web/src/components/ui/ToastHost.tsx",
+      "mi": 138.079
+    },
+    {
+      "path": "apps/web/src/components/ui/VerifiedTick.ts",
+      "mi": 120.661
+    },
+    {
       "mi": 171,
       "path": "apps/web/src/index.ts"
     },
@@ -445,44 +403,44 @@
       "path": "apps/web/src/lib/db.ts"
     },
     {
-      "mi": 106.52,
-      "path": "apps/web/src/lib/navigation.ts"
+      "path": "apps/web/src/lib/navigation.ts",
+      "mi": 107.035
     },
     {
-      "mi": 106.274,
-      "path": "apps/web/src/lib/ssrAuthGate.ts"
+      "path": "apps/web/src/lib/ssrAuthGate.ts",
+      "mi": 106.978
     },
     {
-      "mi": 104.126,
-      "path": "apps/web/src/middleware.ts"
+      "path": "apps/web/src/middleware.ts",
+      "mi": 104.955
     },
     {
-      "mi": 131.444,
-      "path": "apps/web/src/pages/admin/teams/index.ts"
+      "path": "apps/web/src/pages/admin/teams/index.ts",
+      "mi": 133.672
     },
     {
-      "mi": 98.571,
-      "path": "apps/web/src/pages/dashboard.ts"
+      "path": "apps/web/src/pages/dashboard.ts",
+      "mi": 103.348
     },
     {
-      "mi": 107.296,
-      "path": "apps/web/src/pages/internal/styleguide.ts"
+      "path": "apps/web/src/pages/internal/styleguide.ts",
+      "mi": 109.049
     },
     {
-      "mi": 94.355,
-      "path": "apps/web/src/pages/onboarding.ts"
+      "path": "apps/web/src/pages/onboarding.ts",
+      "mi": 95.099
     },
     {
-      "mi": 101.775,
-      "path": "apps/web/src/pages/sign-out.ts"
+      "path": "apps/web/src/pages/sign-out.ts",
+      "mi": 102.441
     },
     {
       "mi": 147.989,
       "path": "apps/web/src/sentry.ts"
     },
     {
-      "mi": 121.79,
-      "path": "apps/web/src/testing/astro-middleware-shim.ts"
+      "path": "apps/web/src/testing/astro-middleware-shim.ts",
+      "mi": 123.543
     },
     {
       "mi": 86.689,
@@ -513,8 +471,8 @@
       "path": "packages/baselines/src/serialise.ts"
     },
     {
-      "mi": 147.996,
-      "path": "packages/baselines/src/types.ts"
+      "path": "packages/baselines/src/types.ts",
+      "mi": 154.573
     },
     {
       "mi": 127.151,
@@ -537,8 +495,8 @@
       "path": "packages/shared/scripts/reset.mjs"
     },
     {
-      "mi": 91.3,
-      "path": "packages/shared/scripts/seed.mjs"
+      "path": "packages/shared/scripts/seed.mjs",
+      "mi": 84.896
     },
     {
       "mi": 101.306,
@@ -549,24 +507,28 @@
       "path": "packages/shared/src/csv/parse.ts"
     },
     {
-      "mi": 88.147,
-      "path": "packages/shared/src/db/queries/coach/roster.ts"
+      "path": "packages/shared/src/db/queries/coach/roster.ts",
+      "mi": 88.813
     },
     {
-      "mi": 94.082,
-      "path": "packages/shared/src/db/queries/legalDocuments.ts"
+      "path": "packages/shared/src/db/queries/legalDocuments.ts",
+      "mi": 95.622
     },
     {
-      "mi": 97.292,
-      "path": "packages/shared/src/db/queries/parentAthleteLinks.ts"
+      "path": "packages/shared/src/db/queries/parentAthleteLinks.ts",
+      "mi": 98.22
     },
     {
-      "mi": 95.558,
-      "path": "packages/shared/src/db/queries/scopedDb.ts"
+      "path": "packages/shared/src/db/queries/scopedDb.ts",
+      "mi": 96.814
     },
     {
-      "mi": 104.761,
-      "path": "packages/shared/src/db/queries/users.ts"
+      "path": "packages/shared/src/db/queries/users.ts",
+      "mi": 105.646
+    },
+    {
+      "path": "packages/shared/src/db/queries/userTeams.ts",
+      "mi": 101.019
     },
     {
       "mi": 110.893,
@@ -621,12 +583,12 @@
       "path": "packages/shared/src/db/schema/users.ts"
     },
     {
-      "mi": 104.614,
-      "path": "packages/shared/src/db/seed.ts"
+      "path": "packages/shared/src/db/seed.ts",
+      "mi": 105.91
     },
     {
-      "mi": 75.194,
-      "path": "packages/shared/src/db/seedFixtures.ts"
+      "path": "packages/shared/src/db/seedFixtures.ts",
+      "mi": 96.984
     },
     {
       "mi": 171,
@@ -641,8 +603,8 @@
       "path": "packages/shared/src/observability/redaction.ts"
     },
     {
-      "mi": 114.82,
-      "path": "packages/shared/src/rbac/coachOnTeam.ts"
+      "path": "packages/shared/src/rbac/coachOnTeam.ts",
+      "mi": 116.174
     },
     {
       "mi": 171,
@@ -661,16 +623,16 @@
       "path": "packages/shared/src/rbac/types.ts"
     },
     {
-      "mi": 99.32,
-      "path": "packages/shared/src/rollover/buildPlan.ts"
+      "path": "packages/shared/src/rollover/buildPlan.ts",
+      "mi": 100.351
     },
     {
-      "mi": 70.836,
-      "path": "packages/shared/src/schemas/admin/csvImport.ts"
+      "path": "packages/shared/src/schemas/admin/csvImport.ts",
+      "mi": 71.395
     },
     {
-      "mi": 92.379,
-      "path": "packages/shared/src/schemas/admin/csvImportBatches.ts"
+      "path": "packages/shared/src/schemas/admin/csvImportBatches.ts",
+      "mi": 92.95
     },
     {
       "mi": 86.881,
@@ -681,8 +643,8 @@
       "path": "packages/shared/src/schemas/admin/org.ts"
     },
     {
-      "mi": 89.7,
-      "path": "packages/shared/src/schemas/admin/reports.ts"
+      "path": "packages/shared/src/schemas/admin/reports.ts",
+      "mi": 90.497
     },
     {
       "mi": 70.956,
@@ -705,32 +667,32 @@
       "path": "packages/shared/src/schemas/coach/roster.ts"
     },
     {
-      "mi": 122.795,
-      "path": "packages/shared/src/testing/app.ts"
+      "path": "packages/shared/src/testing/app.ts",
+      "mi": 123.818
     },
     {
-      "mi": 95.14,
-      "path": "packages/shared/src/testing/auth.ts"
+      "path": "packages/shared/src/testing/auth.ts",
+      "mi": 95.829
     },
     {
       "mi": 96.445,
       "path": "packages/shared/src/testing/clerkPersonas.ts"
     },
     {
-      "mi": 96.366,
-      "path": "packages/shared/src/testing/clerkTickets.ts"
+      "path": "packages/shared/src/testing/clerkTickets.ts",
+      "mi": 96.914
     },
     {
-      "mi": 94.28,
-      "path": "packages/shared/src/testing/createTestUser.ts"
+      "path": "packages/shared/src/testing/createTestUser.ts",
+      "mi": 94.798
     },
     {
-      "mi": 111.005,
-      "path": "packages/shared/src/testing/db.ts"
+      "path": "packages/shared/src/testing/db.ts",
+      "mi": 111.584
     },
     {
-      "mi": 156.236,
-      "path": "packages/shared/src/testing/examples/Greeting.tsx"
+      "path": "packages/shared/src/testing/examples/Greeting.tsx",
+      "mi": 139.071
     },
     {
       "mi": 159.877,
