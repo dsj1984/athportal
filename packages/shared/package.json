@@ -36,6 +36,10 @@
       "types": "./dist/db/queries/parentAthleteLinks.d.ts",
       "import": "./src/db/queries/parentAthleteLinks.ts"
     },
+    "./db/queries/userTeams": {
+      "types": "./dist/db/queries/userTeams.d.ts",
+      "import": "./src/db/queries/userTeams.ts"
+    },
     "./schemas/auth": {
       "types": "./dist/schemas/auth.d.ts",
       "import": "./src/schemas/auth.ts"

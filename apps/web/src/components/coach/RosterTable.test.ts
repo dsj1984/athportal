@@ -43,6 +43,7 @@ describe('COACH_ROSTER_TEST_IDS — canonical data-testid contract', () => {
     expect(COACH_ROSTER_TEST_IDS.jersey).toBe('coach-roster-jersey');
     expect(COACH_ROSTER_TEST_IDS.position).toBe('coach-roster-position');
     expect(COACH_ROSTER_TEST_IDS.badge).toBe('coach-roster-badge');
+    expect(COACH_ROSTER_TEST_IDS.nameLink).toBe('coach-roster-name-link');
   });
 
   it('exposes the Task #928 mutation selectors without renaming the Task #918 ids', () => {
@@ -147,6 +148,15 @@ describe('renderRosterRows', () => {
     const nameCell = tr?.querySelector('td[data-col="name"]');
     expect(nameCell?.textContent).toBe('<script>alert(1)</script>');
     expect(nameCell?.querySelector('script')).toBeNull();
+  });
+
+  it('wraps the athlete name in a link to the team-scoped profile (Story #985 / F29)', () => {
+    renderRosterRows(tbody, [row({ id: 're_x', teamId: 't_y', athleteFullName: 'Ada Lovelace' })]);
+    const link = tbody.querySelector<HTMLAnchorElement>('[data-testid="coach-roster-name-link"]');
+    expect(link).not.toBeNull();
+    expect(link?.textContent).toBe('Ada Lovelace');
+    // `item.id` (roster-entry id) is the `:rosterEntryId` segment, not users.id.
+    expect(link?.getAttribute('href')).toBe('/app/coach/teams/t_y/athletes/re_x');
   });
 
   it('clears the tbody on re-render rather than appending', () => {

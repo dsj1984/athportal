@@ -16,10 +16,24 @@ export type DashboardWidgetId =
   | 'dashboard-widget-roster'
   | 'dashboard-widget-upcoming';
 
+/**
+ * One team row rendered in the dashboard "Roster" widget (Story #985 /
+ * F27). `href` is present for teams the user can navigate to (coach
+ * teams link to the coach roster surface); it is omitted for athlete
+ * memberships until the athlete team surface ships, so the row renders
+ * as plain text rather than a dead link.
+ */
+export interface DashboardTeamRow {
+  readonly teamId: string;
+  readonly teamName: string;
+  readonly role: 'coach' | 'athlete';
+  readonly href?: string;
+}
+
 /** Per-widget data slices read by the dashboard. Each slice is an array; an empty array triggers the widget's empty state. */
 export interface DashboardData {
   readonly recentActivity: readonly unknown[];
-  readonly roster: readonly unknown[];
+  readonly roster: readonly DashboardTeamRow[];
   readonly upcoming: readonly unknown[];
 }
 
@@ -105,6 +119,33 @@ export function buildDashboard(data: DashboardData): DashboardView {
   }) as unknown as DashboardView['widgets'];
 
   return { widgets };
+}
+
+/**
+ * Map the persisted "teams this user belongs to" rows into the
+ * dashboard roster slice. Coach teams get an `href` to the coach
+ * roster surface so the widget is a one-click path from `/dashboard`
+ * to the roster (Story #985 / F27 / Probe 1). Athlete memberships
+ * carry no `href` yet — the `/app/athlete/teams/...` surface does not
+ * exist, and a dead link is worse than plain text — but still render
+ * so the user sees every team they belong to.
+ *
+ * Pure function: exposed so `dashboard.test.ts` can pin the href and
+ * role mapping without an Astro context.
+ */
+export function buildRosterRows(
+  teams: ReadonlyArray<{ teamId: string; teamName: string; role: 'coach' | 'athlete' }>,
+): DashboardTeamRow[] {
+  return teams.map((t) =>
+    t.role === 'coach'
+      ? {
+          teamId: t.teamId,
+          teamName: t.teamName,
+          role: 'coach',
+          href: `/app/coach/teams/${encodeURIComponent(t.teamId)}/roster`,
+        }
+      : { teamId: t.teamId, teamName: t.teamName, role: 'athlete' },
+  );
 }
 
 /**

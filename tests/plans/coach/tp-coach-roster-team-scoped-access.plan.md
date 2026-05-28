@@ -38,7 +38,7 @@ prerequisites:
 4. Navigate directly to `/app/coach/teams/<otherOrgTeamId>/roster`.
    **Expected:** the same not-found surface as step 2. The cross-org case is indistinguishable from the same-org refusal — no signal that "this team exists but you can't see it" vs "this team doesn't exist."
 
-5. As a final negative probe, try `/app/coach/teams/<assignedTeamId>/athletes/<athleteIdFromOtherTeam>` — i.e. an athlete that exists, but on a team this coach does not own — using an athlete ID retrieved from the seed for `otherTeamSameOrgId`.
+5. As a final negative probe, try `/app/coach/teams/<assignedTeamId>/athletes/<rosterEntryIdFromOtherTeam>` — i.e. a roster entry that exists, but on a team this coach does not own — using a `roster_entry.id` retrieved from the seed for `otherTeamSameOrgId`.
    **Expected:** not-found surface. The team-scoped athlete profile route does not render another team's athlete just because the coach owns *a* team.
 
 ## Cleanup

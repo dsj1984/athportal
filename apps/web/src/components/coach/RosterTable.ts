@@ -45,6 +45,7 @@ export const COACH_ROSTER_TEST_IDS = {
   badge: 'coach-roster-badge',
   emptyState: 'coach-roster-empty',
   error: 'coach-roster-error',
+  nameLink: 'coach-roster-name-link',
   // Task #928 — mutation surface
   editBtn: 'coach-roster-edit-btn',
   saveBtn: 'coach-roster-save-btn',
@@ -152,7 +153,17 @@ export function renderRosterRows(
 
     const nameTd = document.createElement('td');
     nameTd.setAttribute('data-col', 'name');
-    nameTd.textContent = item.athleteFullName;
+    // Story #985 / F29 — the athlete name links to the team-scoped
+    // athlete profile. `item.id` is the roster-entry id, which is
+    // exactly the `:rosterEntryId` segment the profile route + API
+    // expect (NOT the athlete's `users.id`). The name is set via
+    // `textContent` on the anchor so a server-supplied value cannot
+    // inject markup (per security-baseline § Output & Rendering).
+    const nameLink = document.createElement('a');
+    nameLink.setAttribute('data-testid', COACH_ROSTER_TEST_IDS.nameLink);
+    nameLink.href = `/app/coach/teams/${encodeURIComponent(item.teamId)}/athletes/${encodeURIComponent(item.id)}`;
+    nameLink.textContent = item.athleteFullName;
+    nameTd.appendChild(nameLink);
     tr.appendChild(nameTd);
 
     const jerseyTd = document.createElement('td');

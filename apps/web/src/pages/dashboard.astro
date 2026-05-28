@@ -16,12 +16,19 @@
 // typography per docs/style-guide.md §3, page chrome per §4.
 //
 // Story #836 / Task #847 — Epic #828 dashboard surface.
+import { listUserTeamsBySubject } from '@repo/shared/db/queries/userTeams';
 import Card from '../components/ui/Card.astro';
 import EmptyState from '../components/ui/EmptyState.astro';
 import PageHeader from '../components/ui/PageHeader.astro';
 import RootLayout from '../layouts/RootLayout.astro';
+import { getDb } from '../lib/db';
 import { requireSignedIn } from '../lib/ssrAuthGate';
-import { EMPTY_DASHBOARD_DATA, buildDashboard } from './dashboard.ts';
+import {
+  EMPTY_DASHBOARD_DATA,
+  type DashboardTeamRow,
+  buildDashboard,
+  buildRosterRows,
+} from './dashboard.ts';
 
 // SSR auth gate (Story #952 F1). Anonymous requests must not see the
 // dashboard chrome — the prior shape returned 200-with-chrome to a bare
@@ -30,7 +37,25 @@ import { EMPTY_DASHBOARD_DATA, buildDashboard } from './dashboard.ts';
 const gate = requireSignedIn(Astro);
 if (gate) return gate;
 
-const view = buildDashboard(EMPTY_DASHBOARD_DATA);
+// Story #985 / F27 — the Roster widget surfaces every team the signed-in
+// user belongs to (coach assignments + athlete memberships). The web
+// runtime only sees the Clerk `sub` claim; the query resolves the
+// internal user id itself. A DB read failure must not 500 the whole
+// dashboard — fall back to the empty-roster view, matching the
+// safe-default posture the onboarding gate takes (middleware.ts).
+const clerkSubjectId = Astro.locals.auth().userId;
+let rosterRows: DashboardTeamRow[] = [];
+if (typeof clerkSubjectId === 'string' && clerkSubjectId.length > 0) {
+  try {
+    rosterRows = buildRosterRows(listUserTeamsBySubject(getDb(), clerkSubjectId));
+  } catch (cause) {
+    const message = cause instanceof Error ? cause.message : String(cause);
+    console.error(`[dashboard] roster read failed; rendering empty roster. Cause: ${message}`);
+    rosterRows = [];
+  }
+}
+
+const view = buildDashboard({ ...EMPTY_DASHBOARD_DATA, roster: rosterRows });
 ---
 
 <RootLayout title="Dashboard">
@@ -46,6 +71,39 @@ const view = buildDashboard(EMPTY_DASHBOARD_DATA);
                 <div class="mt-4">
                   <EmptyState {...widget.emptyState} />
                 </div>
+              ) : widget.id === 'dashboard-widget-roster' ? (
+                <ul class="mt-4 flex flex-col gap-2">
+                  {(widget.rows as readonly DashboardTeamRow[]).map((team, idx) => (
+                    <li
+                      class="flex items-center justify-between gap-2 rounded-md border border-border bg-surface-bg px-3 py-2 text-sm"
+                      data-row-index={idx}
+                      data-testid="dashboard-roster-team"
+                      data-team-id={team.teamId}
+                    >
+                      {team.href ? (
+                        <a
+                          class="font-medium text-text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+                          href={team.href}
+                          data-testid="dashboard-roster-team-link"
+                        >
+                          {team.teamName}
+                        </a>
+                      ) : (
+                        <span class="font-medium text-text-primary">{team.teamName}</span>
+                      )}
+                      <span
+                        class="rounded-full bg-surface-subtle px-2 py-0.5 text-xs font-medium text-text-secondary"
+                        data-testid={
+                          team.role === 'coach'
+                            ? 'dashboard-roster-coach-badge'
+                            : 'dashboard-roster-athlete-badge'
+                        }
+                      >
+                        {team.role === 'coach' ? 'Coach' : 'Athlete'}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
               ) : (
                 <ul class="mt-4 flex flex-col gap-2">
                   {widget.rows.map((_row, idx) => (
