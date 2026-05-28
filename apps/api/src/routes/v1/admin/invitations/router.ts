@@ -35,15 +35,17 @@
 // pins this contract.
 
 import { randomUUID } from 'node:crypto';
+import { createClerkClient } from '@clerk/backend';
 import { type Invitation, invitations, teams } from '@repo/shared/db/schema';
 import {
   AthleteInvitationCreateInputSchema,
   CoachInvitationCreateInputSchema,
 } from '@repo/shared/schemas/admin/invitations';
 import { and, eq, inArray } from 'drizzle-orm';
-import { Hono } from 'hono';
+import { Hono, type MiddlewareHandler } from 'hono';
 import {
   type ClerkInvitationClient,
+  asInvitationClient,
   createInvitation,
   resendInvitation,
   revokeInvitation,
@@ -51,11 +53,13 @@ import {
 import type { RequireInternalUserEnv } from '../../../../middleware/auth';
 
 /**
- * Test-only seam. Production wiring builds the Clerk client from
- * `c.env.CLERK_SECRET_KEY` lazily on the first call inside a request.
- * Contract tests inject a hand-rolled stub via
- * `c.set('clerkInvitationClient', stub)` so the suite never touches
- * the real Clerk SDK.
+ * Production wiring builds the Clerk client from `c.env.CLERK_SECRET_KEY`
+ * lazily on the first call inside an invitations-router request (see
+ * `requireClerkInvitationClient` below). Contract tests inject a
+ * hand-rolled stub via `c.set('clerkInvitationClient', stub)` upstream
+ * of the router; the middleware short-circuits when the variable is
+ * already populated so the test seam still wins. Story #970 wired the
+ * lazy construction this comment originally promised.
  */
 interface InvitationsRouterVariables {
   clerkInvitationClient?: ClerkInvitationClient;
@@ -150,7 +154,56 @@ function toWire(row: Invitation): PendingInvitationWire {
   };
 }
 
+/**
+ * Lazily construct the `ClerkInvitationClient` on the first invitations
+ * request when no pre-seeded stub is present. Reads
+ * `c.env.CLERK_SECRET_KEY`, validates it carries a recognised Clerk
+ * secret prefix (`sk_test_` or `sk_live_`), and builds the wrapper via
+ * `asInvitationClient(createClerkClient({ secretKey }))`.
+ *
+ * Per `.agents/rules/security-baseline.md` (Secrets Management, Output
+ * & Rendering): a missing or malformed secret surfaces the same opaque
+ * `INTERNAL: Invitation client unavailable.` envelope the per-route
+ * guards already emit — operators triage via the structured warn log,
+ * never via response detail. The secret value itself is NEVER logged.
+ *
+ * The middleware is a no-op when `c.get('clerkInvitationClient')` is
+ * already set so contract tests that inject a stub via an upstream
+ * middleware keep working unchanged.
+ */
+function requireClerkInvitationClient(): MiddlewareHandler<InvitationsRouterEnv> {
+  return async (c, next) => {
+    if (c.get('clerkInvitationClient')) {
+      await next();
+      return;
+    }
+    const secretKey = c.env?.CLERK_SECRET_KEY;
+    if (
+      typeof secretKey !== 'string' ||
+      (!secretKey.startsWith('sk_test_') && !secretKey.startsWith('sk_live_'))
+    ) {
+      try {
+        console.warn(
+          JSON.stringify({
+            scope: 'admin-invitations',
+            reason: 'clerk-secret-missing-or-malformed',
+          }),
+        );
+      } catch {
+        // intentional swallow — logging must never turn into a 500
+      }
+      return c.json(errorBody('INTERNAL', 'Invitation client unavailable.'), 500);
+    }
+    const client = asInvitationClient(createClerkClient({ secretKey }));
+    c.set('clerkInvitationClient', client);
+    await next();
+    return;
+  };
+}
+
 export const invitationsAdminRouter = new Hono<InvitationsRouterEnv>();
+
+invitationsAdminRouter.use('*', requireClerkInvitationClient());
 
 invitationsAdminRouter.get('/', (c) => {
   const auth = c.get('auth');
