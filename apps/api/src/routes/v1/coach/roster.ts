@@ -77,7 +77,10 @@ function errorBody(
   message: string,
   field?: string,
 ): CoachRosterErrorBody {
-  return { success: false, error: field !== undefined ? { code, message, field } : { code, message } };
+  return {
+    success: false,
+    error: field !== undefined ? { code, message, field } : { code, message },
+  };
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -297,7 +300,10 @@ coachRosterRoute.patch('/entries/:entryId', async (c) => {
     const firstIssue = safe.error.issues[0];
     const message = firstIssue?.message ?? 'Invalid input.';
     const field = firstIssue?.path[0];
-    return c.json(errorBody('INVALID_INPUT', message, typeof field === 'string' ? field : undefined), 400);
+    return c.json(
+      errorBody('INVALID_INPUT', message, typeof field === 'string' ? field : undefined),
+      400,
+    );
   }
   const parsed = safe.data;
 
