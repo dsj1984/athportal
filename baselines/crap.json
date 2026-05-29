@@ -1,10 +1,10 @@
 {
   "$schema": ".agents/schemas/baselines/crap.schema.json",
   "kernelVersion": "0.1.0",
-  "generatedAt": "2026-05-28T13:26:57.745Z",
+  "generatedAt": "2026-05-29T17:31:45.057Z",
   "rollup": {
     "*": {
-      "p50": 2.0078125,
+      "p50": 2,
       "p95": 5,
       "max": 6,
       "methodsAbove20": 0
@@ -112,6 +112,42 @@
       "method": "<anon method-3>",
       "startLine": 153,
       "crap": 2.004
+    },
+    {
+      "path": "packages/shared/src/db/queries/__tests__/graphDb.ts",
+      "method": "applyMigration",
+      "startLine": 46,
+      "crap": 2
+    },
+    {
+      "path": "packages/shared/src/db/queries/__tests__/graphDb.ts",
+      "method": "<anon method-2>",
+      "startLine": 50,
+      "crap": 2
+    },
+    {
+      "path": "packages/shared/src/db/queries/__tests__/onboardingDb.ts",
+      "method": "applyMigration",
+      "startLine": 40,
+      "crap": 1
+    },
+    {
+      "path": "packages/shared/src/db/queries/__tests__/onboardingDb.ts",
+      "method": "<anon method-2>",
+      "startLine": 48,
+      "crap": 1
+    },
+    {
+      "path": "packages/shared/src/db/schema/__tests__/freshSchemaDb.ts",
+      "method": "applyMigration",
+      "startLine": 53,
+      "crap": 1
+    },
+    {
+      "path": "packages/shared/src/db/schema/__tests__/freshSchemaDb.ts",
+      "method": "<anon method-2>",
+      "startLine": 57,
+      "crap": 1
     },
     {
       "path": "packages/shared/src/db/schema/userLegalAgreements.ts",
