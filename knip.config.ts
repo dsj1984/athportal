@@ -33,6 +33,13 @@ const config: KnipConfig = {
         // (framework submodule, ignored by knip's project scan). Surfaced
         // by Epic #702 design-system close-validation.
         'minimatch',
+        // typhonjs-escomplex — consumed by the `.agents/` submodule
+        // maintainability + CRAP baseline engines
+        // (`lib/maintainability-engine.js`, `lib/crap-engine.js`), which
+        // knip's project scan can't follow. Its consumer-side import was
+        // removed when #1000/#1002 converged the baselines onto the Mandrel
+        // engine; surfaced by Epic #997 close-validation.
+        'typhonjs-escomplex',
       ],
     },
     'apps/api': {
