@@ -17,9 +17,11 @@
  * Wired into `package.json` `prepare` and `sync:commands` so a fresh
  * install (or a deliberate sync) hydrates both sources.
  *
- * Citation: Story #794 (the /run-qa slash command) — the submodule
- * constraint forbids editing `.agents/workflows/` directly, so the
- * project keeps its own surface here.
+ * The submodule constraint forbids editing `.agents/workflows/`
+ * directly, so the project keeps any project-local slash commands here.
+ * (The original `run-qa*` local workflows were retired in favour of the
+ * framework-owned `/run-qa-harness` command; `workflows-local/` may now
+ * be empty, which this script handles as a no-op.)
  */
 
 import fs from 'node:fs';
