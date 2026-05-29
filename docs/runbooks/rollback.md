@@ -299,7 +299,13 @@ event:
   **no state has mutated** — the production DB, Workers, and Pages are
   untouched. Fix the failure (usually a missing Environment Secret or a
   stale lockfile) and re-dispatch the same commit. Do **not** run a
-  rollback.
+  rollback. To catch a missing-secret failure **before** dispatching,
+  run the cross-surface readiness doctor against production —
+  `node scripts/env/doctor.mjs --env production` — which cross-checks the
+  GitHub Actions (S2) and Cloudflare Worker (S4) surfaces against the
+  [`.env.example`](../../.env.example) manifest instead of an eyeball
+  review of the Environments UI. It exits non-zero on any missing
+  required key and never logs a secret value.
 - Steps 4–6 (deploy api / deploy web / Sentry release) failing **may**
   have mutated state. If step 4 turned green but step 5 turned red, the
   api is on the new build but Pages is not — this is a partial deploy,
@@ -318,8 +324,9 @@ failing run_) covers workflow-level failures.
 
 - Production workflow: [`.github/workflows/deploy-production.yml`](../../.github/workflows/deploy-production.yml)
 - Staging counterpart: [`deploy-staging.md`](./deploy-staging.md)
-- Pre-deploy validator: [`scripts/check-env.mjs`](../../scripts/check-env.mjs)
-- Environment contract: [`.env.example`](../../.env.example)
+- Pre-deploy validator (S1 contract): [`scripts/check-env.mjs`](../../scripts/check-env.mjs)
+- Cross-surface readiness doctor (S1 + S2 + S4): [`scripts/env/doctor.mjs`](../../scripts/env/doctor.mjs)
+- Environment contract + cross-surface manifest: [`.env.example`](../../.env.example)
 - Branch protection + migration label guard: [`branch-protection-setup.md`](./branch-protection-setup.md)
 - Tech Spec (full architectural rationale): [#134](https://github.com/dsj1984/athportal/issues/134)
 - PRD: [#133](https://github.com/dsj1984/athportal/issues/133)

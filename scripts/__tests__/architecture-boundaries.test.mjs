@@ -51,5 +51,12 @@ describe('architecture boundaries (dependency-cruiser)', () => {
     }
 
     expect(errors).toHaveLength(0);
-  }, 60_000);
+    // dependency-cruiser walks the entire apps/** + packages/** source
+    // tree. In isolation this finishes in ~20s, but under the full
+    // `test:coverage` run (V8 coverage instrumentation + 140+ parallel
+    // test files) CPU contention on slower hosts can push it past the
+    // prior 60s ceiling — a timeout flake, not a real violation. The
+    // generous ceiling keeps the gate honest (the assertion still runs)
+    // without flaking the close-validation coverage capture.
+  }, 300_000);
 });
