@@ -363,7 +363,7 @@ jobs:
 
   qa-corpus:
     # Epic #775 — QA-corpus gates.
-    # Three sequential checks against tests/plans/ and tests/charters/:
+    # Three sequential checks against tests/charters/ (Test Plans retired in Epic #997):
     #   1. lint:qa — front-matter Zod schemas + body-shape rules
     #      (scripts/qa/lint.mjs)
     #   2. index:qa --check — tests/qa-index.json must be in sync with

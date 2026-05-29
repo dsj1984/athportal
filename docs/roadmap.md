@@ -139,10 +139,6 @@ Toolchain, CI, observability, baselines, the three-tier test infrastructure, the
 - [`observability/synthetic-failure-rehearsal.feature`](../tests/features/observability/synthetic-failure-rehearsal.feature)
 - [`observability/uptime-probe-alerts.feature`](../tests/features/observability/uptime-probe-alerts.feature)
 
-##### Test plans
-
-- [`tp-design-system-styleguide-walkthrough`](../tests/plans/design-system/tp-design-system-styleguide-walkthrough.plan.md)
-
 ##### Shared exploratory heuristics (reused across charters in every capability)
 
 - [`auth-fuzz.md`](../tests/charters/_heuristics/auth-fuzz.md)
@@ -174,15 +170,6 @@ Authentication, session management, and the `(role, resource, action)` policy mo
 - [`identity/auth/sign-out.feature`](../tests/features/identity/auth/sign-out.feature)
 - [`identity/rbac/last-admin.feature`](../tests/features/identity/rbac/last-admin.feature)
 - [`identity/rbac/matrix-publication.feature`](../tests/features/identity/rbac/matrix-publication.feature)
-
-##### Test plans
-
-- [`tp-identity-signin-happy`](../tests/plans/identity/tp-identity-signin-happy.plan.md)
-- [`tp-identity-signin-bad-password`](../tests/plans/identity/tp-identity-signin-bad-password.plan.md)
-- [`tp-identity-signin-email-not-verified`](../tests/plans/identity/tp-identity-signin-email-not-verified.plan.md)
-- [`tp-identity-signout`](../tests/plans/identity/tp-identity-signout.plan.md)
-- [`tp-identity-jit-provisioning`](../tests/plans/identity/tp-identity-jit-provisioning.plan.md)
-- [`tp-identity-role-assignment`](../tests/plans/identity/tp-identity-role-assignment.plan.md)
 
 ##### Charters
 
@@ -239,24 +226,6 @@ The multi-tenant data model and the server-enforced gate every authenticated use
 - [`coach/roster/digital-roster.feature`](../tests/features/coach/roster/digital-roster.feature)
 - [`coach/roster/roster-invites.feature`](../tests/features/coach/roster/roster-invites.feature)
 - [`coach/roster/team-scoped-access.feature`](../tests/features/coach/roster/team-scoped-access.feature)
-
-##### Test plans
-
-- [`tp-identity-onboarding-gate`](../tests/plans/identity/tp-identity-onboarding-gate.plan.md)
-- [`tp-identity-signup-happy-path`](../tests/plans/identity/tp-identity-signup-happy-path.plan.md)
-- [`tp-identity-signup-org-admin`](../tests/plans/identity/tp-identity-signup-org-admin.plan.md)
-- [`tp-identity-signup-coach`](../tests/plans/identity/tp-identity-signup-coach.plan.md)
-- [`tp-org-admin-team-crud`](../tests/plans/org-admin/tp-org-admin-team-crud.plan.md)
-- [`tp-org-admin-invite-coach`](../tests/plans/org-admin/tp-org-admin-invite-coach.plan.md)
-- [`tp-org-admin-invite-athlete`](../tests/plans/org-admin/tp-org-admin-invite-athlete.plan.md)
-- [`tp-org-admin-csv-import-happy`](../tests/plans/org-admin/tp-org-admin-csv-import-happy.plan.md)
-- [`tp-org-admin-season-rollover`](../tests/plans/org-admin/tp-org-admin-season-rollover.plan.md)
-- [`tp-org-admin-reporting`](../tests/plans/org-admin/tp-org-admin-reporting.plan.md)
-- [`tp-coach-roster-view`](../tests/plans/coach/tp-coach-roster-view.plan.md)
-- [`tp-coach-roster-invite-send-accept`](../tests/plans/coach/tp-coach-roster-invite-send-accept.plan.md)
-- [`tp-coach-roster-invite-decline-expiry`](../tests/plans/coach/tp-coach-roster-invite-decline-expiry.plan.md)
-- [`tp-coach-roster-edit-remove`](../tests/plans/coach/tp-coach-roster-edit-remove.plan.md)
-- [`tp-coach-roster-team-scoped-access`](../tests/plans/coach/tp-coach-roster-team-scoped-access.plan.md)
 
 ##### Charters
 
@@ -633,7 +602,7 @@ Load-bearing terms used across this file and the Epic backlog. Most are defined 
 | **Canonical profile** | The athlete's owned, portable identity record (attributes, academic, vanity URL, privacy controls, completion). Aggregates across every team the athlete belongs to. Lands in [#12](https://github.com/dsj1984/athportal/issues/12). |
 | **Vanity URL** | The athlete-chosen public profile slug (`/u/<vanity>`). The portable artifact an athlete shares with recruiters. |
 | **Public profile** | The anonymous-readable projection of the canonical profile, rendering verified badges and SEO metadata. Lands in [#15](https://github.com/dsj1984/athportal/issues/15). |
-| **JIT provisioning** | Just-in-time user provisioning: a user record is created the first time someone signs in via Clerk, not via a separate signup write. Test plan: [`tp-identity-jit-provisioning`](../tests/plans/identity/tp-identity-jit-provisioning.plan.md). |
+| **JIT provisioning** | Just-in-time user provisioning: a user record is created the first time someone signs in via Clerk, not via a separate signup write. Covered by [`complete-onboarding.feature`](../tests/features/identity/onboarding/complete-onboarding.feature). |
 | **Onboarding gate** | Server-enforced check that every authenticated user has accepted the current ToS and completed onboarding before any feature surface unlocks. Lands in [#8](https://github.com/dsj1984/athportal/issues/8). |
 | **RBAC matrix** | The `(role, resource, action)` policy table every protected route runs through. Module in [`packages/shared/src/rbac/`](../packages/shared/src/rbac/); published table in [`data-dictionary.md`](data-dictionary.md). |
 | **MAAPP** | Minor-Athlete Abuse Prevention Policy — the U.S. Center for SafeSport rule set governing communication between adults and minor athletes. Surfaces in [#20](https://github.com/dsj1984/athportal/issues/20) (MVP plumbing) and [#54](https://github.com/dsj1984/athportal/issues/54) (DMs). |
@@ -641,7 +610,7 @@ Load-bearing terms used across this file and the Epic backlog. Most are defined 
 | **VPC** | Verifiable Parental Consent — the COPPA-required consent mechanism for users under 13. Family Center surface: [#28](https://github.com/dsj1984/athportal/issues/28). |
 | **DSAR** | Data Subject Access Request — a user's right to access, export, or delete their personal data under GDPR / CCPA-equivalent regimes. Surface: [#24](https://github.com/dsj1984/athportal/issues/24). |
 | **Trophy Case** | Post-MVP curated record of athlete placements, awards, and milestones built on top of verified stats. Epic [#29](https://github.com/dsj1984/athportal/issues/29) — Verified Placement Record. |
-| **Test Plan** | A scripted manual or agent-driveable scenario walkthrough at [`tests/plans/`](../tests/plans/). Format and lint rules in [`testing-strategy.md` § QA Corpus](testing-strategy.md#qa-corpus). |
+| **Test Plan** *(retired)* | Legacy scripted manual/agent walkthroughs formerly under `tests/plans/`, retired in Epic #997 — the agent-driven QA harness (`/run-qa-harness`) now drives the `.feature` files directly. See [`testing-strategy.md` § QA Corpus](testing-strategy.md#qa-corpus). |
 | **Exploratory Charter** | A time-boxed, heuristic-driven exploratory test session at [`tests/charters/`](../tests/charters/). Pairs with the shared heuristics under [`tests/charters/_heuristics/`](../tests/charters/_heuristics/). |
 | **Phase gate / Manual QA gate** | The exit criterion at the end of each MVP capability — a charter session and an incremental regression sweep must pass before the next capability opens. Defined in [`testing-strategy.md` § Phase gates](testing-strategy.md#phase-gates). |
 
