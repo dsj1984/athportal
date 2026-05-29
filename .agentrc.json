@@ -28,6 +28,14 @@
     "projectNumber": 6,
     "operatorHandle": "@dsj1984"
   },
+  "qa": {
+    "featureRoot": "tests/features",
+    "fixturesManifest": "tests/fixtures/qa.json",
+    "signInSeam": { "urlTemplate": "/dev/sign-in-as/{persona}" },
+    "personas": ["athlete", "coach", "org-admin"],
+    "consoleAllowlist": [],
+    "designTokens": "apps/web/src/styles/global.css"
+  },
   "delivery": {
     "quality": {
       "gates": {
