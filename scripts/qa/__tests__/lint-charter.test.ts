@@ -79,16 +79,13 @@ const ALL_HEURISTICS = [
 ];
 
 let tmpDir: string;
-let plansRoot: string;
 let chartersRoot: string;
 let heuristicsDir: string;
 
 beforeEach(async () => {
   tmpDir = await mkdtemp(path.join(tmpdir(), 'lint-qa-charter-'));
-  plansRoot = path.join(tmpDir, 'plans');
   chartersRoot = path.join(tmpDir, 'charters');
   heuristicsDir = path.join(chartersRoot, '_heuristics');
-  await mkdir(plansRoot, { recursive: true });
   await mkdir(heuristicsDir, { recursive: true });
   // Seed the heuristic library so charter heuristic-name resolution
   // succeeds for any of the canonical eight names.
@@ -214,14 +211,14 @@ describe('validateCharterHeuristics', () => {
 });
 
 describe('runLint — dispatch and orchestration', () => {
-  it('exits 0 when no plans and no charters are present (only heuristic library)', async () => {
-    const code = await runLint({ plansRoot, chartersRoot });
+  it('exits 0 when no charters are present (only heuristic library)', async () => {
+    const code = await runLint({ chartersRoot });
     expect(code).toBe(0);
   });
 
-  it('exits 0 when every plan and charter in the corpus is valid', async () => {
+  it('exits 0 when every charter in the corpus is valid', async () => {
     await writeCharter('valid.charter.md', VALID_CHARTER);
-    const code = await runLint({ plansRoot, chartersRoot });
+    const code = await runLint({ chartersRoot });
     expect(code).toBe(0);
   });
 
@@ -231,21 +228,21 @@ describe('runLint — dispatch and orchestration', () => {
       '',
     );
     await writeCharter('no-safety.charter.md', withoutSafety);
-    const code = await runLint({ plansRoot, chartersRoot });
+    const code = await runLint({ chartersRoot });
     expect(code).toBe(1);
   });
 
   it('exits 1 when a charter targets environment: prod', async () => {
     const bad = VALID_CHARTER.replace('environment: local', 'environment: prod');
     await writeCharter('prod-env.charter.md', bad);
-    const code = await runLint({ plansRoot, chartersRoot });
+    const code = await runLint({ chartersRoot });
     expect(code).toBe(1);
   });
 
   it('exits 1 when a charter references an unknown heuristic name', async () => {
     const bad = VALID_CHARTER.replace('  - form-fuzz\n', '  - form-fuzz\n  - made-up-heuristic\n');
     await writeCharter('unknown-heuristic.charter.md', bad);
-    const code = await runLint({ plansRoot, chartersRoot });
+    const code = await runLint({ chartersRoot });
     expect(code).toBe(1);
   });
 });
