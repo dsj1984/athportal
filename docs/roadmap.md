@@ -1,6 +1,6 @@
 # Athlete Portal — Roadmap
 
-> Human-readable map of where the product is going. Links GitHub Epics, milestones, Gherkin feature files, Test Plans, and Exploratory Charters so a reader can jump from "what are we building" to "how do we know it works."
+> Human-readable map of where the product is going. Links GitHub Epics, milestones, Gherkin feature files, and Exploratory Charters so a reader can jump from "what are we building" to "how do we know it works."
 >
 > **Authoritative ordering and exit gates live here.** GitHub Issues hold the live state of each Epic; when the Epic body and this file disagree on scope, the Epic wins — open a PR to fix this file. The MVP capabilities below are ordered by **dependency, not date**: an Epic never appears in an earlier capability than something it depends on. Each Epic also declares its prerequisites in a `## Depends on` block on its GitHub issue; that block is the source of truth for individual dependencies, and any time it changes, audit this file in the same PR.
 >
@@ -610,7 +610,7 @@ Load-bearing terms used across this file and the Epic backlog. Most are defined 
 | **VPC** | Verifiable Parental Consent — the COPPA-required consent mechanism for users under 13. Family Center surface: [#28](https://github.com/dsj1984/athportal/issues/28). |
 | **DSAR** | Data Subject Access Request — a user's right to access, export, or delete their personal data under GDPR / CCPA-equivalent regimes. Surface: [#24](https://github.com/dsj1984/athportal/issues/24). |
 | **Trophy Case** | Post-MVP curated record of athlete placements, awards, and milestones built on top of verified stats. Epic [#29](https://github.com/dsj1984/athportal/issues/29) — Verified Placement Record. |
-| **Test Plan** *(retired)* | Legacy scripted manual/agent walkthroughs formerly under `tests/plans/`, retired in Epic #997 — the agent-driven QA harness (`/run-qa-harness`) now drives the `.feature` files directly. See [`testing-strategy.md` § QA Corpus](testing-strategy.md#qa-corpus). |
+| **Test Plan** *(retired)* | Legacy scripted manual/agent walkthroughs, retired in Epic #997. The QA Corpus is now driven by the agent-driven QA harness (`/run-qa-harness`) over the Gherkin `.feature` scenarios, alongside human-driven exploratory charters (`tests/charters/**`). See [`testing-strategy.md` § QA Corpus](testing-strategy.md#qa-corpus). |
 | **Exploratory Charter** | A time-boxed, heuristic-driven exploratory test session at [`tests/charters/`](../tests/charters/). Pairs with the shared heuristics under [`tests/charters/_heuristics/`](../tests/charters/_heuristics/). |
 | **Phase gate / Manual QA gate** | The exit criterion at the end of each MVP capability — a charter session and an incremental regression sweep must pass before the next capability opens. Defined in [`testing-strategy.md` § Phase gates](testing-strategy.md#phase-gates). |
 
