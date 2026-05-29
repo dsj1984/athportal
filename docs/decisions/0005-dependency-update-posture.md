@@ -120,7 +120,7 @@ this ADR.
   the weekly window named in the Decision.
 - `platformAutomerge: true` — Renovate hands the merge to GitHub native
   auto-merge once required checks are green. Mirrors the
-  `/single-story-deliver` close path.
+  `single-story-deliver` close path.
 - `prConcurrentLimit: 15`, `prHourlyLimit: 4` — bounded review surface.
 - `lockFileMaintenance.enabled: true` with the same weekly window —
   transitive refresh runs in the same review session.
@@ -163,7 +163,7 @@ Two paths land updates outside the Monday window:
   review time is spent on major-version PRs and on the rare
   patch / minor PR that fails CI (a flaky test, a coverage regression,
   a baseline ratchet failure). This is the same posture
-  [`/single-story-deliver`](../../.agents/workflows/single-story-deliver.md)
+  [`single-story-deliver`](../../.agents/workflows/helpers/single-story-deliver.md)
   uses for human-authored PRs and is the load-bearing reason the
   weekly volume stays reviewable.
 - **A vendor family that introduces a breaking change as a "minor"
