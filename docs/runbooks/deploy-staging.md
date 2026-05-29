@@ -45,6 +45,51 @@ each one is present and shape-valid against
 `TURBO_TEAM` is an Action **variable** (not a secret) and lives at the
 repo level — it carries no credential, only the team slug.
 
+### Pre-deploy readiness check (cross-surface doctor)
+
+Instead of cross-checking the GitHub Environments UI **by eye** before a
+deploy, run the readiness doctor. It reads the manifest in
+[`.env.example`](../../.env.example) (the `# shape:` + `# surfaces:`
+markers — the single source of truth) and reports, per surface, whether
+every required key is actually present:
+
+```bash
+node scripts/env/doctor.mjs --env staging          # human-readable matrix
+node scripts/env/doctor.mjs --env staging --json    # CI-friendly structured matrix
+```
+
+The doctor queries three surfaces and exits non-zero if any required key
+is missing (or, on S1, is a ⚠️ placeholder):
+
+- **S1 — local `.env`**: reuses `check-env` shape validation **and**
+  flags present-but-placeholder values (`pk_test_…`, dummy DSNs, empty
+  strings). This is the only surface where placeholder detection is
+  possible — see below.
+- **S2 — GitHub Actions** (`gh secret list` / `gh variable list --env
+  staging`): presence of each expected **name**.
+- **S4 — Cloudflare Worker secrets** (`wrangler secret list --env
+  staging`): presence of each expected **name**.
+
+**Presence ≠ correctness.** S2/S4 expose **names only**, so the doctor
+reports _presence_ there — it cannot tell a real value from a placeholder
+on a remote surface. The dangerous failure mode (a `pk_test_…` key or a
+dummy DSN that "looks set" but fails at runtime) is caught only on S1,
+where the local value is readable. The doctor **never logs, echoes, or
+persists a secret value** — S2/S4 are name-only and S1 placeholder
+detection reports a _shape category_, never the value.
+
+**Graceful degradation.** If `gh` or `wrangler` is not authenticated, the
+doctor reports `couldn't check S2/S4: …` for that surface and continues
+rather than aborting — only a genuinely missing key (or an S1 placeholder)
+flips the exit code.
+
+> The same command serves the **production** surface — swap `--env
+> staging` for `--env production` before a `workflow_dispatch` run of
+> [`deploy-production.yml`](../../.github/workflows/deploy-production.yml).
+> The production deploy's own pre-deploy gate remains
+> `node scripts/check-env.mjs` (S1 contract); the doctor is the operator's
+> manual cross-surface readiness check that replaces the by-eye review.
+
 ### How to add or rotate an Environment Secret
 
 1. Open `Settings → Environments → staging`.
@@ -53,9 +98,11 @@ repo level — it carries no credential, only the team slug.
 3. Name the secret exactly as listed in the table above. Names are
    case-sensitive; `check-env` looks them up verbatim.
 4. Paste the new value and **Save**.
-5. Re-run the most recent `deploy-staging` run from the **Actions** tab
-   (or push a no-op commit to `main`) to confirm the new value flows
-   through `check-env` cleanly.
+5. Confirm presence across surfaces with
+   `node scripts/env/doctor.mjs --env staging` (replaces the old by-eye
+   review of the Environments UI), then re-run the most recent
+   `deploy-staging` run from the **Actions** tab (or push a no-op commit
+   to `main`) to confirm the new value flows through `check-env` cleanly.
 
 > **Never** paste a real secret into a PR, an issue comment, or this
 > runbook. The only legal home for live values is the GitHub Environment
@@ -171,8 +218,9 @@ purpose of the GitHub Environments split.
 ## Cross-references
 
 - Workflow file: [`.github/workflows/deploy-staging.yml`](../../.github/workflows/deploy-staging.yml)
-- Pre-deploy validator: [`scripts/check-env.mjs`](../../scripts/check-env.mjs)
-- Environment contract: [`.env.example`](../../.env.example)
+- Pre-deploy validator (S1 contract): [`scripts/check-env.mjs`](../../scripts/check-env.mjs)
+- Cross-surface readiness doctor (S1 + S2 + S4): [`scripts/env/doctor.mjs`](../../scripts/env/doctor.mjs)
+- Environment contract + cross-surface manifest: [`.env.example`](../../.env.example)
 - Branch protection + required checks: [`branch-protection-setup.md`](./branch-protection-setup.md)
 - Tech Spec (full architectural rationale): [#134](https://github.com/dsj1984/athportal/issues/134)
 - PRD: [#133](https://github.com/dsj1984/athportal/issues/133)
