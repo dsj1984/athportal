@@ -13,49 +13,53 @@ Feature: Coach views and curates their team's digital roster
   scenarios assert only the user-visible outcomes on the coach roster
   page and the athlete profile page.
 
+  These scenarios are drivable by the agent QA harness (Epic #997 /
+  Story #1024). Every scenario reaches the roster surface by navigating
+  UI affordances from the dashboard — the coach signs in, finds their
+  team in the dashboard roster widget, and follows the team link to the
+  roster page. No step jumps to a deep link. Curation runs through the
+  per-row controls (edit, save, remove with confirmation) and the
+  athlete name link the roster page renders.
+
+  Background:
+    Given I am signed in as "coach"
+    And I follow my team's link from the dashboard roster widget to its roster page
+
   @pending @issue-997 @ac-1 @persona-coach @smoke
   Scenario: Coach sees the roster for their team
-    Given I am signed in as "coach"
-    And my team has at least one accepted athlete on its roster
-    When I open my team's roster page
+    Given my team has at least one accepted athlete on its roster
     Then I see each accepted athlete listed on my team's roster
     And each row shows the athlete's jersey number, primary position, and verification badge
 
   @pending @issue-997 @ac-9 @persona-coach
   Scenario: Coach updates an athlete's jersey number
-    Given I am signed in as "coach"
-    And my team has an accepted athlete with a known jersey number
-    When I open my team's roster page
-    And I change that athlete's jersey number to a new value
-    Then I see confirmation that the jersey number was updated
-    And when I refresh my team's roster page
-    Then I see the athlete's row with the new jersey number
+    Given my team has an accepted athlete with a known jersey number
+    When I start editing that athlete's row
+    And I change the jersey number to a new value and save the row
+    Then I see the athlete's row showing the new jersey number
+    And when I return to my team's roster from the dashboard
+    Then I still see the athlete's row with the new jersey number
 
   @pending @issue-997 @ac-10 @persona-coach
   Scenario: Coach updates an athlete's primary position
-    Given I am signed in as "coach"
-    And my team has an accepted athlete with a known primary position
-    When I open my team's roster page
-    And I change that athlete's primary position to a new value
-    Then I see confirmation that the primary position was updated
-    And when I refresh my team's roster page
-    Then I see the athlete's row with the new primary position
+    Given my team has an accepted athlete with a known primary position
+    When I start editing that athlete's row
+    And I change the primary position to a new value and save the row
+    Then I see the athlete's row showing the new primary position
+    And when I return to my team's roster from the dashboard
+    Then I still see the athlete's row with the new primary position
 
   @pending @issue-997 @ac-11 @persona-coach
   Scenario: Coach removes an athlete from the roster
-    Given I am signed in as "coach"
-    And my team has an accepted athlete on its roster
-    When I open my team's roster page
-    And I remove that athlete from the roster
-    Then I see confirmation that the athlete was removed
-    And I no longer see that athlete listed on my team's roster
+    Given my team has an accepted athlete on its roster
+    When I choose to remove that athlete from their row
+    And I confirm the removal when the prompt asks me to
+    Then I no longer see that athlete listed on my team's roster
 
   @pending @issue-997 @ac-12 @persona-coach
   Scenario: Athlete profile is scoped to the current team's roster context
-    Given I am signed in as "coach"
-    And one of my athletes is also on another coach's team with a different jersey number and position
-    When I open my team's roster page
-    And I open that athlete's profile from my team's roster
+    Given one of my athletes is also on another coach's team with a different jersey number and position
+    When I follow that athlete's name link from my team's roster
     Then I see the athlete's profile scoped to my team
     And the jersey number and primary position match the values from my team's roster
 
