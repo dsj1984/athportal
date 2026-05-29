@@ -324,3 +324,60 @@ discovery-Story decision. Forcing it here would either ship a broken gate
   policy" stance this ADR's data confirms.
 - [`docs/testing-strategy.md` § Quality Baselines & Ratchets](../testing-strategy.md#quality-baselines--ratchets):
   the operator-facing runbook surface for the CRAP and MI ratchets.
+
+---
+
+## Remediation outcome
+
+**Status**: Resolved — confirmed no-op (2026-05-29, Epic #1001, Story #1041).
+
+Story #1040 removed the test-exclusion globs from both gates'
+`ignoreGlobs` in [`.agentrc.json`](../../.agentrc.json) and re-primed the
+committed baselines, bringing the entire test tree (`*.test.*`,
+`*.spec.*`, `*.contract.test.ts`, `__tests__/**`) into CRAP + MI scope.
+This Story (#1041) is the remediation pass: with test files now measured,
+prove that the broadened gates pass and that no breaching test file
+requires a refactor.
+
+**The Phase 0 catalogue identified `N = 0` breaching test files, and the
+broadened gates confirm it.** Run from the `story-1041` worktree (branched
+from `epic/1001`, with the test-exclusion globs removed per #1040 and test
+files in scope):
+
+| Gate | Command | Result |
+| --- | --- | --- |
+| CRAP | `pnpm run crap:check` | **PASS** — exit 0, `totalBreaches: 0`, `rollup['*'].methodsAbove20 == 0` |
+| Maintainability | `pnpm run maintainability:check` | **PASS** — exit 0, `totalBreaches: 0`, `rollup['*'].min` still satisfies the `>= 70` floor |
+
+Both commands resolve to the canonical
+`node .agents/scripts/check-baselines.js --gate {crap,maintainability}`
+engine.
+
+**No refactor was required.** The Phase 0 measurement predicted this
+outcome on both axes:
+
+- **MI**: zero of the ~142 test files fall below the floor of 70 (lowest
+  test-file MI ≈ 76.31, clearing the floor by more than six points), so
+  there was never an MI breach to remediate.
+- **CRAP**: per ADR-018, the CRAP engine only scores a method that carries
+  a per-method V8 coverage entry. Test files are excluded from coverage
+  instrumentation by every Vitest config, so test methods receive no
+  coverage entry and are **excluded** from the baseline rather than
+  failing it. The worst-case structural surface flagged in Phase 0 (≤ 11
+  methods at `cov = 0`, six of them in
+  `crossTenantIsolation.property.contract.test.ts`) therefore does not
+  produce a live `methodsAbove20` breach under the current toolchain. The
+  gate reports `methodsAbove20 == 0` with the test tree in scope.
+
+**No `ignoreGlobs` escape hatch was reintroduced.** The only remaining
+glob in either gate's `ignoreGlobs` that matches the substring "test" is
+`**/test-results/**` (the Playwright report output directory, not source
+test files); `**/*.test.*`, `**/*.spec.*`, `**/__tests__/**` and the
+`*.contract.test.ts` paths remain **in scope**. Per the uniform-floor
+decision above, no `tests/**`-scoped component floor and no test-file
+exclusion glob was added to make the gates pass — they pass on their own
+because the data supports the uniform production floor.
+
+Re-baselining (`crap.json` / `maintainability.json`) is owned by the
+follow-on baseline-refresh Story (#1042) and is intentionally **not**
+performed here.
