@@ -1,13 +1,18 @@
 #!/usr/bin/env node
 // scripts/qa/index.mjs
 //
-// QA-corpus indexer. Walks every `tests/plans/**/*.plan.md` and
-// `tests/charters/**/*.charter.md` artifact, parses its YAML
-// front-matter, and emits a deterministic JSON catalog to
-// `tests/qa-index.json`. Downstream consumers (`coverage:qa`, future
-// reporters, dashboards) read the index instead of re-walking the
+// QA-corpus indexer. Walks every `tests/charters/**/*.charter.md`
+// artifact, parses its YAML front-matter, and emits a deterministic JSON
+// catalog to `tests/qa-index.json`. Downstream consumers (`coverage:qa`,
+// future reporters, dashboards) read the index instead of re-walking the
 // corpus, so a single grep-friendly artifact captures the live state of
-// the test plans and exploratory charters.
+// the exploratory charters.
+//
+// Scripted Test Plans (`tests/plans/**`) were retired from the corpus —
+// the live MVP journeys are covered by the executable `.feature` suite
+// under `tests/features/**`, leaving exploratory charters as the only
+// remaining markdown-corpus artifact. The indexer therefore catalogs
+// charters only.
 //
 // Modes:
 //   - default (`pnpm run index:qa`)
@@ -19,16 +24,14 @@
 //
 // Index shape (Tech Spec #782 § Core Components → "scripts/qa/index.mjs"):
 //   Array<{
-//     id: string;                  // tp-... or ec-...
+//     id: string;                  // ec-...
 //     path: string;                // repo-relative POSIX path
-//     type: 'plan' | 'charter';
+//     type: 'charter';
 //     domain: string;              // canonical domain enum entry
 //     persona: string;             // canonical persona enum entry
-//     surface?: string;            // plans only ('web' | 'mobile')
 //     route_prefixes: string[];
 //     mission?: string;            // charters only
 //     time_box_minutes?: number;   // charters only
-//     est_minutes?: number;        // plans only
 //   }>
 //
 // The output is ordered lexically by `id` so the JSON diff is stable
@@ -49,7 +52,6 @@ import matter from 'gray-matter';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
-const DEFAULT_PLANS_ROOT = path.join(REPO_ROOT, 'tests', 'plans');
 const DEFAULT_CHARTERS_ROOT = path.join(REPO_ROOT, 'tests', 'charters');
 const DEFAULT_INDEX_PATH = path.join(REPO_ROOT, 'tests', 'qa-index.json');
 const HEURISTICS_DIRNAME = '_heuristics';
@@ -103,47 +105,10 @@ function toRepoRelative(absPath, repoRoot) {
 }
 
 /**
- * Project a parsed plan front-matter block into the index entry shape.
+ * Project a parsed charter front-matter block into the index entry shape.
  * The function is total (returns either an entry or a structured error)
  * because the index runner aggregates errors instead of short-circuiting
  * on the first bad artifact.
- */
-function projectPlanEntry(data, absPath, repoRoot) {
-  const errors = [];
-  const id = typeof data.id === 'string' ? data.id : null;
-  if (id === null) errors.push('missing id');
-  const domain = typeof data.domain === 'string' ? data.domain : null;
-  if (domain === null) errors.push('missing domain');
-  const persona = typeof data.persona === 'string' ? data.persona : null;
-  if (persona === null) errors.push('missing persona');
-  const surface = typeof data.surface === 'string' ? data.surface : null;
-  if (surface === null) errors.push('missing surface');
-  const routePrefixes = Array.isArray(data.route_prefixes) ? data.route_prefixes : null;
-  if (routePrefixes === null) errors.push('missing route_prefixes');
-  const estMinutes = typeof data.est_minutes === 'number' ? data.est_minutes : null;
-
-  if (errors.length > 0) {
-    return { ok: false, file: absPath, errors };
-  }
-  return {
-    ok: true,
-    entry: {
-      id,
-      path: toRepoRelative(absPath, repoRoot),
-      type: 'plan',
-      domain,
-      persona,
-      surface,
-      route_prefixes: routePrefixes,
-      ...(estMinutes !== null ? { est_minutes: estMinutes } : {}),
-    },
-  };
-}
-
-/**
- * Project a parsed charter front-matter block into the index entry shape.
- * Charters omit `surface` and `est_minutes` and add `mission` /
- * `time_box_minutes`.
  */
 function projectCharterEntry(data, absPath, repoRoot) {
   const errors = [];
@@ -177,12 +142,12 @@ function projectCharterEntry(data, absPath, repoRoot) {
 }
 
 /**
- * Parse a single artifact and project it into an index entry. Returns a
- * `{ ok: true, entry }` discriminated union on success and a
+ * Parse a single charter artifact and project it into an index entry.
+ * Returns a `{ ok: true, entry }` discriminated union on success and a
  * `{ ok: false, file, errors }` shape on failure so the runner can
  * aggregate every problem before exiting.
  */
-async function parseArtifact(absPath, kind, repoRoot) {
+async function parseArtifact(absPath, repoRoot) {
   let raw;
   try {
     raw = await readFile(absPath, 'utf8');
@@ -201,9 +166,6 @@ async function parseArtifact(absPath, kind, repoRoot) {
     return { ok: false, file: absPath, errors: ['missing or empty YAML front-matter'] };
   }
 
-  if (kind === 'plan') {
-    return projectPlanEntry(parsed.data, absPath, repoRoot);
-  }
   return projectCharterEntry(parsed.data, absPath, repoRoot);
 }
 
@@ -218,31 +180,13 @@ async function parseArtifact(absPath, kind, repoRoot) {
  * could not be projected.
  */
 export async function buildIndex({
-  plansRoot = DEFAULT_PLANS_ROOT,
   chartersRoot = DEFAULT_CHARTERS_ROOT,
   repoRoot = REPO_ROOT,
 } = {}) {
-  const planFiles = await discoverArtifacts(plansRoot, '.plan.md');
   const charterFiles = await discoverArtifacts(chartersRoot, '.charter.md');
 
   const entries = [];
   const errors = [];
-
-  for (const file of planFiles) {
-    let entryStat;
-    try {
-      entryStat = await stat(file);
-    } catch {
-      continue;
-    }
-    if (!entryStat.isFile()) continue;
-    const result = await parseArtifact(file, 'plan', repoRoot);
-    if (result.ok) {
-      entries.push(result.entry);
-    } else {
-      errors.push({ file: result.file, errors: result.errors });
-    }
-  }
 
   for (const file of charterFiles) {
     let entryStat;
@@ -252,7 +196,7 @@ export async function buildIndex({
       continue;
     }
     if (!entryStat.isFile()) continue;
-    const result = await parseArtifact(file, 'charter', repoRoot);
+    const result = await parseArtifact(file, repoRoot);
     if (result.ok) {
       entries.push(result.entry);
     } else {
@@ -308,7 +252,6 @@ function reportErrors(errors, repoRoot) {
  * function is testable from unit tests.
  *
  * Options:
- *   - `plansRoot`     — override the plan discovery root (test fixtures)
  *   - `chartersRoot`  — override the charter discovery root (test fixtures)
  *   - `indexPath`     — override the on-disk index path
  *   - `repoRoot`      — repo root used to render relative `path` values
@@ -316,13 +259,12 @@ function reportErrors(errors, repoRoot) {
  *                       exit 1 on mismatch instead of writing
  */
 export async function runIndex({
-  plansRoot = DEFAULT_PLANS_ROOT,
   chartersRoot = DEFAULT_CHARTERS_ROOT,
   indexPath = DEFAULT_INDEX_PATH,
   repoRoot = REPO_ROOT,
   check = false,
 } = {}) {
-  const { entries, errors } = await buildIndex({ plansRoot, chartersRoot, repoRoot });
+  const { entries, errors } = await buildIndex({ chartersRoot, repoRoot });
 
   if (errors.length > 0) {
     reportErrors(errors, repoRoot);
@@ -360,7 +302,7 @@ export async function runIndex({
 }
 
 // Exported for unit tests.
-export { discoverArtifacts, parseArtifact, projectPlanEntry, projectCharterEntry, toRepoRelative };
+export { discoverArtifacts, parseArtifact, projectCharterEntry, toRepoRelative };
 
 // Only run when invoked directly (not when imported by tests). The
 // resolved CLI argv may be undefined when the module is imported via
