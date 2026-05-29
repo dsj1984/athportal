@@ -39,12 +39,13 @@ than relying on a snapshot in this file.
   via `context::prd` / `context::tech-spec` / `context::acceptance-spec`
   sub-issues — read those before starting work in an Epic. Planning
   board: GitHub Project #6.
-- **QA Corpus** (Test Plans, Exploratory Charters, the shared heuristic
-  library, `pnpm run lint:qa`, and the `/run-qa` agent-runner contract)
-  is documented in
+- **QA Corpus** (the human-driven Exploratory Charters under
+  `tests/charters/**`, the shared heuristic library, `pnpm run lint:qa`,
+  and the agent-driven `/run-qa-harness <selector>` contract that sweeps
+  the Gherkin `.feature` suite) is documented in
   [`docs/testing-strategy.md` § QA Corpus](docs/testing-strategy.md#qa-corpus).
-  Read it before authoring a `tests/plans/**` or `tests/charters/**`
-  artifact, or before driving an existing one through the agent runner.
+  Read it before authoring a `tests/charters/**` artifact, or before
+  driving the acceptance suite through `/run-qa-harness`.
 
 ---
 

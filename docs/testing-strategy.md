@@ -56,16 +56,20 @@
   - [Regression checklist](#regression-checklist)
   - [How to update this section](#how-to-update-this-section)
 - [QA Corpus](#qa-corpus)
-  - [Manually injecting roster invites](#manually-injecting-roster-invites)
   - [Overview](#overview)
-  - [Test Plan format](#test-plan-format)
-  - [Exploratory Charter format](#exploratory-charter-format)
-  - [Heuristic library](#heuristic-library)
+  - [The agent-driven QA harness](#the-agent-driven-qa-harness)
+    - [The `qa` contract block](#the-qa-contract-block)
+    - [Selectors](#selectors)
+    - [Navigation-first, semantic-Then execution](#navigation-first-semantic-then-execution)
+    - [Findings — the `F#` shape](#findings--the-f-shape)
+    - [Findings → draft → operator sign-off](#findings--draft--operator-sign-off)
+  - [Exploratory Charters (human-driven)](#exploratory-charters-human-driven)
+    - [Sign-out pattern (charter sessions)](#sign-out-pattern-charter-sessions)
+    - [Manually injecting roster invites](#manually-injecting-roster-invites)
+    - [Exploratory Charter format](#exploratory-charter-format)
+    - [Heuristic library](#heuristic-library)
+    - [Safety-constraints contract](#safety-constraints-contract)
   - [Lint, index, and coverage gates](#lint-index-and-coverage-gates)
-  - [Agent-runner runbook](#agent-runner-runbook)
-  - [Promotion pipeline (charter finding → Test Plan / scenario)](#promotion-pipeline-charter-finding--test-plan--scenario)
-  - [Safety-constraints contract](#safety-constraints-contract)
-  - [Per-domain coverage floors](#per-domain-coverage-floors)
 - [Coverage expectations](#coverage-expectations)
 - [When to add a test vs. when to move one](#when-to-add-a-test-vs-when-to-move-one)
 - [Canonical step vocabulary](#canonical-step-vocabulary)
@@ -620,7 +624,7 @@ Each class has a distinct detection mechanism. A gap at any level lets a regress
 >
 > This section defines **when** to test manually, **what** to test, and **where** the artifacts live. The cadence is referenced from [`docs/roadmap.md`](roadmap.md) as the manual-QA gate between MVP capabilities, and is the ongoing rhythm after MVP.
 >
-> The **scripted artifacts** that drive manual sessions (Test Plans, Exploratory Charters, the shared heuristic library) live in the [§ QA Corpus](#qa-corpus) section below. The Manual Testing section here governs the **cadence and judgment calls**; the QA Corpus section governs the **on-disk shape, the lint gates, and the agent-runner contract** that lets a human session and an agent-driven session ride the same artifacts.
+> The **on-disk artifacts** that anchor manual sessions (the human-driven Exploratory Charters and the shared heuristic library) live in the [§ QA Corpus](#qa-corpus) section below, alongside the agent-driven `/run-qa-harness` contract that sweeps the Gherkin acceptance suite. The Manual Testing section here governs the **cadence and judgment calls**; the QA Corpus section governs the **on-disk charter shape, the lint gate, and the harness contract**.
 
 ### What manual testing is for
 
@@ -828,90 +832,103 @@ The accumulating sweep, grouped by phase. Rows are appended as phases land. The 
 
 ## QA Corpus
 
-> The QA Corpus is the on-disk substrate that turns the [§ Manual Testing](#manual-testing) cadence into reviewable, lintable, and re-runnable artifacts. It complements the unit, contract, and acceptance tiers above — it does not replace them. Test Plans script the manual sweeps that the automated tiers can't yet reach; Exploratory Charters drive the time-boxed probes that surface the next round of bugs.
+> The QA Corpus is the on-disk substrate that anchors the [§ Manual Testing](#manual-testing) cadence and feeds the agent-driven harness. It complements the unit, contract, and acceptance tiers above — it does not replace them. The **agent-driven QA harness** sweeps the existing Gherkin `.feature` suite through a real browser and turns captured signal into reviewable findings; the **human-driven Exploratory Charters** drive the time-boxed probes that surface the next round of bugs.
 >
-> **Citations.** [Tech Spec #782](https://github.com/dsj1984/athportal/issues/782) § Core Components #7–8, [PRD #781](https://github.com/dsj1984/athportal/issues/781) AC-9, [Acceptance Spec #783](https://github.com/dsj1984/athportal/issues/783) AC-16.
+> **Citations.** [Tech Spec #782](https://github.com/dsj1984/athportal/issues/782) § Core Components #7–8, [PRD #781](https://github.com/dsj1984/athportal/issues/781) AC-9, [Acceptance Spec #783](https://github.com/dsj1984/athportal/issues/783) AC-16. The harness model (the `/run-qa-harness` successor to the retired headless BDD runner, the `qa` contract block, and the `qa-finding.schema.json` finding shape) lands with Epic #997.
 
 ### Overview
 
-The corpus is two artifact families and a shared library:
+The corpus is one agent-driven harness plus a human-driven charter family and its shared library:
 
-- **Test Plans** (`tests/plans/<domain>/tp-*.plan.md`) — scripted, repeatable walk-throughs of a user-visible journey. A plan declares its surface, persona, route prefixes, and time-box in YAML front-matter, then walks Setup → numbered Steps (each with an `**Expected:**` line) → Cleanup. Plans are the unit of *regression manual sweep*: every plan must be runnable by a human or by an agent runner against the same artifact and produce the same verdict.
-- **Exploratory Charters** (`tests/charters/<domain>/ec-*.charter.md`) — time-boxed probes whose mission is to *find* something, not to confirm a known outcome. A charter declares a mission, a list of heuristics it will apply, and a load-bearing `safety_constraints` block (environment scope, mutation surface, required reset). Findings are appended to the charter's `## Findings` table; promotable findings become Test Plans or `.feature` scenarios in a follow-up PR (see [§ Promotion pipeline](#promotion-pipeline-charter-finding--test-plan--scenario) below).
+- **Agent-driven QA harness** — the [`/run-qa-harness <selector>`](../.agents/workflows/run-qa-harness.md) workflow drives the project's Gherkin `.feature` scenarios (under `tests/features/`) through a real browser via the `chrome-devtools` MCP surface. It resolves the consumer's `qa` contract from `.agentrc.json`, selects a scenario set, signs in via the configured dev seam, navigates **from a root** to each `Given/When/Then`, asserts `Then` outcomes **semantically** against the accessibility snapshot, and instruments each surface's console and network into structured `F#` findings. The harness is the agent-driven successor to the framework's earlier headless BDD runner.
+- **Exploratory Charters** (`tests/charters/<domain>/ec-*.charter.md`) — **human-driven**, time-boxed probes whose mission is to *find* something, not to confirm a known outcome. A charter declares a mission, a list of heuristics it will apply, and a load-bearing `safety_constraints` block (environment scope, mutation surface, required reset). A human runs the charter at the keyboard and appends findings to the charter's `## Findings` table; promotable findings become `.feature` scenarios (which the harness then sweeps) or contract/unit tests in a follow-up PR. The charter's own **agent runner has been removed** — charters are no longer driven by a charter-running slash command; they remain a human exploratory-testing artifact, still governed by `pnpm run lint:qa`.
 - **Heuristic library** (`tests/charters/_heuristics/<name>.md`) — shared, named heuristic cards (boundary-values, encoding-fuzz, cross-tenant-probe, …) referenced by charters via the `heuristics:` array in front-matter. Reuse is enforced at the lint layer: a charter that lists an unknown heuristic name fails `pnpm run lint:qa` with a clear "does not resolve to tests/charters/_heuristics/<name>.md" error.
 
-**Human-vs-agent parity** is the principle that holds the corpus together. Every artifact is authored once and read by both audiences:
+The two halves are complementary, not redundant. The harness exercises **known, scripted** user journeys (the `.feature` suite) for regression and instruments them for the console/network/visual signal a green scenario would otherwise hide. The charters chase the **unknown** — the "what happens if I…?" probes no scenario author predicted — and feed their best findings back into the scripted suite the harness then guards.
 
-- A **human** opens the file in their editor, follows the Setup, runs the Steps, and either records pass/fail (plan) or appends findings (charter).
-- An **agent** loads the same file via the upcoming `/run-qa`-family slash commands (see [§ Agent-runner runbook](#agent-runner-runbook)) and drives the same workflow through the `chrome-devtools` MCP surface. The agent sees the same front-matter, the same numbered steps, the same `**Expected:**` predicates, and (for charters) the same `safety_constraints` gate.
+### The agent-driven QA harness
 
-The parity rule is enforced bidirectionally: an instruction that only a human can follow ("look closely at the spacing") belongs in the body as a `**Note:**` aside, not as a numbered step the agent will try to assert against. An instruction that only an agent can follow ("use the chrome-devtools `take_snapshot` tool") belongs nowhere — it leaks runtime implementation into a portable artifact. Both sides drive against user-visible outcomes only.
+The harness is a **prose workflow**, not a Node orchestrator: the host LLM executes the procedure (the SSOT is [`.agents/workflows/run-qa-harness.md`](../.agents/workflows/run-qa-harness.md); the conventions reference is the [`stack/qa/qa-harness`](../.agents/skills/stack/qa/qa-harness/SKILL.md) skill). Deterministic Node helpers under `.agents/scripts/lib/qa/` do only contract resolution, scenario selection, and console filtering.
 
-### Test Plan format
+Run it during sprint testing to exercise a targeted slice of the acceptance suite, for a regression pass before `/epic-deliver`, or on demand while debugging a Story's user-visible behavior in a live browser.
 
-Test Plan front-matter is validated by [`scripts/qa/schema/plan.front-matter.zod.ts`](../scripts/qa/schema/plan.front-matter.zod.ts). The required fields are:
+#### The `qa` contract block
 
-| Field | Type | Notes |
-|---|---|---|
-| `id` | string | Kebab-case, prefixed with `tp-`. Regex: `^tp-[a-z0-9]+(?:-[a-z0-9]+)*$`. Example: `tp-identity-signup-happy-path`. |
-| `type` | literal `plan` | Used by the lint dispatcher to route the file to the plan branch. |
-| `title` | string | One-line human-readable headline. |
-| `domain` | enum | One of the values in [`scripts/qa/schema/domains.ts`](../scripts/qa/schema/domains.ts). Live domains today: `identity`, `org-admin`, `design-system`. Deferred entries (`marketing`, `public-discovery`, `settings`, `athlete-dashboard`, `coach-dashboard`) are accepted by the schema so future Epics land their plans in the same PR that ships the routes. `mobile` is reserved. |
-| `persona` | enum | One of `visitor`, `athlete`, `coach`, `org-admin`, `platform-admin` (see [`scripts/qa/schema/personas.ts`](../scripts/qa/schema/personas.ts)). Mirrors [`docs/personas.md`](personas.md). |
-| `surface` | enum | `web` today. `mobile` is reserved until the mobile Epic lands. |
-| `route_prefixes` | string[] | At least one entry. Each must start with `/` and use URL-safe characters. |
-| `est_minutes` | positive integer | The human time-box. The runner does not enforce this — it is documentation. |
-| `prerequisites` | string[] | Optional. Free-form natural-language list of setup steps the agent or human must satisfy before starting. |
+The harness is meaningless without the consumer's `qa` contract in [`.agentrc.json`](../.agentrc.json). It is resolved through the single seam [`resolve-qa-contract.js`](../.agents/scripts/lib/qa/resolve-qa-contract.js) (`resolveQaContract(config)`) **before any browser work**; when the block is absent, malformed, or missing a required field the resolver **throws** with a field-named message and the harness **stops** — there is no auto-detection fallback and no headless degrade. The normalized contract fields:
 
-The body follows a canonical three-section shape. Each section is a top-level H2 in the exact order below:
+| Field | Use |
+|---|---|
+| `featureRoot` | Root under which scenarios are discovered (this project: `tests/features`). |
+| `fixturesManifest` | Persona → seed binding loaded before sign-in (this project: `tests/fixtures/qa.json`). |
+| `signInSeam` | Discriminated union — `{ kind: 'url', urlTemplate }` dev seam **or** `{ kind: 'skill', skill }` procedural sign-in. This project uses the dev seam `/dev/sign-in-as/{persona}`; **no real credentials are ever entered**. |
+| `personas` | The persona names the harness signs in as (this project: `athlete`, `coach`, `org-admin`). Under a `urlTemplate` seam the persona name is the sole input. |
+| `consoleAllowlist` | Inline benign-console substring patterns (default `[]`) — a **noise filter, not a security control**. |
+| `designTokens` | Pointer to the token/style source for the visual spot-check (this project: `apps/web/src/styles/global.css`; `null` skips the check). |
 
-1. `## Setup` — natural-language prose listing the preconditions (local stack running, DB seeded, test email picked, side-channels ready).
-2. `## Steps` — a numbered list. Every step's body MUST contain a `**Expected:**` line. The lint script enforces this — a numbered step without an expected line fails `lint:qa` with `step <n> is missing an "**Expected:**" line`.
-3. `## Cleanup` — natural-language prose listing the teardown actions (sign out, reset DB, delete partially-registered Clerk users).
+#### Selectors
 
-Example skeleton:
+`/run-qa-harness <selector>` scopes the sweep to a concrete, deterministic, `(file, line)`-sorted scenario set via [`resolve-selection.js`](../.agents/scripts/lib/qa/resolve-selection.js). Three selector kinds:
 
-````markdown
----
-id: tp-identity-signup-happy-path
-type: plan
-title: Sign-up → onboarding happy path (athlete)
-domain: identity
-persona: athlete
-surface: web
-route_prefixes:
-  - /sign-up
-  - /onboarding
-est_minutes: 8
-prerequisites:
-  - "local stack running (pnpm dev)"
-  - "DB seeded with a fresh org via pnpm db:seed"
----
+- **`feature:<id>`** — the single `.feature` file whose `featureRoot`-relative path stem (or basename) equals the id (case-insensitive). Ambiguous ids throw; qualify with a relative path.
+- **`tag:<expression>`** — the scenario set whose tags satisfy a cucumber boolean expression (`@tag` atoms with `and` / `or` / `not` and parentheses). Quote expressions containing spaces. The canonical tag taxonomy lives in [`.agents/rules/gherkin-standards.md`](../.agents/rules/gherkin-standards.md).
+- **`domain:<name>`** — every scenario under the `featureRoot`-relative subdirectory `name`.
 
-## Setup
+```text
+/run-qa-harness feature:login
+/run-qa-harness "tag:@smoke and not @wip"
+/run-qa-harness domain:identity
+```
 
-- Confirm the local stack is running …
-- Pick a fresh, unique test email address …
+An empty selection is operator error (a typo'd feature id or domain), reported as "no scenarios matched `<selector>`" — never a silently passing sweep.
 
-## Steps
+#### Navigation-first, semantic-Then execution
 
-1. Open a fresh browser session and visit `/sign-up`.
-   **Expected:** the sign-up page renders with a heading that announces the sign-up flow …
+Two rules are non-negotiable and define what the harness is:
 
-2. Enter the test email address and a strong password, then submit the form.
-   **Expected:** the page transitions to a "verify your email" state …
+- **Navigation-first — never URL-jump.** After signing in once per persona via the `signInSeam`, the harness starts each scenario at a **root** (home/dashboard) and reaches the surface under test **only by navigating UI affordances** — clicking nav links, menu items, and buttons the way a real user would. It **never** `navigate_page`s directly to a deep link to set up a `Given`. URL-jumping bypasses the app's real authorization and routing flows, which both masks access-control gaps and produces findings no user could actually trigger. A missing affordance, a nav link that 404s, or a guard redirect loop is itself **a finding**, not a workaround to route around.
+- **Semantic `Then` against the accessibility snapshot.** Every `Then` is asserted semantically against the `take_snapshot` accessibility tree — matching on **roles, accessible names, labels, and visible text** that express the user-visible outcome ("a banner with text *Invoice sent* is visible"). The harness **never** asserts via brittle DOM/CSS/XPath selectors, and **never** on HTTP status codes, response bodies, or DB rows inside a scenario — those are contract-tier concerns per [§ Assertion Placement](../.agents/rules/testing-standards.md#assertion-placement). A `Then` that can only be expressed as a wire-shape or DB check signals a **mis-tiered** scenario, not a license to break the rule.
 
-## Cleanup
+The chrome-devtools MCP surface (`navigate_page`, `take_snapshot`, `click`, `fill_form`, `evaluate_script`, `wait_for`, `list_console_messages`, `list_network_requests`) is a **host-provided** runtime dependency. If the host does not expose it, the harness degrades with a clear error and stops — it does **not** fall back to a retired headless BDD runner.
 
-- Sign out by visiting `/sign-out` …
-- Reset the local DB: `pnpm db:reset && pnpm db:seed`.
-````
+#### Findings — the `F#` shape
 
-The live pilot lives at [`tests/plans/identity/tp-identity-signup-happy-path.plan.md`](../tests/plans/identity/tp-identity-signup-happy-path.plan.md) — copy its shape verbatim when authoring a new plan.
+Per surface visited, the harness captures console and network the moment it lands, before moving on, so evidence is attributable to a concrete user-reachable state:
 
-### Sign-out pattern
+- **Console** — `list_console_messages`, filtered through the contract's `consoleAllowlist` via [`filterConsoleMessages`](../.agents/scripts/lib/qa/console-allowlist.js). Only level `error` / `severe` escalates; allowlisted substrings and non-error levels are suppressed. Each surviving error becomes one finding.
+- **Network** — `list_network_requests`; failed or error-status (4xx / 5xx) requests become findings alongside the console-derived set, sharing the same per-surface `F#` numbering.
+- **Visual** — when `designTokens` is set, spot-check the surface for **gross** token violations (off-palette color, off-scale spacing/typography); subtle sub-pixel differences are not harness findings.
 
-`/sign-out` is **POST-only**. The route handler at [`apps/web/src/pages/sign-out.ts`](../apps/web/src/pages/sign-out.ts) returns `405 Method Not Allowed` on any GET request by design — sign-out is a state-changing action and a GET would be CSRF-vulnerable via a stray link or image tag. Authoring a plan or charter step that tells the operator to "visit", "navigate to", or otherwise GET `/sign-out` is therefore forbidden: the step would fail every time, both for a human operator (the browser renders the 405) and for the agent runner (the assertion against the post-step snapshot never matches).
+Every captured problem is normalized into the structured `F#` shape, validated against [`qa-finding.schema.json`](../.agents/schemas/qa-finding.schema.json):
+
+```jsonc
+{
+  "id": "F1",                        // 1-based, assigned per surface in capture order
+  "classification": "console-error", // console-error | network-error | design-token | behavior
+  "surface": "/invoices",            // the user-reachable surface, not a deep link
+  "symptom": "...",                  // one-line user-visible / captured symptom (scrubbed)
+  "likelyRootCause": null,           // heuristic-card output; null until inferred
+  "disposition": "follow-up",        // blocker | follow-up
+  "acceptance": null,                // the AC this folds into, when known
+  "foldsInto": "F2",                 // optional: another finding this duplicates
+  "evidence": { "console": [], "network": [] }
+}
+```
+
+Determinism is load-bearing — re-running the same selector over the same captured console with the same allowlist yields the same findings in the same order. Framework-generic heuristic cards (in the [`qa-harness`](../.agents/skills/stack/qa/qa-harness/SKILL.md) skill) reason about the **symptom** to populate `likelyRootCause` and set `disposition`: a `401`/`403` on a surface the persona should see or a `5xx` on a user action is a **blocker**; cosmetic token drift or non-journey-breaking noise is a **follow-up**; a repeated identical error across surfaces is **folded** into one finding via `foldsInto`. When unsure, record the symptom and leave `likelyRootCause: null` — an honest "unknown" beats a wrong guess. Before any finding's evidence is rendered, the harness **scrubs** captured console and network of tokens, session cookies, Authorization headers, and PII per [`security-baseline.md`](../.agents/rules/security-baseline.md) — findings are posted to GitHub at approval time, so captured evidence is untrusted until scrubbed.
+
+#### Findings → draft → operator sign-off
+
+The harness **never files tickets autonomously.** It validates each finding against the schema, bundles findings **by likely root cause** into proposed follow-up tickets with `Depends-on` / `Blocks` relationships, and presents the bundle as a **draft for operator sign-off**. The operator-approval gate is the safety boundary against spurious filing. When the run was triggered from an Epic-testing context, the **approved** findings are handed to the Epic-testing helper for attachment to the Epic's QA evidence ticket. The sweep closes with a chat report: the selector applied and resolved scenario count, scenario totals (passed / failed / blocked), findings totals by classification and disposition, a one-line user-visible symptom per failure, and a pointer to the drafted bundle awaiting sign-off.
+
+### Exploratory Charters (human-driven)
+
+Exploratory Charters are the corpus's **human-driven** half. A human picks a charter, runs its mission at the keyboard for the timebox, and records what they find. There is **no agent runner** for charters — the charter-running slash commands that once drove them have been removed; a charter is now read and executed by a person, and the harness above instead sweeps the scripted `.feature` suite. What survives, and what holds the charter practice together, is the on-disk format and the `pnpm run lint:qa` gate that validates it: a charter that drifts from the schema or references an unknown heuristic fails CI exactly as before.
+
+The per-Story / per-phase / pre-release cadence that decides **when** a human runs a charter lives in [§ Manual Testing → The three cadences](#the-three-cadences); this section governs the **on-disk shape** of the charter artifact.
+
+#### Sign-out pattern (charter sessions)
+
+`/sign-out` is **POST-only**. The route handler at [`apps/web/src/pages/sign-out.ts`](../apps/web/src/pages/sign-out.ts) returns `405 Method Not Allowed` on any GET request by design — sign-out is a state-changing action and a GET would be CSRF-vulnerable via a stray link or image tag. Authoring a charter step that tells the operator to "visit", "navigate to", or otherwise GET `/sign-out` is therefore forbidden: the step would fail every time for a human operator — the browser renders the 405.
 
 Every corpus artifact MUST drive sign-out through one of the two patterns below.
 
@@ -921,7 +938,7 @@ Every corpus artifact MUST drive sign-out through one of the two patterns below.
 - Sign out via the `<UserButton/>` menu in the header (the menu posts to `/sign-out`).
 ```
 
-**Fallback — `<form method="POST" action="/sign-out">` shim.** When a plan or charter exercises a surface that intentionally hides the header (e.g. an onboarding step before the chrome renders, or a charter probing an unauthenticated landing surface), drive sign-out via an explicit POST form shim from the browser devtools console:
+**Fallback — `<form method="POST" action="/sign-out">` shim.** When a charter exercises a surface that intentionally hides the header (e.g. an onboarding step before the chrome renders, or a charter probing an unauthenticated landing surface), drive sign-out via an explicit POST form shim from the browser devtools console:
 
 ```html
 <form method="POST" action="/sign-out"><button type="submit">Sign out</button></form>
@@ -929,25 +946,25 @@ Every corpus artifact MUST drive sign-out through one of the two patterns below.
 
 Paste the form into the page, click submit, and observe the same `303 → /` redirect the menu produces. The shim is the documented escape hatch; it MUST NOT be used as the default — the menu is what real users have.
 
-**Forbidden.** Do not author any of the following in a plan, charter, or step:
+**Forbidden.** Do not author any of the following in a charter or step:
 
 - "Visit `/sign-out`."
 - "Navigate to `/sign-out`."
 - "Sign out via `/sign-out`."
 - Any link, anchor, or address-bar entry that issues a GET against `/sign-out`.
 
-The `lint:qa` gate does not (yet) scan for these strings, but Story #876 § Plan-content fixes migrated every existing offender to the patterns above — new authors are expected to follow the same convention. A reviewer who spots a GET-shape sign-out instruction in a PR MUST request changes before approving.
+The `lint:qa` gate does not scan for these strings — new charter authors are expected to follow the convention above. A reviewer who spots a GET-shape sign-out instruction in a PR MUST request changes before approving.
 
-### Manually injecting roster invites
+#### Manually injecting roster invites
 
-Some QA sessions need to drive the roster-invite accept/decline flow without going through the send leg — for example when the local stack has no mail transport bound (see below) or when the session is probing the accept page directly and the send-side has already been exercised by another plan. Both cases mean inserting `roster_invite` rows by hand.
+Some charter sessions need to drive the roster-invite accept/decline flow without going through the send leg — for example when the local stack has no mail transport bound (see below) or when the session is probing the accept page directly and the send-side has already been exercised. Both cases mean inserting `roster_invite` rows by hand.
 
 Two conventions matter when you do that, and both have silent failure modes:
 
 - **Token plaintext is 64 lowercase hex characters, not base64url.** The public route at [`apps/api/src/routes/v1/public/roster-invites.ts`](../apps/api/src/routes/v1/public/roster-invites.ts) requires the path-param plaintext token to match `/^[0-9a-f]{64}$/` — the same shape as a SHA-256 hex digest. The coach-side issue path generates plaintext as `randomBytes(32).toString('hex')` (see [`apps/api/src/routes/v1/coach/invites.ts`](../apps/api/src/routes/v1/coach/invites.ts)), and the accept page hashes the path-param plaintext with SHA-256 before looking up the row. If you reach for `randomBytes(32).toString('base64url')` by default, the resulting 43-char plaintext fails the pre-check and the accept page reports `NOT_FOUND` — indistinguishable from a genuinely missing invite. Generate the plaintext as `randomBytes(32).toString('hex')` and the `token_hash` column as `createHash('sha256').update(plaintext, 'utf8').digest('hex')`.
 - **Local dev does not ship with a transactional-mail transport.** Production environments set `MAILER_TRANSPORT` per environment; local dev does not. UI invite-send flows therefore refuse with `503 MAIL_TRANSPORT_UNBOUND` from [`apps/api/src/routes/v1/coach/invites.ts`](../apps/api/src/routes/v1/coach/invites.ts) until you either wire a transport locally or seed `roster_invite` rows directly using the hex-token convention above. The 503 is the documented "no transport bound" outcome, not a regression.
 
-### Exploratory Charter format
+#### Exploratory Charter format
 
 Exploratory Charter front-matter is validated by [`scripts/qa/schema/charter.front-matter.zod.ts`](../scripts/qa/schema/charter.front-matter.zod.ts). The required fields are:
 
@@ -956,25 +973,25 @@ Exploratory Charter front-matter is validated by [`scripts/qa/schema/charter.fro
 | `id` | string | Kebab-case, prefixed with `ec-`. Regex: `^ec-[a-z0-9]+(?:-[a-z0-9]+)*$`. Example: `ec-org-admin-csv-import`. |
 | `type` | literal `charter` | Lint dispatcher route. |
 | `title` | string | One-line human-readable headline. |
-| `domain` | enum | Same enum as plans (see above). |
-| `persona` | enum | Same enum as plans (see above). |
-| `route_prefixes` | string[] | At least one. Same regex as plans. |
+| `domain` | enum | One of the values in [`scripts/qa/schema/domains.ts`](../scripts/qa/schema/domains.ts) (live: `identity`, `org-admin`, `design-system`; others deferred; `mobile` reserved). |
+| `persona` | enum | One of `visitor`, `athlete`, `coach`, `org-admin`, `platform-admin` (see [`scripts/qa/schema/personas.ts`](../scripts/qa/schema/personas.ts)). Mirrors [`docs/personas.md`](personas.md). |
+| `route_prefixes` | string[] | At least one entry. Each must start with `/` and use URL-safe characters. |
 | `mission` | string | One-sentence falsifiable mission (e.g. "find ways the CSV import surface accepts malformed data without surfacing a visible error"). |
 | `heuristics` | string[] | At least one kebab-case heuristic name. Each must resolve to `tests/charters/_heuristics/<name>.md` — the lint script enforces this. |
 | `time_box_minutes` | positive integer | The session timebox (typically 15–30 minutes). |
 | `safety_constraints` | object | **Mandatory, load-bearing.** See [§ Safety-constraints contract](#safety-constraints-contract) below. |
-| `prerequisites` | string[] | Optional, same shape as plans. |
+| `prerequisites` | string[] | Optional. Free-form natural-language list of setup steps the human must satisfy before starting. |
 
 The body shape:
 
 1. `## Mission` — a paragraph expanding the front-matter mission with the *why* (which downstream surfaces a bug here would corrupt, what classes of defect are most dangerous).
 2. `## Heuristics` — one bullet per heuristic listed in the front-matter, with a sentence or two explaining how this charter will apply that named heuristic to the specific surface.
-3. `## Notes` — optional scratchpad. The session runner appends per-snapshot notes here.
-4. `## Findings` — a table with columns `id | title | severity | repro | suggested-promotion`. New findings are appended as new rows; rows are never deleted — promoted findings stay in the table for traceability with their `suggested-promotion` cell pointing at the follow-up issue or PR.
+3. `## Notes` — optional scratchpad. The human running the session records per-surface observations here.
+4. `## Findings` — a table with columns `id | title | severity | repro | suggested-promotion`. New findings are appended as new rows; rows are never deleted — promoted findings stay in the table for traceability with their `suggested-promotion` cell pointing at the follow-up issue or PR (a new `.feature` scenario, contract test, or unit test).
 
 The live pilot lives at [`tests/charters/org-admin/ec-org-admin-csv-import.charter.md`](../tests/charters/org-admin/ec-org-admin-csv-import.charter.md) — copy its shape when authoring a new charter.
 
-### Heuristic library
+#### Heuristic library
 
 Shared heuristic cards live under [`tests/charters/_heuristics/`](../tests/charters/_heuristics/). Each card is a single Markdown file whose basename (without `.md`) is the heuristic's canonical name. A charter references a heuristic by listing the basename in its `heuristics:` array; the lint script registers every file in the directory at startup and rejects any name that does not resolve.
 
@@ -993,60 +1010,25 @@ The 8 heuristics shipped by Story #791:
 
 Heuristic cards are intentionally short — a `## When to apply` paragraph and a list of concrete probes. They are reference material, not scripts; the charter that *uses* a heuristic is responsible for translating it into surface-specific moves.
 
-### Lint, index, and coverage gates
-
-The QA Corpus has three CLI gates, layered:
-
-- **`pnpm run lint:qa`** — runs [`scripts/qa/lint.mjs`](../scripts/qa/lint.mjs). Discovers every `*.plan.md` under `tests/plans/` and every `*.charter.md` under `tests/charters/` (skipping `_heuristics/`), validates each artifact's front-matter against the matching Zod schema, validates the body-section shape, and (for charters) resolves every heuristic name against the `_heuristics/` directory. Exit code 0 on a clean pass, 1 on any artifact failure, 2 on CLI misuse. Wired into the `quality.yml` CI gate and (via a later Story) the Husky `pre-commit` hook against staged `.plan.md` / `.charter.md` paths.
-- **`pnpm run index:qa`** *(lands with a later Story)* — emits a deterministic JSON index of the corpus (id, type, domain, persona, route_prefixes, file path) so agent workflows and the coverage check can read the corpus shape without re-parsing every file. The index is committed and ratcheted; drift between the index and the on-disk corpus fails CI.
-- **`pnpm run coverage:qa`** *(lands with a later Story)* — enforces the per-domain plan + charter floors declared in `scripts/qa/schema/coverage-floors.ts` (planned location; ships with the coverage Story). A domain whose plan count falls below its floor fails CI, the same ratchet shape as the other quality baselines.
-
-`lint:qa` is the only gate live today; `index:qa` and `coverage:qa` are forward-looking commitments named here so authors and reviewers know the lint they pass on PR-open is the first of three.
-
-### Agent-runner runbook
-
-The agent runners are slash commands that load a QA-corpus artifact, drive the steps through the `chrome-devtools` MCP surface, and record the outcome back to the artifact (charters) or to the run-log (plans). The commands land in later Stories of Epic #775:
-
-- **`/run-qa <plan-or-charter-id>`** *(lands with Story #794)* — runs a single named artifact end-to-end. Loads the file from `tests/plans/` or `tests/charters/` by `id`, validates it through the same Zod schemas the linter uses, then dispatches to the plan-runner or charter-runner.
-- **`/run-qa-domain <domain>`** *(lands with Story #807)* — runs every artifact in a domain (e.g. all `domain: identity` plans + charters) in deterministic id-sorted order.
-- **`/run-qa-all`** *(lands with Story #807)* — runs the entire corpus. The pre-release sweep companion to the human pre-release sweep documented in [§ Pre-release sweep](#3-pre-release-sweep).
-
-The runners drive the browser through the `chrome-devtools` MCP surface — `navigate_page`, `take_snapshot`, `click`, `fill`, `evaluate_script`, `take_screenshot`, `list_console_messages`, and `list_network_requests` are the primary tools. The runner reads `route_prefixes[0]` from front-matter to decide where to start, applies each step's interaction, then evaluates the `**Expected:**` predicate against the post-step snapshot.
-
-**Safety gate.** A charter whose `safety_constraints.environment` is anything other than `local` cannot run unless the operator passes `--allow-non-local` explicitly. The gate exists because charters mutate state (per the `mutation_surface` declaration) and a stray `preview` or `staging` run would leak fuzz data into a shared environment. The `environment: prod` value is denylisted at the schema layer, so a prod-targeted charter cannot even land on `main` — the runner gate is a second line of defense against the `local` → non-local class of mistake.
-
-### Promotion pipeline (charter finding → Test Plan / scenario)
-
-A charter is a *probe*; once it finds a real defect, the defect is fixed and the surface gains a permanent guard. The fix PR carries the promotion:
-
-- **Always:** the bug fix itself, plus a row appended to a Test Plan that exercises the regression manually. If the affected surface had no plan yet, the PR creates the plan. The charter's `## Findings` row's `suggested-promotion` cell points at the plan id (and, when relevant, the new contract or unit test).
-- **When the defect is user-visible:** a new `.feature` scenario at the acceptance tier asserting the user-visible outcome ("after a malformed CSV upload, the operator sees a row-level error"). The scenario is authored per [`gherkin-standards.md`](../.agents/rules/gherkin-standards.md) and does NOT assert on the wire shape — that lives in the matching contract test under `apps/api/src/**/*.contract.test.ts`.
-
-The pipeline closes the loop: a charter finding is never a one-shot — it is the trigger for both a regression script and (where the assertion class warrants it) a permanent automated guard. The charter row stays in `## Findings` with its `suggested-promotion` populated so a future reviewer can trace fix → plan → scenario → test.
-
-### Safety-constraints contract
+#### Safety-constraints contract
 
 The `safety_constraints` block on every charter is the corpus's load-bearing security gate. It is validated by [`scripts/qa/schema/charter.front-matter.zod.ts`](../scripts/qa/schema/charter.front-matter.zod.ts) and has three required fields:
 
-- **`environment`** — one of `local`, `preview`, `staging`. The literal `prod` is **denylisted at the schema layer**: the Zod error message reads "safety_constraints.environment must not be \"prod\" — charters that target production are denylisted at the lint layer" so the operator immediately understands a denylist, not a typo, is the cause. The `lint:qa` gate therefore refuses to merge a prod-targeted charter onto `main`. The agent-runner gate is the second line of defense — `environment: local` runs without ceremony; anything else requires the operator to pass `--allow-non-local` explicitly.
-- **`mutation_surface`** — a non-empty list of natural-language identifiers naming every persisted surface the charter is allowed to mutate (e.g. `"csv_import_batches table"`, `"athlete_memberships table"`). The list is documentation for the operator and a checklist for the cleanup step — it does NOT grant runtime capability; the runner does not enforce a per-table allow-list. The list's load-bearing role is review: a charter that mutates a surface not declared here is a defect in the charter, caught at PR review.
-- **`required_reset`** — a single string naming the command (or sequence) that returns the named mutation surface to a clean state. Example: `"pnpm db:reset && pnpm db:seed"`. The runner displays this string at the end of every charter session as a reminder; the human operator runs it before the next charter.
+- **`environment`** — one of `local`, `preview`, `staging`. The literal `prod` is **denylisted at the schema layer**: the Zod error message reads "safety_constraints.environment must not be \"prod\" — charters that target production are denylisted at the lint layer" so the operator immediately understands a denylist, not a typo, is the cause. The `lint:qa` gate therefore refuses to merge a prod-targeted charter onto `main`. With the charter agent runner removed, the human running the session is responsible for honoring the declared environment — `local` runs without ceremony; a deliberate `preview` or `staging` session is the operator's explicit choice, made with the leak risk in mind.
+- **`mutation_surface`** — a non-empty list of natural-language identifiers naming every persisted surface the charter is allowed to mutate (e.g. `"csv_import_batches table"`, `"athlete_memberships table"`). The list is documentation for the operator and a checklist for the cleanup step — it does NOT grant runtime capability. Its load-bearing role is review: a charter that mutates a surface not declared here is a defect in the charter, caught at PR review.
+- **`required_reset`** — a single string naming the command (or sequence) that returns the named mutation surface to a clean state. Example: `"pnpm db:reset && pnpm db:seed"`. The human operator runs it before starting the next charter.
 
 A charter that omits any of the three fields fails `lint:qa` with a path-prefixed error (e.g. `safety_constraints.environment: Required`) so the operator sees the missing field by name.
 
-### Per-domain coverage floors
+> **Promotion.** A charter is a *probe*; once it surfaces a real defect, the fix PR carries the promotion. When the defect is user-visible, the PR adds a `.feature` scenario at the acceptance tier (which `/run-qa-harness` then sweeps), authored per [`gherkin-standards.md`](../.agents/rules/gherkin-standards.md) and asserting only the user-visible outcome — the wire shape lives in the matching contract test under `apps/api/src/**/*.contract.test.ts`. The charter's `## Findings` row keeps its `suggested-promotion` cell populated so a reviewer can trace finding → scenario → test.
 
-Each live domain carries a minimum plan + charter count, enforced by `pnpm run coverage:qa` (lands with a later Story; the floors table below is mirrored from `scripts/qa/schema/coverage-floors.ts`'s planned shape so reviewers do not need to open the Epic).
+### Lint, index, and coverage gates
 
-| Domain | Plans (floor) | Charters (floor) |
-|---|---:|---:|
-| `identity` | 10 | 1 |
-| `org-admin` | 6 | 2 |
-| `design-system` | 1 | 0 |
+The QA Corpus has three CLI gates:
 
-Domains not listed (`marketing`, `public-discovery`, `settings`, `athlete-dashboard`, `coach-dashboard`) are deferred — their floors land in the same PR that ships the routes those domains cover. `mobile` is reserved.
-
-The floors ratchet only upward: a Story that lifts a domain's plan count over its floor lands the new floor in the same PR. Lowering a floor requires explicit operator approval in the PR description, the same discipline as the lint and coverage baselines above.
+- **`pnpm run lint:qa`** — runs [`scripts/qa/lint.mjs`](../scripts/qa/lint.mjs). Discovers every `*.charter.md` under `tests/charters/` (skipping `_heuristics/`), validates each charter's front-matter against the Zod schema, validates the required body sections (`## Mission`, `## Heuristics`, `## Findings`), and resolves every heuristic name against the `_heuristics/` directory. It additionally enforces the `@pending` TTL gate over every `.feature` file under `tests/features/` (a scenario `@pending` past the TTL, or missing an `@issue-<number>` co-tag, fails). Exit code 0 on a clean pass, 1 on any artifact failure, 2 on CLI misuse. This is the gate that keeps the **human-driven charter practice** governed even though the charter agent runner is gone — a charter that drifts from the schema fails CI exactly as before. Wired into the `quality.yml` CI gate and the Husky `pre-commit` hook against staged `.charter.md` paths.
+- **`pnpm run index:qa`** — runs [`scripts/qa/index.mjs`](../scripts/qa/index.mjs), emitting a deterministic JSON index of the corpus (committed at [`tests/qa-index.json`](../tests/qa-index.json)) so tooling can read the corpus shape without re-parsing every file. Drift between the index and the on-disk corpus fails CI.
+- **`pnpm run coverage:qa`** — runs [`scripts/qa/coverage.mjs`](../scripts/qa/coverage.mjs), enforcing the per-domain charter floors. A domain whose charter count falls below its floor fails CI, the same ratchet shape as the other quality baselines; floors ratchet only upward.
 
 ---
 

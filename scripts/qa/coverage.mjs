@@ -2,14 +2,19 @@
 // scripts/qa/coverage.mjs
 //
 // QA-corpus coverage reporter. Reads `tests/qa-index.json` (produced by
-// `scripts/qa/index.mjs`), counts plans and charters per domain, and
-// reports the gap against the per-domain floors declared in
+// `scripts/qa/index.mjs`), counts charters per domain, and reports the
+// gap against the per-domain floors declared in
 // `scripts/qa/schema/coverage-floors.ts`.
+//
+// Scripted Test Plans (`tests/plans/**`) were retired from the corpus,
+// so charters are the only artifact kind the index now carries and the
+// only kind this reporter measures.
 //
 // Modes:
 //   - default (`pnpm run coverage:qa`)
-//       Prints a human-readable domain × kind grid to stdout and exits 0
-//       regardless of gaps. Useful as a status snapshot while authoring.
+//       Prints a human-readable domain × charter grid to stdout and
+//       exits 0 regardless of gaps. Useful as a status snapshot while
+//       authoring.
 //   - `--report` (`pnpm run coverage:qa -- --report`)
 //       Writes a structured report to `coverage/qa-coverage.json` and
 //       exits 1 when at least one floor is unmet. CI uses this mode to
@@ -17,11 +22,11 @@
 //
 // Report shape (Tech Spec #782 § Core Components → "scripts/qa/coverage.mjs"):
 //   {
-//     floors: Record<Domain, { plans: number, charters: number }>,
-//     actual: Record<Domain, { plans: number, charters: number }>,
+//     floors: Record<Domain, { charters: number }>,
+//     actual: Record<Domain, { charters: number }>,
 //     gaps: Array<{
 //       domain: Domain;
-//       kind: 'plan' | 'charter';
+//       kind: 'charter';
 //       need: number;
 //       have: number;
 //     }>,
@@ -51,31 +56,30 @@ const DEFAULT_REPORT_PATH = path.join(REPO_ROOT, 'coverage', 'qa-coverage.json')
 // ---------------------------------------------------------------------------
 
 /**
- * Initialize an empty `Record<Domain, { plans, charters }>` populated
- * with zeros for every declared domain so the output is exhaustive even
+ * Initialize an empty `Record<Domain, { charters }>` populated with
+ * zeros for every declared domain so the output is exhaustive even
  * when a domain has no live artifacts yet.
  */
 function emptyTotals() {
   const totals = {};
   for (const domain of DOMAINS) {
-    totals[domain] = { plans: 0, charters: 0 };
+    totals[domain] = { charters: 0 };
   }
   return totals;
 }
 
 /**
- * Count plans and charters per domain across the given index entries.
- * Returns the populated totals object. Entries whose `domain` is not in
- * the declared enum are skipped — those would have failed the lint
- * stage before ever reaching the index.
+ * Count charters per domain across the given index entries. Returns the
+ * populated totals object. Entries whose `domain` is not in the declared
+ * enum are skipped — those would have failed the lint stage before ever
+ * reaching the index.
  */
 export function countByDomain(entries) {
   const totals = emptyTotals();
   for (const entry of entries) {
     const domain = entry.domain;
     if (!(domain in totals)) continue;
-    if (entry.type === 'plan') totals[domain].plans += 1;
-    else if (entry.type === 'charter') totals[domain].charters += 1;
+    if (entry.type === 'charter') totals[domain].charters += 1;
   }
   return totals;
 }
@@ -83,16 +87,13 @@ export function countByDomain(entries) {
 /**
  * Compute the gaps between actual counts and the declared floors.
  * Returns an array of `{ domain, kind, need, have }` records, sorted
- * by `domain` then `kind` so the JSON diff is stable across runs.
+ * by `domain` so the JSON diff is stable across runs.
  */
 export function computeGaps(actual, floors) {
   const gaps = [];
   for (const domain of DOMAINS) {
     const floor = floors[domain];
     const got = actual[domain];
-    if (got.plans < floor.plans) {
-      gaps.push({ domain, kind: 'plan', need: floor.plans, have: got.plans });
-    }
     if (got.charters < floor.charters) {
       gaps.push({ domain, kind: 'charter', need: floor.charters, have: got.charters });
     }
@@ -139,25 +140,19 @@ export async function loadIndex(indexPath) {
 
 /**
  * Render the per-domain grid as a fixed-width table to stdout. Each row
- * shows the domain, the plans floor / actual / gap, and the charters
- * floor / actual / gap. The renderer is deterministic and column-padded
- * so the output is comfortable to scan in CI logs.
+ * shows the domain, the charters floor / actual / gap. The renderer is
+ * deterministic and column-padded so the output is comfortable to scan
+ * in CI logs.
  */
 export function renderGrid({ floors, actual, gaps }) {
   const gapKeys = new Set(gaps.map((g) => `${g.domain}:${g.kind}`));
   const rows = [];
-  rows.push(['domain', 'plans (have/need)', 'charters (have/need)', 'status']);
+  rows.push(['domain', 'charters (have/need)', 'status']);
   for (const domain of DOMAINS) {
-    const planStr = `${actual[domain].plans}/${floors[domain].plans}`;
     const charterStr = `${actual[domain].charters}/${floors[domain].charters}`;
-    const planGap = gapKeys.has(`${domain}:plan`);
     const charterGap = gapKeys.has(`${domain}:charter`);
-    let status;
-    if (planGap && charterGap) status = 'GAP (plans + charters)';
-    else if (planGap) status = 'GAP (plans)';
-    else if (charterGap) status = 'GAP (charters)';
-    else status = 'ok';
-    rows.push([domain, planStr, charterStr, status]);
+    const status = charterGap ? 'GAP (charters)' : 'ok';
+    rows.push([domain, charterStr, status]);
   }
   const widths = rows[0].map((_, col) => Math.max(...rows.map((r) => r[col].length)));
   const lines = rows.map((row) => row.map((cell, col) => cell.padEnd(widths[col], ' ')).join('  '));
@@ -179,7 +174,7 @@ export function buildReport(entries, { floors = COVERAGE_FLOORS } = {}) {
   // Clone the floors record so the report is fully owned by the caller.
   const floorsCopy = {};
   for (const domain of DOMAINS) {
-    floorsCopy[domain] = { plans: floors[domain].plans, charters: floors[domain].charters };
+    floorsCopy[domain] = { charters: floors[domain].charters };
   }
   return { floors: floorsCopy, actual, gaps };
 }

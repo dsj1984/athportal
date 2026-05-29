@@ -235,11 +235,10 @@ describe('scanAllPendingFeatures — multi-file corpus', () => {
 // ---------------------------------------------------------------------------
 
 describe('runLint — @pending TTL gate integration', () => {
-  it('exits 1 when @pending scenarios are over TTL (no plan/charter corpus)', async () => {
+  it('exits 1 when @pending scenarios are over TTL (no charter corpus)', async () => {
     await writeFeature('overdue.feature', PENDING_NO_ISSUE);
 
     const code = await runLint({
-      plansRoot: tmpDir, // empty — no plans here
       chartersRoot: tmpDir, // empty — no charters here
       featuresRoot: tmpDir,
       repoRoot: tmpDir,
@@ -254,7 +253,6 @@ describe('runLint — @pending TTL gate integration', () => {
     await writeFeature('clean.feature', NO_PENDING);
 
     const code = await runLint({
-      plansRoot: tmpDir,
       chartersRoot: tmpDir,
       featuresRoot: tmpDir,
       repoRoot: tmpDir,
@@ -270,7 +268,6 @@ describe('runLint — @pending TTL gate integration', () => {
     await writeFeature('missing-issue.feature', PENDING_NO_ISSUE);
 
     const code = await runLint({
-      plansRoot: tmpDir,
       chartersRoot: tmpDir,
       featuresRoot: tmpDir,
       repoRoot: tmpDir,
@@ -284,7 +281,7 @@ describe('runLint — @pending TTL gate integration', () => {
   it('skips the @pending TTL scan when `paths` is provided (staged-file mode)', async () => {
     await writeFeature('overdue.feature', PENDING_NO_ISSUE);
 
-    // When `paths` is passed, only plan/charter paths are scanned — feature
+    // When `paths` is passed, only charter paths are scanned — feature
     // files are not checked, so the overdue scenario does not fail the lint.
     const code = await runLint({
       paths: [], // explicit empty list → scoped mode
@@ -294,7 +291,7 @@ describe('runLint — @pending TTL gate integration', () => {
       resolveDateFn: fakeDateFn(60),
     });
 
-    // Empty paths list → no plans/charters, no pending scan → exit 0
+    // Empty paths list → no charters, no pending scan → exit 0
     expect(code).toBe(0);
   });
 });
