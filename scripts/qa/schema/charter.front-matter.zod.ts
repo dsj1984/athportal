@@ -14,7 +14,7 @@
 // shape of charter front-matter. Two layered policies (`mobile` domain
 // reserved; `safety_constraints.environment` denylists `prod` at the
 // schema layer so a prod-targeted charter cannot land on `main`) are
-// applied via the same superRefine pattern used by `plan.front-matter.zod.ts`.
+// applied via a superRefine pass on top of the structural parse.
 
 import { z } from 'zod';
 import { DOMAINS, reservedDomainMessage } from './domains.ts';

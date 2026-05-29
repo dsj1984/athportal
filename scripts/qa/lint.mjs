@@ -1,21 +1,20 @@
 #!/usr/bin/env node
 // scripts/qa/lint.mjs
 //
-// QA-corpus linter. Scans every `tests/plans/**/*.plan.md` and
-// `tests/charters/**/*.charter.md` artifact, validates its YAML
-// front-matter against the matching Zod schema in `scripts/qa/schema/`,
-// and verifies the required body sections.
+// QA-corpus linter. Scans every `tests/charters/**/*.charter.md` artifact,
+// validates its YAML front-matter against the charter Zod schema in
+// `scripts/qa/schema/`, and verifies the required body sections.
 //
-// The dispatcher reads `type:` from front-matter and routes:
-//   - `type: plan`    → plan.front-matter.zod.ts + Setup/Steps/Cleanup body
-//   - `type: charter` → charter.front-matter.zod.ts + Mission/Heuristics/
-//                       Findings body + heuristic-name resolution against
-//                       tests/charters/_heuristics/<name>.md
+// Charter validation routes:
+//   - charter.front-matter.zod.ts + Mission/Heuristics/Findings body +
+//     heuristic-name resolution against tests/charters/_heuristics/<name>.md.
+//     The `safety_constraints.environment` prod-denylist gate is enforced
+//     at the schema layer so a prod-targeted charter cannot land on `main`.
 //
 // Wired into:
 //   - `pnpm run lint:qa` (package.json scripts) — CI quality gate
 //   - Husky `pre-commit` step that also runs `lint:qa` against staged
-//     `.plan.md` / `.charter.md` paths (added by a later Story)
+//     `.charter.md` paths (added by a later Story)
 //
 // Exit codes:
 //   0 — every artifact parsed and body-shape-checked clean
@@ -24,7 +23,7 @@
 //
 // Output contract:
 //   - Success path prints a one-line summary to stdout:
-//       "lint:qa: ok — N plan(s), M charter(s) checked"
+//       "lint:qa: ok — M charter(s) checked"
 //   - Each error prints a per-file row to stderr:
 //       "<file>: <field-path-or-section>: <message>"
 //     Multiple errors per file are listed individually so the operator
@@ -40,7 +39,6 @@ import { fileURLToPath } from 'node:url';
 import matter from 'gray-matter';
 
 import { safeParseCharterFrontMatter } from './schema/charter.front-matter.zod.ts';
-import { safeParsePlanFrontMatter } from './schema/plan.front-matter.zod.ts';
 
 // ---------------------------------------------------------------------------
 // Path resolution
@@ -48,7 +46,6 @@ import { safeParsePlanFrontMatter } from './schema/plan.front-matter.zod.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
-const DEFAULT_PLANS_ROOT = path.join(REPO_ROOT, 'tests', 'plans');
 const DEFAULT_CHARTERS_ROOT = path.join(REPO_ROOT, 'tests', 'charters');
 const DEFAULT_FEATURES_ROOT = path.join(REPO_ROOT, 'tests', 'features');
 const HEURISTICS_DIRNAME = '_heuristics';
@@ -76,26 +73,11 @@ const PENDING_TAG_PATTERN = /@pending\b/;
 // ---------------------------------------------------------------------------
 
 /**
- * Required H2 sections for a plan, in order. The order is part of the
- * canonical body shape per Tech Spec #782 § Body shape → "Plan".
- */
-const REQUIRED_PLAN_SECTIONS = ['## Setup', '## Steps', '## Cleanup'];
-
-/**
  * Required H2 sections for a charter, in order. Per Tech Spec #782
  * § Body shape → "Charter". `## Notes` is optional per the spec body
  * (free-form scratchpad) and is not required.
  */
 const REQUIRED_CHARTER_SECTIONS = ['## Mission', '## Heuristics', '## Findings'];
-
-/**
- * Each numbered step in a plan must be followed by an `**Expected:**`
- * line. The pattern is intentionally permissive about whitespace so
- * authors can format the expected line on the same physical line or on
- * the next indented line.
- */
-const STEP_HEADER_PATTERN = /^\s*(\d+)\.\s+/m;
-const EXPECTED_LINE_PATTERN = /\*\*Expected:\*\*/;
 
 // ---------------------------------------------------------------------------
 // @pending TTL — git-log first-seen date helper
@@ -365,10 +347,6 @@ async function discoverArtifacts(root, suffix) {
   return out.sort((a, b) => a.localeCompare(b));
 }
 
-async function discoverPlanFiles(root) {
-  return discoverArtifacts(root, '.plan.md');
-}
-
 async function discoverCharterFiles(root) {
   return discoverArtifacts(root, '.charter.md');
 }
@@ -431,42 +409,6 @@ function findMissingSections(body, required) {
 }
 
 /**
- * Validate the body of a plan. Returns an array of `{ section, message }`
- * errors so the caller can render them per-file.
- */
-function validatePlanBody(body) {
-  const errors = findMissingSections(body, REQUIRED_PLAN_SECTIONS);
-
-  // If `## Steps` is present, every numbered step must be followed by an
-  // `**Expected:**` line within the same step block. We segment the
-  // Steps section between `## Steps` and the next H2 header.
-  const lines = body.split(/\r?\n/);
-  const stepsStart = lines.findIndex((line) => line.trim() === '## Steps');
-  if (stepsStart >= 0) {
-    let stepsEnd = lines.findIndex((line, idx) => idx > stepsStart && /^##\s+/.test(line));
-    if (stepsEnd === -1) stepsEnd = lines.length;
-    const stepsBlock = lines.slice(stepsStart + 1, stepsEnd).join('\n');
-
-    // Split on numbered step headers; the first piece (before step 1) is
-    // narrative/preamble and can be skipped.
-    const stepBlocks = stepsBlock.split(STEP_HEADER_PATTERN);
-    // After split, stepBlocks alternates: [preamble, "1", block1, "2", block2, ...]
-    for (let i = 1; i < stepBlocks.length; i += 2) {
-      const stepNumber = stepBlocks[i];
-      const stepBody = stepBlocks[i + 1] ?? '';
-      if (!EXPECTED_LINE_PATTERN.test(stepBody)) {
-        errors.push({
-          section: 'Steps',
-          message: `step ${stepNumber} is missing an "**Expected:**" line`,
-        });
-      }
-    }
-  }
-
-  return errors;
-}
-
-/**
  * Validate the body of a charter. Returns an array of `{ section,
  * message }` errors. The charter body must carry `## Mission`,
  * `## Heuristics`, and `## Findings` headings; `## Notes` is optional.
@@ -490,76 +432,6 @@ function validateCharterHeuristics(heuristicNames, knownHeuristics) {
       });
     }
   }
-  return errors;
-}
-
-/**
- * Validate a single plan file. Returns an array of `{ file, field,
- * message }` errors; an empty array means the file is clean.
- */
-async function validatePlanFile(absPath) {
-  const errors = [];
-  let raw;
-  try {
-    raw = await readFile(absPath, 'utf8');
-  } catch (err) {
-    return [{ file: absPath, field: '<io>', message: `unreadable: ${err.message}` }];
-  }
-
-  let parsed;
-  try {
-    parsed = matter(raw);
-  } catch (err) {
-    return [
-      { file: absPath, field: '<front-matter>', message: `unparseable YAML: ${err.message}` },
-    ];
-  }
-
-  // Empty front-matter is a hard failure — the schema would reject every
-  // required field, but a clearer single message is friendlier.
-  if (!parsed.data || Object.keys(parsed.data).length === 0) {
-    return [
-      { file: absPath, field: '<front-matter>', message: 'missing or empty YAML front-matter' },
-    ];
-  }
-
-  // A `.plan.md` whose front-matter type is anything but `plan` is a
-  // type/path mismatch — surface it as a single clear error rather than
-  // letting the plan schema reject every other field.
-  if (parsed.data.type !== undefined && parsed.data.type !== 'plan') {
-    return [
-      {
-        file: absPath,
-        field: 'type',
-        message: `file extension .plan.md requires type: "plan" (received "${parsed.data.type}")`,
-      },
-    ];
-  }
-
-  // Plan schema validation
-  const result = safeParsePlanFrontMatter(parsed.data);
-  if (!result.success) {
-    for (const issue of result.error.issues) {
-      errors.push({
-        file: absPath,
-        field: formatPath(issue.path),
-        message: issue.message,
-      });
-    }
-    // Body validation only runs once the schema is well-formed enough
-    // to trust `type: plan`. We still surface body errors when the
-    // schema fails, so authors see every issue at once.
-  }
-
-  const bodyErrors = validatePlanBody(parsed.content);
-  for (const bodyError of bodyErrors) {
-    errors.push({
-      file: absPath,
-      field: bodyError.section,
-      message: bodyError.message,
-    });
-  }
-
   return errors;
 }
 
@@ -666,23 +538,21 @@ function reportErrors(errors) {
  * function is testable from unit tests.
  *
  * Options:
- *   - `plansRoot`       — override the plan discovery root (test fixtures)
  *   - `chartersRoot`    — override the charter discovery root (test fixtures)
  *   - `featuresRoot`    — override the .feature discovery root (test fixtures)
  *   - `repoRoot`        — override the repo root used for git log calls
  *   - `pendingTtlDays`  — override the @pending TTL in days (default: PENDING_TTL_DAYS)
  *   - `paths`           — when provided, validate exactly this list of file
- *                         paths instead of recursive discovery; each path is
- *                         dispatched on its suffix (`.plan.md` vs `.charter.md`).
+ *                         paths instead of recursive discovery; each `.charter.md`
+ *                         path is validated, all other suffixes are ignored.
  *   - `resolveDateFn`   — injectable date resolver for unit tests (bypasses git)
  */
 export async function runLint({
-  plansRoot = DEFAULT_PLANS_ROOT,
   chartersRoot = DEFAULT_CHARTERS_ROOT,
   /**
    * Root for .feature file discovery. Pass `null` to disable the @pending
    * TTL scan entirely (e.g. in unit tests that do not need feature scanning).
-   * Defaults to `null` so callers that only override `plansRoot` / `chartersRoot`
+   * Defaults to `null` so callers that only override `chartersRoot`
    * are not unexpectedly affected by the @pending gate. The CLI entry-point
    * below explicitly passes `DEFAULT_FEATURES_ROOT` so the full corpus scan
    * runs in CI.
@@ -695,31 +565,14 @@ export async function runLint({
 } = {}) {
   const knownHeuristics = await loadHeuristicNames(chartersRoot);
 
-  let planFiles;
   let charterFiles;
   if (paths === null) {
-    planFiles = await discoverPlanFiles(plansRoot);
     charterFiles = await discoverCharterFiles(chartersRoot);
   } else {
-    planFiles = paths.filter((p) => p.endsWith('.plan.md'));
     charterFiles = paths.filter((p) => p.endsWith('.charter.md'));
   }
 
   const allErrors = [];
-
-  for (const file of planFiles) {
-    let entryStat;
-    try {
-      entryStat = await stat(file);
-    } catch {
-      continue;
-    }
-    if (!entryStat.isFile()) continue;
-    if (!file.endsWith('.plan.md')) continue;
-
-    const errors = await validatePlanFile(file);
-    allErrors.push(...errors);
-  }
 
   for (const file of charterFiles) {
     let entryStat;
@@ -739,7 +592,7 @@ export async function runLint({
   // Skipped when:
   //   - `featuresRoot` is null (caller explicitly opted out, or the default)
   //   - `paths` is provided (pre-commit staged-file mode — the staged list
-  //     contains .plan.md / .charter.md only; a partial feature scan would
+  //     contains .charter.md only; a partial feature scan would
   //     be misleading). The full TTL scan runs in CI via `pnpm run lint:qa`.
   if (featuresRoot !== null && paths === null) {
     const pendingErrors = await scanAllPendingFeatures(
@@ -751,7 +604,7 @@ export async function runLint({
     allErrors.push(...pendingErrors);
   }
 
-  const totalArtifacts = planFiles.length + charterFiles.length;
+  const totalArtifacts = charterFiles.length;
   if (allErrors.length > 0) {
     reportErrors(allErrors);
     process.stderr.write(
@@ -760,20 +613,15 @@ export async function runLint({
     return 1;
   }
 
-  process.stdout.write(
-    `lint:qa: ok — ${planFiles.length} plan(s), ${charterFiles.length} charter(s) checked\n`,
-  );
+  process.stdout.write(`lint:qa: ok — ${charterFiles.length} charter(s) checked\n`);
   return 0;
 }
 
 // Exported for unit tests so they can drive validation without spawning
 // a child process.
 export {
-  discoverPlanFiles,
   discoverCharterFiles,
   loadHeuristicNames,
-  validatePlanFile,
-  validatePlanBody,
   validateCharterFile,
   validateCharterBody,
   validateCharterHeuristics,
@@ -791,9 +639,9 @@ const isDirectCli =
 if (isDirectCli) {
   // Positional args (anything that is not a `--`-prefixed flag) are
   // treated as explicit artifact paths. The Husky `pre-commit` hook
-  // uses this to scope lint:qa to staged `.plan.md` / `.charter.md`
-  // files only; CI continues to invoke `pnpm run lint:qa` with no args
-  // so the full corpus is checked.
+  // uses this to scope lint:qa to staged `.charter.md` files only; CI
+  // continues to invoke `pnpm run lint:qa` with no args so the full
+  // corpus is checked.
   //
   // The CLI path explicitly enables the @pending TTL scan by passing
   // `DEFAULT_FEATURES_ROOT`. Tests that call `runLint()` directly and do

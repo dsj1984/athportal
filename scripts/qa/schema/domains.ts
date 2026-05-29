@@ -20,8 +20,8 @@
 //   - `mobile`         — RESERVED; rejected by lint until the mobile Epic
 //                        lands and reclaims the directory.
 //
-// The schema (`plan.front-matter.zod.ts`) consumes `DOMAINS` for the
-// `domain` field; consumers that need to *reject* the reserved
+// The charter schema (`charter.front-matter.zod.ts`) consumes `DOMAINS`
+// for the `domain` field; consumers that need to *reject* the reserved
 // `mobile` entry must read `RESERVED_DOMAIN_MESSAGES` after the Zod
 // parse succeeds and surface the message verbatim.
 
