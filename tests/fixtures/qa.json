@@ -1,0 +1,68 @@
+{
+  "$comment": "Persona -> seed-entity manifest consumed by the QA harness (run-qa-harness) before sign-in. Keys are the QA-corpus personas (scripts/qa/schema/personas.ts). Every value is a non-sensitive seed entity identifier planted by packages/shared/src/db/seedFixtures.ts (Story #986). This file holds identifiers only; per-persona sign-in material is supplied by the harness sign-in seam, never stored here.",
+  "$source": "packages/shared/src/db/seedFixtures.ts (Epic #869 / Story #875, grown by Story #986)",
+  "personas": {
+    "athlete": {
+      "userId": "user_seed_athlete",
+      "email": "athlete@example.com",
+      "role": "member",
+      "orgId": "org_test_a",
+      "membershipId": "am_seed_athlete",
+      "rosterEntryId": "re_seed_athlete",
+      "teamId": "team_test_a_1"
+    },
+    "coach": {
+      "userId": "user_seed_coach",
+      "email": "coach@example.com",
+      "role": "team_admin",
+      "orgId": "org_test_a",
+      "assignmentId": "ca_seed_coach",
+      "assignedTeamId": "team_test_a_1",
+      "teams": {
+        "assignedTeamId": "team_test_a_1",
+        "otherTeamSameOrgId": "team_test_a_2",
+        "otherOrgTeamId": "team_test_b_1"
+      },
+      "athletes": {
+        "primary": {
+          "userId": "user_seed_athlete",
+          "rosterEntryId": "re_seed_athlete",
+          "teamId": "team_test_a_1",
+          "jerseyNumber": "10",
+          "primaryPosition": "Forward"
+        },
+        "control": {
+          "userId": "user_seed_athlete_b",
+          "rosterEntryId": "re_seed_athlete_b",
+          "teamId": "team_test_a_1",
+          "jerseyNumber": "7",
+          "primaryPosition": "Goalkeeper"
+        },
+        "otherTeamSameOrg": {
+          "userId": "user_seed_athlete_a2",
+          "rosterEntryId": "re_seed_athlete_a2",
+          "teamId": "team_test_a_2",
+          "jerseyNumber": "22",
+          "primaryPosition": "Center"
+        },
+        "otherOrg": {
+          "userId": "user_seed_athlete_b1",
+          "rosterEntryId": "re_seed_athlete_b1",
+          "teamId": "team_test_b_1",
+          "jerseyNumber": "11",
+          "primaryPosition": "Setter"
+        }
+      }
+    },
+    "org-admin": {
+      "userId": "user_seed_org_admin",
+      "email": "org-admin@example.com",
+      "role": "org_admin",
+      "orgId": "org_test_a",
+      "teams": {
+        "team_test_a_1": "team_test_a_1",
+        "team_test_a_2": "team_test_a_2"
+      }
+    }
+  }
+}
