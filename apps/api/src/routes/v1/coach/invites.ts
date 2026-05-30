@@ -65,6 +65,7 @@ type CoachInvitesErrorCode =
   | 'NOT_FOUND'
   | 'MISSING_ORG_SCOPE'
   | 'INVALID_BODY'
+  | 'INVITE_ALREADY_PENDING'
   | 'INVITE_NOT_PENDING'
   | 'MAIL_SEND_FAILED'
   | 'MAIL_TRANSPORT_UNBOUND';
@@ -296,6 +297,42 @@ coachInvitesRoute.post('/', async (c) => {
     );
   }
 
+  const writeDb = narrowDb(db);
+
+  // Single-pending-invite invariant (Story #1052 / F35). Probe for an
+  // existing pending invite for this (email, team_id) pair BEFORE
+  // insert and refuse a duplicate with 409 INVITE_ALREADY_PENDING. Two
+  // live accept links for the same recipient on the same team is a
+  // correctness hazard — whichever token is accepted first wins, the
+  // other lingers as `pending` until expiry. `input.email` is the
+  // Zod-lowercased value, matching the lowercased column the row was
+  // persisted with. The partial unique index in migration 0009 is the
+  // race-safe backstop behind this probe. Re-issue after expiry /
+  // revoke still works: those rows are not `pending`, so the probe
+  // does not match them.
+  const existingPending = writeDb
+    .select()
+    .from(rosterInvites)
+    .where(
+      and(
+        eq(rosterInvites.orgId, auth.orgId),
+        eq(rosterInvites.teamId, teamId),
+        eq(rosterInvites.email, input.email),
+        eq(rosterInvites.status, 'pending'),
+      ),
+    )
+    .limit(1)
+    .all();
+  if (existingPending.length > 0) {
+    return c.json(
+      errorBody(
+        'INVITE_ALREADY_PENDING',
+        'A pending invite already exists for this athlete on this team. Revoke the existing invite, then send a new one.',
+      ),
+      409,
+    );
+  }
+
   // 7-day TTL per Tech Spec §Data Models. Calculated relative to
   // server time — clock skew between API and DB is bounded by the
   // server's own NTP discipline.
@@ -305,7 +342,6 @@ coachInvitesRoute.post('/', async (c) => {
   const plaintextToken = generateToken();
   const tokenHash = hashToken(plaintextToken);
 
-  const writeDb = narrowDb(db);
   writeDb
     .insert(rosterInvites)
     .values({
