@@ -17,59 +17,55 @@
 // `window.location.pathname` rather than embedded in an HTML
 // attribute, so the static markup never carries the secret.
 
+import RootLayout from '../../../../layouts/RootLayout.astro';
+
 const { token } = Astro.params;
 if (typeof token !== 'string' || token.length === 0) {
   return new Response('Not Found', { status: 404 });
 }
 ---
 
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="robots" content="noindex, nofollow" />
-    <title>Decline roster invite</title>
-  </head>
-  <body class="bg-surface-page text-text-primary">
-    <main
-      class="mx-auto flex w-full max-w-xl flex-col gap-6 px-4 py-12 sm:px-6"
-      data-roster-invite-action="decline"
+<RootLayout title="Decline roster invite">
+  <meta name="robots" content="noindex, nofollow" slot="head" />
+  <main
+    class="mx-auto flex w-full max-w-xl flex-col gap-6 px-4 py-12 sm:px-6"
+    data-roster-invite-action="decline"
+  >
+    <h1 class="text-2xl font-semibold">Declining the invite</h1>
+
+    <p
+      class="rounded-md border border-border bg-surface-card px-4 py-3 text-sm"
+      data-testid="roster-invite-pending"
     >
-      <h1 class="text-2xl font-semibold">Declining the invite</h1>
+      Recording your response…
+    </p>
 
-      <p
-        class="rounded-md border border-border bg-surface-card px-4 py-3 text-sm"
-        data-testid="roster-invite-pending"
-      >
-        Recording your response…
+    <section
+      class="rounded-md border border-border bg-surface-card px-4 py-3 text-sm"
+      data-testid="roster-invite-decline-confirm"
+      hidden
+    >
+      <h2 class="text-lg font-semibold">Invitation declined</h2>
+      <p class="mt-2">
+        We let your coach know. You won’t be added to the roster. You can
+        close this tab.
       </p>
+    </section>
 
-      <section
-        class="rounded-md border border-border bg-surface-card px-4 py-3 text-sm"
-        data-testid="roster-invite-decline-confirm"
-        hidden
-      >
-        <h2 class="text-lg font-semibold">Invitation declined</h2>
-        <p class="mt-2">
-          We let your coach know. You won’t be added to the roster. You can
-          close this tab.
-        </p>
-      </section>
+    <section
+      class="rounded-md border border-action-coral bg-surface-card px-4 py-3 text-sm text-action-coral"
+      data-testid="roster-invite-error"
+      role="alert"
+      hidden
+    >
+      <h2 class="text-lg font-semibold">We couldn’t record that response</h2>
+      <p class="mt-2" data-roster-invite-error-message>
+        Something went wrong.
+      </p>
+    </section>
+  </main>
 
-      <section
-        class="rounded-md border border-action-coral bg-surface-card px-4 py-3 text-sm text-action-coral"
-        data-testid="roster-invite-error"
-        role="alert"
-        hidden
-      >
-        <h2 class="text-lg font-semibold">We couldn’t record that response</h2>
-        <p class="mt-2" data-roster-invite-error-message>
-          Something went wrong.
-        </p>
-      </section>
-    </main>
-
-    <script>
+  <script>
       interface DeclineEnvelope {
         success: boolean;
         data?: { invite: { id: string; teamId: string; status: string } };
@@ -153,5 +149,5 @@ if (typeof token !== 'string' || token.length === 0) {
 
       void run();
     </script>
-  </body>
-</html>
+  </main>
+</RootLayout>
