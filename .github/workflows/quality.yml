@@ -341,7 +341,7 @@ jobs:
     # Steps 2 + 3 also run in `.husky/pre-push` as part of the fail-fast
     # local chain; this job is their CI mirror. Step 3 additionally
     # runs the script's own self-test under `node --test`.
-    name: Targeted lints (step defs, orphan BEM, Astro frontmatter, route collisions)
+    name: Targeted lints (step defs, orphan BEM, Astro frontmatter)
     needs: [lint, typecheck]
     runs-on: ubuntu-latest
     timeout-minutes: 10
