@@ -157,6 +157,15 @@ These are real personas with real jobs to be done; they are out of scope for MVP
 
 ---
 
+## Persona → identity model mapping
+
+Personas are a **product taxonomy**; the persistence model expresses them across two orthogonal axes (full detail in [`docs/data-dictionary.md` § Identity axes](./data-dictionary.md#identity-axes--privilege-role-vs-team-graph-membership) and [ADR-022](./decisions.md#adr-022--privilege-role-and-team-graph-membership-are-orthogonal-role-escalation-is-invitation-only)):
+
+- **Privilege axis** — `users.role` (`dev_admin | org_admin | team_admin | member`). The **Athlete** persona maps to the `member` baseline (no admin capability); **Org admin** → `org_admin`; **Platform admin** → `dev_admin`.
+- **Team-graph axis** — the **Coach** and **Athlete** personas are defined by active `coach_assignments` / `athlete_memberships` rows, **not** by `users.role`. A coach's privilege role is `member`.
+- **Role is never self-selected.** Self-signup → `member`; coach/athlete relationships are assigned at **invitation-accept**; org admins are bootstrapped by platform staff. `/onboarding` collects identity, legal acceptance, and age attestation only — there is **no persona-selection step, by design**: a self-claim picker would let any user grant themselves `coach`/`org-admin` and break the trust chain above.
+- **"Member" is the internal privilege name; "Athlete" is the surfaced label.** Not every member is an athlete — parents (post-MVP) and signed-in users not yet on a roster are also `member`.
+
 ## How this gets used
 
 - **`docs/features.md`** is rewritten in step 5 with one section per MVP persona; every capability bullet falls under exactly one persona.

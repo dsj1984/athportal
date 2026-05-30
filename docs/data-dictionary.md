@@ -69,6 +69,18 @@ deleted_at: text('deleted_at'),  // nullable, ISO-8601 when set
 - Resources owned by a user carry `user_id`. Composite ownership (e.g. a post by a user within a team) carries all three.
 - The RBAC policy module at `packages/shared/src/rbac/` reads these columns; routes never re-derive ownership from joins.
 
+## Identity axes — privilege role vs team-graph membership
+
+Identity is expressed across **two orthogonal axes** (see [ADR-022](./decisions.md#adr-022--privilege-role-and-team-graph-membership-are-orthogonal-role-escalation-is-invitation-only)). They are different columns in different tables — do not conflate them.
+
+- **Privilege** — `users.role` (`text NOT NULL DEFAULT 'member'`): `dev_admin | org_admin | team_admin | member`. Answers "what administrative capability does this user have?" `member` is the no-admin baseline.
+- **Team-graph position** — carried by join rows, **not** by `users.role`:
+  - `coach_assignments` — `(org_id, team_id, coach_user_id, ended_at)`. A user **is a coach** of a team iff an active (`ended_at IS NULL`) row exists; authorization is derived via `requireCoachOnTeam`, never from `users.role`. A coach's privilege role is `member`.
+  - `athlete_memberships` — `(org_id, team_id, athlete_user_id, ended_at)`. A user **is an athlete** on a team iff an active row exists.
+- **`member` ≠ "athlete".** Parents (`parent_athlete_links`) and signed-in users not on any roster are also `member`. "Athlete" is a **derived persona label** surfaced in UI copy, not a stored role — store `member`, display "Athlete".
+- **Role escalation is invitation-only.** Self-signup users default to `member`; `/onboarding` never writes `role`. Coach/athlete memberships are created at invitation-accept; `org_admin` / `dev_admin` are bootstrapped out-of-band. `invitations.role` is a frozen `['coach','athlete']` tuple and cannot mint an admin.
+- **Extension point (not yet built):** coach designations (head / assistant / sport-specific) will be an **additive, nullable** `coach_assignments.designation` column (`null` = unspecified coach). The per-team join already supports it without restructuring; deferred to the coach-management Epic per ADR-022.
+
 ## Validation contract
 
 - Every column that crosses a system boundary has a Zod schema in [`packages/shared/src/schemas/`](../packages/shared/src/schemas/).
