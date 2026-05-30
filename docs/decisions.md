@@ -705,3 +705,27 @@ A separate concern is CodeQL. Story #413 added [`.github/workflows/codeql.yml`](
 - Any future role/membership surface reads from the correct axis: admin capability from `users.role`, team relationship from the membership joins via the scoped predicates.
 - Building coach designations later is an **additive migration**, not a redesign — recorded here so the coach-management Epic inherits the shape instead of rediscovering the gap.
 - `/onboarding` keeps its identity/legal/age-only shape. A future change that adds any role-affecting field to the form must update this ADR in the same PR.
+
+## ADR-023 — Display name is Clerk-owned identity data, promoted into `users` at onboarding and kept fresh via `user.updated`
+
+**Status**: Accepted (2026-05-30, Story #1054)
+
+**Context**: The system had **no canonical home for a person's name** — `users` stored only `email` ([`users.ts`](../packages/shared/src/db/schema/users.ts)), and the coach roster projection derived a display name from the email local-part ([`deriveFullName(row.athleteEmail)`](../apps/api/src/routes/v1/coach/roster.ts)), so `e2e-roster-s4-001` rendered as "E2e Roster S4 001" (Story [#1054](https://github.com/dsj1984/athportal/issues/1054), F33). The real name lives in Clerk: `onboard.ts` already fetches the Clerk user for the verified-email re-query ([`onboard.ts` `fetchPrimaryEmailVerified`](../apps/api/src/routes/v1/auth/onboard.ts)), whose object carries `firstName` / `lastName`, but discarded everything except the email. An earlier plan proposed copying the coach-typed **invite** first/last onto the `users` row at accept-time — but per ADR-021 the accept path only operates on an **already-onboarded** Clerk identity, so the athlete already has a real name in Clerk and the coach's invite text is a guess. The invite name is the wrong source of truth.
+
+**Decision**:
+
+- **Name is Clerk-owned identity data, promoted into `users` at the same lifecycle points `email` is** — directly mirroring the ADR-005 email-promotion precedent. Two nullable columns (`first_name`, `last_name`) are added to `users` via an additive migration ([`0010_users_name.sql`](../packages/shared/src/db/migrations/0010_users_name.sql)); they are nullable because the JIT-provisioned placeholder row exists before any name is known and a Clerk profile may omit either field.
+- **Onboarding promotes the Clerk name inside the same transaction that promotes the verified email.** `fetchPrimaryEmailVerified` is extended to return `firstName` / `lastName` from the **already-fetched** Clerk user object — no extra Clerk API call — and `stampUserRow` writes them alongside `email`. Pinned by `onboard.contract.test.ts`.
+- **A Clerk `user.updated` webhook keeps the name fresh on profile edits** ([`clerk-user-updated.ts`](../apps/api/src/routes/webhooks/clerk-user-updated.ts)). It **verifies the Standard Webhooks (Svix) signature** before reading any field — the signature is the security boundary, identical to the `clerk-invitation-accepted` handler — resolves the local row by `clerk_subject_id`, and re-promotes the normalised name. Empty / whitespace Clerk values normalise to `null`. The handler emits no log lines (names are PII per security-baseline § Data Leakage & Logging).
+- **The email-derived name is now a FALLBACK only.** The roster projection reads `users.first_name` / `users.last_name` and falls back to `deriveFullName(email)` only when **both** columns are null.
+- **The invite `first_name` / `last_name` are retained only as a pre-onboarding display seed** (the coach pending-invite strip). They are **not** written as the post-accept athlete display name — the accept path in [`roster-invites.ts`](../apps/api/src/routes/v1/public/roster-invites.ts) does not touch `users.first_name` / `users.last_name`.
+- **No backfill.** The app is pre-launch — there are no existing onboarded users to reconcile. Recorded here so the omission is intentional, not an oversight.
+
+**Rejected — copy the coach-typed invite first/last onto `users` at accept-time**: The accept path operates on an already-onboarded Clerk identity (ADR-021), so the athlete already has a real Clerk name; the coach's invite text is a guess that would overwrite the truth. The invite name is the wrong source of truth for the canonical display name.
+
+**Consequences**:
+
+- Name surfaces across the app read from one canonical home (`users.first_name` / `users.last_name`) with a deterministic email-derived fallback — not from per-surface email parsing.
+- Clerk remains the single source of truth for identity data: a profile edit propagates via the `user.updated` webhook the same way the email is owned by Clerk and promoted at onboarding.
+- Adding the `user.updated` webhook means the `CLERK_WEBHOOK_SIGNING_SECRET` binding now gates two webhook routes; the operator must subscribe the `user.updated` event in the Clerk dashboard for the fresh-on-edit behaviour to fire (onboarding promotion works regardless).
+- The migration is additive (nullable `ADD COLUMN`) — it does not trip the ADR-017 destructive-migration guard.
