@@ -27,7 +27,7 @@ const config: ExpoConfig = {
   orientation: 'portrait',
   plugins: [
     [
-      'sentry-expo',
+      '@sentry/react-native/expo',
       {
         organization: sentryOrg,
         project: sentryProject,
