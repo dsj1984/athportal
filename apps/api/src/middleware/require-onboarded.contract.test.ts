@@ -47,7 +47,12 @@ const MIGRATIONS_DIR = join(__dirname, '../../../../packages/shared/src/db/migra
 function freshOnboardingProdDb() {
   const sqlite = new Database(':memory:');
   sqlite.pragma('foreign_keys = ON');
-  for (const file of ['0000_auth_and_rbac.sql', '0001_onboarding_schema.sql']) {
+  // Story #1054 / F33 — 0010 adds nullable first_name/last_name on users.
+  for (const file of [
+    '0000_auth_and_rbac.sql',
+    '0001_onboarding_schema.sql',
+    '0010_users_name.sql',
+  ]) {
     const sql = readFileSync(join(MIGRATIONS_DIR, file), 'utf8');
     for (const stmt of sql.split('--> statement-breakpoint').map((s) => s.trim())) {
       if (stmt.length > 0) sqlite.exec(stmt);

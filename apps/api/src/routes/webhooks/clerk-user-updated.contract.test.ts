@@ -30,10 +30,7 @@ import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { Hono } from 'hono';
 import { describe, expect, it } from 'vitest';
 import type { Env } from '../../env';
-import {
-  type ClerkUserUpdatedWebhookEnv,
-  clerkUserUpdatedRoute,
-} from './clerk-user-updated';
+import { type ClerkUserUpdatedWebhookEnv, clerkUserUpdatedRoute } from './clerk-user-updated';
 import type { VerifyWebhook } from './clerk-user-updated-shared';
 
 const MIGRATIONS_DIR = join(__dirname, '../../../../../packages/shared/src/db/migrations');
@@ -60,10 +57,7 @@ type ProductionDb = ReturnType<typeof freshProductionDb>;
 const CLERK_SUBJECT = 'user_clerk_subject_1';
 const LOCAL_USER_ID = 'u_local_1';
 
-function seedUser(
-  db: ProductionDb,
-  overrides: Partial<typeof users.$inferInsert> = {},
-): void {
+function seedUser(db: ProductionDb, overrides: Partial<typeof users.$inferInsert> = {}): void {
   db.insert(users)
     .values({
       id: LOCAL_USER_ID,
@@ -77,10 +71,7 @@ function seedUser(
     .run();
 }
 
-function buildApp(
-  db: ProductionDb,
-  verifier: VerifyWebhook,
-): Hono<ClerkUserUpdatedWebhookEnv> {
+function buildApp(db: ProductionDb, verifier: VerifyWebhook): Hono<ClerkUserUpdatedWebhookEnv> {
   const app = new Hono<ClerkUserUpdatedWebhookEnv>();
   app.use('*', async (c, next) => {
     c.set('db', db as unknown);

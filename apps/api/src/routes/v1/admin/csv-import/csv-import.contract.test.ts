@@ -55,6 +55,8 @@ const MIGRATION_FILES = [
   '0006_csv_import_batches.sql',
   '0007_roster.sql',
   '0008_csv_import_batch_filename.sql',
+  // Story #1054 / F33 — nullable first_name/last_name on users.
+  '0010_users_name.sql',
 ];
 
 function freshProductionDb() {

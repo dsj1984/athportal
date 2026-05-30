@@ -47,11 +47,7 @@ import { users } from '@repo/shared/db/schema';
 import { eq } from 'drizzle-orm';
 import { Hono } from 'hono';
 import type { Env } from '../../env';
-import {
-  type VerifyWebhook,
-  isUserUpdatedEvent,
-  normalizeName,
-} from './clerk-user-updated-shared';
+import { type VerifyWebhook, isUserUpdatedEvent, normalizeName } from './clerk-user-updated-shared';
 
 /**
  * Structural shape of the Drizzle handle this webhook handler consumes.
@@ -155,11 +151,7 @@ clerkUserUpdatedRoute.post('/', async (c) => {
   // Resolve the local row by Clerk subject id. The webhook may fire for a
   // subject this app never provisioned (e.g. a user created in a sibling
   // application sharing the Clerk instance) — 200-ignore that case.
-  const localRows = db
-    .select()
-    .from(users)
-    .where(eq(users.clerkSubjectId, clerkSubjectId))
-    .all();
+  const localRows = db.select().from(users).where(eq(users.clerkSubjectId, clerkSubjectId)).all();
   const local = localRows[0];
   if (!local) {
     return c.json({ success: true, ignored: true }, 200);

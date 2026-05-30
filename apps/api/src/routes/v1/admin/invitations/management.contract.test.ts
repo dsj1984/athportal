@@ -48,6 +48,8 @@ const MIGRATION_FILES = [
   '0003_invitations.sql',
   '0004_org_branding.sql',
   '0005_team_metadata.sql',
+  // Story #1054 / F33 — nullable first_name/last_name on users.
+  '0010_users_name.sql',
 ];
 
 function freshProductionDb() {
