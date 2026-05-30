@@ -22,7 +22,7 @@ import EmptyState from '../components/ui/EmptyState.astro';
 import PageHeader from '../components/ui/PageHeader.astro';
 import RootLayout from '../layouts/RootLayout.astro';
 import { getDb } from '../lib/db';
-import { requireSignedIn } from '../lib/ssrAuthGate';
+import { isAdminBySsr, requireSignedIn } from '../lib/ssrAuthGate';
 import {
   EMPTY_DASHBOARD_DATA,
   type DashboardTeamRow,
@@ -36,6 +36,22 @@ import {
 // stays in the middleware chain (see `apps/web/src/middleware.ts`).
 const gate = requireSignedIn(Astro);
 if (gate) return gate;
+
+// Story #1086 — persona-aware landing routing. The generic dashboard
+// (roster + activity + upcoming) has no affordance to the `/admin/*`
+// surfaces an org-admin's role grants, which left a signed-in org-admin
+// stranded on `/dashboard` with no discoverable path to their tools.
+// Route them to the canonical admin landing (`/admin` → `/admin/teams`),
+// where the shared App Shell header carries nav to every admin surface.
+//
+// The org-admin determination is server-side and driven by `users.role`:
+// `isAdminBySsr` probes `GET /api/v1/admin/teams`, which the API edge
+// gates with `requireRole('org_admin')`. A non-admin (member / athlete /
+// anonymous-but-here) returns `false` and falls through to the generic
+// dashboard below — non-admin callers see no admin affordance.
+if (await isAdminBySsr(Astro)) {
+  return Astro.redirect('/admin', 302);
+}
 
 // Story #985 / F27 — the Roster widget surfaces every team the signed-in
 // user belongs to (coach assignments + athlete memberships). The web

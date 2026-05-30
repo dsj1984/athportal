@@ -13,12 +13,16 @@
 //
 // Styling follows the Tailwind-utility-first convention codified by
 // ADR-0007 (docs/decisions/0007-ui-styling-convention.md). Page chrome
-// is composed via the shared `PageHeader` primitive and each report
-// section's table chrome via the shared `DataTable` primitive — no
-// orphan BEM hooks. Every `data-testid` on the surface is preserved
-// verbatim because the verified-achievement-report contract tests
-// (`VerifiedAchievementReport.test.ts`) and the admin acceptance
-// scenarios target those selectors.
+// composes the shared `<AppLayout>` (Story #971 reference adoption,
+// extended to this surface by Story #1086 so the org-admin can reach
+// every other `/admin/*` surface from the shared header) with the
+// canonical `PageHeader` primitive inside the layout's <main> slot;
+// each report section's table chrome composes the shared `DataTable`
+// primitive — no orphan BEM hooks. The page keeps its `noindex` robots
+// directive via AppLayout's `head` slot. Every `data-testid` on the
+// surface is preserved verbatim because the verified-achievement-report
+// contract tests (`VerifiedAchievementReport.test.ts`) and the admin
+// acceptance scenarios target those selectors.
 //
 // Authentication & authorization: every `/admin/*` route is gated by
 // Clerk's middleware (signed-in users only) AND the API edge's
@@ -32,6 +36,7 @@ import { requireAdminSsr } from '../../lib/ssrAuthGate';
 // non-admin → 404 (non-enumeration per Epic #11 AC-2/AC-3). The page
 // chrome must not render to non-admin callers, even though the inline
 // client-script fetch would 403 a moment later.
+import AppLayout from '../../components/layout/AppLayout.astro';
 import DataTable from '../../components/ui/DataTable.astro';
 import PageHeader from '../../components/ui/PageHeader.astro';
 import { REPORT_TEST_IDS } from '../../components/admin/reports/VerifiedAchievementReport.ts';
@@ -40,17 +45,10 @@ if (__ssr_gate) return __ssr_gate;
 
 ---
 
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="robots" content="noindex, nofollow" />
-    <title>Reports · Admin</title>
-  </head>
-  <body class="bg-surface-page text-text-primary">
-    <main class="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
-      <PageHeader title="Verified achievements" />
-      <span class="sr-only" data-testid="admin-report-heading">Verified achievements</span>
+<AppLayout title="Reports · Admin" role="org_admin" activeHref="/admin/reports">
+  <meta slot="head" name="robots" content="noindex, nofollow" />
+  <PageHeader title="Verified achievements" />
+  <span class="sr-only" data-testid="admin-report-heading">Verified achievements</span>
 
       <p
         class="hidden rounded-md border border-danger bg-danger-soft px-4 py-3 text-sm text-danger"
@@ -90,9 +88,7 @@ if (__ssr_gate) return __ssr_gate;
       >
         No verified achievements to show.
       </p>
-    </main>
-  </body>
-</html>
+</AppLayout>
 
 <script>
   import {

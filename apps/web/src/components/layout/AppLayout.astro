@@ -8,6 +8,12 @@
 //     a Sign out form which POSTs to `/sign-out`.
 //   - A <main> content slot for the page body, constrained to the
 //     canonical max-w-6xl gutter used across `/admin/*` pages.
+//   - An optional named `head` slot, forwarded to RootLayout's own
+//     `head` slot, so a page that needs per-route <head> tags (e.g. a
+//     `<meta name="robots" content="noindex, nofollow">` directive)
+//     can inject them without dropping the App Shell chrome (Story
+//     #1086, when `/admin/reports` and `/admin/rollover` adopted the
+//     shell and had to keep their noindex meta).
 //
 // Styling is Tailwind-utility-first on the @theme tokens declared in
 // `apps/web/src/styles/global.css` (ADR-0007). No orphan BEM hooks —
@@ -68,6 +74,7 @@ const navRows = buildAppNavView(role, activeHref);
 ---
 
 <RootLayout title={title}>
+  <slot name="head" slot="head" />
   <header
     class="border-b border-border bg-surface-card"
     data-testid={APP_LAYOUT_HEADER_TEST_ID}

@@ -32,15 +32,21 @@
 // Styling follows the Tailwind-utility-first convention codified by
 // ADR-0007 (docs/decisions/0007-ui-styling-convention.md) — utility
 // classes resolve against the @theme tokens declared in
-// apps/web/src/styles/global.css; no orphan BEM hooks. Page chrome is
-// composed from the canonical PageHeader primitive (Story #836).
+// apps/web/src/styles/global.css; no orphan BEM hooks. Page chrome
+// composes the shared `<AppLayout>` (Story #971 reference adoption,
+// extended to this surface by Story #1086 so the org-admin can reach
+// every other `/admin/*` surface from the shared header) with the
+// canonical `<PageHeader>` primitive inside the layout's <main> slot.
+// The form keeps its narrower max-w-3xl gutter via an inner wrapper.
 
 import { requireAdminSsr } from '../../lib/ssrAuthGate';
 
 // SSR auth gate (Story #952 F4). Anonymous → 302 /sign-in; signed-in
 // non-admin → 404 (non-enumeration per Epic #11 AC-2/AC-3). The page
-// chrome must not render to non-admin callers, even though the inline
-// client-script fetch would 403 a moment later.
+// chrome (including the <AppLayout> header) must not render to non-
+// admin callers, even though the inline client-script fetch would 403
+// a moment later.
+import AppLayout from '../../components/layout/AppLayout.astro';
 import OrgConfigForm from '../../components/admin/OrgConfigForm.astro';
 import type { OrgConfigLoaderPayload } from '../../components/admin/OrgConfigForm.ts';
 import PageHeader from '../../components/ui/PageHeader.astro';
@@ -65,22 +71,15 @@ if (__ssr_gate) return __ssr_gate;
 
 ---
 
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Organization configuration</title>
-  </head>
-  <body>
-    <main class="mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
-      <PageHeader
-        title="Organization configuration"
-        intro="Update your organization’s public profile, brand colour, and logo."
-      />
-      <OrgConfigForm loader={skeletonLoader} />
-    </main>
-  </body>
-</html>
+<AppLayout title="Organization configuration · Admin" role="org_admin" activeHref="/admin/org">
+  <div class="mx-auto flex w-full max-w-3xl flex-col gap-8">
+    <PageHeader
+      title="Organization configuration"
+      intro="Update your organization’s public profile, brand colour, and logo."
+    />
+    <OrgConfigForm loader={skeletonLoader} />
+  </div>
+</AppLayout>
 
 <script>
   import { ORG_CONFIG_FORM_TEST_IDS as TEST_IDS } from '../../components/admin/OrgConfigForm.ts';

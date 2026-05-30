@@ -1,11 +1,13 @@
 // apps/web/src/lib/ssrAuthGate.test.ts
 //
 // Unit tests for the SSR auth gates that protect `/dashboard` and the
-// `/admin/*` surface. Story #952 / F1 + F4.
+// `/admin/*` surface. Story #952 / F1 + F4. Extended by Story #1086
+// with `isAdminBySsr` — the boolean org-admin probe `/dashboard` uses
+// to route an org-admin to the admin landing.
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { type SsrAuthContext, requireAdminSsr, requireSignedIn } from './ssrAuthGate';
+import { type SsrAuthContext, isAdminBySsr, requireAdminSsr, requireSignedIn } from './ssrAuthGate';
 
 function makeContext(opts: {
   userId: string | null;
@@ -175,5 +177,74 @@ describe('requireAdminSsr', () => {
       'https://api.example.com/api/v1/admin/teams',
       expect.anything(),
     );
+  });
+});
+
+describe('isAdminBySsr (Story #1086)', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('returns false for anonymous callers without ever calling fetch', async () => {
+    const fetchImpl = vi.fn();
+    const ctx = makeContext({ userId: null });
+
+    const result = await isAdminBySsr(ctx, {
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    });
+
+    expect(result).toBe(false);
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it('returns true when the admin probe returns 2xx (signed-in admin)', async () => {
+    const fetchImpl = vi.fn(() => Promise.resolve(new Response('{"rows":[]}', { status: 200 })));
+    const ctx = makeContext({ userId: 'user_test_admin' });
+
+    const result = await isAdminBySsr(ctx, {
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    });
+
+    expect(result).toBe(true);
+  });
+
+  it('returns false when the admin probe returns 403 (signed-in non-admin)', async () => {
+    const fetchImpl = vi.fn(() => Promise.resolve(new Response('forbidden', { status: 403 })));
+    const ctx = makeContext({ userId: 'user_test_member', cookieHeader: '__session=abc' });
+
+    const result = await isAdminBySsr(ctx, {
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    });
+
+    expect(result).toBe(false);
+  });
+
+  it('returns false when the admin probe throws (network error)', async () => {
+    const fetchImpl = vi.fn(() => Promise.reject(new TypeError('econnrefused')));
+    const ctx = makeContext({ userId: 'user_test_member' });
+
+    const result = await isAdminBySsr(ctx, {
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    });
+
+    expect(result).toBe(false);
+  });
+
+  it('forwards the request cookie header to the admin probe', async () => {
+    const fetchImpl = vi.fn(() => Promise.resolve(new Response('{"rows":[]}', { status: 200 })));
+    const ctx = makeContext({
+      userId: 'user_test_admin',
+      cookieHeader: '__session_abc=signed-jwt',
+    });
+
+    await isAdminBySsr(ctx, {
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    });
+
+    const calls = fetchImpl.mock.calls as unknown as Array<
+      [string, { headers: Record<string, string> }]
+    >;
+    expect(calls[0]?.[0]).toContain('/api/v1/admin/teams');
+    expect(calls[0]?.[1].headers.cookie).toBe('__session_abc=signed-jwt');
   });
 });
