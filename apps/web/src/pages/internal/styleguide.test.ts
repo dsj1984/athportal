@@ -38,7 +38,7 @@ import {
   decideStyleguideAccess,
   lookupRoleBySubject,
   productionRoleLookup,
-} from './styleguide';
+} from './_styleguide';
 
 describe('decideStyleguideAccess', () => {
   it('redirects an anonymous caller to / with status 302', () => {

@@ -1,4 +1,4 @@
-// apps/web/src/pages/dashboard.ts
+// apps/web/src/pages/_dashboard.ts
 //
 // Pure data-shaper for the post-onboarding dashboard. Encodes the
 // initial widget set (RecentActivity, Roster, Upcoming) and the
@@ -7,6 +7,12 @@
 // renders one `<EmptyState>` per widget; the unit tests assert that
 // every widget surfaces an empty state on the zero-data branch (never
 // a skeleton) and that the canonical data-testids stay stable.
+//
+// Prefixed with `_` so Astro does not register this module as a route.
+// Astro's router ignores any file whose name starts with `_`, which
+// prevents the boot-time "route defined in both .ts and .astro" warning
+// that fires when a plain `.ts` sits alongside its `.astro` sibling in
+// the pages directory (Story #1068).
 
 import type { EmptyStateProps } from '../components/ui/EmptyState.ts';
 
@@ -130,7 +136,7 @@ export function buildDashboard(data: DashboardData): DashboardView {
  * exist, and a dead link is worse than plain text — but still render
  * so the user sees every team they belong to.
  *
- * Pure function: exposed so `dashboard.test.ts` can pin the href and
+ * Pure function: exposed so `_dashboard.test.ts` can pin the href and
  * role mapping without an Astro context.
  */
 export function buildRosterRows(

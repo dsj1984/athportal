@@ -1,4 +1,4 @@
-// apps/web/src/pages/internal/styleguide.ts
+// apps/web/src/pages/internal/_styleguide.ts
 //
 // Pure-TS gate decision for the `/internal/styleguide` page. The
 // `.astro` sibling consumes `decideStyleguideAccess` so the gate
@@ -11,6 +11,12 @@
 // noindex/nofollow header is emitted unconditionally on every render
 // so even the redirect response and any future bypass branch stays
 // out of search indexes.
+//
+// Prefixed with `_` so Astro does not register this module as a route.
+// Astro's router ignores any file whose name starts with `_`, which
+// prevents the boot-time "route defined in both .ts and .astro" warning
+// that fires when a plain `.ts` sits alongside its `.astro` sibling in
+// the pages directory (Story #1068).
 //
 // Story #723 / Task #734 introduced the gate. Story #749 / Task #752
 // landed the real `productionRoleLookup` body — the placeholder that

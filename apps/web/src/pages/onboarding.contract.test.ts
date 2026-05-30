@@ -148,7 +148,7 @@ describe('/onboarding SSR data path — contract', () => {
     //   view = buildOnboardingPageView(activeLegalDocuments)
     const { getActiveLegalDocuments } = await import('@repo/shared/db/queries/legalDocuments');
     const { getDb } = await import('../lib/db');
-    const { buildOnboardingPageView } = await import('./onboarding');
+    const { buildOnboardingPageView } = await import('./_onboarding');
 
     const activeLegalDocuments = getActiveLegalDocuments(
       getDb(),
@@ -205,7 +205,7 @@ describe('/onboarding SSR data path — contract', () => {
 
     const { getActiveLegalDocuments } = await import('@repo/shared/db/queries/legalDocuments');
     const { getDb } = await import('../lib/db');
-    const { buildOnboardingPageView } = await import('./onboarding');
+    const { buildOnboardingPageView } = await import('./_onboarding');
 
     const activeLegalDocuments = getActiveLegalDocuments(
       getDb(),
@@ -235,7 +235,7 @@ describe('/onboarding SSR data path — contract', () => {
 
     const { getActiveLegalDocuments } = await import('@repo/shared/db/queries/legalDocuments');
     const { getDb } = await import('../lib/db');
-    const { buildOnboardingPageView } = await import('./onboarding');
+    const { buildOnboardingPageView } = await import('./_onboarding');
     const {
       SEED_BOOTSTRAP_EFFECTIVE_AT,
       SEED_PRIVACY_BODY_URL,

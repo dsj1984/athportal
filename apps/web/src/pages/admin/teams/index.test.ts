@@ -5,7 +5,7 @@
 // heading text and the empty-state flag.
 
 import { describe, expect, it } from 'vitest';
-import { buildTeamsListView } from './index';
+import { buildTeamsListView } from './_index';
 
 const SAMPLE = [
   {

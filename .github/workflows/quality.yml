@@ -333,10 +333,15 @@ jobs:
     #   compiler treats as a real script-block opener and feeds to
     #   esbuild — breaking `pnpm dev` for downstream consumers.
     #
+    # Step 4 — Astro route-collision guard (Story #1068). Walks
+    #   apps/web/src/pages/ and fails when a non-`_`-prefixed `.ts`/`.tsx`
+    #   file has an `.astro` sibling with the same stem. Astro warns today
+    #   and will hard-error in a future major.
+    #
     # Steps 2 + 3 also run in `.husky/pre-push` as part of the fail-fast
     # local chain; this job is their CI mirror. Step 3 additionally
     # runs the script's own self-test under `node --test`.
-    name: Targeted lints (step defs, orphan BEM, Astro frontmatter)
+    name: Targeted lints (step defs, orphan BEM, Astro frontmatter, route collisions)
     needs: [lint, typecheck]
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -360,6 +365,9 @@ jobs:
 
       - name: Unit-test the Astro frontmatter lint script itself
         run: node --test scripts/lint-astro-frontmatter.test.mjs
+
+      - name: Lint Astro route collisions (Story #1068)
+        run: node scripts/lint-astro-route-collisions.mjs
 
   qa-corpus:
     # Epic #775 — QA-corpus gates.
