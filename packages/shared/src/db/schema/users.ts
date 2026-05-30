@@ -32,6 +32,13 @@ export const users = sqliteTable(
     id: text('id').primaryKey(),
     clerkSubjectId: text('clerk_subject_id').notNull(),
     email: text('email').notNull(),
+    // Display-name identity data promoted from Clerk at onboarding and
+    // kept fresh via the `user.updated` webhook (Story #1054 / F33),
+    // mirroring the `email` promotion in ADR-005. Nullable because the
+    // JIT-provisioned placeholder row exists before any name is known,
+    // and because Clerk profiles may omit either field.
+    firstName: text('first_name'),
+    lastName: text('last_name'),
     role: text('role').notNull().default('member'),
     orgId: text('org_id').references(() => organizations.id),
     teamId: text('team_id').references(() => teams.id),
