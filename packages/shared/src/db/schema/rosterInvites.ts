@@ -96,6 +96,16 @@ export const rosterInvites = sqliteTable(
     // sole authorization signal MUST be unforgeable at the
     // persistence layer.
     tokenHashUnique: uniqueIndex('roster_invite_token_hash_unique').on(table.tokenHash),
+    // Single-pending-invite invariant (Story #1052 / F35): at most one
+    // pending invite per (email, team_id). Partial so the constraint
+    // applies only while a row is pending — accepted / declined /
+    // expired / revoked rows for the same pair are unconstrained, which
+    // keeps re-issue after expiry or revoke working. The race-safe
+    // backstop behind the handler's pre-insert probe (409
+    // INVITE_ALREADY_PENDING). Mirrors migration 0009.
+    emailTeamPendingUnique: uniqueIndex('roster_invite_email_team_pending_unique')
+      .on(table.email, table.teamId)
+      .where(sql`${table.status} = 'pending'`),
   }),
 );
 

@@ -39,7 +39,7 @@ import {
 } from '@repo/shared/db/schema';
 import { type AuthContext, createTestApp } from '@repo/shared/testing';
 import Database from 'better-sqlite3';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import type { Hono } from 'hono';
 import { beforeEach, describe, expect, it } from 'vitest';
@@ -61,6 +61,8 @@ function freshCoachDb() {
     '0005_team_metadata.sql',
     '0006_csv_import_batches.sql',
     '0007_roster.sql',
+    '0008_csv_import_batch_filename.sql',
+    '0009_roster_invite_dedup_pending.sql',
   ]) {
     const sql = readFileSync(join(MIGRATIONS_DIR, file), 'utf8');
     for (const stmt of sql.split('--> statement-breakpoint').map((s) => s.trim())) {
@@ -380,6 +382,148 @@ describe('POST /api/v1/coach/teams/:teamId/roster/invites — happy path', () =>
   });
 });
 
+// ──────────────────────────────────────────────────────────────────────────
+// POST — dedup pending (Story #1052 / F35)
+// ──────────────────────────────────────────────────────────────────────────
+
+describe('POST /api/v1/coach/teams/:teamId/roster/invites — dedup pending', () => {
+  it('refuses a second invite for a pending (email, team) pair with 409 INVITE_ALREADY_PENDING and leaves a single pending row', async () => {
+    // Arrange — a pending invite already exists for this recipient on
+    // this team.
+    const db = freshCoachDb();
+    seedOrg(db, ORG_A);
+    const team = seedTeam(db, ORG_A, 't_one');
+    const coach = actor(ORG_A);
+    seedUser(db, ORG_A, coach.userId, coach.email);
+    seedCoachAssignment(db, ORG_A, team, coach.userId);
+    seedInvite(db, ORG_A, team, coach.userId, {
+      id: 'rinv_existing',
+      email: 'dupe@x.test',
+      status: 'pending',
+    });
+    const transport = recordingTransport();
+
+    // Act — the coach sends a second invite to the same email.
+    const res = await buildApp(db, coach, transport).request(
+      `/api/v1/coach/teams/${team}/roster/invites`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email: 'dupe@x.test' }),
+      },
+      STUB_ENV,
+    );
+
+    // Assert — wire shape: 409 INVITE_ALREADY_PENDING.
+    expect(res.status).toBe(409);
+    const body = (await res.json()) as CreateBody;
+    expect(body.success).toBe(false);
+    expect(body.error?.code).toBe('INVITE_ALREADY_PENDING');
+
+    // Assert — DB state: exactly one pending row survives; no second
+    // row was inserted.
+    const pendingRows = db.select().from(rosterInvites).where(eqInvitePending('dupe@x.test')).all();
+    expect(pendingRows).toHaveLength(1);
+
+    // No email was dispatched for the refused duplicate.
+    expect(transport.sent).toHaveLength(0);
+  });
+
+  it('matches on the Zod-lowercased email so a differently-cased resend is still refused', async () => {
+    const db = freshCoachDb();
+    seedOrg(db, ORG_A);
+    const team = seedTeam(db, ORG_A, 't_one');
+    const coach = actor(ORG_A);
+    seedUser(db, ORG_A, coach.userId, coach.email);
+    seedCoachAssignment(db, ORG_A, team, coach.userId);
+    // Persisted lowercased — the create path lowercases via the Zod
+    // transform.
+    seedInvite(db, ORG_A, team, coach.userId, {
+      id: 'rinv_lower',
+      email: 'mixed@x.test',
+      status: 'pending',
+    });
+
+    const res = await buildApp(db, coach, recordingTransport()).request(
+      `/api/v1/coach/teams/${team}/roster/invites`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email: 'Mixed@X.test' }),
+      },
+      STUB_ENV,
+    );
+
+    expect(res.status).toBe(409);
+    const body = (await res.json()) as CreateBody;
+    expect(body.error?.code).toBe('INVITE_ALREADY_PENDING');
+
+    const rows = db.select().from(rosterInvites).where(eqInvitePending('mixed@x.test')).all();
+    expect(rows).toHaveLength(1);
+  });
+
+  it('still allows a fresh invite when the only prior row for the pair is non-pending (revoked)', async () => {
+    const db = freshCoachDb();
+    seedOrg(db, ORG_A);
+    const team = seedTeam(db, ORG_A, 't_one');
+    const coach = actor(ORG_A);
+    seedUser(db, ORG_A, coach.userId, coach.email);
+    seedCoachAssignment(db, ORG_A, team, coach.userId);
+    seedInvite(db, ORG_A, team, coach.userId, {
+      id: 'rinv_revoked',
+      email: 'resend@x.test',
+      status: 'revoked',
+    });
+
+    const res = await buildApp(db, coach, recordingTransport()).request(
+      `/api/v1/coach/teams/${team}/roster/invites`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email: 'resend@x.test' }),
+      },
+      STUB_ENV,
+    );
+
+    // The prior row is revoked (not pending), so the dedup probe does
+    // not match and the resend succeeds.
+    expect(res.status).toBe(201);
+    const rows = db.select().from(rosterInvites).where(eqInvitePending('resend@x.test')).all();
+    expect(rows).toHaveLength(1);
+  });
+
+  it('the partial unique index rejects a second pending row at the persistence layer (race-safe backstop)', () => {
+    // Arrange — a pending invite already exists.
+    const db = freshCoachDb();
+    seedOrg(db, ORG_A);
+    const team = seedTeam(db, ORG_A, 't_one');
+    const coach = actor(ORG_A);
+    seedUser(db, ORG_A, coach.userId, coach.email);
+    seedCoachAssignment(db, ORG_A, team, coach.userId);
+    seedInvite(db, ORG_A, team, coach.userId, {
+      id: 'rinv_first',
+      email: 'backstop@x.test',
+      status: 'pending',
+    });
+
+    // Act + Assert — a direct second pending insert for the same
+    // (email, team_id) pair (simulating the lost-probe race) is
+    // refused by the DB. The partial unique index from migration 0009
+    // is the final arbiter even when two concurrent Sends both pass
+    // the application-side probe.
+    expect(() =>
+      seedInvite(db, ORG_A, team, coach.userId, {
+        id: 'rinv_second',
+        email: 'backstop@x.test',
+        status: 'pending',
+      }),
+    ).toThrow(/UNIQUE/i);
+
+    const rows = db.select().from(rosterInvites).where(eqInvitePending('backstop@x.test')).all();
+    expect(rows).toHaveLength(1);
+  });
+});
+
 describe('POST /api/v1/coach/teams/:teamId/roster/invites — authorization', () => {
   it('returns 404 when the coach is on a different team in the same org', async () => {
     const db = freshCoachDb();
@@ -622,4 +766,13 @@ describe('re-issue after expiry creates a new pending row', () => {
  */
 function eqInviteEmail(email: string) {
   return eq(rosterInvites.email, email);
+}
+
+/**
+ * Local helper — Drizzle predicate selecting the pending row(s) for a
+ * given email. Used by the dedup tests to assert the single-pending
+ * post-state.
+ */
+function eqInvitePending(email: string) {
+  return and(eq(rosterInvites.email, email), eq(rosterInvites.status, 'pending'));
 }

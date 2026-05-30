@@ -57,6 +57,20 @@
       "when": 1779570952031,
       "tag": "0007_roster",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1779571052031,
+      "tag": "0008_csv_import_batch_filename",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1779571152031,
+      "tag": "0009_roster_invite_dedup_pending",
+      "breakpoints": true
     }
   ]
 }
