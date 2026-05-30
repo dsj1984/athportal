@@ -105,6 +105,7 @@ if (probe === null || !probe.ok) {
     COACH_INVITE_TEST_IDS,
     buildInvitesUrl,
     buildRevokeUrl,
+    filterVisibleInvites,
     readInvitePayload,
     renderPendingInvites,
   } from '../../../../../components/coach/InviteAthleteDialog.ts';
@@ -166,10 +167,12 @@ if (probe === null || !probe.ok) {
   }
 
   /**
-   * Fetch the pending invites for the team and repopulate the strip.
-   * Filters to `status === 'pending'` client-side as defence-in-depth
-   * — the server returns every status, the strip only renders the
-   * pending subset (AC #3).
+   * Fetch the team's invites and repopulate the strip. The server
+   * returns every status; `filterVisibleInvites` narrows to `pending`
+   * and `expired` client-side (Story #1051 / F34) so a coach sees both
+   * live and stale work, while `declined` / `revoked` stay hidden. The
+   * empty-state toggle keys off the same narrowed list, so a strip with
+   * only declined/revoked invites still reads as empty.
    */
   async function loadInvites(teamId: string): Promise<void> {
     const listEl = document.querySelector<HTMLElement>('[data-coach-pending-invites-list]');
@@ -193,9 +196,9 @@ if (probe === null || !probe.ok) {
         return;
       }
       if (errorEl) errorEl.hidden = true;
-      const pending = envelope.data.items.filter((i) => i.status === 'pending');
-      renderPendingInvites(listEl, pending);
-      if (emptyEl) emptyEl.hidden = pending.length !== 0;
+      const visible = filterVisibleInvites(envelope.data.items);
+      renderPendingInvites(listEl, visible);
+      if (emptyEl) emptyEl.hidden = visible.length !== 0;
     } catch {
       if (errorEl) {
         errorEl.textContent = 'Could not reach the server.';
@@ -326,6 +329,62 @@ if (probe === null || !probe.ok) {
     }
   }
 
+  /**
+   * Delegate Re-send clicks on expired-invite rows. Like revoke, the
+   * handler lives on the stable list container so rows rendered by
+   * `renderPendingInvites` pick it up without re-attaching after each
+   * refresh (Story #1051 / F34).
+   */
+  function wireResendDelegation(teamId: string): void {
+    const listEl = document.querySelector<HTMLElement>('[data-coach-pending-invites-list]');
+    if (!listEl) return;
+    listEl.addEventListener('click', (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      const btn = target.closest<HTMLButtonElement>(
+        `[data-testid="${COACH_INVITE_TEST_IDS.resendBtn}"]`,
+      );
+      if (!btn) return;
+      const email = btn.getAttribute('data-invite-email');
+      if (!email) return;
+      void resendInvite(teamId, email);
+    });
+  }
+
+  /**
+   * Re-send an expired invite by POSTing the same email to the
+   * existing create-invite endpoint. The server issues a fresh
+   * tokenized invite for that recipient; on success we refresh the
+   * strip so the new pending row replaces the expired one.
+   */
+  async function resendInvite(teamId: string, email: string): Promise<void> {
+    const errorEl = document.querySelector<HTMLElement>(
+      '[data-testid="coach-pending-invites-error"]',
+    );
+    try {
+      const res = await fetch(buildInvitesUrl(teamId), {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', accept: 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const envelope = (await res.json().catch(() => null)) as InviteCreateEnvelope | null;
+      if (res.status !== 201 || envelope?.success !== true) {
+        if (errorEl) {
+          errorEl.textContent = envelope?.error?.message ?? 'Could not re-send the invite.';
+          errorEl.hidden = false;
+        }
+        return;
+      }
+      if (errorEl) errorEl.hidden = true;
+      await loadInvites(teamId);
+    } catch {
+      if (errorEl) {
+        errorEl.textContent = 'Could not reach the server.';
+        errorEl.hidden = false;
+      }
+    }
+  }
+
   void load();
   const rootEl = document.querySelector<HTMLElement>('[data-coach-roster-page]');
   const pageTeamId = rootEl?.dataset.teamId;
@@ -339,6 +398,7 @@ if (probe === null || !probe.ok) {
     if (rosterTbody) attachRowActions(rosterTbody, pageTeamId);
     wireDialog(pageTeamId);
     wireRevokeDelegation(pageTeamId);
+    wireResendDelegation(pageTeamId);
     void loadInvites(pageTeamId);
   }
 </script>

@@ -25,8 +25,10 @@ import {
   type CoachInviteEntry,
   buildInvitesUrl,
   buildRevokeUrl,
+  filterVisibleInvites,
   formatExpiresLabel,
   inviteDisplayName,
+  isInviteExpired,
   readInvitePayload,
   renderPendingInvites,
 } from './InviteAthleteDialog';
@@ -39,6 +41,8 @@ describe('COACH_INVITE_TEST_IDS — canonical data-testid contract', () => {
     expect(COACH_INVITE_TEST_IDS.submitBtn).toBe('coach-invite-submit-btn');
     expect(COACH_INVITE_TEST_IDS.row).toBe('coach-pending-invite-row');
     expect(COACH_INVITE_TEST_IDS.revokeBtn).toBe('coach-pending-invite-revoke-btn');
+    expect(COACH_INVITE_TEST_IDS.resendBtn).toBe('coach-pending-invite-resend-btn');
+    expect(COACH_INVITE_TEST_IDS.expiredPill).toBe('coach-pending-invite-expired-pill');
   });
 });
 
@@ -121,6 +125,71 @@ describe('formatExpiresLabel', () => {
   it('returns "expires in N days" for multi-day windows', () => {
     const sevenDays = new Date(now.getTime() + 7 * 86_400_000).toISOString();
     expect(formatExpiresLabel(sevenDays, now)).toBe('expires in 7 days');
+  });
+});
+
+describe('filterVisibleInvites', () => {
+  function entry(status: CoachInviteEntry['status'], id: string): CoachInviteEntry {
+    return {
+      id,
+      teamId: 't_1',
+      email: `${id}@x.test`,
+      firstName: null,
+      lastName: null,
+      status,
+      expiresAt: new Date(Date.now() + 7 * 86_400_000).toISOString(),
+      createdAt: new Date().toISOString(),
+    };
+  }
+
+  it('keeps pending and expired invites and drops declined/revoked/accepted', () => {
+    const visible = filterVisibleInvites([
+      entry('pending', 'a'),
+      entry('expired', 'b'),
+      entry('declined', 'c'),
+      entry('revoked', 'd'),
+      entry('accepted', 'e'),
+    ]);
+    expect(visible.map((i) => i.id)).toEqual(['a', 'b']);
+  });
+
+  it('returns an empty list when only declined/revoked invites exist', () => {
+    expect(filterVisibleInvites([entry('declined', 'c'), entry('revoked', 'd')])).toEqual([]);
+  });
+});
+
+describe('isInviteExpired', () => {
+  const now = new Date('2026-01-01T00:00:00.000Z');
+
+  function entry(overrides: Partial<CoachInviteEntry>): CoachInviteEntry {
+    return {
+      id: 'inv_1',
+      teamId: 't_1',
+      email: 'ada@x.test',
+      firstName: null,
+      lastName: null,
+      status: 'pending',
+      expiresAt: new Date(now.getTime() + 86_400_000).toISOString(),
+      createdAt: now.toISOString(),
+      ...overrides,
+    };
+  }
+
+  it('is true when the status is explicitly expired', () => {
+    expect(isInviteExpired(entry({ status: 'expired' }), now)).toBe(true);
+  });
+
+  it('is true when a pending invite has a lapsed expiresAt (lazy transition)', () => {
+    expect(
+      isInviteExpired(
+        entry({ status: 'pending', expiresAt: new Date(now.getTime() - 1000).toISOString() }),
+        now,
+      ),
+    ).toBe(true);
+  });
+
+  it('is false for a pending invite with a future expiresAt', () => {
+    expect(isInviteExpired(entry({ status: 'pending' }), now)).toBe(false);
   });
 });
 
@@ -221,5 +290,52 @@ describe('renderPendingInvites', () => {
       li.getAttribute('data-invite-id'),
     );
     expect(ids).toEqual(['inv_second', 'inv_third']);
+  });
+
+  const fixedNow = new Date('2026-01-01T00:00:00.000Z');
+  const past = new Date(fixedNow.getTime() - 86_400_000).toISOString();
+  const future = new Date(fixedNow.getTime() + 7 * 86_400_000).toISOString();
+
+  it('renders a Revoke button (no expired pill) for a pending row', () => {
+    renderPendingInvites(
+      list,
+      [entry({ id: 'inv_pending', status: 'pending', expiresAt: future })],
+      fixedNow,
+    );
+    const row = list.querySelector('li');
+    expect(row?.getAttribute('data-status')).toBe('pending');
+    expect(row?.querySelector('[data-testid="coach-pending-invite-expired-pill"]')).toBeNull();
+    const revokeBtn = row?.querySelector('[data-testid="coach-pending-invite-revoke-btn"]');
+    expect(revokeBtn?.textContent).toBe('Revoke');
+    expect(row?.querySelector('[data-testid="coach-pending-invite-resend-btn"]')).toBeNull();
+  });
+
+  it('renders an Expired pill and a Re-send button for an expired-status row', () => {
+    renderPendingInvites(
+      list,
+      [entry({ id: 'inv_exp', status: 'expired', email: 'ada@x.test', expiresAt: past })],
+      fixedNow,
+    );
+    const row = list.querySelector('li');
+    expect(row?.getAttribute('data-status')).toBe('expired');
+    const pill = row?.querySelector('[data-testid="coach-pending-invite-expired-pill"]');
+    expect(pill?.textContent).toBe('Expired');
+    const resendBtn = row?.querySelector<HTMLButtonElement>(
+      '[data-testid="coach-pending-invite-resend-btn"]',
+    );
+    expect(resendBtn?.textContent).toBe('Re-send');
+    expect(resendBtn?.getAttribute('data-invite-email')).toBe('ada@x.test');
+    expect(row?.querySelector('[data-testid="coach-pending-invite-revoke-btn"]')).toBeNull();
+  });
+
+  it('treats a pending row with a lapsed expiresAt as expired (lazy transition)', () => {
+    renderPendingInvites(
+      list,
+      [entry({ id: 'inv_lapsed', status: 'pending', expiresAt: past })],
+      fixedNow,
+    );
+    const row = list.querySelector('li');
+    expect(row?.getAttribute('data-status')).toBe('expired');
+    expect(row?.querySelector('[data-testid="coach-pending-invite-resend-btn"]')).not.toBeNull();
   });
 });

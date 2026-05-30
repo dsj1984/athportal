@@ -38,6 +38,8 @@ export const COACH_INVITE_TEST_IDS = {
   stripEmpty: 'coach-pending-invites-empty',
   row: 'coach-pending-invite-row',
   revokeBtn: 'coach-pending-invite-revoke-btn',
+  resendBtn: 'coach-pending-invite-resend-btn',
+  expiredPill: 'coach-pending-invite-expired-pill',
 } as const;
 
 /**
@@ -76,6 +78,43 @@ export function buildRevokeUrl(teamId: string, inviteId: string): string {
 }
 
 /**
+ * Statuses the pending-invites strip surfaces to the coach (Story
+ * #1051 / F34). `pending` invites are live work; `expired` invites are
+ * stale work the coach can re-send. `declined` and `revoked` stay
+ * hidden — surfacing a final "no" with no next action is noise.
+ */
+const VISIBLE_INVITE_STATUSES: ReadonlySet<CoachInviteEntry['status']> = new Set([
+  'pending',
+  'expired',
+]);
+
+/**
+ * Filter the raw invites list down to the rows the strip renders:
+ * `pending` and `expired` only. The list-invites API returns every
+ * status (no server-side filter), so the strip narrows client-side —
+ * the same narrowing also drives the empty-state toggle, so a strip
+ * with only declined/revoked invites still reads as empty.
+ */
+export function filterVisibleInvites(items: ReadonlyArray<CoachInviteEntry>): CoachInviteEntry[] {
+  return items.filter((i) => VISIBLE_INVITE_STATUSES.has(i.status));
+}
+
+/**
+ * True when the invite should render in the strip's expired visual
+ * state. The server transitions `status` lazily, so a row whose
+ * `expires_at < now()` may still arrive as `status === 'pending'` —
+ * treat both the explicit `expired` status and a lapsed lifetime as
+ * expired so the pill and the Re-send CTA stay consistent with the
+ * "expired" meta label `formatExpiresLabel` already renders.
+ */
+export function isInviteExpired(entry: CoachInviteEntry, now: Date = new Date()): boolean {
+  if (entry.status === 'expired') return true;
+  const exp = new Date(entry.expiresAt);
+  if (Number.isNaN(exp.getTime())) return false;
+  return exp.getTime() - now.getTime() <= 0;
+}
+
+/**
  * Format a `RosterInviteOutput.expiresAt` ISO string into a short
  * "expires in N days" label for the strip. Returns "expired" when the
  * value is in the past — the server transitions `status` lazily, so a
@@ -107,14 +146,22 @@ export function inviteDisplayName(entry: CoachInviteEntry): string {
 /**
  * Render the pending-invites strip body. The function fully replaces
  * the supplied container's children. Each row carries the canonical
- * row data-testid and a per-row revoke button keyed by
- * `data-invite-id`. Cells are populated via `textContent`.
+ * row data-testid keyed by `data-invite-id`. Cells are populated via
+ * `textContent`.
+ *
+ * Rows render in one of two states (Story #1051 / F34):
+ *   - **pending** — the name + "expires in N days" meta and a per-row
+ *     **Revoke** button.
+ *   - **expired** — a distinct "Expired" pill alongside the name, the
+ *     "expired" meta label, and a **Re-send** button that the page's
+ *     inline `script` wires to the create-invite endpoint for the same
+ *     email (`data-invite-email`).
  *
  * The container is a `<ul>` so the rendered list is semantically a
- * list of pending invitations (screen-readers announce the count).
- * The empty-state row stays in place — the function does NOT touch
- * the seeded empty placeholder; the caller toggles it via the
- * `hidden` attribute based on `items.length`.
+ * list of invitations (screen-readers announce the count). The
+ * empty-state row stays in place — the function does NOT touch the
+ * seeded empty placeholder; the caller toggles it via the `hidden`
+ * attribute based on `items.length`.
  */
 export function renderPendingInvites(
   container: HTMLElement,
@@ -123,20 +170,37 @@ export function renderPendingInvites(
 ): void {
   while (container.firstChild) container.removeChild(container.firstChild);
   for (const item of items) {
+    const expired = isInviteExpired(item, now);
+
     const li = document.createElement('li');
     li.setAttribute('data-testid', COACH_INVITE_TEST_IDS.row);
     li.setAttribute('data-invite-id', item.id);
+    li.setAttribute('data-status', expired ? 'expired' : 'pending');
     li.className =
       'flex items-center justify-between gap-3 rounded-md border border-border bg-surface-card px-3 py-2 text-sm';
 
     const left = document.createElement('div');
     left.className = 'flex flex-col';
 
+    const nameRow = document.createElement('div');
+    nameRow.className = 'flex items-center gap-2';
+
     const nameEl = document.createElement('span');
     nameEl.className = 'font-medium text-text-primary';
     nameEl.setAttribute('data-col', 'name');
     nameEl.textContent = inviteDisplayName(item);
-    left.appendChild(nameEl);
+    nameRow.appendChild(nameEl);
+
+    if (expired) {
+      const pill = document.createElement('span');
+      pill.setAttribute('data-testid', COACH_INVITE_TEST_IDS.expiredPill);
+      pill.className =
+        'inline-flex items-center rounded-full border border-action-coral px-2 py-0.5 text-xs font-medium text-action-coral';
+      pill.textContent = 'Expired';
+      nameRow.appendChild(pill);
+    }
+
+    left.appendChild(nameRow);
 
     const metaEl = document.createElement('span');
     metaEl.className = 'text-xs text-text-secondary';
@@ -146,14 +210,21 @@ export function renderPendingInvites(
 
     li.appendChild(left);
 
-    const revokeBtn = document.createElement('button');
-    revokeBtn.type = 'button';
-    revokeBtn.setAttribute('data-testid', COACH_INVITE_TEST_IDS.revokeBtn);
-    revokeBtn.setAttribute('data-invite-id', item.id);
-    revokeBtn.className =
+    const actionBtn = document.createElement('button');
+    actionBtn.type = 'button';
+    actionBtn.className =
       'inline-flex items-center justify-center rounded-md border border-border bg-surface-card px-2.5 py-1.5 text-xs font-medium text-text-primary shadow-sm hover:bg-surface-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand';
-    revokeBtn.textContent = 'Revoke';
-    li.appendChild(revokeBtn);
+    if (expired) {
+      actionBtn.setAttribute('data-testid', COACH_INVITE_TEST_IDS.resendBtn);
+      actionBtn.setAttribute('data-invite-id', item.id);
+      actionBtn.setAttribute('data-invite-email', item.email);
+      actionBtn.textContent = 'Re-send';
+    } else {
+      actionBtn.setAttribute('data-testid', COACH_INVITE_TEST_IDS.revokeBtn);
+      actionBtn.setAttribute('data-invite-id', item.id);
+      actionBtn.textContent = 'Revoke';
+    }
+    li.appendChild(actionBtn);
 
     container.appendChild(li);
   }
