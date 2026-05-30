@@ -72,5 +72,7 @@ export function freshOnboardingDb(): OnboardingTestDb {
   client.pragma('foreign_keys = ON');
   applyMigration(client, loadMigration('0000_auth_and_rbac.sql'));
   applyMigration(client, loadMigration('0001_onboarding_schema.sql'));
+  // Story #1054 / F33 — nullable first_name/last_name on users.
+  applyMigration(client, loadMigration('0010_users_name.sql'));
   return buildHandle(client);
 }

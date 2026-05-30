@@ -60,6 +60,7 @@ import { publicRosterInvitesRoute } from './routes/v1/public/roster-invites';
 import { signOutRoute } from './routes/v1/sign-out';
 import { userRoleRoute } from './routes/v1/users/role';
 import { clerkInvitationAcceptedRoute } from './routes/webhooks/clerk-invitation-accepted';
+import { clerkUserUpdatedRoute } from './routes/webhooks/clerk-user-updated';
 
 type AppEnv = RequestLoggerEnv & SyntheticFailureEnv & CreateTestUserDebugEnv & ClerkAuthEnv;
 
@@ -95,6 +96,14 @@ app.route('/api/v1/_debug/create-test-user', createTestUserDebugRoute);
 //      the security boundary for this endpoint (Epic #10 / Story #655
 //      / Task #666).
 app.route('/webhooks/clerk/invitation-accepted', clerkInvitationAcceptedRoute);
+
+// 3.5b) Clerk `user.updated` webhook (Story #1054 / F33). Same mount
+//       rationale as the invitation webhook — the Svix signature inside
+//       the handler is the security boundary, so it sits BEFORE clerkAuth.
+//       `withDb` runs only on this sub-tree so the handler has a Drizzle
+//       handle on `c.var.db` to re-promote the edited name into `users`.
+app.use('/webhooks/clerk/user-updated', withDb());
+app.route('/webhooks/clerk/user-updated', clerkUserUpdatedRoute);
 
 // 3.6) Public tokenized roster-invite handshake (Epic #11 / Story #926).
 //      Mounted BEFORE clerkAuth because the plaintext token in the URL

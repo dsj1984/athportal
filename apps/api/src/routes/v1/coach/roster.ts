@@ -86,11 +86,15 @@ function errorBody(
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 /**
- * Derive a user-visible name from the user's email until a real
- * `full_name` column lands on `users`. Mirrors the helper in
- * `apps/api/src/routes/v1/admin/roster.ts` so the wire shape stays
- * consistent between the org-wide admin view and the team-scoped
- * coach view.
+ * Derive a user-visible name from the user's email. Mirrors the helper
+ * in `apps/api/src/routes/v1/admin/roster.ts` so the wire shape stays
+ * consistent between the org-wide admin view and the team-scoped coach
+ * view.
+ *
+ * Since Story #1054 / F33 this is the FALLBACK only — used when the
+ * athlete's `users.first_name` / `users.last_name` are both null (e.g. a
+ * Clerk profile that omitted the name). The canonical display name is
+ * the Clerk-promoted first/last (see `resolveAthleteName`).
  */
 function deriveFullName(email: string): string {
   const at = email.indexOf('@');
@@ -101,6 +105,20 @@ function deriveFullName(email: string): string {
     .filter((t) => t.length > 0)
     .map((t) => t.charAt(0).toUpperCase() + t.slice(1).toLowerCase());
   return tokens.length > 0 ? tokens.join(' ') : email;
+}
+
+/**
+ * Resolve the athlete's display name: prefer the Clerk-promoted
+ * `first_name` / `last_name` (Story #1054 / F33), falling back to the
+ * email-derived name only when BOTH columns are null. A single present
+ * column is used on its own (a Clerk profile may carry only one). Empty
+ * / whitespace-only values are treated as absent.
+ */
+function resolveAthleteName(row: RosterEntryRow): string {
+  const first = row.athleteFirstName?.trim() ?? '';
+  const last = row.athleteLastName?.trim() ?? '';
+  const combined = [first, last].filter((part) => part.length > 0).join(' ');
+  return combined.length > 0 ? combined : deriveFullName(row.athleteEmail);
 }
 
 /**
@@ -132,7 +150,7 @@ function projectEntry(row: RosterEntryRow): unknown {
     teamId: row.teamId,
     athleteUserId: row.athleteUserId,
     athleteEmail: row.athleteEmail,
-    athleteFullName: deriveFullName(row.athleteEmail),
+    athleteFullName: resolveAthleteName(row),
     jerseyNumber: row.jerseyNumber,
     primaryPosition: row.primaryPosition,
     endedAt: row.endedAt ? row.endedAt.toISOString() : null,

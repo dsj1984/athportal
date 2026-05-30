@@ -60,6 +60,12 @@ const MIGRATION_0001 = join(
   __dirname,
   '../../../../../../packages/shared/src/db/migrations/0001_onboarding_schema.sql',
 );
+// Story #1054 / F33 — adds the nullable first_name/last_name columns the
+// onboarding handler now promotes from Clerk.
+const MIGRATION_0010 = join(
+  __dirname,
+  '../../../../../../packages/shared/src/db/migrations/0010_users_name.sql',
+);
 
 const fullSchema = {
   users,
@@ -80,6 +86,7 @@ function freshOnboardingProductionDb() {
   client.pragma('foreign_keys = ON');
   applyMigration(client, MIGRATION_0000);
   applyMigration(client, MIGRATION_0001);
+  applyMigration(client, MIGRATION_0010);
   return drizzle(client, { schema: fullSchema });
 }
 
@@ -142,13 +149,27 @@ function buildApp(db: ProductionDb, actor: AuthContext = ACTOR) {
 }
 
 function stubClerkUser(
-  options: { verified?: boolean; email?: string; throws?: boolean } = {},
+  options: {
+    verified?: boolean;
+    email?: string;
+    throws?: boolean;
+    firstName?: string | null;
+    lastName?: string | null;
+  } = {},
 ): void {
-  const { verified = true, email = 'athlete@test.invalid', throws = false } = options;
+  const {
+    verified = true,
+    email = 'athlete@test.invalid',
+    throws = false,
+    firstName = 'Ada',
+    lastName = 'Lovelace',
+  } = options;
   const getUser = throws
     ? vi.fn().mockRejectedValue(new Error('clerk_unavailable'))
     : vi.fn().mockResolvedValue({
         id: ACTOR.clerkSubjectId,
+        firstName,
+        lastName,
         primaryEmailAddressId: 'idn_primary',
         emailAddresses: [
           {
@@ -239,6 +260,10 @@ describe('POST /api/v1/auth/onboard — happy path', () => {
     expect(reloaded?.onboardedAt).toBeInstanceOf(Date);
     expect(reloaded?.ageAttestedAt).toBeInstanceOf(Date);
     expect(reloaded?.onboardedAt?.getTime()).toBe(reloaded?.ageAttestedAt?.getTime());
+    // Story #1054 / F33: the Clerk display name is promoted into `users`
+    // inside the same transaction that promotes the email.
+    expect(reloaded?.firstName).toBe('Ada');
+    expect(reloaded?.lastName).toBe('Lovelace');
 
     const agreements = await db.query.userLegalAgreements.findMany({
       where: eq(userLegalAgreements.userId, ACTOR.userId),
@@ -289,6 +314,70 @@ describe('POST /api/v1/auth/onboard — users.email side-effect', () => {
     });
     expect(reloaded?.email).toBe(verifiedEmail);
     expect(reloaded?.email).not.toContain('@clerk-jit.invalid');
+  });
+});
+
+describe('POST /api/v1/auth/onboard — Clerk name promotion (Story #1054)', () => {
+  it('promotes the Clerk firstName/lastName into users alongside the email', async () => {
+    // Arrange — Clerk reports a profile name distinct from the local row.
+    const db = freshOnboardingProductionDb();
+    seedActor(db);
+    seedActiveLegalDocs(db);
+    stubClerkUser({ verified: true, firstName: 'Grace', lastName: 'Hopper' });
+    const app = buildApp(db);
+
+    // Act
+    const res = await app.request(
+      '/api/v1/auth/onboard',
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(VALID_BODY),
+      },
+      ENV,
+    );
+
+    // Assert — wire shape
+    expect(res.status).toBe(200);
+
+    // Assert — DB side-effect: the name columns carry the Clerk values.
+    const reloaded = await db.query.users.findFirst({
+      where: eq(users.id, ACTOR.userId),
+    });
+    expect(reloaded?.firstName).toBe('Grace');
+    expect(reloaded?.lastName).toBe('Hopper');
+  });
+
+  it('stores null name columns when Clerk omits firstName/lastName', async () => {
+    // Arrange — a Clerk profile with no name (e.g. email-only sign-up).
+    const db = freshOnboardingProductionDb();
+    seedActor(db);
+    seedActiveLegalDocs(db);
+    stubClerkUser({ verified: true, firstName: null, lastName: null });
+    const app = buildApp(db);
+
+    // Act
+    const res = await app.request(
+      '/api/v1/auth/onboard',
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(VALID_BODY),
+      },
+      ENV,
+    );
+
+    // Assert — wire shape
+    expect(res.status).toBe(200);
+
+    // Assert — DB side-effect: name columns are null, not the email or a
+    // sentinel; the roster projection falls back to the email-derived
+    // name when both are null.
+    const reloaded = await db.query.users.findFirst({
+      where: eq(users.id, ACTOR.userId),
+    });
+    expect(reloaded?.firstName).toBeNull();
+    expect(reloaded?.lastName).toBeNull();
   });
 });
 

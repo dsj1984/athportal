@@ -59,6 +59,11 @@ export interface RosterEntryRow {
   readonly teamId: string;
   readonly athleteUserId: string;
   readonly athleteEmail: string;
+  // Display-name identity promoted from Clerk into `users` at onboarding
+  // (Story #1054 / F33). `null` when Clerk omitted the field; the API
+  // edge falls back to the email-derived name when both are null.
+  readonly athleteFirstName: string | null;
+  readonly athleteLastName: string | null;
   readonly jerseyNumber: string | null;
   readonly primaryPosition: string | null;
   readonly endedAt: Date | null;
@@ -153,6 +158,8 @@ export function listRosterEntries(
       teamId: rosterEntries.teamId,
       athleteUserId: rosterEntries.athleteUserId,
       athleteEmail: users.email,
+      athleteFirstName: users.firstName,
+      athleteLastName: users.lastName,
       jerseyNumber: rosterEntries.jerseyNumber,
       primaryPosition: rosterEntries.primaryPosition,
       endedAt: rosterEntries.endedAt,
@@ -198,6 +205,8 @@ export function getTeamScopedAthlete(
       teamId: rosterEntries.teamId,
       athleteUserId: rosterEntries.athleteUserId,
       athleteEmail: users.email,
+      athleteFirstName: users.firstName,
+      athleteLastName: users.lastName,
       jerseyNumber: rosterEntries.jerseyNumber,
       primaryPosition: rosterEntries.primaryPosition,
       endedAt: rosterEntries.endedAt,

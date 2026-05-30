@@ -101,5 +101,7 @@ export function freshGraphDb(): GraphTestDb {
   applyMigration(client, loadMigration('0003_invitations.sql'));
   applyMigration(client, loadMigration('0004_org_branding.sql'));
   applyMigration(client, loadMigration('0005_team_metadata.sql'));
+  // Story #1054 / F33 — nullable first_name/last_name on users.
+  applyMigration(client, loadMigration('0010_users_name.sql'));
   return buildHandle(client);
 }

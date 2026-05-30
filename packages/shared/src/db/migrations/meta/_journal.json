@@ -71,6 +71,13 @@
       "when": 1779571152031,
       "tag": "0009_roster_invite_dedup_pending",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1779571252031,
+      "tag": "0010_users_name",
+      "breakpoints": true
     }
   ]
 }

@@ -169,6 +169,13 @@ function asRouteError(err: unknown): RouteError | null {
 interface PrimaryEmailCheck {
   readonly verified: boolean;
   readonly email: string | null;
+  // First/last name promoted from the same already-fetched Clerk `user`
+  // object — no extra Clerk API call. `null` when Clerk omits the field
+  // (Story #1054 / F33). These are display-name identity data, promoted
+  // into `users` inside the onboarding transaction exactly as `email` is,
+  // mirroring the ADR-005 email-promotion precedent.
+  readonly firstName: string | null;
+  readonly lastName: string | null;
 }
 
 async function fetchPrimaryEmailVerified(
@@ -177,18 +184,24 @@ async function fetchPrimaryEmailVerified(
 ): Promise<PrimaryEmailCheck> {
   const client = createClerkClient({ secretKey: env.CLERK_SECRET_KEY });
   const user = await client.users.getUser(clerkSubjectId);
+  // Pull the profile name off the already-fetched user object. No extra
+  // round-trip — the verified-email re-query already paid for this fetch.
+  const firstName = user.firstName ?? null;
+  const lastName = user.lastName ?? null;
   const primaryId = user.primaryEmailAddressId;
   if (!primaryId) {
-    return { verified: false, email: null };
+    return { verified: false, email: null, firstName, lastName };
   }
   const primary = user.emailAddresses.find((ea) => ea.id === primaryId);
   if (!primary) {
-    return { verified: false, email: null };
+    return { verified: false, email: null, firstName, lastName };
   }
   const status = primary.verification?.status ?? null;
   return {
     verified: status === 'verified',
     email: primary.emailAddress ?? null,
+    firstName,
+    lastName,
   };
 }
 
@@ -261,7 +274,9 @@ const EMAIL_UNVERIFIED_BODY = errorBody(
   'Your primary email address must be verified before completing onboarding.',
 );
 
-type EmailGate = { ok: true; email: string } | { ok: false; body: OnboardErrorBody };
+type EmailGate =
+  | { ok: true; email: string; firstName: string | null; lastName: string | null }
+  | { ok: false; body: OnboardErrorBody };
 
 async function resolveVerifiedEmail(env: Env, clerkSubjectId: string): Promise<EmailGate> {
   let primary: PrimaryEmailCheck;
@@ -276,7 +291,12 @@ async function resolveVerifiedEmail(env: Env, clerkSubjectId: string): Promise<E
   if (!primary.verified || !primary.email) {
     return { ok: false, body: EMAIL_UNVERIFIED_BODY };
   }
-  return { ok: true, email: primary.email };
+  return {
+    ok: true,
+    email: primary.email,
+    firstName: primary.firstName,
+    lastName: primary.lastName,
+  };
 }
 
 // ── Transactional commit ───────────────────────────────────────────────────
@@ -288,6 +308,11 @@ interface CommitArgs {
   readonly auth: AuthContext;
   readonly input: OnboardInput;
   readonly verifiedEmail: string;
+  // Clerk-owned display name promoted alongside `verifiedEmail`. `null`
+  // when Clerk omits the field; the roster projection falls back to the
+  // email-derived name in that case (Story #1054 / F33).
+  readonly firstName: string | null;
+  readonly lastName: string | null;
   readonly acceptedAt: Date;
 }
 
@@ -318,6 +343,13 @@ function stampUserRow(tx: unknown, args: CommitArgs): void {
       ageAttestedAt: args.acceptedAt,
       updatedAt: args.acceptedAt,
       email: args.verifiedEmail,
+      // Promote the Clerk display name into `users` in the same write
+      // that promotes the verified email (Story #1054 / F33). `null`
+      // overwrites are intentional — Clerk is the source of truth, so a
+      // cleared Clerk name clears the local copy and the roster
+      // projection falls back to the email-derived name.
+      firstName: args.firstName,
+      lastName: args.lastName,
     })
     .where(eq(users.id, args.auth.userId))
     .returning()
@@ -464,6 +496,7 @@ onboardRoute.post('/', async (c) => {
     return c.json(emailGate.body, 400);
   }
   const verifiedEmail = emailGate.email;
+  const { firstName, lastName } = emailGate;
 
   // 5. Transactional commit. Re-reads `onboarded_at` once more INSIDE
   //    the transaction so a parallel onboarding submission can't
@@ -475,7 +508,7 @@ onboardRoute.post('/', async (c) => {
   let committed: CommitResult;
   try {
     committed = db.transaction((tx) =>
-      commitOnboarding({ tx, auth, input, verifiedEmail, acceptedAt }),
+      commitOnboarding({ tx, auth, input, verifiedEmail, firstName, lastName, acceptedAt }),
     );
   } catch (err) {
     const mapped = transactionErrorToResponse(err);

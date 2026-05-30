@@ -51,6 +51,8 @@ function freshCoachDb() {
     '0005_team_metadata.sql',
     '0006_csv_import_batches.sql',
     '0007_roster.sql',
+    // Story #1054 / F33 — nullable first_name/last_name on users.
+    '0010_users_name.sql',
   ]) {
     const sql = readFileSync(join(MIGRATIONS_DIR, file), 'utf8');
     for (const stmt of sql.split('--> statement-breakpoint').map((s) => s.trim())) {
