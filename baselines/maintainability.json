@@ -1,11 +1,11 @@
 {
   "$schema": ".agents/schemas/baselines/maintainability.schema.json",
   "kernelVersion": "0.1.0",
-  "generatedAt": "2026-05-29T17:29:06.684Z",
+  "generatedAt": "2026-05-30T22:38:08.063Z",
   "rollup": {
     "*": {
       "min": 70.515,
-      "p50": 106.544,
+      "p50": 106.649,
       "p95": 147.376
     }
   },
@@ -305,10 +305,6 @@
     {
       "mi": 94.92,
       "path": "apps/api/vitest.config.ts"
-    },
-    {
-      "mi": 96.11,
-      "path": "apps/mobile/app.config.ts"
     },
     {
       "path": "apps/mobile/src/sentry.ts",
