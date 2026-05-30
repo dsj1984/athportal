@@ -68,3 +68,11 @@ Feature: Coach sends roster invites and recipients accept or decline
     And I send a fresh roster invite to the same recipient
     Then I see confirmation that the invite was sent
     And I see the new invite listed as pending on my team's roster page
+
+  @pending @issue-1051 @persona-coach
+  Scenario: Coach re-sends an expired invite from the pending-invites strip
+    Given my team has a roster invite to the recipient that has expired
+    Then I see that invite listed as expired in the pending-invites strip
+    When I re-send that expired invite from the pending-invites strip
+    Then I see confirmation that the invite was sent
+    And I see the invite to that recipient listed as pending on my team's roster page
