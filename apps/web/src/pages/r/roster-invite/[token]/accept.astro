@@ -76,31 +76,36 @@ if (typeof token !== 'string' || token.length === 0) {
         <p class="mt-2" data-roster-invite-error-message>
           Something went wrong.
         </p>
+        <a
+          class="mt-3 inline-flex items-center rounded-md bg-action-coral px-3 py-1.5 font-medium text-surface-card"
+          data-testid="roster-invite-sign-up"
+          data-roster-invite-sign-up
+          href="/sign-up"
+          hidden
+        >
+          Sign up
+        </a>
       </section>
     </main>
 
     <script>
+      import { resolveAcceptError } from './accept-page';
+
       interface AcceptEnvelope {
         success: boolean;
         data?: { invite: { id: string; teamId: string; status: string } };
         error?: { code?: string; message?: string };
       }
 
-      function messageForError(code: string | undefined): string {
-        switch (code) {
-          case 'NOT_FOUND':
-            return 'This invitation link is not valid. Ask your coach to send a new one.';
-          case 'INVITE_EXPIRED':
-            return 'This invitation has expired. Ask your coach to send a new one.';
-          case 'INVITE_REVOKED':
-            return 'Your coach cancelled this invitation.';
-          case 'INVITE_NOT_PENDING':
-            return 'This invitation has already been responded to.';
-          case 'RECIPIENT_NOT_FOUND':
-            return 'We could not find your account. Sign up first, then ask your coach to re-send the invite.';
-          default:
-            return 'We could not accept this invitation. Please try again later.';
-        }
+      /**
+       * Read an optional invite email from the page URL's `email` query
+       * param. The public accept API never echoes the invite email back to
+       * the client, so the only place a prefill value can originate is a
+       * query param the mailer/coach link chooses to append. Absent → the
+       * sign-up link falls back to the bare `/sign-up` path.
+       */
+      function emailFromQuery(): string | null {
+        return new URLSearchParams(window.location.search).get('email');
       }
 
       /**
@@ -132,6 +137,9 @@ if (typeof token !== 'string' || token.length === 0) {
         const errorMsgEl = document.querySelector<HTMLElement>(
           '[data-roster-invite-error-message]',
         );
+        const signUpEl = document.querySelector<HTMLAnchorElement>(
+          '[data-roster-invite-sign-up]',
+        );
         const token = tokenFromPath();
         if (!token || !pendingEl || !confirmEl || !errorEl) return;
 
@@ -151,8 +159,20 @@ if (typeof token !== 'string' || token.length === 0) {
             confirmEl.hidden = false;
             return;
           }
+          const resolution = resolveAcceptError(
+            envelope?.error?.code,
+            emailFromQuery(),
+          );
           if (errorMsgEl) {
-            errorMsgEl.textContent = messageForError(envelope?.error?.code);
+            errorMsgEl.textContent = resolution.message;
+          }
+          if (signUpEl) {
+            if (resolution.signUpHref) {
+              signUpEl.href = resolution.signUpHref;
+              signUpEl.hidden = false;
+            } else {
+              signUpEl.hidden = true;
+            }
           }
           errorEl.hidden = false;
         } catch {
@@ -160,6 +180,7 @@ if (typeof token !== 'string' || token.length === 0) {
           if (errorMsgEl) {
             errorMsgEl.textContent = 'We could not reach the server. Try again in a moment.';
           }
+          if (signUpEl) signUpEl.hidden = true;
           errorEl.hidden = false;
         }
       }
