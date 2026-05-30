@@ -7,10 +7,14 @@
 // buttons.
 //
 // The page is a thin Astro shell that renders an h1 + the
-// `InvitationList` island. The island handles the data fetch and the
-// resend / revoke interactions; the shell exists so the page has a
-// route, a title, and a landmark heading for the acceptance scenario
-// to anchor on.
+// `InvitationList` island inside the shared `<AppLayout>`. The island
+// handles the data fetch and the resend / revoke interactions; the
+// shell exists so the page has a route, a title, and a landmark
+// heading for the acceptance scenario to anchor on.
+//
+// Page chrome composes the shared `<AppLayout>` (Story #971 reference
+// adoption, extended to this surface by Story #1086 so the org-admin
+// can reach every other `/admin/*` surface from the shared header).
 //
 // Auth gating lives upstream — the Astro middleware redirects
 // anonymous callers to sign-in, and the API endpoints the island
@@ -23,37 +27,32 @@ import { requireAdminSsr } from '../../../lib/ssrAuthGate';
 // non-admin → 404 (non-enumeration per Epic #11 AC-2/AC-3). The page
 // chrome must not render to non-admin callers, even though the inline
 // client-script fetch would 403 a moment later.
+import AppLayout from '../../../components/layout/AppLayout.astro';
 import InvitationList from '../../../components/admin/InvitationList.astro';
 const __ssr_gate = await requireAdminSsr(Astro);
 if (__ssr_gate) return __ssr_gate;
 
 ---
 
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <title>Pending invitations</title>
-  </head>
-  <body>
-    <main aria-label="Pending invitations">
-      <h1>Pending invitations</h1>
-      <nav aria-label="Create invitation" class="my-4 flex flex-wrap gap-2">
-        <a
-          href="/admin/invitations/coach"
-          class="inline-flex items-center justify-center rounded-md border border-border bg-surface-card px-3 py-2 text-sm text-text-primary hover:bg-surface-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
-          data-testid="admin-invitations-invite-coach-link"
-        >
-          Invite coach
-        </a>
-        <a
-          href="/admin/invitations/athlete"
-          class="inline-flex items-center justify-center rounded-md border border-border bg-surface-card px-3 py-2 text-sm text-text-primary hover:bg-surface-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
-          data-testid="admin-invitations-invite-athlete-link"
-        >
-          Invite athlete
-        </a>
-      </nav>
-      <InvitationList />
-    </main>
-  </body>
-</html>
+<AppLayout title="Pending invitations · Admin" role="org_admin" activeHref="/admin/invitations">
+  <section aria-label="Pending invitations">
+    <h1>Pending invitations</h1>
+    <nav aria-label="Create invitation" class="my-4 flex flex-wrap gap-2">
+      <a
+        href="/admin/invitations/coach"
+        class="inline-flex items-center justify-center rounded-md border border-border bg-surface-card px-3 py-2 text-sm text-text-primary hover:bg-surface-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+        data-testid="admin-invitations-invite-coach-link"
+      >
+        Invite coach
+      </a>
+      <a
+        href="/admin/invitations/athlete"
+        class="inline-flex items-center justify-center rounded-md border border-border bg-surface-card px-3 py-2 text-sm text-text-primary hover:bg-surface-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+        data-testid="admin-invitations-invite-athlete-link"
+      >
+        Invite athlete
+      </a>
+    </nav>
+    <InvitationList />
+  </section>
+</AppLayout>

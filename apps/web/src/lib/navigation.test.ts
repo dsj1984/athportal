@@ -3,7 +3,8 @@
 // Unit tests for the App Shell nav registry (Story #971). Pins:
 //
 //   1. The org-admin nav set matches the Story acceptance verbatim
-//      (Teams, Invitations, Import, Reports, Rollover, in that order).
+//      (Teams, Org config, Invitations, Import, Reports, Rollover, in
+//      that order). Story #1086 added the Org config row.
 //   2. `resolveAppNav` throws on an unknown role so the renderer can't
 //      silently render an empty header.
 //   3. `buildAppNavView` flags exactly the row matching `activeHref`,
@@ -16,6 +17,7 @@ describe('navigation — org_admin nav set (Story #971 acceptance)', () => {
   it('renders the org-admin rows in canonical order', () => {
     expect(APP_NAV.org_admin.map((r) => r.label)).toEqual([
       'Teams',
+      'Org config',
       'Invitations',
       'Import',
       'Reports',
@@ -26,11 +28,29 @@ describe('navigation — org_admin nav set (Story #971 acceptance)', () => {
   it('points org-admin rows at their canonical hrefs', () => {
     expect(APP_NAV.org_admin.map((r) => r.href)).toEqual([
       '/admin/teams',
+      '/admin/org',
       '/admin/invitations',
       '/admin/import',
       '/admin/reports',
       '/admin/rollover',
     ]);
+  });
+
+  it('includes a row for every admin surface the org-admin role grants', () => {
+    // Story #1086 acceptance: org-admin must reach Teams, Org config,
+    // pending invitations, Import, Reports, and Rollover via visible
+    // affordances. The shared header is the affordance carrier.
+    const hrefs = new Set(APP_NAV.org_admin.map((r) => r.href));
+    for (const required of [
+      '/admin/teams',
+      '/admin/org',
+      '/admin/invitations',
+      '/admin/import',
+      '/admin/reports',
+      '/admin/rollover',
+    ]) {
+      expect(hrefs.has(required)).toBe(true);
+    }
   });
 });
 
@@ -68,7 +88,8 @@ describe('navigation — buildAppNavView', () => {
   it('stamps each row with a slug-derived data-testid', () => {
     const view = buildAppNavView('org_admin', '/admin/teams');
     expect(view[0]?.testId).toBe(`${APP_NAV_ITEM_TEST_ID_PREFIX}teams`);
-    expect(view[1]?.testId).toBe(`${APP_NAV_ITEM_TEST_ID_PREFIX}invitations`);
-    expect(view[4]?.testId).toBe(`${APP_NAV_ITEM_TEST_ID_PREFIX}rollover`);
+    expect(view[1]?.testId).toBe(`${APP_NAV_ITEM_TEST_ID_PREFIX}org-config`);
+    expect(view[2]?.testId).toBe(`${APP_NAV_ITEM_TEST_ID_PREFIX}invitations`);
+    expect(view[5]?.testId).toBe(`${APP_NAV_ITEM_TEST_ID_PREFIX}rollover`);
   });
 });

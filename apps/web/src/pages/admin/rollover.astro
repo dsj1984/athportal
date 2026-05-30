@@ -36,8 +36,13 @@
 // ADR-0007 (docs/decisions/0007-ui-styling-convention.md) — utility
 // classes resolve against the @theme tokens declared in
 // apps/web/src/styles/global.css; no orphan BEM hooks. Page chrome
-// composes the canonical PageHeader primitive; the initial diff
-// placeholder composes EmptyState (Story #844 / Task #855).
+// composes the shared `<AppLayout>` (Story #971 reference adoption,
+// extended to this surface by Story #1086 so the org-admin can reach
+// every other `/admin/*` surface from the shared header) with the
+// canonical PageHeader primitive inside the layout's <main> slot; the
+// initial diff placeholder composes EmptyState (Story #844 /
+// Task #855). The page keeps its `noindex` robots directive via
+// AppLayout's `head` slot.
 
 import { requireAdminSsr } from '../../lib/ssrAuthGate';
 
@@ -45,6 +50,7 @@ import { requireAdminSsr } from '../../lib/ssrAuthGate';
 // non-admin → 404 (non-enumeration per Epic #11 AC-2/AC-3). The page
 // chrome must not render to non-admin callers, even though the inline
 // client-script fetch would 403 a moment later.
+import AppLayout from '../../components/layout/AppLayout.astro';
 import EmptyState from '../../components/ui/EmptyState.astro';
 import PageHeader from '../../components/ui/PageHeader.astro';
 import { ROLLOVER_TEST_IDS } from '../../components/admin/rollover/RolloverPreview.ts';
@@ -53,16 +59,9 @@ if (__ssr_gate) return __ssr_gate;
 
 ---
 
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="robots" content="noindex, nofollow" />
-    <title>Season rollover · Admin</title>
-  </head>
-  <body>
-    <main class="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
-      <PageHeader title="Season rollover" />
+<AppLayout title="Season rollover · Admin" role="org_admin" activeHref="/admin/rollover">
+  <meta slot="head" name="robots" content="noindex, nofollow" />
+  <PageHeader title="Season rollover" />
 
       <section
         class="flex flex-wrap items-end gap-4 rounded-xl border border-border bg-surface-card p-6 shadow-sm"
@@ -150,9 +149,7 @@ if (__ssr_gate) return __ssr_gate;
         class="text-sm text-text-secondary"
         data-testid={ROLLOVER_TEST_IDS.status}
       ></p>
-    </main>
-  </body>
-</html>
+</AppLayout>
 
 <script>
   import {

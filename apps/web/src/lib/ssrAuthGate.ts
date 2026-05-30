@@ -100,6 +100,44 @@ export function requireSignedIn(
 }
 
 /**
+ * Server-side org-admin probe. Returns `true` when the request's
+ * session resolves to an `org_admin` on the API edge, `false`
+ * otherwise (including non-admin, anonymous, and network-error cases).
+ *
+ * The determination is driven by `users.role` server-side: the API
+ * edge runs `requireRole('org_admin')` on every `/api/v1/admin/*`
+ * route, so a 2xx from the `GET /api/v1/admin/teams` probe means the
+ * caller's `users.role` is `org_admin`, while a 403 (or any non-2xx)
+ * means it is not. Network errors collapse to `false` — the safe
+ * default is "no admin affordance" rather than leaking the surface to
+ * a caller we could not verify.
+ *
+ * Exposed so a non-admin-only surface (e.g. `/dashboard`) can decide
+ * whether to route the caller to the admin landing without duplicating
+ * the probe wiring. `requireAdminSsr` is the gate counterpart that
+ * short-circuits the page render; this helper just reports the boolean.
+ *
+ * @returns `true` when the caller is an org-admin, else `false`.
+ */
+export async function isAdminBySsr(
+  ctx: SsrAuthContext,
+  options: SsrAdminGateOptions = {},
+): Promise<boolean> {
+  const userId = ctx.locals.auth().userId;
+  if (typeof userId !== 'string' || userId.length === 0) return false;
+
+  const apiBaseUrl = options.apiBaseUrl ?? process.env.API_BASE_URL ?? 'http://localhost:8787';
+  const fetchImpl = options.fetchImpl ?? fetch;
+  const cookieHeader = ctx.request.headers.get('cookie') ?? '';
+
+  const probe = await fetchImpl(`${apiBaseUrl}${ADMIN_PROBE_PATH}`, {
+    headers: { accept: 'application/json', cookie: cookieHeader },
+  }).catch(() => null);
+
+  return probe?.ok === true;
+}
+
+/**
  * Anonymous → 302 `/sign-in`. Signed-in non-admin → 404 (non-
  * enumeration). Admin → `null` (caller proceeds).
  *
@@ -120,15 +158,8 @@ export async function requireAdminSsr(
   const signedIn = requireSignedIn(ctx);
   if (signedIn !== null) return signedIn;
 
-  const apiBaseUrl = options.apiBaseUrl ?? process.env.API_BASE_URL ?? 'http://localhost:8787';
-  const fetchImpl = options.fetchImpl ?? fetch;
-  const cookieHeader = ctx.request.headers.get('cookie') ?? '';
-
-  const probe = await fetchImpl(`${apiBaseUrl}${ADMIN_PROBE_PATH}`, {
-    headers: { accept: 'application/json', cookie: cookieHeader },
-  }).catch(() => null);
-
-  if (probe === null || !probe.ok) {
+  const isAdmin = await isAdminBySsr(ctx, options);
+  if (!isAdmin) {
     return new Response('Not Found', { status: 404 });
   }
   return null;
