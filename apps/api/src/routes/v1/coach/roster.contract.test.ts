@@ -56,6 +56,8 @@ function freshCoachDb() {
     '0005_team_metadata.sql',
     '0006_csv_import_batches.sql',
     '0007_roster.sql',
+    // Story #1054 / F33 — nullable first_name/last_name on users.
+    '0010_users_name.sql',
   ]) {
     const sql = readFileSync(join(MIGRATIONS_DIR, file), 'utf8');
     for (const stmt of sql.split('--> statement-breakpoint').map((s) => s.trim())) {
@@ -105,12 +107,20 @@ function seedTeam(db: CoachDb, orgId: string, id: string): string {
   return id;
 }
 
-function seedUser(db: CoachDb, orgId: string, id: string, email?: string): string {
+function seedUser(
+  db: CoachDb,
+  orgId: string,
+  id: string,
+  email?: string,
+  name?: { firstName?: string | null; lastName?: string | null },
+): string {
   db.insert(users)
     .values({
       id,
       clerkSubjectId: `clerk_${id}`,
       email: email ?? `${id}@test.invalid`,
+      firstName: name?.firstName ?? null,
+      lastName: name?.lastName ?? null,
       role: 'member',
       orgId,
       teamId: null,
@@ -236,6 +246,59 @@ describe('GET /api/v1/coach/teams/:teamId/roster — happy path', () => {
       jerseyNumber: '7',
       primaryPosition: 'Setter',
     });
+  });
+});
+
+describe('GET /api/v1/coach/teams/:teamId/roster — display name (Story #1054)', () => {
+  it('renders the Clerk-promoted first/last name when present', async () => {
+    // Arrange — athlete has a real Clerk name promoted into users.
+    const db = freshCoachDb();
+    seedOrg(db, ORG_A);
+    const team = seedTeam(db, ORG_A, 't_name');
+    const coach = actor(ORG_A);
+    seedUser(db, ORG_A, coach.userId, coach.email);
+    seedCoachAssignment(db, ORG_A, team, coach.userId);
+    const athlete = seedUser(db, ORG_A, 'u_named', 'e2e-roster-s4-001@test.invalid', {
+      firstName: 'Grace',
+      lastName: 'Hopper',
+    });
+    seedRosterEntry(db, ORG_A, team, athlete, { id: 're_named' });
+
+    // Act
+    const res = await buildApp(db, coach).request(
+      `/api/v1/coach/teams/${team}/roster`,
+      { method: 'GET' },
+      STUB_ENV,
+    );
+
+    // Assert — the real name wins over the email-derived fallback.
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as RosterListBody;
+    expect(body.data.items[0]?.athleteFullName).toBe('Grace Hopper');
+  });
+
+  it('falls back to the email-derived name when both name columns are null', async () => {
+    // Arrange — athlete with no Clerk name (both columns null).
+    const db = freshCoachDb();
+    seedOrg(db, ORG_A);
+    const team = seedTeam(db, ORG_A, 't_fallback');
+    const coach = actor(ORG_A);
+    seedUser(db, ORG_A, coach.userId, coach.email);
+    seedCoachAssignment(db, ORG_A, team, coach.userId);
+    const athlete = seedUser(db, ORG_A, 'u_noname', 'e2e-roster-s4-001@test.invalid');
+    seedRosterEntry(db, ORG_A, team, athlete, { id: 're_fallback' });
+
+    // Act
+    const res = await buildApp(db, coach).request(
+      `/api/v1/coach/teams/${team}/roster`,
+      { method: 'GET' },
+      STUB_ENV,
+    );
+
+    // Assert — the email local-part is title-cased into the fallback.
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as RosterListBody;
+    expect(body.data.items[0]?.athleteFullName).toBe('E2e Roster S4 001');
   });
 });
 
