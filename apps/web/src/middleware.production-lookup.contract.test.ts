@@ -106,6 +106,8 @@ function freshOnboardingDb(): {
   client.pragma('foreign_keys = ON');
   applyMigration(client, '0000_auth_and_rbac.sql');
   applyMigration(client, '0001_onboarding_schema.sql');
+  // Story #1054 / F33 — nullable first_name/last_name on users.
+  applyMigration(client, '0010_users_name.sql');
   const drizzleDb = drizzle(client);
   return { drizzleDb, client };
 }
