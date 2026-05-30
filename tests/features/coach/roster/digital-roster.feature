@@ -3,7 +3,7 @@ Feature: Coach views and curates their team's digital roster
 
   Epic #11 ships the digital roster surface a coach uses to see the
   athletes assigned to one of their teams, with team-scoped attributes
-  (jersey number, primary position, verification badge) attached to each
+  (jersey number, primary position) attached to each
   row, and to curate that roster — edit attributes, remove athletes, and
   drill into a team-scoped athlete profile. Wire shape (the read
   envelope, the mutation 400/404 denials, the soft-delete row state)
@@ -29,7 +29,7 @@ Feature: Coach views and curates their team's digital roster
   Scenario: Coach sees the roster for their team
     Given my team has at least one accepted athlete on its roster
     Then I see each accepted athlete listed on my team's roster
-    And each row shows the athlete's jersey number, primary position, and verification badge
+    And each row shows the athlete's jersey number and primary position
 
   @pending @issue-997 @ac-9 @persona-coach
   Scenario: Coach updates an athlete's jersey number

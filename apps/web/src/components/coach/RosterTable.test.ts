@@ -42,7 +42,6 @@ describe('COACH_ROSTER_TEST_IDS — canonical data-testid contract', () => {
     expect(COACH_ROSTER_TEST_IDS.row).toBe('coach-roster-row');
     expect(COACH_ROSTER_TEST_IDS.jersey).toBe('coach-roster-jersey');
     expect(COACH_ROSTER_TEST_IDS.position).toBe('coach-roster-position');
-    expect(COACH_ROSTER_TEST_IDS.badge).toBe('coach-roster-badge');
     expect(COACH_ROSTER_TEST_IDS.nameLink).toBe('coach-roster-name-link');
   });
 
@@ -118,14 +117,21 @@ describe('renderRosterRows', () => {
     expect(rows[0]?.getAttribute('data-roster-entry-id')).toBe('re_a');
   });
 
-  it('attaches per-cell testids for jersey, position, and badge', () => {
+  it('attaches per-cell testids for jersey and position', () => {
     renderRosterRows(tbody, [row({ id: 're_one', jerseyNumber: '07', primaryPosition: 'Setter' })]);
 
     const tr = tbody.querySelector('tr');
     expect(tr).not.toBeNull();
     expect(tr?.querySelector('[data-testid="coach-roster-jersey"]')?.textContent).toBe('07');
     expect(tr?.querySelector('[data-testid="coach-roster-position"]')?.textContent).toBe('Setter');
-    expect(tr?.querySelector('[data-testid="coach-roster-badge"]')?.textContent).toBe('Setter');
+  });
+
+  it('no longer renders the verification-badge "Status" cell (Story #1049 / F28)', () => {
+    renderRosterRows(tbody, [row({ id: 're_one', primaryPosition: 'Setter' })]);
+
+    const tr = tbody.querySelector('tr');
+    expect(tr?.querySelector('[data-testid="coach-roster-badge"]')).toBeNull();
+    expect(tr?.querySelector('td[data-col="badge"]')).toBeNull();
   });
 
   it('substitutes an em-dash when jersey or position is null', () => {
@@ -274,10 +280,8 @@ describe('enterEditMode / exitEditMode', () => {
 
     const jerseyTd = tr.querySelector<HTMLElement>('td[data-col="jersey"]');
     const positionTd = tr.querySelector<HTMLElement>('td[data-col="position"]');
-    const badgeTd = tr.querySelector<HTMLElement>(`[data-testid="${COACH_ROSTER_TEST_IDS.badge}"]`);
     expect(jerseyTd?.textContent).toBe('11');
     expect(positionTd?.textContent).toBe('Libero');
-    expect(badgeTd?.textContent).toBe('Libero');
   });
 });
 

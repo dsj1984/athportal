@@ -3,8 +3,8 @@
 // Pure-TS view-shape and rendering helpers for the coach roster page
 // (Epic #11 / Story #912 / Task #918, Story #917 / Task #928). The
 // `.astro` sibling (`./RosterTable.astro`) renders the empty shell
-// composed of the `apps/web/src/components/ui/*` primitives (Badge,
-// Btn); the inline `<script>` on the parent page binds to it via
+// composed of the `apps/web/src/components/ui/*` primitives (Btn);
+// the inline `<script>` on the parent page binds to it via
 // `data-testid` and calls `fetchRoster` + `renderRosterRows` to
 // populate the table on load.
 //
@@ -32,17 +32,21 @@
  * Any change to a string here is a breaking change to the acceptance
  * suite — bump the two in the same PR.
  *
- * Task #928 invariance: every Task #918 id (`root`, `row`, `jersey`,
- * `position`, `badge`, `emptyState`, `error`) carries the same string
+ * Task #928 invariance: every surviving Task #918 id (`root`, `row`,
+ * `jersey`, `position`, `emptyState`, `error`) carries the same string
  * it had at Task #918 close. New ids added in Task #928 are clearly
  * grouped below the original block.
+ *
+ * Story #1049 (F28 cleanup) dropped the `badge` id together with the
+ * verification-badge "Status" column it labelled — the column only
+ * re-rendered the primary position and there is no verification state
+ * to show yet. <!-- Re-introduced by Epic #14 -->
  */
 export const COACH_ROSTER_TEST_IDS = {
   root: 'coach-roster-root',
   row: 'coach-roster-row',
   jersey: 'coach-roster-jersey',
   position: 'coach-roster-position',
-  badge: 'coach-roster-badge',
   emptyState: 'coach-roster-empty',
   error: 'coach-roster-error',
   nameLink: 'coach-roster-name-link',
@@ -131,9 +135,7 @@ export function buildEntryUrl(teamId: string, entryId: string): string {
  * The `data-testid` on each `<tr>` is the row marker; per-cell
  * markers (`coach-roster-jersey`, `coach-roster-position`) attach to
  * the inner `<td>` so the QA suite can target them without re-finding
- * the row. The badge cell carries the `coach-roster-badge` testid
- * whether or not the row has a jersey — it always renders the
- * primary-position chip when present, otherwise an em-dash placeholder.
+ * the row.
  *
  * Task #928 added an "actions" cell carrying the per-row Edit and
  * Remove controls. The edit controls (save/cancel) and the
@@ -178,15 +180,9 @@ export function renderRosterRows(
     positionTd.textContent = item.primaryPosition ?? '—';
     tr.appendChild(positionTd);
 
-    const badgeTd = document.createElement('td');
-    badgeTd.setAttribute('data-col', 'badge');
-    badgeTd.setAttribute('data-testid', COACH_ROSTER_TEST_IDS.badge);
-    // The badge cell carries the same primary-position string; the
-    // visual chrome (rounded pill, soft-translucent tone) comes from
-    // the `.astro` renderer's seeded `<span>` markup, which this
-    // helper does NOT redraw — it only sets the textContent.
-    badgeTd.textContent = item.primaryPosition ?? '—';
-    tr.appendChild(badgeTd);
+    // The verification-badge "Status" cell was dropped in Story #1049
+    // (F28 cleanup) — it duplicated the primary position above with no
+    // verification state to show. <!-- Re-introduced by Epic #14 -->
 
     // Actions cell — Edit + Remove controls + jersey-warning slot.
     // Edit reveals save/cancel; cancel restores the read-only cells.
@@ -323,7 +319,6 @@ export function exitEditMode(
 ): void {
   const jerseyTd = rowCell(tr, 'jersey');
   const positionTd = rowCell(tr, 'position');
-  const badgeTd = tr.querySelector<HTMLElement>(`td[data-testid="${COACH_ROSTER_TEST_IDS.badge}"]`);
   if (!jerseyTd || !positionTd) return;
 
   const jerseyValue = updated
@@ -340,10 +335,6 @@ export function exitEditMode(
   while (positionTd.firstChild) positionTd.removeChild(positionTd.firstChild);
   positionTd.textContent = positionValue;
   positionTd.removeAttribute('data-original');
-
-  if (badgeTd && updated) {
-    badgeTd.textContent = positionValue;
-  }
 
   const editBtn = actionButton(tr, COACH_ROSTER_TEST_IDS.editBtn);
   const removeBtn = actionButton(tr, COACH_ROSTER_TEST_IDS.removeBtn);
