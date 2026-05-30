@@ -52,7 +52,8 @@
     "prepare": "node .agents/scripts/sync-claude-commands.js && node scripts/sync-local-commands.mjs",
     "quality:preview": "node .agents/scripts/quality-preview.js --changed-since HEAD",
     "quality:watch": "node .agents/scripts/quality-watch.js",
-    "quality:ci-local": "pnpm run lint && pnpm run typecheck && pnpm run test && pnpm run build && pnpm run lint:baseline:check && pnpm run knip:strict && pnpm run lint:secrets && node scripts/lint-orphan-bem.mjs && node scripts/lint-astro-frontmatter.mjs && node scripts/lint-astro-script-modules.mjs"
+    "lint:astro-route-collisions": "node scripts/lint-astro-route-collisions.mjs",
+    "quality:ci-local": "pnpm run lint && pnpm run typecheck && pnpm run test && pnpm run build && pnpm run lint:baseline:check && pnpm run knip:strict && pnpm run lint:secrets && node scripts/lint-orphan-bem.mjs && node scripts/lint-astro-frontmatter.mjs && node scripts/lint-astro-script-modules.mjs && node scripts/lint-astro-route-collisions.mjs"
   },
   "dependencies": {
     "ajv": "^8.20.0",

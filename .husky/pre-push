@@ -27,6 +27,11 @@
 #                      into treating the trailing comment body as
 #                      script content, producing parser errors at
 #                      `pnpm dev` time.
+#   8. lint-astro-route-collisions — fails when a non-`_`-prefixed
+#                      `.ts`/`.tsx` file in `apps/web/src/pages/` has
+#                      an `.astro` sibling with the same stem. Astro
+#                      warns today and will hard-error in a future
+#                      major (Story #1068).
 #
 # secretlint runs on pre-commit only (staged scope). At push time the
 # committed history is already past the local trust boundary;
@@ -43,3 +48,4 @@ pnpm run lint:baseline:check
 pnpm run lint:steps
 node scripts/lint-orphan-bem.mjs
 node scripts/lint-astro-frontmatter.mjs
+node scripts/lint-astro-route-collisions.mjs

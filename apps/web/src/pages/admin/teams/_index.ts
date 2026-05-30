@@ -1,4 +1,4 @@
-// apps/web/src/pages/admin/teams/index.ts
+// apps/web/src/pages/admin/teams/_index.ts
 //
 // Pure-TS view-builder for the `/admin/teams` list page (Story #657 /
 // Task #676). The `.astro` sibling renders the markup; this module
@@ -6,6 +6,12 @@
 //
 // Kept here as a sibling .ts so the same evaluator is unit-testable
 // without spinning Astro.
+//
+// Prefixed with `_` so Astro does not register this module as a route.
+// Astro's router ignores any file whose name starts with `_`, which
+// prevents the boot-time "route defined in both .ts and .astro" warning
+// that fires when a plain `.ts` sits alongside its `.astro` sibling in
+// the pages directory (Story #1068).
 
 export interface TeamListEntry {
   readonly id: string;

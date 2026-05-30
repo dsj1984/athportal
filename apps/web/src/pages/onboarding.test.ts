@@ -8,7 +8,7 @@ import type { ActiveLegalDocuments } from '@repo/shared/db/queries/legalDocument
 //
 // Story #574 / Task #580.
 import { describe, expect, it } from 'vitest';
-import { ONBOARDING_PAGE_TEST_IDS, buildOnboardingPageView } from './onboarding';
+import { ONBOARDING_PAGE_TEST_IDS, buildOnboardingPageView } from './_onboarding';
 
 function makeActiveDocs(
   overrides: {

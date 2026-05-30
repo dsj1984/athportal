@@ -13,7 +13,7 @@ import {
   EMPTY_DASHBOARD_DATA,
   buildDashboard,
   buildRosterRows,
-} from './dashboard';
+} from './_dashboard';
 
 const REQUIRED_WIDGET_IDS: readonly DashboardWidgetId[] = [
   'dashboard-widget-recent-activity',

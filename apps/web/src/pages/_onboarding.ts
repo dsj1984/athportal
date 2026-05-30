@@ -1,11 +1,17 @@
-// apps/web/src/pages/onboarding.ts
+// apps/web/src/pages/_onboarding.ts
 //
 // Pure-TS view-shape builder for the `/onboarding` route. Mirrors the
-// pattern set by `pages/dashboard.ts`: the `.astro` sibling consumes
+// pattern set by `pages/_dashboard.ts`: the `.astro` sibling consumes
 // `buildOnboardingPageView(activeLegalDocuments)` and renders the five
 // islands in their canonical order. The unit tests target the builder
 // directly because the web Vitest project runs in `node` env with no
 // JSX/Astro renderer wired in (see `apps/web/vitest.config.ts`).
+//
+// Prefixed with `_` so Astro does not register this module as a route.
+// Astro's router ignores any file whose name starts with `_`, which
+// prevents the boot-time "route defined in both .ts and .astro" warning
+// that fires when a plain `.ts` sits alongside its `.astro` sibling in
+// the pages directory (Story #1068).
 //
 // Story #574 / Task #580. Tech Spec #490. PRD #489.
 
