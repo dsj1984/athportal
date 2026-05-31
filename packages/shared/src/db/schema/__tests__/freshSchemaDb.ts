@@ -70,9 +70,9 @@ function applyMigration(client: SqliteDatabase, sql: string): void {
 
 /**
  * Build an ephemeral in-memory SQLite handle with the full Epic #9
- * schema graph applied via the canonical migrations 0000, 0001, and
- * 0002. Foreign-key enforcement is enabled so FK violations surface
- * the same way they do in production.
+ * schema graph applied via the canonical migration set (0000–0011, less
+ * the roster-only 0009). Foreign-key enforcement is enabled so FK
+ * violations surface the same way they do in production.
  */
 export function freshSchemaDb(): SchemaTestDb {
   const client = new Database(':memory:');
@@ -87,5 +87,6 @@ export function freshSchemaDb(): SchemaTestDb {
   applyMigration(client, loadMigration('0007_roster.sql'));
   applyMigration(client, loadMigration('0008_csv_import_batch_filename.sql'));
   applyMigration(client, loadMigration('0010_users_name.sql'));
+  applyMigration(client, loadMigration('0011_organization_type_check.sql'));
   return buildHandle(client);
 }
