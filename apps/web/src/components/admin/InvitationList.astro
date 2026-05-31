@@ -91,13 +91,11 @@ import DataTable from '../ui/DataTable.astro';
   // the page island rather than a shared bundle because the surface
   // is small and the dependency footprint is zero — pulling in React
   // for one table is the wrong trade-off at this scope.
-
-  interface InvitationRow {
-    readonly id: string;
-    readonly email: string;
-    readonly role: 'coach' | 'athlete';
-    readonly createdAt: number;
-  }
+  //
+  // The row type and the "Sent" timestamp formatter live in the
+  // sibling `InvitationList.ts` module so the epoch-ms contract stays
+  // unit-tested (Story #1088).
+  import { type InvitationRow, formatInvitationTimestamp } from './InvitationList';
 
   interface ListResponse {
     readonly success: true;
@@ -108,10 +106,6 @@ import DataTable from '../ui/DataTable.astro';
     if (typeof x !== 'object' || x === null) return false;
     const o = x as { success?: unknown; data?: unknown };
     return o.success === true && Array.isArray(o.data);
-  }
-
-  function format(ts: number): string {
-    return new Date(ts * 1000).toLocaleString();
   }
 
   function render(root: HTMLElement, rows: readonly InvitationRow[]): void {
@@ -144,7 +138,7 @@ import DataTable from '../ui/DataTable.astro';
       const created = tr.querySelector<HTMLElement>('[data-invitations-created]');
       if (email) email.textContent = row.email;
       if (role) role.textContent = row.role;
-      if (created) created.textContent = format(row.createdAt);
+      if (created) created.textContent = formatInvitationTimestamp(row.createdAt);
       tbody.appendChild(fragment);
     }
   }
