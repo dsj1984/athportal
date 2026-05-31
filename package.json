@@ -93,7 +93,8 @@
       "drizzle-orm@<0.45.2": ">=0.45.2",
       "@clerk/clerk-expo@<2.19.36": ">=2.19.36",
       "@clerk/clerk-react@<5.61.6": ">=5.61.6",
-      "qs@<6.15.2": ">=6.15.2"
+      "qs@<6.15.2": ">=6.15.2",
+      "esbuild@<0.25.0": ">=0.25.0"
     },
     "patchedDependencies": {
       "oxc-parser@0.130.0": "patches/oxc-parser@0.130.0.patch"
