@@ -123,7 +123,7 @@
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
     "@vitejs/plugin-react": "^5.0.0",
-    "drizzle-kit": "^0.30.0",
+    "drizzle-kit": "^0.31.10",
     "fast-check": "^4.8.0",
     "jsdom": "^26.0.0",
     "vitest": "^4.1.6"
