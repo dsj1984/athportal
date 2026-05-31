@@ -17,7 +17,7 @@ land in subsequent Epics. Capability tracking lives on
 | Concern | Tool | Pinned via |
 | --- | --- | --- |
 | Node runtime | Node 24 | [`.nvmrc`](./.nvmrc) + `engines.node` in [`package.json`](./package.json) |
-| Package manager | pnpm 9.15.9 | `packageManager` in [`package.json`](./package.json) |
+| Package manager | pnpm 11.5.0 | `packageManager` in [`package.json`](./package.json) |
 | Monorepo runner | Turborepo 2 | [`turbo.json`](./turbo.json) |
 | Workspaces | `apps/*`, `packages/*` | [`pnpm-workspace.yaml`](./pnpm-workspace.yaml) (folders pending) |
 | Lint / format (primary) | Biome 1.9 | [`biome.json`](./biome.json) |
