@@ -52,10 +52,7 @@ function fakeCookies(): FakeCookies {
   };
 }
 
-function fakeContext(opts: {
-  cookieHeader: string | null;
-  sessionId: string | null;
-}): {
+function fakeContext(opts: { cookieHeader: string | null; sessionId: string | null }): {
   ctx: Parameters<typeof POST>[0];
   cookies: FakeCookies;
   redirects: Array<{ path: string; status: number | undefined }>;

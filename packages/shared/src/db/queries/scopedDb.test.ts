@@ -140,25 +140,25 @@ describe('scopedDb — construction guards', () => {
 });
 
 describe('scopedDb — read surface injects org-id scope', () => {
-  it.each(['teams', 'users', 'coachAssignments', 'athleteMemberships'] as const)(
-    'findFirst(%s) forwards eq(<table>.org_id, actor.orgId)',
-    async (name) => {
-      const { handle, spies } = makeMockHandle();
-      const scoped = scopedDb(handle, orgAdmin('org-A'));
-      // Touch the lazy getter dynamically; one path per table name.
-      const node = (scoped as unknown as Record<string, { findFirst: () => Promise<unknown> }>)[
-        name
-      ];
-      if (!node) throw new Error(`missing scoped node for ${name}`);
-      await node.findFirst();
-      const spy = spies.findFirst[name];
-      if (!spy) throw new Error(`missing spy for ${name}`);
-      expect(spy).toHaveBeenCalledTimes(1);
-      const callArg = spy.mock.calls[0]?.[0] as { where: SQL } | undefined;
-      expect(callArg).toBeDefined();
-      expect(callArg?.where).toBeDefined();
-    },
-  );
+  it.each([
+    'teams',
+    'users',
+    'coachAssignments',
+    'athleteMemberships',
+  ] as const)('findFirst(%s) forwards eq(<table>.org_id, actor.orgId)', async (name) => {
+    const { handle, spies } = makeMockHandle();
+    const scoped = scopedDb(handle, orgAdmin('org-A'));
+    // Touch the lazy getter dynamically; one path per table name.
+    const node = (scoped as unknown as Record<string, { findFirst: () => Promise<unknown> }>)[name];
+    if (!node) throw new Error(`missing scoped node for ${name}`);
+    await node.findFirst();
+    const spy = spies.findFirst[name];
+    if (!spy) throw new Error(`missing spy for ${name}`);
+    expect(spy).toHaveBeenCalledTimes(1);
+    const callArg = spy.mock.calls[0]?.[0] as { where: SQL } | undefined;
+    expect(callArg).toBeDefined();
+    expect(callArg?.where).toBeDefined();
+  });
 
   it('organizations scope keys off organizations.id (the tenant boundary itself)', async () => {
     const { handle, spies } = makeMockHandle();

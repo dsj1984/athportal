@@ -59,17 +59,18 @@ describe('decideStyleguideAccess', () => {
     expect(decision).toEqual({ kind: 'redirect', to: '/', status: 302 });
   });
 
-  it.each<Role>(['member', 'team_admin', 'org_admin'])(
-    'redirects a signed-in non-dev_admin (%s) to / with status 302',
-    (role) => {
-      const decision = decideStyleguideAccess({
-        subjectId: 'user_x',
-        roleLookup: () => role,
-      });
+  it.each<Role>([
+    'member',
+    'team_admin',
+    'org_admin',
+  ])('redirects a signed-in non-dev_admin (%s) to / with status 302', (role) => {
+    const decision = decideStyleguideAccess({
+      subjectId: 'user_x',
+      roleLookup: () => role,
+    });
 
-      expect(decision).toEqual({ kind: 'redirect', to: '/', status: 302 });
-    },
-  );
+    expect(decision).toEqual({ kind: 'redirect', to: '/', status: 302 });
+  });
 
   it('allows a signed-in dev_admin to render the page', () => {
     const decision = decideStyleguideAccess({
@@ -118,13 +119,14 @@ describe('lookupRoleBySubject', () => {
     expect(lookupRoleBySubject(db, 'user_no_row')).toBeNull();
   });
 
-  it.each<Role>(['member', 'team_admin', 'org_admin'])(
-    "returns the user's role verbatim when role != dev_admin (PRD #742 AC-10: role=%s)",
-    (role) => {
-      const db = mockDbReturning([{ role }]);
-      expect(lookupRoleBySubject(db, 'user_x')).toBe(role);
-    },
-  );
+  it.each<Role>([
+    'member',
+    'team_admin',
+    'org_admin',
+  ])("returns the user's role verbatim when role != dev_admin (PRD #742 AC-10: role=%s)", (role) => {
+    const db = mockDbReturning([{ role }]);
+    expect(lookupRoleBySubject(db, 'user_x')).toBe(role);
+  });
 
   it("returns 'dev_admin' when the user's role is dev_admin (PRD #742 AC-10)", () => {
     const db = mockDbReturning([{ role: 'dev_admin' }]);
