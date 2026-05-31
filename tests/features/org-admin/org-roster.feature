@@ -14,7 +14,8 @@ Feature: Org admin browses the org-wide roster
   scenario only asserts what the org admin sees on the page.
 
   @persona-org-admin
-  Scenario: Org admin browses the org-wide roster
+  Scenario: Org admin reaches the org-wide roster from the app header
     Given I am signed in as "org admin"
+    And I open the admin org configuration page
     When I follow the "Roster" link in the app header
     Then I see the org-wide roster table
