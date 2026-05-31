@@ -8,12 +8,10 @@
  * migrations.
  *
  * The negative-case test (an unsupported string is rejected by the DB
- * layer) is currently `it.skip` and tracked by issue #642 — the
- * `organizations` table rebuilt by migration 0002 lacks the `CHECK`
- * constraint that would make Drizzle's TypeScript `enum` hint
- * load-bearing at the persistence layer. The skip points to the gap so
- * the assertion flips active in the same PR that lands the follow-up
- * migration.
+ * layer) is enforced by issue #642 — migration
+ * 0011_organization_type_check.sql rebuilds the `organizations` table
+ * with the `CHECK` constraint that makes Drizzle's TypeScript `enum`
+ * hint load-bearing at the persistence layer.
  */
 
 import { eq } from 'drizzle-orm';
@@ -41,14 +39,12 @@ describe('organizations.organization_type — enum acceptance', () => {
 });
 
 describe('organizations.organization_type — enum rejection', () => {
-  // Gated on follow-up issue #642 (add CHECK constraint to
-  // `organizations.organization_type` via migration 0003). The
-  // production schema currently relies on the Drizzle TypeScript enum
-  // hint only — the DB itself accepts arbitrary text. Once the CHECK
-  // constraint lands, flip `.skip` to active and the assertion below
-  // will start enforcing the rejection contract at the persistence
-  // boundary.
-  it.skip('rejects an unsupported string at insert time (blocked on #642)', async () => {
+  // Resolved by issue #642: migration 0011_organization_type_check.sql
+  // adds `CHECK ("organization_type" IN ('CLUB','HIGH_SCHOOL','COLLEGE'))`
+  // to the rebuilt `organizations` table, so the Drizzle TypeScript enum
+  // hint is now load-bearing at the persistence layer. This assertion
+  // enforces the rejection contract at the DB boundary.
+  it('rejects an unsupported string at insert time', async () => {
     const db = freshSchemaDb();
 
     // Cast bypasses the compile-time enum guard so we exercise the
