@@ -28,6 +28,7 @@
 // what the API actually wants — passing a `users.id` returns
 // `entry-not-found`.
 
+import AppLayout from '../../../../../../../components/layout/AppLayout.astro';
 import PageHeader from '../../../../../../../components/ui/PageHeader.astro';
 
 const { teamId, rosterEntryId } = Astro.params;
@@ -39,66 +40,59 @@ if (typeof rosterEntryId !== 'string' || rosterEntryId.length === 0) {
 }
 ---
 
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="robots" content="noindex, nofollow" />
-    <title>Athlete · Coach</title>
-  </head>
-  <body class="bg-surface-page text-text-primary">
-    <main
-      class="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8"
-      data-team-id={teamId}
-      data-roster-entry-id={rosterEntryId}
-      data-coach-athlete-profile
-      data-testid="athlete-profile-root"
-    >
-      <PageHeader title="Athlete profile">
-        <a
-          slot="actions"
-          class="inline-flex items-center justify-center rounded-md border border-border bg-surface-card px-3 py-2 text-sm font-medium text-text-primary shadow-sm hover:bg-surface-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
-          href={`/app/coach/teams/${teamId}/roster`}
-        >
-          Back to roster
-        </a>
-      </PageHeader>
-
-      <p
-        class="rounded-md border border-action-coral bg-surface-card px-4 py-3 text-sm text-action-coral"
-        data-testid="athlete-profile-error"
-        role="alert"
-        hidden
-      ></p>
-
-      <dl
-        class="grid grid-cols-1 gap-4 rounded-md border border-border bg-surface-card p-4 sm:grid-cols-2"
+<AppLayout title="Athlete · Coach" role="coach" activeHref="/dashboard">
+  <meta name="robots" content="noindex, nofollow" slot="head" />
+  <div
+    data-team-id={teamId}
+    data-roster-entry-id={rosterEntryId}
+    data-coach-athlete-profile
+    data-testid="athlete-profile-root"
+    class="flex flex-col gap-6"
+  >
+    <PageHeader title="Athlete profile">
+      <a
+        slot="actions"
+        class="inline-flex items-center justify-center rounded-md border border-border bg-surface-card px-3 py-2 text-sm font-medium text-text-primary shadow-sm hover:bg-surface-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+        href={`/app/coach/teams/${teamId}/roster`}
       >
-        <div>
-          <dt class="text-sm font-medium text-text-secondary">Name</dt>
-          <dd
-            class="mt-1 text-base text-text-primary"
-            data-testid="athlete-profile-name"
-          >—</dd>
-        </div>
-        <div>
-          <dt class="text-sm font-medium text-text-secondary">Jersey</dt>
-          <dd
-            class="mt-1 text-base text-text-primary"
-            data-testid="athlete-profile-jersey"
-          >—</dd>
-        </div>
-        <div>
-          <dt class="text-sm font-medium text-text-secondary">Position</dt>
-          <dd
-            class="mt-1 text-base text-text-primary"
-            data-testid="athlete-profile-position"
-          >—</dd>
-        </div>
-      </dl>
-    </main>
-  </body>
-</html>
+        Back to roster
+      </a>
+    </PageHeader>
+
+    <p
+      class="rounded-md border border-action-coral bg-surface-card px-4 py-3 text-sm text-action-coral"
+      data-testid="athlete-profile-error"
+      role="alert"
+      hidden
+    ></p>
+
+    <dl
+      class="grid grid-cols-1 gap-4 rounded-md border border-border bg-surface-card p-4 sm:grid-cols-2"
+    >
+      <div>
+        <dt class="text-sm font-medium text-text-secondary">Name</dt>
+        <dd
+          class="mt-1 text-base text-text-primary"
+          data-testid="athlete-profile-name"
+        >—</dd>
+      </div>
+      <div>
+        <dt class="text-sm font-medium text-text-secondary">Jersey</dt>
+        <dd
+          class="mt-1 text-base text-text-primary"
+          data-testid="athlete-profile-jersey"
+        >—</dd>
+      </div>
+      <div>
+        <dt class="text-sm font-medium text-text-secondary">Position</dt>
+        <dd
+          class="mt-1 text-base text-text-primary"
+          data-testid="athlete-profile-position"
+        >—</dd>
+      </div>
+    </dl>
+  </div>
+</AppLayout>
 
 <script>
   interface ApiEntry {

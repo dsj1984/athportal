@@ -27,68 +27,64 @@
 //     (no innerHTML / dangerouslySetInnerHTML).
 //   - No PII or token material is rendered into the static markup.
 
+import RootLayout from '../../../../layouts/RootLayout.astro';
+
 const { token } = Astro.params;
 if (typeof token !== 'string' || token.length === 0) {
   return new Response('Not Found', { status: 404 });
 }
 ---
 
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="robots" content="noindex, nofollow" />
-    <title>Accept roster invite</title>
-  </head>
-  <body class="bg-surface-page text-text-primary">
-    <main
-      class="mx-auto flex w-full max-w-xl flex-col gap-6 px-4 py-12 sm:px-6"
-      data-roster-invite-action="accept"
+<RootLayout title="Accept roster invite">
+  <meta name="robots" content="noindex, nofollow" slot="head" />
+  <main
+    class="mx-auto flex w-full max-w-xl flex-col gap-6 px-4 py-12 sm:px-6"
+    data-roster-invite-action="accept"
+  >
+    <h1 class="text-2xl font-semibold">Joining the team</h1>
+
+    <p
+      class="rounded-md border border-border bg-surface-card px-4 py-3 text-sm"
+      data-testid="roster-invite-pending"
     >
-      <h1 class="text-2xl font-semibold">Joining the team</h1>
+      Confirming your invitation…
+    </p>
 
-      <p
-        class="rounded-md border border-border bg-surface-card px-4 py-3 text-sm"
-        data-testid="roster-invite-pending"
-      >
-        Confirming your invitation…
+    <section
+      class="rounded-md border border-border bg-surface-card px-4 py-3 text-sm"
+      data-testid="roster-invite-accept-confirm"
+      hidden
+    >
+      <h2 class="text-lg font-semibold">You’re on the roster</h2>
+      <p class="mt-2">
+        Your coach has been notified. You can close this tab — your team
+        will appear the next time you sign in.
       </p>
+    </section>
 
-      <section
-        class="rounded-md border border-border bg-surface-card px-4 py-3 text-sm"
-        data-testid="roster-invite-accept-confirm"
+    <section
+      class="rounded-md border border-action-coral bg-surface-card px-4 py-3 text-sm text-action-coral"
+      data-testid="roster-invite-error"
+      role="alert"
+      hidden
+    >
+      <h2 class="text-lg font-semibold">We couldn’t accept this invite</h2>
+      <p class="mt-2" data-roster-invite-error-message>
+        Something went wrong.
+      </p>
+      <a
+        class="mt-3 inline-flex items-center rounded-md bg-action-coral px-3 py-1.5 font-medium text-surface-card"
+        data-testid="roster-invite-sign-up"
+        data-roster-invite-sign-up
+        href="/sign-up"
         hidden
       >
-        <h2 class="text-lg font-semibold">You’re on the roster</h2>
-        <p class="mt-2">
-          Your coach has been notified. You can close this tab — your team
-          will appear the next time you sign in.
-        </p>
-      </section>
+        Sign up
+      </a>
+    </section>
+  </main>
 
-      <section
-        class="rounded-md border border-action-coral bg-surface-card px-4 py-3 text-sm text-action-coral"
-        data-testid="roster-invite-error"
-        role="alert"
-        hidden
-      >
-        <h2 class="text-lg font-semibold">We couldn’t accept this invite</h2>
-        <p class="mt-2" data-roster-invite-error-message>
-          Something went wrong.
-        </p>
-        <a
-          class="mt-3 inline-flex items-center rounded-md bg-action-coral px-3 py-1.5 font-medium text-surface-card"
-          data-testid="roster-invite-sign-up"
-          data-roster-invite-sign-up
-          href="/sign-up"
-          hidden
-        >
-          Sign up
-        </a>
-      </section>
-    </main>
-
-    <script>
+  <script>
       import { resolveAcceptError } from './accept-page';
 
       interface AcceptEnvelope {
@@ -187,5 +183,5 @@ if (typeof token !== 'string' || token.length === 0) {
 
       void run();
     </script>
-  </body>
-</html>
+  </main>
+</RootLayout>

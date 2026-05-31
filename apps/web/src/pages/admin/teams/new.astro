@@ -18,6 +18,7 @@ import { requireAdminSsr } from '../../../lib/ssrAuthGate';
 // non-admin → 404 (non-enumeration per Epic #11 AC-2/AC-3). The page
 // chrome must not render to non-admin callers, even though the inline
 // client-script fetch would 403 a moment later.
+import AppLayout from '../../../components/layout/AppLayout.astro';
 import PageHeader from '../../../components/ui/PageHeader.astro';
 import TeamForm from '../../../components/admin/teams/TeamForm.astro';
 const __ssr_gate = await requireAdminSsr(Astro);
@@ -25,26 +26,17 @@ if (__ssr_gate) return __ssr_gate;
 
 ---
 
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="robots" content="noindex, nofollow" />
-    <title>New team · Admin</title>
-  </head>
-  <body class="bg-surface-page text-text-primary">
-    <main class="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
-      <PageHeader title="Create team">
-        <a
-          slot="actions"
-          class="inline-flex items-center justify-center rounded-md border border-border bg-surface-card px-3 py-2 text-sm font-medium text-text-primary shadow-sm hover:bg-surface-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
-          href="/admin/teams"
-        >
-          Back to teams
-        </a>
-      </PageHeader>
+<AppLayout title="New team · Admin" role="org_admin" activeHref="/admin/teams">
+  <meta name="robots" content="noindex, nofollow" slot="head" />
+  <PageHeader title="Create team">
+    <a
+      slot="actions"
+      class="inline-flex items-center justify-center rounded-md border border-border bg-surface-card px-3 py-2 text-sm font-medium text-text-primary shadow-sm hover:bg-surface-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+      href="/admin/teams"
+    >
+      Back to teams
+    </a>
+  </PageHeader>
 
-      <TeamForm mode="create" action="/api/v1/admin/teams" />
-    </main>
-  </body>
-</html>
+  <TeamForm mode="create" action="/api/v1/admin/teams" />
+</AppLayout>
