@@ -35,3 +35,20 @@ function resolvePagePath(pageName: string): string {
 When('I open the {word} page', async ({ page }, pageName: string) => {
   await page.goto(resolvePagePath(`${pageName} page`));
 });
+
+/**
+ * Follow a primary navigation link in the authenticated App Shell header
+ * by its visible label. Each header row renders with a stable
+ * `app-nav-item-<slug>` data-testid (the `APP_NAV_ITEM_TEST_ID_PREFIX`
+ * contract pinned in `apps/web/src/lib/navigation.ts`); the slug
+ * derivation here mirrors that registry so scenarios name the link by
+ * its label ("Roster") without mentioning a route path or selector.
+ */
+When('I follow the {string} link in the app header', async ({ page }, label: string) => {
+  const slug = label
+    .toLowerCase()
+    .replace(/&/g, 'and')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  await page.getByTestId(`app-nav-item-${slug}`).click();
+});

@@ -13,9 +13,9 @@
 //     preview.
 //   - This module carries the *production* nav set adopted by the
 //     `<AppLayout>` header. The two diverge intentionally — production
-//     surfaces today are CRUD pages (`/admin/teams`, `/admin/org`,
-//     `/admin/invitations`, `/admin/import`, `/admin/reports`,
-//     `/admin/rollover`) whereas the
+//     surfaces today are CRUD pages (`/admin/teams`, `/admin/roster`,
+//     `/admin/org`, `/admin/invitations`, `/admin/import`,
+//     `/admin/reports`, `/admin/rollover`) whereas the
 //     styleguide preview uses the post-MVP "Overview / Coaches /
 //     Athletes / Events" shape that the dashboard Epic will deliver.
 //
@@ -26,6 +26,9 @@
 // shared header, and adopted `<AppLayout>` on the remaining admin
 // pages (`/admin/org`, `/admin/reports`, `/admin/rollover`,
 // `/admin/invitations`) that previously rendered a bare `<main>`.
+// Story #1092 added the `/admin/roster` (Roster) row — the org-wide
+// roster page (`/admin/roster`, shipped by Story #974) had no header
+// affordance and was reachable only by typing the URL.
 
 /**
  * Roles consumed by the App Shell nav. Mirrors the values the API edge
@@ -62,6 +65,7 @@ export interface AppNavItem {
 export const APP_NAV: Readonly<Record<AppNavRole, readonly AppNavItem[]>> = {
   org_admin: [
     { label: 'Teams', href: '/admin/teams' },
+    { label: 'Roster', href: '/admin/roster' },
     { label: 'Org config', href: '/admin/org' },
     { label: 'Invitations', href: '/admin/invitations' },
     { label: 'Import', href: '/admin/import' },
