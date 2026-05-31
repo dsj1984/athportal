@@ -16,7 +16,7 @@
     "astro": "astro"
   },
   "devDependencies": {
-    "@clerk/testing": "^2.0.31",
+    "@clerk/testing": "^2.0.34",
     "@playwright/test": "^1.60.0",
     "@repo/config": "workspace:*",
     "@repo/shared": "workspace:*",
@@ -30,16 +30,16 @@
   },
   "dependencies": {
     "@astrojs/node": "^9",
-    "@astrojs/react": "^5.0.5",
-    "@clerk/astro": "^3.2.4",
-    "@sentry/astro": "^10.53.1",
+    "@astrojs/react": "^5.0.6",
+    "@clerk/astro": "^3.3.2",
+    "@sentry/astro": "^10.55.0",
     "@tailwindcss/vite": "^4.3.0",
     "astro": "^5",
     "better-sqlite3": "^12.10.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.45.2",
-    "lucide-react": "^1.16.0",
+    "lucide-react": "^1.17.0",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.6.0",
     "tailwindcss": "^4.3.0"

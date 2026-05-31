@@ -18,10 +18,10 @@
     "vitest": "^4.1.6"
   },
   "dependencies": {
-    "@clerk/backend": "^3.4.9",
+    "@clerk/backend": "^3.4.14",
     "@hono/node-server": "^2.0.4",
     "@repo/shared": "workspace:*",
-    "@sentry/cloudflare": "^10.53.1",
+    "@sentry/cloudflare": "^10.55.0",
     "drizzle-orm": "^0.45.2",
     "hono": "^4.6.13"
   }
