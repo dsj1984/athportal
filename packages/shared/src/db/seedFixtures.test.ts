@@ -174,6 +174,8 @@ const FIXTURE_MIGRATIONS = [
   '0007_roster.sql',
   // Story #1054 / F33 — nullable first_name/last_name on users.
   '0010_users_name.sql',
+  // Story #642 — DB-layer CHECK on organizations.organization_type.
+  '0011_organization_type_check.sql',
 ];
 
 const schema = {

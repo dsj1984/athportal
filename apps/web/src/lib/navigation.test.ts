@@ -15,8 +15,11 @@ import { APP_NAV, APP_NAV_ITEM_TEST_ID_PREFIX, buildAppNavView, resolveAppNav } 
 
 describe('navigation — org_admin nav set (Story #971 acceptance)', () => {
   it('renders the org-admin rows in canonical order', () => {
+    // Story #1092 inserted Roster directly after Teams (the people /
+    // structure grouping).
     expect(APP_NAV.org_admin.map((r) => r.label)).toEqual([
       'Teams',
+      'Roster',
       'Org config',
       'Invitations',
       'Import',
@@ -28,6 +31,7 @@ describe('navigation — org_admin nav set (Story #971 acceptance)', () => {
   it('points org-admin rows at their canonical hrefs', () => {
     expect(APP_NAV.org_admin.map((r) => r.href)).toEqual([
       '/admin/teams',
+      '/admin/roster',
       '/admin/org',
       '/admin/invitations',
       '/admin/import',
@@ -39,10 +43,12 @@ describe('navigation — org_admin nav set (Story #971 acceptance)', () => {
   it('includes a row for every admin surface the org-admin role grants', () => {
     // Story #1086 acceptance: org-admin must reach Teams, Org config,
     // pending invitations, Import, Reports, and Rollover via visible
-    // affordances. The shared header is the affordance carrier.
+    // affordances. Story #1092 adds the org-wide Roster. The shared
+    // header is the affordance carrier.
     const hrefs = new Set(APP_NAV.org_admin.map((r) => r.href));
     for (const required of [
       '/admin/teams',
+      '/admin/roster',
       '/admin/org',
       '/admin/invitations',
       '/admin/import',
@@ -51,6 +57,15 @@ describe('navigation — org_admin nav set (Story #971 acceptance)', () => {
     ]) {
       expect(hrefs.has(required)).toBe(true);
     }
+  });
+
+  it('exposes the org-wide roster affordance only to org_admin (Story #1092)', () => {
+    expect(APP_NAV.org_admin.some((r) => r.href === '/admin/roster')).toBe(true);
+    // The roster is an org-admin surface — it must not leak into the
+    // coach or athlete nav sets (both empty today; assert the negative
+    // so a future non-empty set can't silently inherit it).
+    expect(APP_NAV.coach.some((r) => r.href === '/admin/roster')).toBe(false);
+    expect(APP_NAV.athlete.some((r) => r.href === '/admin/roster')).toBe(false);
   });
 });
 
@@ -88,8 +103,9 @@ describe('navigation — buildAppNavView', () => {
   it('stamps each row with a slug-derived data-testid', () => {
     const view = buildAppNavView('org_admin', '/admin/teams');
     expect(view[0]?.testId).toBe(`${APP_NAV_ITEM_TEST_ID_PREFIX}teams`);
-    expect(view[1]?.testId).toBe(`${APP_NAV_ITEM_TEST_ID_PREFIX}org-config`);
-    expect(view[2]?.testId).toBe(`${APP_NAV_ITEM_TEST_ID_PREFIX}invitations`);
-    expect(view[5]?.testId).toBe(`${APP_NAV_ITEM_TEST_ID_PREFIX}rollover`);
+    expect(view[1]?.testId).toBe(`${APP_NAV_ITEM_TEST_ID_PREFIX}roster`);
+    expect(view[2]?.testId).toBe(`${APP_NAV_ITEM_TEST_ID_PREFIX}org-config`);
+    expect(view[3]?.testId).toBe(`${APP_NAV_ITEM_TEST_ID_PREFIX}invitations`);
+    expect(view[6]?.testId).toBe(`${APP_NAV_ITEM_TEST_ID_PREFIX}rollover`);
   });
 });

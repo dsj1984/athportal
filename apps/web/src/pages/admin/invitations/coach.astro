@@ -22,21 +22,16 @@ import { requireAdminSsr } from '../../../lib/ssrAuthGate';
 // non-admin → 404 (non-enumeration per Epic #11 AC-2/AC-3). The page
 // chrome must not render to non-admin callers, even though the inline
 // client-script fetch would 403 a moment later.
+import AppLayout from '../../../components/layout/AppLayout.astro';
 import CoachInviteForm from '../../../components/admin/invitations/CoachInviteForm.astro';
 const __ssr_gate = await requireAdminSsr(Astro);
 if (__ssr_gate) return __ssr_gate;
 
 ---
 
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <title>Invite a coach</title>
-  </head>
-  <body>
-    <main aria-label="Invite a coach">
-      <h1>Invite a coach</h1>
-      <CoachInviteForm />
-    </main>
-  </body>
-</html>
+<AppLayout title="Invite a coach · Admin" role="org_admin" activeHref="/admin/invitations">
+  <section aria-label="Invite a coach">
+    <h1>Invite a coach</h1>
+    <CoachInviteForm />
+  </section>
+</AppLayout>
