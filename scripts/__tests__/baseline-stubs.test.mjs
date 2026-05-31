@@ -115,42 +115,42 @@ describe('baseline stubs (crap + maintainability)', () => {
     expect(doc.rows.length).toBeGreaterThan(0);
   });
 
-  it.each(STUBS)(
-    '$kind rollup * carries real measurements (primed in Story #375)',
-    ({ file, rollupAxes }) => {
-      const doc = loadJson(path.join(BASELINES_DIR, file));
-      // Replaces the previous "values are zero placeholders" pin. After
-      // priming, at least one axis MUST be non-zero — otherwise the
-      // `*:check` gate either misread the producer or the producer
-      // emitted no data, both of which we want to fail loud.
-      const someAxisNonZero = rollupAxes.some((axis) => {
-        const v = doc.rollup['*'][axis];
-        return typeof v === 'number' && v !== 0;
-      });
-      expect(someAxisNonZero).toBe(true);
-    },
-  );
+  it.each(STUBS)('$kind rollup * carries real measurements (primed in Story #375)', ({
+    file,
+    rollupAxes,
+  }) => {
+    const doc = loadJson(path.join(BASELINES_DIR, file));
+    // Replaces the previous "values are zero placeholders" pin. After
+    // priming, at least one axis MUST be non-zero — otherwise the
+    // `*:check` gate either misread the producer or the producer
+    // emitted no data, both of which we want to fail loud.
+    const someAxisNonZero = rollupAxes.some((axis) => {
+      const v = doc.rollup['*'][axis];
+      return typeof v === 'number' && v !== 0;
+    });
+    expect(someAxisNonZero).toBe(true);
+  });
 
-  it.each(STUBS)(
-    '$kind stub validates under AJV against its per-kind schema',
-    ({ file, schemaFile }) => {
-      const ajv = buildAjv();
-      const schema = loadJson(path.join(SCHEMA_DIR, schemaFile));
-      const validate = ajv.compile(schema);
-      const doc = loadJson(path.join(BASELINES_DIR, file));
-      const ok = validate(doc);
-      if (!ok) {
-        console.error(`AJV errors for ${file}:`, validate.errors);
-      }
-      expect(ok).toBe(true);
-    },
-  );
+  it.each(STUBS)('$kind stub validates under AJV against its per-kind schema', ({
+    file,
+    schemaFile,
+  }) => {
+    const ajv = buildAjv();
+    const schema = loadJson(path.join(SCHEMA_DIR, schemaFile));
+    const validate = ajv.compile(schema);
+    const doc = loadJson(path.join(BASELINES_DIR, file));
+    const ok = validate(doc);
+    if (!ok) {
+      console.error(`AJV errors for ${file}:`, validate.errors);
+    }
+    expect(ok).toBe(true);
+  });
 
-  it.each(STUBS)(
-    "$kind stub's $schema pointer targets the matching per-kind schema",
-    ({ file, schemaFile }) => {
-      const doc = loadJson(path.join(BASELINES_DIR, file));
-      expect(doc.$schema).toBe(`.agents/schemas/baselines/${schemaFile}`);
-    },
-  );
+  it.each(STUBS)("$kind stub's $schema pointer targets the matching per-kind schema", ({
+    file,
+    schemaFile,
+  }) => {
+    const doc = loadJson(path.join(BASELINES_DIR, file));
+    expect(doc.$schema).toBe(`.agents/schemas/baselines/${schemaFile}`);
+  });
 });

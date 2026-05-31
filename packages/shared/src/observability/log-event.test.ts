@@ -134,13 +134,18 @@ describe('LogEventSchema', () => {
   });
 
   describe('method enum', () => {
-    it.each(['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'])(
-      'accepts %s',
-      (method) => {
-        const result = LogEventSchema.safeParse({ ...baseEvent(), method });
-        expect(result.success).toBe(true);
-      },
-    );
+    it.each([
+      'GET',
+      'POST',
+      'PUT',
+      'PATCH',
+      'DELETE',
+      'HEAD',
+      'OPTIONS',
+    ])('accepts %s', (method) => {
+      const result = LogEventSchema.safeParse({ ...baseEvent(), method });
+      expect(result.success).toBe(true);
+    });
 
     it('rejects a lowercase method (e.g. "get")', () => {
       const result = LogEventSchema.safeParse({ ...baseEvent(), method: 'get' });

@@ -12,8 +12,7 @@
   "dependencies": {
     "@clerk/clerk-expo": "^2.19.31",
     "@sentry/react-native": "^8.11.1",
-    "expo-constants": "^55.0.16",
-    "sentry-expo": "^7.2.0"
+    "expo-constants": "^55.0.16"
   },
   "devDependencies": {
     "@repo/config": "workspace:*",

@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "@clerk/backend": "^3.4.9",
-    "@hono/node-server": "^1.13.7",
+    "@hono/node-server": "^2.0.4",
     "@repo/shared": "workspace:*",
     "@sentry/cloudflare": "^10.53.1",
     "drizzle-orm": "^0.45.2",

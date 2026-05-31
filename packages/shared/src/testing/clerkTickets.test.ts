@@ -16,10 +16,7 @@ import {
   mintSignInTicket,
 } from './clerkTickets';
 
-function fakeClerkClient(returned: {
-  token: string;
-  userId: string;
-}) {
+function fakeClerkClient(returned: { token: string; userId: string }) {
   return {
     signInTokens: {
       createSignInToken: vi.fn(() =>

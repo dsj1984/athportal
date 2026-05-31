@@ -9,10 +9,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { type SsrAuthContext, isAdminBySsr, requireAdminSsr, requireSignedIn } from './ssrAuthGate';
 
-function makeContext(opts: {
-  userId: string | null;
-  cookieHeader?: string;
-}): SsrAuthContext {
+function makeContext(opts: { userId: string | null; cookieHeader?: string }): SsrAuthContext {
   return {
     locals: {
       auth: () => ({ userId: opts.userId }),

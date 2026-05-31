@@ -107,65 +107,68 @@ describe('per-kind baseline schemas', () => {
     expect(ref).toBeTruthy();
   });
 
-  it.each(KIND_CONTRACTS)(
-    '$kind schema constrains rollup.* to required axes %j',
-    ({ file, rollupRequired }) => {
-      const schema = loadSchema(file);
-      const required = schema.properties?.rollup?.properties?.['*']?.required;
-      expect(required).toEqual(expect.arrayContaining(rollupRequired));
-    },
-  );
+  it.each(KIND_CONTRACTS)('$kind schema constrains rollup.* to required axes %j', ({
+    file,
+    rollupRequired,
+  }) => {
+    const schema = loadSchema(file);
+    const required = schema.properties?.rollup?.properties?.['*']?.required;
+    expect(required).toEqual(expect.arrayContaining(rollupRequired));
+  });
 
-  it.each(KIND_CONTRACTS)(
-    '$kind schema constrains rows items to required fields %j',
-    ({ file, rowsRequired }) => {
-      const schema = loadSchema(file);
-      const required = schema.properties?.rows?.items?.required;
-      expect(required).toEqual(expect.arrayContaining(rowsRequired));
-    },
-  );
+  it.each(KIND_CONTRACTS)('$kind schema constrains rows items to required fields %j', ({
+    file,
+    rowsRequired,
+  }) => {
+    const schema = loadSchema(file);
+    const required = schema.properties?.rows?.items?.required;
+    expect(required).toEqual(expect.arrayContaining(rowsRequired));
+  });
 
-  it.each(KIND_CONTRACTS)(
-    '$kind schema accepts a minimal envelope-shaped document',
-    ({ kind, file, sampleRollup, sampleRow }) => {
-      const ajv = buildAjv();
-      const schema = loadSchema(file);
-      const validate = ajv.compile(schema);
+  it.each(KIND_CONTRACTS)('$kind schema accepts a minimal envelope-shaped document', ({
+    kind,
+    file,
+    sampleRollup,
+    sampleRow,
+  }) => {
+    const ajv = buildAjv();
+    const schema = loadSchema(file);
+    const validate = ajv.compile(schema);
 
-      const sample = {
-        $schema: `.agents/schemas/baselines/${kind}.schema.json`,
-        kernelVersion: '1.0.0',
-        generatedAt: '2026-05-17T00:00:00.000Z',
-        rollup: { '*': sampleRollup },
-        rows: [sampleRow],
-      };
+    const sample = {
+      $schema: `.agents/schemas/baselines/${kind}.schema.json`,
+      kernelVersion: '1.0.0',
+      generatedAt: '2026-05-17T00:00:00.000Z',
+      rollup: { '*': sampleRollup },
+      rows: [sampleRow],
+    };
 
-      const ok = validate(sample);
-      if (!ok) {
-        // Surface AJV errors when the assertion fails so a future row-shape
-        // drift is immediately attributable.
-        console.error(`AJV errors for ${kind}:`, validate.errors);
-      }
-      expect(ok).toBe(true);
-    },
-  );
+    const ok = validate(sample);
+    if (!ok) {
+      // Surface AJV errors when the assertion fails so a future row-shape
+      // drift is immediately attributable.
+      console.error(`AJV errors for ${kind}:`, validate.errors);
+    }
+    expect(ok).toBe(true);
+  });
 
-  it.each(KIND_CONTRACTS)(
-    "$kind schema rejects a rollup that omits the '*' key",
-    ({ kind, file, sampleRollup }) => {
-      const ajv = buildAjv();
-      const schema = loadSchema(file);
-      const validate = ajv.compile(schema);
+  it.each(KIND_CONTRACTS)("$kind schema rejects a rollup that omits the '*' key", ({
+    kind,
+    file,
+    sampleRollup,
+  }) => {
+    const ajv = buildAjv();
+    const schema = loadSchema(file);
+    const validate = ajv.compile(schema);
 
-      const bad = {
-        $schema: `.agents/schemas/baselines/${kind}.schema.json`,
-        kernelVersion: '1.0.0',
-        generatedAt: '2026-05-17T00:00:00.000Z',
-        rollup: { 'apps/api': sampleRollup },
-        rows: [],
-      };
+    const bad = {
+      $schema: `.agents/schemas/baselines/${kind}.schema.json`,
+      kernelVersion: '1.0.0',
+      generatedAt: '2026-05-17T00:00:00.000Z',
+      rollup: { 'apps/api': sampleRollup },
+      rows: [],
+    };
 
-      expect(validate(bad)).toBe(false);
-    },
-  );
+    expect(validate(bad)).toBe(false);
+  });
 });
