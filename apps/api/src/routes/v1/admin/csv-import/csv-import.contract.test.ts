@@ -578,4 +578,174 @@ describe('admin csv-import — contract', () => {
     // contract — the failure path does not write an audit row).
     expect(db.select().from(csvImportBatches).all().length).toBe(0);
   });
+
+  // ──────────────────────────────────────────────────────────────────
+  // Story #1091 — the persisted batch summary must report the true
+  // "rows parsed vs. rows succeeded" tally and the actual created rows,
+  // so the count surfaced in the import-history list can never drift
+  // away from the data that landed. The original defect surfaced a
+  // 3-data-row import recorded as `rows: 2, succeeded: 1`. These tests
+  // pin the tally against known multi-row CSVs (new-only and mixed
+  // new/reused) and assert the DB side-effects directly.
+  // ──────────────────────────────────────────────────────────────────
+
+  // The QA-harness CSV that surfaced #1091: header + three NEW athletes,
+  // required columns only (no teamName column at all). This is the exact
+  // shape the org-admin sweep uploaded.
+  const THREE_NEW_REQUIRED_ONLY_CSV = [
+    'email,firstName,lastName',
+    'quinn@x.invalid,Quinn,River',
+    'riley@x.invalid,Riley,Stone',
+    'sage@x.invalid,Sage,Brook',
+  ].join('\n');
+
+  it('POST /commit records rows:3, succeeded:3 for a 3-new-row CSV and creates 3 athletes', async () => {
+    const db = freshProductionDb();
+    const seed = seedGraph(db);
+    const app = buildApp(db, actorFor(seed, 'A'));
+
+    const res = await app.request('/api/v1/admin/csv-import/commit', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        fileBase64: toBase64(THREE_NEW_REQUIRED_ONLY_CSV),
+        fileName: 'qa-roster.csv',
+        mapping: {
+          email: 'email',
+          firstName: 'firstName',
+          lastName: 'lastName',
+        },
+      }),
+    });
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      success: true;
+      data: {
+        rowCount: number;
+        successCount: number;
+        errorCount: number;
+        reusedUserIds: string[];
+      };
+    };
+    // The commit response must report the true tally, not an undercount.
+    expect(body.data.rowCount).toBe(3);
+    expect(body.data.successCount).toBe(3);
+    expect(body.data.errorCount).toBe(0);
+    expect(body.data.reusedUserIds).toEqual([]);
+
+    // Persisted batch summary mirrors the response exactly.
+    const batches = db.select().from(csvImportBatches).all();
+    expect(batches.length).toBe(1);
+    expect(batches[0]!.rowCount).toBe(3);
+    expect(batches[0]!.successCount).toBe(3);
+    expect(batches[0]!.errorCount).toBe(0);
+
+    // Actual created rows: 3 distinct athlete users landed (no data
+    // loss). This is the contract-tier check the Story demands to prove
+    // the count is not merely cosmetic — the rows really exist.
+    for (const email of ['quinn@x.invalid', 'riley@x.invalid', 'sage@x.invalid']) {
+      const matches = db.select().from(users).where(eq(users.email, email)).all();
+      expect(matches.length).toBe(1);
+    }
+  });
+
+  it('GET /batches surfaces the true rows:3, succeeded:3 tally for the QA-repro CSV', async () => {
+    const db = freshProductionDb();
+    const seed = seedGraph(db);
+    const app = buildApp(db, actorFor(seed, 'A'));
+
+    await app.request('/api/v1/admin/csv-import/commit', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        fileBase64: toBase64(THREE_NEW_REQUIRED_ONLY_CSV),
+        fileName: 'qa-roster.csv',
+        mapping: { email: 'email', firstName: 'firstName', lastName: 'lastName' },
+      }),
+    });
+
+    const list = await app.request('/api/v1/admin/csv-import/batches', { method: 'GET' });
+    expect(list.status).toBe(200);
+    const body = (await list.json()) as {
+      success: true;
+      data: { batches: Array<{ rowCount: number; successCount: number; errorCount: number }> };
+    };
+    expect(body.data.batches.length).toBe(1);
+    // The exact mismatch from the bug report (rows:2, succeeded:1) must
+    // never reappear: the history row reports the true tally.
+    expect(body.data.batches[0]!.rowCount).toBe(3);
+    expect(body.data.batches[0]!.successCount).toBe(3);
+    expect(body.data.batches[0]!.errorCount).toBe(0);
+  });
+
+  it('POST /commit records the true tally for a mixed new/reused CSV (with teams)', async () => {
+    const db = freshProductionDb();
+    const seed = seedGraph(db);
+
+    // One of the three imported emails already exists as a platform
+    // account (in a peer org). Reuse must not change the tally: three
+    // rows parsed, three rows succeeded — one via reuse, two new.
+    const existingUserId = 'u_existing_reuse';
+    db.insert(users)
+      .values({
+        id: existingUserId,
+        clerkSubjectId: 'user_existing_reuse',
+        email: 'a@x.invalid',
+        role: 'member',
+        orgId: seed.orgB,
+      })
+      .run();
+
+    const app = buildApp(db, actorFor(seed, 'A'));
+
+    const res = await app.request('/api/v1/admin/csv-import/commit', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        fileBase64: toBase64(HAPPY_CSV),
+        fileName: 'mixed-roster.csv',
+        mapping: {
+          email: 'email',
+          firstName: 'firstName',
+          lastName: 'lastName',
+          teamName: 'teamName',
+        },
+      }),
+    });
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      success: true;
+      data: {
+        rowCount: number;
+        successCount: number;
+        errorCount: number;
+        reusedUserIds: string[];
+      };
+    };
+    expect(body.data.rowCount).toBe(3);
+    expect(body.data.successCount).toBe(3);
+    expect(body.data.errorCount).toBe(0);
+    expect(body.data.reusedUserIds).toEqual([existingUserId]);
+
+    // Persisted batch mirrors the tally.
+    const batches = db.select().from(csvImportBatches).all();
+    expect(batches.length).toBe(1);
+    expect(batches[0]!.rowCount).toBe(3);
+    expect(batches[0]!.successCount).toBe(3);
+    expect(batches[0]!.errorCount).toBe(0);
+
+    // Actual created rows: two NEW users minted, the existing user
+    // re-used (not duplicated), and three memberships landed in org A.
+    expect(db.select().from(users).where(eq(users.email, 'a@x.invalid')).all().length).toBe(1);
+    expect(db.select().from(users).where(eq(users.email, 'b@x.invalid')).all().length).toBe(1);
+    expect(db.select().from(users).where(eq(users.email, 'c@x.invalid')).all().length).toBe(1);
+    const memberships = db
+      .select()
+      .from(athleteMemberships)
+      .where(eq(athleteMemberships.orgId, seed.orgA))
+      .all();
+    expect(memberships.length).toBe(3);
+  });
 });

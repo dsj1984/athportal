@@ -141,6 +141,34 @@ describe('resolveRows', () => {
     });
   });
 
+  it('reports totalDataRows as the full parsed data-row count (Story #1091)', () => {
+    // Three data rows, all valid → totalDataRows and rows.length agree.
+    const csv = [
+      'email,firstName,lastName',
+      'a@x.com,Ada,Lovelace',
+      'b@x.com,Bob,Smith',
+      'c@x.com,Carol,Jones',
+    ].join('\n');
+    const mapping = { email: 'email', firstName: 'firstName', lastName: 'lastName' };
+    const result = resolveRows(bytes(csv), mapping);
+    expect(result.errors).toEqual([]);
+    expect(result.rows.length).toBe(3);
+    // The total-parsed count is the denominator the importer records as
+    // the batch `rowCount`; it must count every data row, never the
+    // resolved subset.
+    expect(result.totalDataRows).toBe(3);
+  });
+
+  it('totalDataRows counts a failed row even when it is pruned from rows', () => {
+    // Second row is unmappable (short) → excluded from rows but still a
+    // parsed data row, so totalDataRows stays 2 while rows.length is 1.
+    const csv = ['email,firstName,lastName', 'a@x.com,Ada,Lovelace', 'b@x.com,Bob'].join('\n');
+    const mapping = { email: 'email', firstName: 'firstName', lastName: 'lastName' };
+    const result = resolveRows(bytes(csv), mapping);
+    expect(result.totalDataRows).toBe(2);
+    expect(result.rows.length).toBe(1);
+  });
+
   it('ignores headers mapped to null', () => {
     const csv = ['email,firstName,lastName,ignored', 'a@x.com,Ada,Lovelace,junk'].join('\n');
     const mapping = {
