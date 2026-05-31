@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@clerk/clerk-expo": "^2.19.31",
-    "@sentry/react-native": "^8.11.1",
+    "@sentry/react-native": "^8.13.0",
     "expo-constants": "^55.0.16"
   },
   "devDependencies": {
