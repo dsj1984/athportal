@@ -69,6 +69,17 @@ export interface ResolveError {
 export interface ResolveRowsResult {
   readonly rows: ReadonlyArray<Readonly<Record<string, string>>>;
   readonly errors: readonly ResolveError[];
+  /**
+   * Total number of data rows parsed from the upload (header excluded,
+   * trailing blank line dropped). This is the count BEFORE per-row
+   * validation prunes any row into `errors` — it is the denominator the
+   * importer records as the batch `rowCount`. `rows.length` is always
+   * `<= totalDataRows`; the two differ exactly when a row failed
+   * validation. Keeping the total distinct from the resolved count is
+   * what lets the persisted batch summary report an accurate
+   * "rows parsed vs. rows succeeded" tally (Story #1091).
+   */
+  readonly totalDataRows: number;
 }
 
 /**
@@ -186,7 +197,7 @@ export function parseCsv(buffer: Uint8Array): ParseCsvResult {
 export function resolveRows(buffer: Uint8Array, mapping: ColumnMapping): ResolveRowsResult {
   const text = decodeBuffer(buffer);
   if (text.trim().length === 0) {
-    return { rows: [], errors: [{ rowIndex: -1, code: 'EMPTY_FILE' }] };
+    return { rows: [], errors: [{ rowIndex: -1, code: 'EMPTY_FILE' }], totalDataRows: 0 };
   }
 
   // Mapping-level check: every required target field must be the
@@ -203,12 +214,13 @@ export function resolveRows(buffer: Uint8Array, mapping: ColumnMapping): Resolve
         code: 'MISSING_REQUIRED_COLUMN' as const,
         field,
       })),
+      totalDataRows: 0,
     };
   }
 
   const allRows = splitRows(text);
   if (allRows.length === 0) {
-    return { rows: [], errors: [{ rowIndex: -1, code: 'EMPTY_FILE' }] };
+    return { rows: [], errors: [{ rowIndex: -1, code: 'EMPTY_FILE' }], totalDataRows: 0 };
   }
   const headers = allRows[0]!;
   const dataRows = allRows.slice(1);
@@ -251,5 +263,5 @@ export function resolveRows(buffer: Uint8Array, mapping: ColumnMapping): Resolve
     }
   });
 
-  return { rows, errors };
+  return { rows, errors, totalDataRows: dataRows.length };
 }

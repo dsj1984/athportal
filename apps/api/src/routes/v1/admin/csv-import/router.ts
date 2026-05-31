@@ -452,6 +452,31 @@ csvImportAdminRouter.post('/commit', async (c) => {
   const reusedUserIds: string[] = [];
   const importedAt = new Date();
 
+  // Batch tally (Story #1091). Derive the three persisted counts from
+  // distinct, real quantities rather than reusing a single value for
+  // all of them:
+  //   - `rowCount`     — TOTAL data rows parsed from the upload. This
+  //                      is the denominator the admin "import history"
+  //                      surface reports as "rows" and MUST equal the
+  //                      number of data rows in the source CSV. The
+  //                      prior code recorded `resolved.rows.length`
+  //                      here, which is the *resolved* count, not the
+  //                      parsed total — the source of the undercount
+  //                      reported in #1091.
+  //   - `successCount` — rows that resolved into an athlete record the
+  //                      transaction commits (new-minted + reused). The
+  //                      commit path is only reached when the resolver
+  //                      surfaced zero errors, so on a clean import this
+  //                      equals `rowCount`; keeping it as its own count
+  //                      stops the two from silently sharing one value.
+  //   - `errorCount`   — parsed rows that did not succeed
+  //                      (`rowCount - successCount`). Zero on the happy
+  //                      path; never negative because `rows.length` is
+  //                      always `<= totalDataRows`.
+  const rowCount = resolved.totalDataRows;
+  const successCount = resolved.rows.length;
+  const errorCount = rowCount - successCount;
+
   try {
     db.transaction((tx) => {
       // 1. Audit row.
@@ -460,9 +485,9 @@ csvImportAdminRouter.post('/commit', async (c) => {
           id: batchId,
           orgId,
           importedByUserId: auth.userId,
-          rowCount: resolved.rows.length,
-          successCount: resolved.rows.length,
-          errorCount: 0,
+          rowCount,
+          successCount,
+          errorCount,
           errorEnvelope: '[]',
           fileName: parsed.data.fileName,
           createdAt: importedAt,
@@ -553,9 +578,12 @@ csvImportAdminRouter.post('/commit', async (c) => {
 
   const data: CsvImportCommitOutput = {
     batchId,
-    rowCount: resolved.rows.length,
-    successCount: resolved.rows.length,
-    errorCount: 0,
+    // Mirror the persisted audit-row counts exactly so the commit
+    // response and the import-history list can never disagree about the
+    // same batch (Story #1091).
+    rowCount,
+    successCount,
+    errorCount,
     // De-duplicate so the same user does not appear twice if a CSV
     // mentions the same email on two rows.
     reusedUserIds: Array.from(new Set(reusedUserIds)),
